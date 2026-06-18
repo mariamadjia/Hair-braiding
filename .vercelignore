@@ -41,8 +41,12 @@ public/Gallery/Box-Braids/**
 public/Gallery/Men/**
 public/Gallery/Crochets/**
 public/Gallery/Locs/**
-public/welcome/*.MOV
-public/welcome/*.mov
+# Exclude unused welcome videos but keep video1, video2, video4
+public/welcome/video0.MOV
+public/welcome/video3.MOV
+public/welcome/video5.mov
+public/welcome/video-*.mov
+public/welcome/videonull.mov
 public/uploads/**
 public/services/box*.png
 public/services/Box*.png
