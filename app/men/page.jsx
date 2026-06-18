@@ -7,8 +7,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 async function getMenData() {
   try {
     const [categoriesRes, galleryRes] = await Promise.all([
-      fetch(`${API_BASE_URL}/api/categories`, { next: { revalidate: 60 } }),
-      fetch(`${API_BASE_URL}/api/gallery`, { next: { revalidate: 60 } })
+      fetch(`${API_BASE_URL}/api/categories`, { cache: 'no-store' }),
+      fetch(`${API_BASE_URL}/api/gallery`, { cache: 'no-store' })
     ]);
     
     const categoriesData = await categoriesRes.json();
