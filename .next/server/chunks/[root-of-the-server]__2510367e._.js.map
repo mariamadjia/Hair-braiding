@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 67, "column": 0}, "map": {"version":3,"sources":["file:///Users/gloriadjonret/Documents/Hair-braiding/app/api/hero-images/route.ts"],"sourcesContent":["import { NextResponse } from 'next/server';\nimport fs from 'fs';\nimport path from 'path';\n\nexport async function GET() {\n  try {\n    const heroDirectory = path.join(process.cwd(), 'public', 'hero');\n    const files = fs.readdirSync(heroDirectory);\n    \n    const imageFiles = files.filter(file => \n      /\\.(jpg|jpeg|png|gif|webp)$/i.test(file)\n    );\n    \n    const imagePaths = imageFiles.map(file => `/hero/${file}`);\n    \n    return NextResponse.json({ images: imagePaths });\n  } catch (error) {\n    console.error('Error reading hero images:', error);\n    return NextResponse.json({ images: [] }, { status: 500 });\n  }\n}\n"],"names":[],"mappings":";;;;AAAA;AACA;AACA;;;;AAEO,eAAe;IACpB,IAAI;QACF,MAAM,gBAAgB,4GAAI,CAAC,IAAI,CAAC,QAAQ,GAAG,IAAI,UAAU;QACzD,MAAM,QAAQ,wGAAE,CAAC,WAAW,CAAC;QAE7B,MAAM,aAAa,MAAM,MAAM,CAAC,CAAA,OAC9B,8BAA8B,IAAI,CAAC;QAGrC,MAAM,aAAa,WAAW,GAAG,CAAC,CAAA,OAAQ,CAAC,MAAM,EAAE,MAAM;QAEzD,OAAO,gJAAY,CAAC,IAAI,CAAC;YAAE,QAAQ;QAAW;IAChD,EAAE,OAAO,OAAO;QACd,QAAQ,KAAK,CAAC,8BAA8B;QAC5C,OAAO,gJAAY,CAAC,IAAI,CAAC;YAAE,QAAQ,EAAE;QAAC,GAAG;YAAE,QAAQ;QAAI;IACzD;AACF","debugId":null}}]
+}

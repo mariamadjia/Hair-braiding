@@ -1,0 +1,1061 @@
+{
+  "defaultBookingUrl": "https://calendly.com/djonretglo",
+  "categories": [
+    {
+      "name": "Box Braids",
+      "slug": "box-braids",
+      "summary": "",
+      "image": "",
+      "subcategories": [
+        {
+          "name": "Classic Box Braids",
+          "slug": "classic-box-braids",
+          "image": "/Gallery/Box-Braids /Box-Braids/IMG_9176.jpg",
+          "items": [
+            {
+              "name": "Classic Box Braids",
+              "price": "",
+              "description": "Various sizes and lengths available",
+              "image": "/Gallery/Box-Braids /Box-Braids/IMG_9176.jpg",
+              "images": [
+                "/Gallery/Box-Braids /Box-Braids/IMG_9176.jpg",
+                "/Gallery/Box-Braids /Box-Braids/IMG_9178.jpg",
+                "/Gallery/Box-Braids /Box-Braids/IMG_9179.jpg",
+                "/Gallery/Box-Braids /Box-Braids/IMG_9183.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$240",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Strap Length",
+                  "price": "$280",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$320",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Butt Length",
+                  "price": "$350",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Knotless",
+          "slug": "knotless",
+          "image": "/Gallery/Box-Braids /knotless/IMG_9219.jpg",
+          "items": [
+            {
+              "name": "Knotless Box Braids",
+              "price": "",
+              "description": "Various sizes and lengths available",
+              "image": "/Gallery/Box-Braids /knotless/IMG_9219.jpg",
+              "images": [
+                "/Gallery/Box-Braids /knotless/IMG_9219.jpg",
+                "/Gallery/Box-Braids /knotless/IMG_9220.jpg",
+                "/Gallery/Box-Braids /knotless/IMG_9221.jpg",
+                "/Gallery/Box-Braids /knotless/IMG_9222.jpg",
+                "/Gallery/Box-Braids /knotless/IMG_9223.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$280",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Strap Length",
+                  "price": "$320",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$350",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Butt Length",
+                  "price": "$380",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Goddess Braids",
+          "slug": "goddess-braids",
+          "image": "/Gallery/Box-Braids /goddess braids/IMG_9174.jpg",
+          "items": [
+            {
+              "name": "Goddess Braids",
+              "price": "",
+              "description": "Various sizes and lengths available",
+              "image": "/Gallery/Box-Braids /goddess braids/IMG_9174.jpg",
+              "images": [
+                "/Gallery/Box-Braids /goddess braids/IMG_9174.jpg",
+                "/Gallery/Box-Braids /goddess braids/IMG_9175.jpg",
+                "/Gallery/Box-Braids /goddess braids/IMG_9180.jpg",
+                "/Gallery/Box-Braids /goddess braids/IMG_9220.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$200",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Strap Length",
+                  "price": "$240",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$280",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Butt Length",
+                  "price": "$320",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Bohemian French Curl",
+          "slug": "bohemian-french-curl",
+          "image": "/Gallery/Box-Braids /Bohemian french curl/IMG_9190.jpg",
+          "items": [
+            {
+              "name": "Bohemian French Curl",
+              "price": "",
+              "description": "Various sizes and lengths available",
+              "image": "/Gallery/Box-Braids /Bohemian french curl/IMG_9190.jpg",
+              "images": [
+                "/Gallery/Box-Braids /Bohemian french curl/IMG_9190.jpg",
+                "/Gallery/Box-Braids /Bohemian french curl/IMG_9191.jpg",
+                "/Gallery/Box-Braids /Bohemian french curl/IMG_9199.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$260",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Strap Length",
+                  "price": "$300",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$340",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Butt Length",
+                  "price": "$370",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "French Curls",
+          "slug": "french-curls",
+          "image": "/Gallery/Box-Braids /French curls/IMG_7654.JPEG",
+          "items": [
+            {
+              "name": "French Curls",
+              "price": "",
+              "description": "Various sizes and lengths available",
+              "image": "/Gallery/Box-Braids /French curls/IMG_7654.JPEG",
+              "images": [
+                "/Gallery/Box-Braids /French curls/IMG_7654.JPEG"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$260",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Strap Length",
+                  "price": "$300",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$340",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Butt Length",
+                  "price": "$370",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Bohemian",
+          "slug": "bohemian",
+          "image": "/Gallery/Box-Braids /Bohemian/IMG_9207.jpg",
+          "items": [
+            {
+              "name": "Bohemian Box Braids",
+              "price": "",
+              "description": "Various sizes and lengths available",
+              "image": "/Gallery/Box-Braids /Bohemian/IMG_9207.jpg",
+              "images": [
+                "/Gallery/Box-Braids /Bohemian/IMG_9207.jpg",
+                "/Gallery/Box-Braids /Bohemian/IMG_9208.jpg",
+                "/Gallery/Box-Braids /Bohemian/IMG_9213.jpg",
+                "/Gallery/Box-Braids /Bohemian/IMG_9214.jpg",
+                "/Gallery/Box-Braids /Bohemian/IMG_9216.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$260",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Strap Length",
+                  "price": "$300",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$340",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Butt Length",
+                  "price": "$370",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Bora Bora",
+          "slug": "bora-bora",
+          "image": "/Gallery/Box-Braids /bora bora/IMG_9180.jpg",
+          "items": [
+            {
+              "name": "Bora Bora Braids",
+              "price": "",
+              "description": "Various sizes and lengths available",
+              "image": "/Gallery/Box-Braids /bora bora/IMG_9180.jpg",
+              "images": [
+                "/Gallery/Box-Braids /bora bora/IMG_9180.jpg",
+                "/Gallery/Box-Braids /bora bora/IMG_9181.jpg",
+                "/Gallery/Box-Braids /bora bora/IMG_9189.jpg",
+                "/Gallery/Box-Braids /bora bora/IMG_9190.jpg",
+                "/Gallery/Box-Braids /bora bora/IMG_9191.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$280",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Strap Length",
+                  "price": "$320",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$350",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Butt Length",
+                  "price": "$380",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        }
+      ],
+      "displayOrder": 2
+    },
+    {
+      "name": "Conrows",
+      "slug": "conrows",
+      "summary": "",
+      "image": "",
+      "subcategories": [
+        {
+          "name": "Feedin Conrows",
+          "slug": "feedin-conrows",
+          "image": "/Gallery/Conrows/Feedin Conrows/IMG_9325.jpg",
+          "items": [
+            {
+              "name": "Feedin Conrows",
+              "price": "",
+              "description": "Various styles and lengths available",
+              "image": "/Gallery/Conrows/Feedin Conrows/IMG_9325.jpg",
+              "images": [
+                "/Gallery/Conrows/Feedin Conrows/IMG_9325.jpg",
+                "/Gallery/Conrows/Feedin Conrows/IMG_9324.jpg",
+                "/Gallery/Conrows/Feedin Conrows/IMG_9323.jpg",
+                "/Gallery/Conrows/Feedin Conrows/IMG_0112.JPG",
+                "/Gallery/Conrows/Feedin Conrows/IMG_9304.jpg",
+                "/Gallery/Conrows/Feedin Conrows/IMG_9305.jpg",
+                "/Gallery/Conrows/Feedin Conrows/IMG_9310.jpg",
+                "/Gallery/Conrows/Feedin Conrows/IMG_9311.jpg",
+                "/Gallery/Conrows/Feedin Conrows/IMG_9312.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$150",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Long",
+                  "price": "$180",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Flip-Over Conrows",
+          "slug": "flip-over-conrows",
+          "image": "/Gallery/Conrows/Flip-Over Conrows/IMG_9316.jpg",
+          "items": [
+            {
+              "name": "Flip-Over Conrows",
+              "price": "",
+              "description": "Various styles available",
+              "image": "/Gallery/Conrows/Flip-Over Conrows/IMG_9316.jpg",
+              "images": [
+                "/Gallery/Conrows/Flip-Over Conrows/IMG_9316.jpg",
+                "/Gallery/Conrows/Flip-Over Conrows/IMG_9317.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$160",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Half-Half Conrows",
+          "slug": "half-half-conrows",
+          "image": "/Gallery/Conrows/Half-Half Conrows/IMG_9303.jpg",
+          "items": [
+            {
+              "name": "Half-Half Conrows",
+              "price": "",
+              "description": "Various styles available",
+              "image": "/Gallery/Conrows/Half-Half Conrows/IMG_9303.jpg",
+              "images": [
+                "/Gallery/Conrows/Half-Half Conrows/IMG_9303.jpg",
+                "/Gallery/Conrows/Half-Half Conrows/IMG_9306.jpg",
+                "/Gallery/Conrows/Half-Half Conrows/IMG_9307.jpg",
+                "/Gallery/Conrows/Half-Half Conrows/IMG_9320.jpg",
+                "/Gallery/Conrows/Half-Half Conrows/IMG_9321.jpg",
+                "/Gallery/Conrows/Half-Half Conrows/IMG.JPEG"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$140",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Straight Back",
+          "slug": "straight-back",
+          "image": "/Gallery/Conrows/Straight Back/IMG_1593.JPG",
+          "items": [
+            {
+              "name": "Straight Back Conrows",
+              "price": "",
+              "description": "Various styles available",
+              "image": "/Gallery/Conrows/Straight Back/IMG_1593.JPG",
+              "images": [
+                "/Gallery/Conrows/Straight Back/IMG_1593.JPG",
+                "/Gallery/Conrows/Straight Back/IMG_9299.jpg",
+                "/Gallery/Conrows/Straight Back/IMG_9300.jpg",
+                "/Gallery/Conrows/Straight Back/IMG_9301.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$120",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Long",
+                  "price": "$150",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Updo Ponytail",
+          "slug": "updo-ponytail",
+          "image": "/Gallery/Conrows/Updo Ponytail/IMG_2688.JPG",
+          "items": [
+            {
+              "name": "Updo Ponytail Conrows",
+              "price": "",
+              "description": "Various styles available",
+              "image": "/Gallery/Conrows/Updo Ponytail/IMG_2688.JPG",
+              "images": [
+                "/Gallery/Conrows/Updo Ponytail/IMG_2688.JPG",
+                "/Gallery/Conrows/Updo Ponytail/IMG_1296.JPG",
+                "/Gallery/Conrows/Updo Ponytail/IMG_1556.JPG",
+                "/Gallery/Conrows/Updo Ponytail/IMG_1570.JPG",
+                "/Gallery/Conrows/Updo Ponytail/IMG_1594.JPG",
+                "/Gallery/Conrows/Updo Ponytail/IMG_9295.jpg",
+                "/Gallery/Conrows/Updo Ponytail/IMG_9296.jpg",
+                "/Gallery/Conrows/Updo Ponytail/IMG_9297.jpg",
+                "/Gallery/Conrows/Updo Ponytail/IMG_9308.jpg",
+                "/Gallery/Conrows/Updo Ponytail/IMG_9309.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$180",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Elaborate",
+                  "price": "$220",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        }
+      ],
+      "displayOrder": 0
+    },
+    {
+      "name": "Miracle Knots",
+      "slug": "miracle-knots",
+      "summary": "",
+      "image": "",
+      "subcategories": [
+        {
+          "name": "Miracle Weaves",
+          "slug": "miracle-weaves",
+          "image": "/Gallery/Miracle-knots/Miracle-weaves/IMG_9365.jpg",
+          "items": [
+            {
+              "name": "Miracle Weaves",
+              "price": "",
+              "description": "Seamless blend of braids and weaves",
+              "image": "/Gallery/Miracle-knots/Miracle-weaves/IMG_9365.jpg",
+              "images": [
+                "/Gallery/Miracle-knots/Miracle-weaves/IMG_9365.jpg",
+                "/Gallery/Miracle-knots/Miracle-weaves/IMG_9362.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$200",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Long",
+                  "price": "$250",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Magic Knots",
+          "slug": "magic-knots",
+          "image": "/Gallery/Miracle-knots/Magic-knots/IMG_9355.jpg",
+          "items": [
+            {
+              "name": "Magic Knots",
+              "price": "",
+              "description": "Unique knotless protective style",
+              "image": "/Gallery/Miracle-knots/Magic-knots/IMG_9355.jpg",
+              "images": [
+                "/Gallery/Miracle-knots/Magic-knots/IMG_9355.jpg",
+                "/Gallery/Miracle-knots/Magic-knots/IMG_9356.jpg",
+                "/Gallery/Miracle-knots/Magic-knots/IMG_9354.jpg",
+                "/Gallery/Miracle-knots/Magic-knots/IMG_9353.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$180",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Long",
+                  "price": "$220",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        }
+      ],
+      "displayOrder": 1
+    },
+    {
+      "name": "Twists",
+      "slug": "twists",
+      "summary": "",
+      "image": "",
+      "subcategories": [
+        {
+          "name": "2-Strands Twists",
+          "slug": "2-strands-twists",
+          "summary": "Classic two-strand twist styles.",
+          "image": "/Gallery/Twists/2-strands-twists/IMG_9101.jpg",
+          "items": [
+            {
+              "name": "Small 2-Strands Twists",
+              "price": "$250",
+              "description": "3 OPTIONS",
+              "image": "/Gallery/Twists/2-strands-twists/IMG_9101.jpg",
+              "images": [
+                "/Gallery/Twists/2-strands-twists/IMG_9101.jpg",
+                "/Gallery/Twists/2-strands-twists/IMG_9102.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$220",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Length",
+                  "price": "$240",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$280",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Bohemian Marley Twists",
+          "slug": "bohemian-marley-twists",
+          "summary": "Bohemian-style marley twists with natural texture.",
+          "image": "/Gallery/Twists/Bohemian-marley twists/IMG_9054.jpg",
+          "items": [
+            {
+              "name": "Small Bohemian Marley Twists",
+              "price": "$280",
+              "description": "3 OPTIONS",
+              "image": "/Gallery/Twists/Bohemian-marley twists/IMG_9054.jpg",
+              "images": [
+                "/Gallery/Twists/Bohemian-marley twists/IMG_9054.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$260",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Length",
+                  "price": "$280",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$320",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Havana Marley Twists",
+          "slug": "havana-marley-twists",
+          "summary": "Chunky Havana-style marley twists.",
+          "image": "/Gallery/Twists/Havana-marley-twists/IMG_9048.jpg",
+          "items": [
+            {
+              "name": "Small Havana Marley Twists",
+              "price": "$270",
+              "description": "3 OPTIONS",
+              "image": "/Gallery/Twists/Havana-marley-twists/IMG_9048.jpg",
+              "images": [
+                "/Gallery/Twists/Havana-marley-twists/IMG_9048.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$250",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Length",
+                  "price": "$270",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$310",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Islands Twists",
+          "slug": "islands-twists",
+          "summary": "Island-inspired twists with flowing texture.",
+          "image": "/Gallery/Twists/Islands-Twists/IMG_9052.jpg",
+          "items": [
+            {
+              "name": "Small Islands Twists",
+              "price": "$360",
+              "description": "3 OPTIONS",
+              "image": "/Gallery/Twists/Islands-Twists/IMG_9052.jpg",
+              "images": [
+                "/Gallery/Twists/Islands-Twists/IMG_9052.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Bra Length",
+                  "price": "$360",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$380",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Butt Length",
+                  "price": "$400",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Kinky Twists",
+          "slug": "kinky-twists",
+          "summary": "Textured kinky twist styles.",
+          "image": "/Gallery/Twists/kinky-twists/IMG_1602.JPG",
+          "items": [
+            {
+              "name": "Small Kinky Twists",
+              "price": "$280",
+              "description": "3 OPTIONS",
+              "image": "/Gallery/Twists/kinky-twists/IMG_1602.JPG",
+              "images": [
+                "/Gallery/Twists/kinky-twists/IMG_1602.JPG"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$260",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Length",
+                  "price": "$280",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$320",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Passion Twists",
+          "slug": "passion-twists",
+          "summary": "Bouncy passion twists with effortless texture.",
+          "image": "/Gallery/Twists/passion-twists/IMG_9049.jpg",
+          "items": [
+            {
+              "name": "Small Passion Twists",
+              "price": "$260",
+              "description": "2 OPTIONS",
+              "image": "/Gallery/Twists/passion-twists/IMG_9049.jpg",
+              "images": [
+                "/Gallery/Twists/passion-twists/IMG_9049.jpg",
+                "/Gallery/Twists/passion-twists/IMG_9105.jpg",
+                "/Gallery/Twists/passion-twists/IMG_9106.jpg",
+                "/Gallery/Twists/passion-twists/IMG_9126.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Waist Length",
+                  "price": "$260",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Butt Length",
+                  "price": "$300",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Senegalese Twists",
+          "slug": "senegalese-twists",
+          "summary": "Sleek Senegalese twist styles.",
+          "image": "/Gallery/Twists/senegalese-twists /IMG_9111.jpg",
+          "items": [
+            {
+              "name": "Small Senegalese Twists",
+              "price": "$280",
+              "description": "3 OPTIONS",
+              "image": "/Gallery/Twists/senegalese-twists /IMG_9111.jpg",
+              "images": [
+                "/Gallery/Twists/senegalese-twists /IMG_9111.jpg",
+                "/Gallery/Twists/senegalese-twists /IMG_9120.jpg",
+                "/Gallery/Twists/senegalese-twists /IMG_9121.jpg",
+                "/Gallery/Twists/senegalese-twists /IMG_9122.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$260",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Length",
+                  "price": "$280",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$320",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Spring Twists",
+          "slug": "spring-twists",
+          "summary": "Bouncy spring twist styles.",
+          "image": "/Gallery/Twists/spring-twists/IMG_9123.jpg",
+          "items": [
+            {
+              "name": "Small Spring Twists",
+              "price": "$220",
+              "description": "3 OPTIONS",
+              "image": "/Gallery/Twists/spring-twists/IMG_9123.jpg",
+              "images": [
+                "/Gallery/Twists/spring-twists/IMG_9123.jpg",
+                "/Gallery/Twists/spring-twists/IMG_9124.jpg",
+                "/Gallery/Twists/spring-twists/IMG_9125.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Shoulder Length",
+                  "price": "$220",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Bra Length",
+                  "price": "$240",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Waist Length",
+                  "price": "$280",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        }
+      ],
+      "displayOrder": 3
+    },
+    {
+      "name": "Locs",
+      "slug": "locs",
+      "summary": "",
+      "image": "",
+      "subcategories": [
+        {
+          "name": "Butterfly",
+          "slug": "butterfly",
+          "image": "/Gallery/Locs/Butterfly/IMG_9387.jpg",
+          "items": [
+            {
+              "name": "Butterfly Locs",
+              "price": "",
+              "description": "Various lengths available",
+              "image": "/Gallery/Locs/Butterfly/IMG_9387.jpg",
+              "images": [
+                "/Gallery/Locs/Butterfly/IMG_9387.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$250",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Long",
+                  "price": "$300",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Soft",
+          "slug": "soft",
+          "image": "/Gallery/Locs/Soft/IMG_9385.jpg",
+          "items": [
+            {
+              "name": "Soft Locs",
+              "price": "",
+              "description": "Various lengths available",
+              "image": "/Gallery/Locs/Soft/IMG_9385.jpg",
+              "images": [
+                "/Gallery/Locs/Soft/IMG_9385.jpg",
+                "/Gallery/Locs/Soft/IMG_9386.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$280",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Long",
+                  "price": "$350",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        }
+      ],
+      "displayOrder": 4
+    },
+    {
+      "name": "Crochets",
+      "slug": "crochets",
+      "summary": "",
+      "image": "",
+      "subcategories": [
+        {
+          "name": "Single",
+          "slug": "single",
+          "image": "/Gallery/Crochets/Single/IMG_9381.jpg",
+          "items": [
+            {
+              "name": "Single Crochet",
+              "price": "",
+              "description": "Various lengths available",
+              "image": "/Gallery/Crochets/Single/IMG_9381.jpg",
+              "images": [
+                "/Gallery/Crochets/Single/IMG_9381.jpg",
+                "/Gallery/Crochets/Single/IMG_9380.jpg",
+                "/Gallery/Crochets/Single/IMG_9382.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$150",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Long",
+                  "price": "$180",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Pre-Braided",
+          "slug": "pre-braided",
+          "image": "/Gallery/Crochets/pre-braided/IMG_9367.jpg",
+          "items": [
+            {
+              "name": "Pre-Braided Crochet",
+              "price": "",
+              "description": "Various lengths available",
+              "image": "/Gallery/Crochets/pre-braided/IMG_9367.jpg",
+              "images": [
+                "/Gallery/Crochets/pre-braided/IMG_9367.jpg",
+                "/Gallery/Crochets/pre-braided/IMG_9372.jpg",
+                "/Gallery/Crochets/pre-braided/IMG_9373.jpg",
+                "/Gallery/Crochets/pre-braided/IMG_9374.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$160",
+                  "notes": "$50.00 deposit required"
+                },
+                {
+                  "name": "Long",
+                  "price": "$200",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Loose Hair",
+          "slug": "loose-hair",
+          "image": "/Gallery/Crochets/Loose hair/IMG_9366.jpg",
+          "items": [
+            {
+              "name": "Loose Hair Crochet",
+              "price": "",
+              "description": "Various lengths available",
+              "image": "/Gallery/Crochets/Loose hair/IMG_9366.jpg",
+              "images": [
+                "/Gallery/Crochets/Loose hair/IMG_9366.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$130",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Pre-Twisted",
+          "slug": "pre-twisted",
+          "image": "/Gallery/Crochets/pre-twisted/IMG_9375.jpg",
+          "items": [
+            {
+              "name": "Pre-Twisted Crochet",
+              "price": "",
+              "description": "Various lengths available",
+              "image": "/Gallery/Crochets/pre-twisted/IMG_9375.jpg",
+              "images": [
+                "/Gallery/Crochets/pre-twisted/IMG_9375.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$140",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        },
+        {
+          "name": "Half & Half Crochet with Braids",
+          "slug": "half-half-crochet-braids",
+          "image": "/Gallery/Crochets/half&half crochet with braids/IMG_9383.jpg",
+          "items": [
+            {
+              "name": "Half & Half Crochet with Braids",
+              "price": "",
+              "description": "Various styles available",
+              "image": "/Gallery/Crochets/half&half crochet with braids/IMG_9383.jpg",
+              "images": [
+                "/Gallery/Crochets/half&half crochet with braids/IMG_9383.jpg",
+                "/Gallery/Crochets/half&half crochet with braids/IMG_9384.jpg"
+              ],
+              "lengthOptions": [
+                {
+                  "name": "Standard",
+                  "price": "$170",
+                  "notes": "$50.00 deposit required"
+                }
+              ],
+              "link": "https://calendly.com/djonretglo"
+            }
+          ]
+        }
+      ],
+      "displayOrder": 5
+    },
+    {
+      "name": "glo",
+      "slug": "glo",
+      "summary": "",
+      "subcategories": [],
+      "displayOrder": 6
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+[
+  {
+    "title": "Twists",
+    "slug": "twists",
+    "images": [
+      "/Gallery/Twists/IMG_1585.JPG",
+      "/Gallery/Twists/IMG_9048.jpg",
+      "/Gallery/Twists/IMG_9052.jpg",
+      "/Gallery/Twists/IMG_9054.jpg",
+      "/Gallery/Twists/IMG_9061.jpg"
+    ]
+  },
+  {
+    "title": "Box Braids",
+    "slug": "box-braids",
+    "images": [
+      "/Gallery/Box-Braids /IMG_9170.jpg",
+      "/Gallery/Box-Braids /IMG_9171.jpg",
+      "/Gallery/Box-Braids /IMG_9174.jpg",
+      "/Gallery/Box-Braids /IMG_9190.jpg"
+    ]
+  },
+  {
+    "title": "Conrows",
+    "slug": "conrows",
+    "images": [
+      "/Gallery/Conrows/IMG_9321.jpg",
+      "/Gallery/Conrows/IMG_1593.JPG",
+      "/Gallery/Conrows/IMG_1594.JPG",
+      "/Gallery/Conrows/IMG_9323.jpg"
+    ]
+  },
+  {
+    "title": "Miracle Knots",
+    "slug": "miracle-knots",
+    "images": [
+      "/Gallery/Miracle-knots/Miracle-weaves/IMG_9365.jpg",
+      "/Gallery/Miracle-knots/Magic-knots/IMG_9355.jpg"
+    ]
+  }
+]
