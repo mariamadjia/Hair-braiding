@@ -2,8 +2,5 @@
   "/_not-found/page": "app/_not-found/page.js",
   "/api/gallery-collections/route": "app/api/gallery-collections/route.js",
   "/api/hero-images/route": "app/api/hero-images/route.js",
-  "/contact/page": "app/contact/page.js",
-  "/gallery/page": "app/gallery/page.js",
-  "/page": "app/page.js",
-  "/services/page": "app/services/page.js"
+  "/page": "app/page.js"
 }
