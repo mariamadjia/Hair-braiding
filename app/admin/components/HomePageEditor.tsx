@@ -242,6 +242,20 @@ export function HomePageEditor() {
       return;
     }
 
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Please upload a JPEG, PNG, or WebP image.');
+      return;
+    }
+
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      alert('File is too large. Maximum size is 10MB.');
+      return;
+    }
+
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
@@ -263,12 +277,16 @@ export function HomePageEditor() {
         const data = await res.json();
         const imageUrl = data.path || data.imageUrl || data.url;
         
+        if (!imageUrl) {
+          throw new Error('No image URL returned from upload');
+        }
+        
         // Add the new image to heroImages array
         const updatedImages = [...heroImages, imageUrl];
         setHeroImages(updatedImages);
         
         // Save to backend
-        await fetch(`${API_BASE_URL}/api/homepage-settings/hero-images`, {
+        const settingsRes = await fetch(`${API_BASE_URL}/api/homepage-settings/hero-images`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -276,6 +294,14 @@ export function HomePageEditor() {
           },
           body: JSON.stringify({ heroImages: JSON.stringify(updatedImages) }),
         });
+        
+        if (!settingsRes.ok) {
+          // Rollback local state if backend update fails
+          setHeroImages(heroImages);
+          throw new Error('Failed to update homepage settings');
+        }
+        
+        alert('Hero image uploaded successfully!');
       } else {
         const error = await res.json().catch(() => ({ error: 'Upload failed' }));
         alert(error.error || 'Failed to upload image');
