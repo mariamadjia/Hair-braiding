@@ -97,6 +97,7 @@ export default function Hero({ videoSrc, useVideo }) {
                   key={currentImageIndex}
                   src={images[currentImageIndex]}
                   alt="Luxury braiding portfolio"
+                  crossOrigin="anonymous"
                   className="w-full h-full max-w-md mx-auto object-cover md:absolute md:inset-0 md:max-w-none"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
