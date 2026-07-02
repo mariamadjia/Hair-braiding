@@ -4,20 +4,33 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
+// Default fallback images - these will show when backend/API is unavailable
+const DEFAULT_HERO_IMAGES = [
+  '/hero/default-1.jpg',
+  '/hero/default-2.jpg',
+  '/hero/default-3.jpg'
+];
+
 export default function Hero({ videoSrc, useVideo }) {
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState(DEFAULT_HERO_IMAGES);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
-    // Fetch all images from the hero folder
+    // Try to fetch images from API, but keep defaults if it fails
     fetch('/api/hero-images')
       .then(res => res.json())
       .then(data => {
+        console.log('Hero images API response:', data);
+        console.log('Source:', data.source);
+        console.log('Number of images:', data.images?.length);
         if (data.images && data.images.length > 0) {
           setImages(data.images);
         }
       })
-      .catch(err => console.error('Failed to load hero images:', err));
+      .catch(err => {
+        console.log('Using default hero images (API unavailable)', err);
+        // Keep default images on error
+      });
   }, []);
 
   useEffect(() => {

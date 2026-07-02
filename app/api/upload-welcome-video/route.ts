@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,24 +12,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Get auth token from request headers
+    const authHeader = request.headers.get('authorization');
+    
+    // Forward the file upload to the backend
+    const backendFormData = new FormData();
+    backendFormData.append('file', file);
+    if (index) {
+      backendFormData.append('index', index);
+    }
+    
+    const uploadResponse = await fetch(`${API_BASE_URL}/api/upload/welcome-video`, {
+      method: 'POST',
+      headers: authHeader ? { 'Authorization': authHeader } : {},
+      body: backendFormData,
+    });
 
-    const welcomeDir = path.join(process.cwd(), 'public', 'welcome');
-    await mkdir(welcomeDir, { recursive: true });
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('Backend upload failed:', errorText);
+      return NextResponse.json({ 
+        error: 'Upload to backend failed',
+        details: errorText 
+      }, { status: uploadResponse.status });
+    }
 
-    const ext = path.extname(file.name);
-    const filename = `video${index}${ext}`;
-    const filepath = path.join(welcomeDir, filename);
-
-    await writeFile(filepath, buffer);
+    const result = await uploadResponse.json();
 
     return NextResponse.json({
       success: true,
-      path: `/welcome/${filename}`,
+      path: result.path || result.url || result.videoPath,
     });
   } catch (error) {
     console.error('Video upload error:', error);
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Upload failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

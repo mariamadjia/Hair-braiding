@@ -50,6 +50,14 @@ export function HomePageEditor() {
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<number, number>>({});
   const [isFlipping, setIsFlipping] = useState<Record<number, boolean>>({});
 
+  // Helper function to get auth token
+  const getAuthToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    }
+    return null;
+  };
+
   // Automatic flipping for collections
   useEffect(() => {
     const interval = setInterval(() => {
@@ -188,9 +196,15 @@ export function HomePageEditor() {
     nextUseHeroVideo = useHeroVideo
   ) => {
     try {
+      const token = getAuthToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${API_BASE_URL}/api/homepage-settings/hero-video`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           heroVideoSrc: nextHeroVideoSrc,
           useHeroVideo: nextUseHeroVideo,
@@ -233,16 +247,27 @@ export function HomePageEditor() {
     formData.append('file', file);
 
     try {
+      const token = getAuthToken();
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch('/api/upload-hero-image', {
         method: 'POST',
+        headers,
         body: formData,
       });
       
       if (res.ok) {
         await loadHeroImages();
+      } else {
+        const error = await res.json().catch(() => ({ error: 'Upload failed' }));
+        alert(error.error || 'Failed to upload image');
       }
     } catch (error) {
       console.error('Failed to upload image:', error);
+      alert('Failed to upload image');
     } finally {
       setUploading(false);
     }
@@ -368,17 +393,27 @@ export function HomePageEditor() {
 
   const handleDeleteImage = async (imagePath: string) => {
     try {
+      const token = getAuthToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch('/api/delete-hero-image', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ imagePath }),
       });
 
       if (res.ok) {
         await loadHeroImages();
+      } else {
+        const error = await res.json().catch(() => ({ error: 'Delete failed' }));
+        alert(error.error || 'Failed to delete image');
       }
     } catch (error) {
       console.error('Failed to delete image:', error);
+      alert('Failed to delete image');
     }
   };
 
@@ -767,9 +802,15 @@ export function HomePageEditor() {
                     setWelcomeItems(newItems);
                     // Save to backend
                     try {
+                      const token = getAuthToken();
+                      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+                      if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                      }
+
                       await fetch(`${API_BASE_URL}/api/homepage-settings/welcome-items`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers,
                         body: JSON.stringify({ welcomeItems: JSON.stringify(newItems) }),
                       });
                     } catch (error) {
