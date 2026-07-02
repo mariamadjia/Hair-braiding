@@ -259,6 +259,8 @@ export function HomePageEditor() {
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('title', file.name);
+    formData.append('isHero', 'true');
 
     try {
       const token = getAuthToken();
@@ -267,7 +269,8 @@ export function HomePageEditor() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch('/api/upload-hero-image', {
+      // Upload directly to backend for faster performance
+      const res = await fetch(`${API_BASE_URL}/api/gallery/upload`, {
         method: 'POST',
         headers,
         body: formData,
