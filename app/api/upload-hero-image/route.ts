@@ -14,11 +14,13 @@ export async function POST(request: NextRequest) {
     // Get auth token from request headers
     const authHeader = request.headers.get('authorization');
     
-    // Forward the file upload to the backend
+    // Forward the file upload to the backend gallery endpoint
     const backendFormData = new FormData();
     backendFormData.append('file', file);
+    backendFormData.append('title', file.name);
+    backendFormData.append('isHero', 'true');
     
-    const uploadResponse = await fetch(`${API_BASE_URL}/api/upload/hero-image`, {
+    const uploadResponse = await fetch(`${API_BASE_URL}/api/gallery/upload`, {
       method: 'POST',
       headers: authHeader ? { 'Authorization': authHeader } : {},
       body: backendFormData,
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ 
       success: true, 
-      path: result.path || result.url || result.imagePath
+      path: result.imageUrl || result.path || result.url
     });
   } catch (error) {
     console.error('Upload error:', error);
