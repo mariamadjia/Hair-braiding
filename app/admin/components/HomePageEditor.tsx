@@ -260,7 +260,22 @@ export function HomePageEditor() {
       });
       
       if (res.ok) {
-        await loadHeroImages();
+        const data = await res.json();
+        const imageUrl = data.path || data.imageUrl || data.url;
+        
+        // Add the new image to heroImages array
+        const updatedImages = [...heroImages, imageUrl];
+        setHeroImages(updatedImages);
+        
+        // Save to backend
+        await fetch(`${API_BASE_URL}/api/homepage-settings/hero-images`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ heroImages: JSON.stringify(updatedImages) }),
+        });
       } else {
         const error = await res.json().catch(() => ({ error: 'Upload failed' }));
         alert(error.error || 'Failed to upload image');
@@ -399,18 +414,26 @@ export function HomePageEditor() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch('/api/delete-hero-image', {
+      // Remove from local state
+      const updatedImages = heroImages.filter(img => img !== imagePath);
+      setHeroImages(updatedImages);
+
+      // Delete from filesystem
+      await fetch('/api/delete-hero-image', {
         method: 'DELETE',
         headers,
         body: JSON.stringify({ imagePath }),
       });
 
-      if (res.ok) {
-        await loadHeroImages();
-      } else {
-        const error = await res.json().catch(() => ({ error: 'Delete failed' }));
-        alert(error.error || 'Failed to delete image');
-      }
+      // Update backend homepage settings
+      await fetch(`${API_BASE_URL}/api/homepage-settings/hero-images`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ heroImages: JSON.stringify(updatedImages) }),
+      });
     } catch (error) {
       console.error('Failed to delete image:', error);
       alert('Failed to delete image');
