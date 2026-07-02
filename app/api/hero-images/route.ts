@@ -26,9 +26,16 @@ export async function GET() {
         backendAvailable = true;
         const data = await backendRes.json();
         
-        // Extract imageUrl from gallery items
+        // Extract imageUrl from gallery items and prepend backend URL
         if (Array.isArray(data) && data.length > 0) {
-          backendImages = data.map((item: any) => item.imageUrl);
+          backendImages = data.map((item: any) => {
+            const imageUrl = item.imageUrl;
+            // If it's a relative path, prepend backend URL
+            if (imageUrl && imageUrl.startsWith('/')) {
+              return `${API_BASE_URL}${imageUrl}`;
+            }
+            return imageUrl;
+          });
           return NextResponse.json({ images: backendImages, source: 'backend' });
         }
       }
