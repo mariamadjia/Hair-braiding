@@ -13,25 +13,23 @@ const DEFAULT_HERO_IMAGES = [
 
 export async function GET() {
   try {
-    // First, try to get images from Spring Boot backend
+    // First, try to get hero images from gallery endpoint
     let backendAvailable = false;
     let backendImages: string[] = [];
     
     try {
-      const backendRes = await fetch(`${API_BASE_URL}/api/homepage-settings`, {
+      const backendRes = await fetch(`${API_BASE_URL}/api/gallery?isHero=true`, {
         cache: 'no-store' // Don't cache - always get fresh data
       });
       
       if (backendRes.ok) {
         backendAvailable = true;
         const data = await backendRes.json();
-        if (data.heroImages) {
-          backendImages = JSON.parse(data.heroImages);
-          
-          // If backend has images configured, use ONLY those
-          if (backendImages.length > 0) {
-            return NextResponse.json({ images: backendImages, source: 'backend' });
-          }
+        
+        // Extract imageUrl from gallery items
+        if (Array.isArray(data) && data.length > 0) {
+          backendImages = data.map((item: any) => item.imageUrl);
+          return NextResponse.json({ images: backendImages, source: 'backend' });
         }
       }
     } catch (backendError) {
