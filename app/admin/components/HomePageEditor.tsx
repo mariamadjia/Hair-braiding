@@ -442,17 +442,24 @@ export function HomePageEditor() {
 
       // Remove from local state
       const updatedImages = heroImages.filter(img => img !== imagePath);
+      const originalImages = [...heroImages];
       setHeroImages(updatedImages);
 
       // Delete from filesystem
-      await fetch('/api/delete-hero-image', {
+      const deleteRes = await fetch('/api/delete-hero-image', {
         method: 'DELETE',
         headers,
         body: JSON.stringify({ imagePath }),
       });
 
+      if (!deleteRes.ok) {
+        // Rollback local state if delete fails
+        setHeroImages(originalImages);
+        throw new Error('Failed to delete image file');
+      }
+
       // Update backend homepage settings
-      await fetch(`${API_BASE_URL}/api/homepage-settings/hero-images`, {
+      const settingsRes = await fetch(`${API_BASE_URL}/api/homepage-settings/hero-images`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -460,6 +467,14 @@ export function HomePageEditor() {
         },
         body: JSON.stringify({ heroImages: JSON.stringify(updatedImages) }),
       });
+
+      if (!settingsRes.ok) {
+        // Rollback local state if backend update fails
+        setHeroImages(originalImages);
+        throw new Error('Failed to update homepage settings');
+      }
+
+      alert('Hero image deleted successfully!');
     } catch (error) {
       console.error('Failed to delete image:', error);
       alert('Failed to delete image');
