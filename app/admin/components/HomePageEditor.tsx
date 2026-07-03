@@ -129,7 +129,17 @@ export function HomePageEditor() {
         const data = await res.json();
         if (data.heroImages) {
           const images = JSON.parse(data.heroImages);
-          setHeroImages(images);
+          // Convert Gallery paths to new image serving endpoint
+          const convertedImages = images.map((imageUrl: string) => {
+            if (imageUrl.startsWith('/Gallery/uploads/')) {
+              const filename = imageUrl.split('/').pop();
+              return `${API_BASE_URL}/api/gallery/image/${filename}`;
+            } else if (imageUrl.startsWith('/')) {
+              return `${API_BASE_URL}${imageUrl}`;
+            }
+            return imageUrl;
+          });
+          setHeroImages(convertedImages);
         }
       }
     } catch (error) {
@@ -284,8 +294,17 @@ export function HomePageEditor() {
           throw new Error('No image URL returned from upload');
         }
         
+        // Convert Gallery path to new image serving endpoint
+        let convertedUrl = imageUrl;
+        if (imageUrl.startsWith('/Gallery/uploads/')) {
+          const filename = imageUrl.split('/').pop();
+          convertedUrl = `${API_BASE_URL}/api/gallery/image/${filename}`;
+        } else if (imageUrl.startsWith('/')) {
+          convertedUrl = `${API_BASE_URL}${imageUrl}`;
+        }
+        
         // Add the new image to heroImages array
-        const updatedImages = [...heroImages, imageUrl];
+        const updatedImages = [...heroImages, convertedUrl];
         setHeroImages(updatedImages);
         
         // Save to backend
