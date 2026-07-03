@@ -294,17 +294,11 @@ export function HomePageEditor() {
           throw new Error('No image URL returned from upload');
         }
         
-        // Convert Gallery path to new image serving endpoint
-        let convertedUrl = imageUrl;
-        if (imageUrl.startsWith('/Gallery/uploads/')) {
-          const filename = imageUrl.split('/').pop();
-          convertedUrl = `${API_BASE_URL}/api/gallery/image/${filename}`;
-        } else if (imageUrl.startsWith('/')) {
-          convertedUrl = `${API_BASE_URL}${imageUrl}`;
-        }
+        // Convert to proxy URL to handle authentication
+        const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
         
         // Add the new image to heroImages array
-        const updatedImages = [...heroImages, convertedUrl];
+        const updatedImages = [...heroImages, proxyUrl];
         setHeroImages(updatedImages);
         
         // Save to backend
