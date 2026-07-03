@@ -29,6 +29,7 @@ export default function AdminPage() {
     const [data, setData] = useState<CategoriesData | null>(null);
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isAuthChecking, setIsAuthChecking] = useState(true);
     const [selection, setSelection] = useState<Selection>({ type: "root" });
     const [currentSection, setCurrentSection] = useState("dashboard");
     const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
@@ -61,7 +62,7 @@ export default function AdminPage() {
         } catch (err: any) {
             if (err.message !== 'Unauthorized') {
                 console.error("Failed to load categories:", err);
-                setError("Failed to load categories from backend");
+                setError("Failed to load categories from backend. Please try again.");
             }
         }
     };
@@ -95,23 +96,34 @@ export default function AdminPage() {
     };
 
     useEffect(() => {
-        const savedToken = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
-        if (savedToken && authApi.isAuthenticated()) {
-            setToken(savedToken);
-            loadCategories(savedToken);
-        }
+        const checkAuthAndLoad = async () => {
+            setIsAuthChecking(true);
+            try {
+                const savedToken = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
+                if (savedToken && authApi.isAuthenticated()) {
+                    setToken(savedToken);
+                    await loadCategories(savedToken);
+                }
 
-        const params = new URLSearchParams(window.location.search);
-        const section = params.get("section");
-        const categorySlug = params.get("category");
+                const params = new URLSearchParams(window.location.search);
+                const section = params.get("section");
+                const categorySlug = params.get("category");
 
-        if (section) {
-            setCurrentSection(section);
-        }
+                if (section) {
+                    setCurrentSection(section);
+                }
 
-        if (section === "categories" && categorySlug) {
-            setSelection({ type: "category", catSlug: categorySlug });
-        }
+                if (section === "categories" && categorySlug) {
+                    setSelection({ type: "category", catSlug: categorySlug });
+                }
+            } catch (err) {
+                console.error("Auth check failed:", err);
+            } finally {
+                setIsAuthChecking(false);
+            }
+        };
+
+        checkAuthAndLoad();
     }, []);
 
     const handleUpdate = (updated: CategoriesData) => {
@@ -140,7 +152,7 @@ export default function AdminPage() {
         setSelection({ type: "category", catSlug: categorySlug });
     };
 
-    if (!token) {
+    if (!token || isAuthChecking) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-neutral-50 relative overflow-hidden">
                 <div 
@@ -228,7 +240,37 @@ export default function AdminPage() {
         );
     }
 
-    if (!data || !data.categories) return <div className="p-12 text-neutral-500">Loading…</div>;
+    if (isAuthChecking) return <div className="p-12 text-neutral-500">Loading…</div>;
+
+    if (!data || !data.categories) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+                <div className="text-center space-y-4">
+                    <p className="text-neutral-500">Failed to load admin data.</p>
+                    {error && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-sm">
+                            <p className="text-sm text-red-600">{error}</p>
+                        </div>
+                    )}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const savedToken = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
+                            if (savedToken) {
+                                loadCategories(savedToken);
+                            } else {
+                                setToken("");
+                                setError("Session expired. Please log in again.");
+                            }
+                        }}
+                        className="px-4 py-2 text-sm font-medium bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 transition-colors"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     // Compute what to show in the preview
     const previewCat = selection.type !== "root" ? data.categories.find((c) => c.slug === selection.catSlug) : null;
