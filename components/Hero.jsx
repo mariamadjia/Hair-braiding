@@ -6,9 +6,9 @@ import { useState, useEffect } from "react";
 
 // Default fallback images - these will show when backend/API is unavailable
 const DEFAULT_HERO_IMAGES = [
-  '/hero/default-1.jpg',
-  '/hero/default-2.jpg',
-  '/hero/default-3.jpg'
+  '/hero/IMG_9011.jpg',
+  '/hero/ISIMG-678789.JPG',
+  '/hero/ISIMG-680068.JPG'
 ];
 
 export default function Hero({ videoSrc, useVideo }) {
