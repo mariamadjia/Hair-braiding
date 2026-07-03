@@ -15,7 +15,7 @@ export async function GET() {
     
     try {
       const backendRes = await fetch(`${API_BASE_URL}/api/gallery?isHero=true`, {
-        cache: 'no-store' // Don't cache - always get fresh data
+        next: { revalidate: 60 } // Cache for 60 seconds to improve performance
       });
       
       if (backendRes.ok) {
@@ -44,8 +44,26 @@ export async function GET() {
       console.log('Backend unavailable, falling back to filesystem');
     }
 
-    // Fallback: Return empty array when backend has no hero images configured
-    // This forces the hero section to be empty instead of showing broken filesystem images
+    // Fallback: Use filesystem images when:
+    // 1. Backend is DOWN, OR
+    // 2. Backend is UP but has no images configured (empty array)
+    const heroDirectory = path.join(process.cwd(), 'public', 'hero');
+    if (fs.existsSync(heroDirectory)) {
+      const files = fs.readdirSync(heroDirectory);
+      const imageFiles = files.filter(file => 
+        /\.(jpg|jpeg|png|gif|webp)$/i.test(file)
+      );
+      
+      if (imageFiles.length > 0) {
+        const imagePaths = imageFiles.map(file => `/hero/${file}`);
+        return NextResponse.json({ 
+          images: imagePaths, 
+          source: backendAvailable ? 'filesystem-fallback' : 'filesystem' 
+        });
+      }
+    }
+
+    // Final fallback: Return empty array if no images found
     return NextResponse.json({ images: [], source: 'none' });
   } catch (error) {
     console.error('Error reading hero images:', error);
