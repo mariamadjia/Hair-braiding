@@ -5,11 +5,7 @@ import path from 'path';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 // Default fallback images - these will show when backend is down
-const DEFAULT_HERO_IMAGES = [
-  '/hero/default-1.jpg',
-  '/hero/default-2.jpg',
-  '/hero/default-3.jpg'
-];
+
 
 export async function GET() {
   try {
@@ -62,10 +58,10 @@ export async function GET() {
       }
     }
 
-    // Final fallback: Return default placeholder images
-    return NextResponse.json({ images: DEFAULT_HERO_IMAGES, source: 'default' });
+    // Final fallback: Return empty array if no images found
+    return NextResponse.json({ images: [], source: 'none' });
   } catch (error) {
     console.error('Error reading hero images:', error);
-    return NextResponse.json({ images: DEFAULT_HERO_IMAGES, source: 'default' });
+    return NextResponse.json({ images: [], source: 'error' });
   }
 }
