@@ -664,7 +664,7 @@ export function HomePageEditor() {
                           {heroVideoUploading ? 'Uploading video...' : heroVideoSrc ? 'Change hero video' : 'Upload hero video'}
                         </p>
                         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                          MP4, MOV, or WebM • Max 50MB
+                          MP4, MOV, or WebM • Max 200MB
                         </p>
                       </div>
                       <input
