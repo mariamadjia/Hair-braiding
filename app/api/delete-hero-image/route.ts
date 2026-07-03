@@ -16,6 +16,15 @@ export async function DELETE(request: NextRequest) {
 
     // Find and delete the image from gallery by imageUrl
     try {
+      // Convert the image URL back to database format for matching
+      let dbImagePath = imagePath;
+      if (imagePath.includes('/api/gallery/image/')) {
+        const filename = imagePath.split('/').pop();
+        dbImagePath = `/Gallery/uploads/${filename}`;
+      } else if (imagePath.startsWith(`${API_BASE_URL}/Gallery/uploads/`)) {
+        dbImagePath = imagePath.replace(`${API_BASE_URL}`, '');
+      }
+
       // First, get all hero images to find the ID
       const galleryRes = await fetch(`${API_BASE_URL}/api/gallery?isHero=true`, {
         headers: authHeader ? { 'Authorization': authHeader } : {},
@@ -23,7 +32,7 @@ export async function DELETE(request: NextRequest) {
 
       if (galleryRes.ok) {
         const galleryItems = await galleryRes.json();
-        const imageToDelete = galleryItems.find((item: any) => item.imageUrl === imagePath);
+        const imageToDelete = galleryItems.find((item: any) => item.imageUrl === dbImagePath);
         
         if (imageToDelete) {
           // Delete from gallery by ID
