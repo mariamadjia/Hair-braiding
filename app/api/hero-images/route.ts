@@ -22,13 +22,18 @@ export async function GET() {
         backendAvailable = true;
         const data = await backendRes.json();
         
-        // Extract imageUrl from gallery items and convert to proxy endpoint
+        // Extract imageUrl from gallery items and convert to direct image serving endpoint
         if (Array.isArray(data) && data.length > 0) {
           backendImages = data.map((item: any) => {
             const imageUrl = item.imageUrl;
-            // Use proxy endpoint to handle authentication
-            if (imageUrl) {
-              return `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+            // Convert Gallery path to direct image serving endpoint
+            if (imageUrl && imageUrl.startsWith('/Gallery/uploads/')) {
+              const filename = imageUrl.split('/').pop();
+              return `${API_BASE_URL}/api/gallery/image/${filename}`;
+            }
+            // If it's a relative path, prepend backend URL
+            if (imageUrl && imageUrl.startsWith('/')) {
+              return `${API_BASE_URL}${imageUrl}`;
             }
             return imageUrl;
           });
