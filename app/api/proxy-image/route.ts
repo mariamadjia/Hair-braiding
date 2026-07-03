@@ -14,9 +14,16 @@ export async function GET(request: NextRequest) {
     // Get auth token from request headers (if user is logged in)
     const authHeader = request.headers.get('authorization');
     
+    // Convert Gallery path to new image serving endpoint
+    let targetUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
+    if (imageUrl.startsWith('/Gallery/uploads/')) {
+      const filename = imageUrl.split('/').pop();
+      targetUrl = `${API_BASE_URL}/api/gallery/image/${filename}`;
+    }
+    
     // Fetch the image from backend with auth
     const imageResponse = await fetch(
-      imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`,
+      targetUrl,
       {
         headers: authHeader ? { 'Authorization': authHeader } : {},
       }
