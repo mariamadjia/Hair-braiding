@@ -64,18 +64,31 @@ export default function GalleryPage({
     const fetchGalleryData = async () => {
       try {
         setLoading(true);
+        console.log('Fetching from:', API_BASE_URL);
+        
         const [imagesRes, categoriesRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/gallery`),
           fetch(`${API_BASE_URL}/api/categories`)
         ]);
         
+        console.log('Images response status:', imagesRes.status);
+        console.log('Categories response status:', categoriesRes.status);
+        
+        if (!imagesRes.ok || !categoriesRes.ok) {
+          throw new Error(`HTTP error! Images: ${imagesRes.status}, Categories: ${categoriesRes.status}`);
+        }
+        
         const images = await imagesRes.json();
         const categoriesData = await categoriesRes.json();
+        
+        console.log('Loaded images:', images.length);
+        console.log('Loaded categories:', categoriesData.categories?.length);
         
         setGalleryImages(images);
         setCategories(categoriesData.categories || []);
       } catch (error) {
         console.error('Failed to load gallery:', error);
+        alert('Failed to load gallery: ' + error.message);
       } finally {
         setLoading(false);
       }
