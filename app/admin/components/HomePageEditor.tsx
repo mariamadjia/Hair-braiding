@@ -131,6 +131,17 @@ export function HomePageEditor() {
           const images = JSON.parse(data.heroImages);
           // Convert Gallery paths to new image serving endpoint
           const convertedImages = images.map((imageUrl: string) => {
+            // Handle proxy-image format
+            if (imageUrl.includes('/api/proxy-image?url=')) {
+              const urlParam = imageUrl.split('url=')[1];
+              const decodedUrl = decodeURIComponent(urlParam);
+              if (decodedUrl.startsWith('/Gallery/uploads/')) {
+                const filename = decodedUrl.split('/').pop();
+                return `${API_BASE_URL}/api/gallery/image/${filename}`;
+              }
+              return decodedUrl;
+            }
+            // Handle direct Gallery paths
             if (imageUrl.startsWith('/Gallery/uploads/')) {
               const filename = imageUrl.split('/').pop();
               return `${API_BASE_URL}/api/gallery/image/${filename}`;
@@ -294,21 +305,27 @@ export function HomePageEditor() {
           throw new Error('No image URL returned from upload');
         }
         
-        // Convert to proxy URL to handle authentication
-        const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+        // Convert to direct image serving endpoint URL
+        let displayUrl;
+        if (imageUrl.startsWith('/Gallery/uploads/')) {
+          const filename = imageUrl.split('/').pop();
+          displayUrl = `${API_BASE_URL}/api/gallery/image/${filename}`;
+        } else {
+          displayUrl = imageUrl;
+        }
         
         // Add the new image to heroImages array
-        const updatedImages = [...heroImages, proxyUrl];
+        const updatedImages = [...heroImages, displayUrl];
         setHeroImages(updatedImages);
         
-        // Save to backend
+        // Save to backend with the original Gallery path format
         const settingsRes = await fetch(`${API_BASE_URL}/api/homepage-settings/hero-images`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ heroImages: JSON.stringify(updatedImages) }),
+          body: JSON.stringify({ heroImages: JSON.stringify([imageUrl]) }),
         });
         
         if (!settingsRes.ok) {
