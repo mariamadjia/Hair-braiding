@@ -395,20 +395,31 @@ export function HomePageEditor() {
     setWelcomeItemUploading(true);
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('index', String(index));
 
     try {
-      const res = await fetch('/api/upload-welcome-video', {
+      const token = getAuthToken();
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // Upload directly to backend to bypass Vercel 4.5MB limit
+      const res = await fetch(`${API_BASE_URL}/api/upload/welcome-video`, {
         method: 'POST',
+        headers,
         body: formData,
       });
 
       if (res.ok) {
         const data = await res.json();
-        const videoUrl = data.url || data.path;
+        const videoUrl = data.url || data.path || data.videoPath;
         // Only update temporary state, not actual welcomeItems
         setTempWelcomeItemSrc(videoUrl);
         // Increment timestamp to force video reload
         setVideoTimestamp(Date.now());
+      } else {
+        throw new Error(`Upload failed: ${res.status}`);
       }
     } catch (error) {
       console.error('Upload failed:', error);
@@ -427,18 +438,28 @@ export function HomePageEditor() {
     formData.append('file', file);
 
     try {
-      const res = await fetch('/api/upload-welcome-video', {
+      const token = getAuthToken();
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // Upload directly to backend to bypass Vercel 4.5MB limit
+      const res = await fetch(`${API_BASE_URL}/api/upload/welcome-video`, {
         method: 'POST',
+        headers,
         body: formData,
       });
 
       if (res.ok) {
         const data = await res.json();
-        const videoUrl = data.url || data.path;
+        const videoUrl = data.url || data.path || data.videoPath;
         setHeroVideoSrc(videoUrl);
         setUseHeroVideo(true); // Automatically enable video mode
         // Save to database
         await saveHomepageSettings(videoUrl, true);
+      } else {
+        throw new Error(`Upload failed: ${res.status}`);
       }
     } catch (error) {
       console.error('Upload failed:', error);
