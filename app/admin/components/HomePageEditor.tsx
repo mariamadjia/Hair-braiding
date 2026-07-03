@@ -318,14 +318,23 @@ export function HomePageEditor() {
         const updatedImages = [...heroImages, displayUrl];
         setHeroImages(updatedImages);
         
-        // Save to backend with the original Gallery path format
+        // Convert display URLs back to Gallery paths for saving
+        const galleryPaths = updatedImages.map((url) => {
+          if (url.includes('/api/gallery/image/')) {
+            const filename = url.split('/').pop();
+            return `/Gallery/uploads/${filename}`;
+          }
+          return url;
+        });
+        
+        // Save to backend with all images
         const settingsRes = await fetch(`${API_BASE_URL}/api/homepage-settings/hero-images`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ heroImages: JSON.stringify([imageUrl]) }),
+          body: JSON.stringify({ heroImages: JSON.stringify(galleryPaths) }),
         });
         
         if (!settingsRes.ok) {
