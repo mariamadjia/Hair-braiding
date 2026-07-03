@@ -8,6 +8,25 @@ import Footer from '@/components/Footer';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+// Helper function to convert image URLs to backend API format
+const getImageUrl = (imageUrl) => {
+  if (!imageUrl) return '';
+  
+  // Convert Gallery path to direct image serving endpoint
+  if (imageUrl.startsWith('/Gallery/uploads/')) {
+    const filename = imageUrl.split('/').pop();
+    return `${API_BASE_URL}/api/gallery/image/${filename}`;
+  }
+  
+  // If it's a relative path, prepend backend URL
+  if (imageUrl.startsWith('/')) {
+    return `${API_BASE_URL}${imageUrl}`;
+  }
+  
+  // Return as-is if it's already a full URL
+  return imageUrl;
+};
+
 /**
  * @param {{
  *   editMode?: boolean,
@@ -88,27 +107,30 @@ export default function GalleryPage({
         ? sub.images 
         : (subImages.length > 0 ? subImages.map(img => img.imageUrl) : (sub.image ? [sub.image] : []));
       
+      // Convert all image URLs to backend API format
+      const backendImageArray = imageArray.map(getImageUrl);
+      
       return {
         id: sub.id,
         name: sub.name,
         slug: sub.slug,
-        image: imageArray[0] || sub.image || (subImages[0] ? subImages[0].imageUrl : null),
-        images: imageArray
+        image: getImageUrl(imageArray[0] || sub.image || (subImages[0] ? subImages[0].imageUrl : null)),
+        images: backendImageArray
       };
     });
     
     // Use flipping images from backend, or fallback to first 5 images
     const flippingImages = cat.flippingImages && cat.flippingImages.length > 0
-      ? cat.flippingImages
-      : categoryImages.slice(0, 5).map(img => img.imageUrl);
+      ? cat.flippingImages.map(getImageUrl)
+      : categoryImages.slice(0, 5).map(img => getImageUrl(img.imageUrl));
     const firstImage = categoryImages[0];
     
     return {
       id: cat.id,
       slug: cat.slug,
       title: cat.name,
-      image: firstImage ? firstImage.imageUrl : cat.image,
-      images: flippingImages.length > 0 ? flippingImages : (firstImage ? [firstImage.imageUrl] : []), // Images for flipping
+      image: getImageUrl(firstImage ? firstImage.imageUrl : cat.image),
+      images: flippingImages.length > 0 ? flippingImages : (firstImage ? [getImageUrl(firstImage.imageUrl)] : []), // Images for flipping
       link: `/${cat.slug}`,
       tags: [cat.name, 'Protective Styles'],
       subcategoryData

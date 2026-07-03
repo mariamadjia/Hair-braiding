@@ -4,6 +4,27 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ChevronLeft, Edit, Trash2, Plus } from 'lucide-react';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+// Helper function to convert image URLs to backend API format
+const getImageUrl = (imageUrl) => {
+  if (!imageUrl) return '';
+  
+  // Convert Gallery path to direct image serving endpoint
+  if (imageUrl.startsWith('/Gallery/uploads/')) {
+    const filename = imageUrl.split('/').pop();
+    return `${API_BASE_URL}/api/gallery/image/${filename}`;
+  }
+  
+  // If it's a relative path, prepend backend URL
+  if (imageUrl.startsWith('/')) {
+    return `${API_BASE_URL}${imageUrl}`;
+  }
+  
+  // Return as-is if it's already a full URL
+  return imageUrl;
+};
+
 export default function CategoryDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -20,12 +41,12 @@ export default function CategoryDetailPage() {
     const loadCategoryData = async () => {
         try {
             // Fetch category by slug
-            const categoryRes = await fetch(`http://localhost:8080/api/categories/slug/${params.slug}`);
+            const categoryRes = await fetch(`${API_BASE_URL}/api/categories/slug/${params.slug}`);
             const categoryData = await categoryRes.json();
             setCategory(categoryData);
 
             // Fetch all images
-            const imagesRes = await fetch('http://localhost:8080/api/gallery');
+            const imagesRes = await fetch(`${API_BASE_URL}/api/gallery`);
             const allImages = await imagesRes.json();
 
             // Filter images for this category
@@ -144,7 +165,7 @@ export default function CategoryDetailPage() {
                                 <div className="aspect-[4/5] bg-neutral-200 overflow-hidden">
                                     {subcategory.images[0] ? (
                                         <img
-                                            src={subcategory.images[0].imageUrl}
+                                            src={getImageUrl(subcategory.images[0].imageUrl)}
                                             alt={subcategory.name}
                                             className="w-full h-full object-cover"
                                         />

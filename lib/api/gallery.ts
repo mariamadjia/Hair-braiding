@@ -2,6 +2,25 @@ import { apiClient } from './client';
 import { API_BASE_URL } from '../config/api';
 import { getAuthToken } from '../utils/auth';
 
+// Helper function to convert image URLs to backend API format
+export const getImageUrl = (imageUrl: string | undefined): string => {
+    if (!imageUrl) return '';
+    
+    // Convert Gallery path to direct image serving endpoint
+    if (imageUrl.startsWith('/Gallery/uploads/')) {
+        const filename = imageUrl.split('/').pop();
+        return `${API_BASE_URL}/api/gallery/image/${filename}`;
+    }
+    
+    // If it's a relative path, prepend backend URL
+    if (imageUrl.startsWith('/')) {
+        return `${API_BASE_URL}${imageUrl}`;
+    }
+    
+    // Return as-is if it's already a full URL
+    return imageUrl;
+};
+
 export interface GalleryImage {
     id: number;
     title: string;

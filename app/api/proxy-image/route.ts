@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const BACKEND_API_KEY = process.env.BACKEND_API_KEY; // Backend API key for public image access
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,15 +22,20 @@ export async function GET(request: NextRequest) {
       targetUrl = `${API_BASE_URL}/api/gallery/image/${filename}`;
     }
     
-    // Fetch the image from backend with auth
-    const imageResponse = await fetch(
-      targetUrl,
-      {
-        headers: authHeader ? { 'Authorization': authHeader } : {},
-      }
-    );
+    // Prepare headers - use API key if available, otherwise try user auth
+    const headers: HeadersInit = {};
+    
+    if (BACKEND_API_KEY) {
+      headers['X-API-Key'] = BACKEND_API_KEY;
+    } else if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+    
+    // Fetch the image from backend
+    const imageResponse = await fetch(targetUrl, { headers });
 
     if (!imageResponse.ok) {
+      console.error('Failed to fetch image:', targetUrl, imageResponse.status);
       return NextResponse.json({ error: 'Failed to fetch image' }, { status: imageResponse.status });
     }
 

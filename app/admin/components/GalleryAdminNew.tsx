@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Edit, Trash2, Plus } from "lucide-react";
-import { galleryApi, GalleryImage } from '@/lib/api/gallery';
+import { galleryApi, GalleryImage, getImageUrl } from '@/lib/api/gallery';
 import { API_BASE_URL } from '@/lib/config/api';
 import { FlippingImagesModal } from "./FlippingImagesModal";
 
@@ -57,13 +57,13 @@ export function GalleryAdminNew() {
                 
                 // Use flipping images from backend, or fallback to first 5 images
                 const flippingImages = cat.flippingImages && cat.flippingImages.length > 0
-                    ? cat.flippingImages
-                    : categoryImages.slice(0, 5).map((img: GalleryImage) => img.imageUrl);
+                    ? cat.flippingImages.map((url: string) => getImageUrl(url))
+                    : categoryImages.slice(0, 5).map((img: GalleryImage) => getImageUrl(img.imageUrl));
                 
                 return {
                     ...cat,
-                    image: firstImage ? firstImage.imageUrl : cat.image,
-                    images: flippingImages.length > 0 ? flippingImages : (firstImage ? [firstImage.imageUrl] : [])
+                    image: firstImage ? getImageUrl(firstImage.imageUrl) : cat.image,
+                    images: flippingImages.length > 0 ? flippingImages : (firstImage ? [getImageUrl(firstImage.imageUrl)] : [])
                 };
             });
             
