@@ -23,9 +23,15 @@ function isAuthorized(req: NextRequest) {
 export async function GET(req: NextRequest) {
     if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+
     try {
-        console.log('Fetching categories from backend:', `${API_URL}/api/categories`);
-        const response = await fetch(`${API_URL}/api/categories`);
+        console.log('Fetching categories from backend admin endpoint:', `${API_URL}/api/categories/admin`);
+        const response = await fetch(`${API_URL}/api/categories/admin`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         console.log('Backend response status:', response.status);
 
         if (!response.ok) {
