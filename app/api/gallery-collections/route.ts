@@ -28,20 +28,28 @@ export async function GET() {
       cache: 'no-store'
     });
     if (!response.ok) {
+      console.error('Backend gallery endpoint failed:', response.status);
       throw new Error('Failed to fetch categories');
     }
 
     const categories = await response.json();
+    console.log('Gallery categories response:', JSON.stringify(categories, null, 2));
 
     // Extract flipping images from categories to create gallery collections
     const collections = categories.map((category: any) => {
+      console.log(`Processing category: ${category.name}, flippingImages:`, category.flippingImages, 'image:', category.image);
+
       // Use actual flipping images from backend, or fallback to the category cover image
       const images: string[] = category.flippingImages && category.flippingImages.length > 0
         ? category.flippingImages
         : (category.image ? [category.image] : []);
 
+      console.log(`Images for ${category.name}:`, images);
+
       // Convert backend URLs to proxy URLs for proper authentication
       const proxyImages = images.map(toProxyUrl).filter(Boolean);
+
+      console.log(`Proxy images for ${category.name}:`, proxyImages);
 
       return {
         title: category.name,
@@ -49,6 +57,8 @@ export async function GET() {
         images: [...new Set(proxyImages)], // Remove duplicates
       };
     });
+
+    console.log('Final collections:', JSON.stringify(collections, null, 2));
 
     return NextResponse.json({ collections: collections.slice(0, 4) });
   } catch (error) {
