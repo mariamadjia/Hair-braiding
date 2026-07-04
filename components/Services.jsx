@@ -1,26 +1,26 @@
 import { Button } from "@/components/ui/button";
+import { toProxyUrl } from "@/lib/utils/image";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 async function getCategories() {
   try {
-    const response = await fetch(`${API_URL}/api/categories/gallery`, {
+    const response = await fetch(`${API_URL}/api/booking`, {
       cache: 'no-store'
     });
     if (!response.ok) {
-      throw new Error('Failed to fetch categories');
+      throw new Error('Failed to fetch booking data');
     }
     const data = await response.json();
-    // Return in the same format as before for compatibility
-    return { categories: data, defaultBookingUrl: 'https://calendly.com/djonretglo' };
+    return data;
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    return { categories: [], defaultBookingUrl: '' };
+    console.error('Error fetching booking data:', error);
+    return [];
   }
 }
 
 export default async function Services() {
-  const { categories } = await getCategories();
+  const categories = await getCategories();
 
   return (
     <>
@@ -44,13 +44,13 @@ export default async function Services() {
                 className="group flex items-center justify-between py-8 md:py-10 transition-all duration-300 hover:bg-white/80 dark:hover:bg-neutral-800/50"
               >
                 <div className="flex items-center gap-4">
-                  {/* {cat.image && (
+                  {cat.image && (
                     <img
-                      src={cat.image}
+                      src={toProxyUrl(cat.image)}
                       alt={cat.name}
                       className="h-14 w-14 object-cover rounded-sm shrink-0"
                     />
-                  )} */}
+                  )}
                   <span className="text-lg md:text-xl font-light tracking-wide text-neutral-900 dark:text-white transition-colors group-hover:text-neutral-700 dark:group-hover:text-neutral-300">
                     {cat.name}
                   </span>
