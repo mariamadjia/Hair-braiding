@@ -56,15 +56,16 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
     };
 
     const handleAddImage = (imageUrl: string) => {
+        const proxyUrl = toProxyUrl(imageUrl);
         if (selectedImages.length >= MAX_IMAGES) {
             alert(`Maximum ${MAX_IMAGES} images allowed.`);
             return;
         }
-        if (selectedImages.includes(imageUrl)) {
+        if (selectedImages.includes(proxyUrl)) {
             alert("This image is already selected.");
             return;
         }
-        setSelectedImages([...selectedImages, imageUrl]);
+        setSelectedImages([...selectedImages, proxyUrl]);
         setShowImagePicker(false);
     };
 
@@ -82,7 +83,7 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
     };
 
     const availableImages = allCategoryImages.filter(
-        img => !selectedImages.includes(img.imageUrl)
+        img => !selectedImages.includes(toProxyUrl(img.imageUrl))
     );
 
     return (
