@@ -368,22 +368,32 @@ export function HomePageEditor() {
     formData.append('file', file);
 
     try {
+      const token = getAuthToken();
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch('/api/upload-hero-image', {
         method: 'POST',
+        headers,
         body: formData,
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         const imageUrl = data.url || data.path;
-        
+
         // Add the new image to the collection
         const newCollections = [...galleryCollections];
         newCollections[collectionIndex].images.push(imageUrl);
         setGalleryCollections(newCollections);
-        
+
         // Save to API
         await saveGalleryCollections(newCollections);
+      } else {
+        const error = await res.json().catch(() => ({ error: 'Upload failed' }));
+        alert(error.error || 'Failed to upload image');
       }
     } catch (error) {
       console.error('Upload failed:', error);
