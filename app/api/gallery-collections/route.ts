@@ -79,7 +79,7 @@ export async function GET() {
         slug: category.slug,
         images: [...new Set(proxyImages)], // Remove duplicates
       };
-    }).filter((collection): collection is NonNullable<typeof collection> => collection !== null);
+    }).filter((collection) => collection !== null);
 
     console.log('Final collections:', JSON.stringify(collections, null, 2));
 
