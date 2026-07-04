@@ -22,10 +22,20 @@ function isAuthorized(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
     if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    
+
     try {
+        console.log('Fetching categories from backend:', `${API_URL}/api/categories`);
         const response = await fetch(`${API_URL}/api/categories`);
+        console.log('Backend response status:', response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Backend error response:', errorText);
+            return NextResponse.json({ error: `Backend returned ${response.status}: ${errorText}` }, { status: response.status });
+        }
+
         const data = await response.json();
+        console.log('Backend response data keys:', Object.keys(data));
         return NextResponse.json(data);
     } catch (error) {
         console.error('Failed to fetch categories from backend:', error);
