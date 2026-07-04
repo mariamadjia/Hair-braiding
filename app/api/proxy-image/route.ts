@@ -22,15 +22,14 @@ export async function GET(request: NextRequest) {
       targetUrl = `${API_BASE_URL}/api/gallery/image/${filename}`;
     }
     
-    // Prepare headers - use API key if available, otherwise try user auth
+    // Prepare headers - try without auth first for public images
     const headers: HeadersInit = {};
-    
-    if (BACKEND_API_KEY) {
-      headers['X-API-Key'] = BACKEND_API_KEY;
-    } else if (authHeader) {
+
+    // Only add authentication if available (for private images)
+    if (authHeader) {
       headers['Authorization'] = authHeader;
     }
-    
+
     // Fetch the image from backend
     const imageResponse = await fetch(targetUrl, { headers });
 
