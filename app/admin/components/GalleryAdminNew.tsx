@@ -36,37 +36,37 @@ export function GalleryAdminNew() {
         try {
             setLoading(true);
             const token = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
-            
+
             const [imagesData, categoriesRes] = await Promise.all([
                 galleryApi.getAllImages(),
-                fetch(`${API_BASE_URL}/api/categories`, {
+                fetch(`${API_BASE_URL}/api/categories/gallery`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 }).then(r => r.json())
             ]);
-            
+
             setImages(imagesData);
-            setCategories(categoriesRes.categories || []);
-            
+            setCategories(categoriesRes || []);
+
             // Transform categories to include flipping images (same as public gallery)
-            const transformedCategories = categoriesRes.categories.map((cat: any) => {
+            const transformedCategories = categoriesRes.map((cat: any) => {
                 const categoryImages = imagesData.filter((img: GalleryImage) => img.categoryId === cat.id);
                 const firstImage = categoryImages[0];
-                
+
                 // Use flipping images from backend, or fallback to first 5 images
                 const flippingImages = cat.flippingImages && cat.flippingImages.length > 0
                     ? cat.flippingImages
                     : categoryImages.slice(0, 5).map((img: GalleryImage) => img.imageUrl);
-                
+
                 return {
                     ...cat,
                     image: firstImage ? firstImage.imageUrl : cat.image,
                     images: flippingImages.length > 0 ? flippingImages : (firstImage ? [firstImage.imageUrl] : [])
                 };
             });
-            
+
             // Sort by displayOrder (null values go to end, then sort by ID)
             const sortedCategories = transformedCategories.sort((a: any, b: any) => {
                 if (a.displayOrder === null && b.displayOrder === null) return a.id - b.id;
@@ -74,7 +74,7 @@ export function GalleryAdminNew() {
                 if (b.displayOrder === null) return -1;
                 return a.displayOrder - b.displayOrder;
             });
-            
+
             setCategories(sortedCategories);
         } catch (error) {
             console.error("Failed to load data:", error);
