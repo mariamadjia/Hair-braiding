@@ -2,6 +2,24 @@ import { NextResponse } from 'next/server';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+// Helper function to convert image URLs to proxy endpoint for authentication
+const toProxyUrl = (imageUrl: string | null | undefined): string => {
+  if (!imageUrl) return '';
+  // If already a proxy URL, return as is
+  if (imageUrl.includes('/api/proxy-image?url=')) return imageUrl;
+  // If it's a Gallery path, convert to proxy
+  if (imageUrl.startsWith('/Gallery/uploads/')) {
+    const filename = imageUrl.split('/').pop();
+    return `/api/proxy-image?url=${encodeURIComponent(`${API_URL}/api/gallery/image/${filename}`)}`;
+  }
+  // If it's already a full URL with the backend, convert to proxy
+  if (imageUrl.startsWith(API_URL)) {
+    return `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+  }
+  // Otherwise return as is (local public assets)
+  return imageUrl;
+};
+
 // GET - Retrieve gallery collections from categories with flipping images
 export async function GET() {
   try {
@@ -12,23 +30,26 @@ export async function GET() {
     if (!response.ok) {
       throw new Error('Failed to fetch categories');
     }
-    
+
     const categories = await response.json();
-    
+
     // Extract flipping images from categories to create gallery collections
     const collections = categories.map((category: any) => {
       // Use actual flipping images from backend, or fallback to the category cover image
       const images: string[] = category.flippingImages && category.flippingImages.length > 0
         ? category.flippingImages
         : (category.image ? [category.image] : []);
-      
+
+      // Convert backend URLs to proxy URLs for proper authentication
+      const proxyImages = images.map(toProxyUrl).filter(Boolean);
+
       return {
         title: category.name,
         slug: category.slug,
-        images: [...new Set(images.filter(Boolean))], // Remove duplicates and empty values
+        images: [...new Set(proxyImages)], // Remove duplicates
       };
     });
-    
+
     return NextResponse.json({ collections: collections.slice(0, 4) });
   } catch (error) {
     console.error('Error fetching gallery collections:', error);
