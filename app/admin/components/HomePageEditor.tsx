@@ -304,33 +304,40 @@ export function HomePageEditor() {
       if (res.ok) {
         const data = await res.json();
         const imageUrl = data.path || data.imageUrl || data.url;
-        
+
         if (!imageUrl) {
           throw new Error('No image URL returned from upload');
         }
-        
-        // Convert to direct image serving endpoint URL
+
+        // Convert to proxy URL for proper authentication
         let displayUrl;
         if (imageUrl.startsWith('/Gallery/uploads/')) {
           const filename = imageUrl.split('/').pop();
-          displayUrl = `${API_BASE_URL}/api/gallery/image/${filename}`;
+          displayUrl = `/api/proxy-image?url=${encodeURIComponent(`${API_BASE_URL}/api/gallery/image/${filename}`)}`;
+        } else if (imageUrl.startsWith(API_BASE_URL)) {
+          displayUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
         } else {
           displayUrl = imageUrl;
         }
-        
+
         // Add the new image to heroImages array
         const updatedImages = [...heroImages, displayUrl];
         setHeroImages(updatedImages);
-        
-        // Convert display URLs back to Gallery paths for saving
+
+        // Convert proxy URLs back to Gallery paths for saving
         const galleryPaths = updatedImages.map((url) => {
-          if (url.includes('/api/gallery/image/')) {
-            const filename = url.split('/').pop();
-            return `/Gallery/uploads/${filename}`;
+          if (url.includes('/api/proxy-image?url=')) {
+            const urlParam = url.split('url=')[1];
+            const decodedUrl = decodeURIComponent(urlParam);
+            if (decodedUrl.includes('/api/gallery/image/')) {
+              const filename = decodedUrl.split('/').pop();
+              return `/Gallery/uploads/${filename}`;
+            }
+            return decodedUrl;
           }
           return url;
         });
-        
+
         // Save to backend with all images
         const settingsRes = await fetch(`${API_BASE_URL}/api/homepage-settings/hero-images`, {
           method: 'POST',
