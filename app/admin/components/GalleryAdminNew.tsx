@@ -38,16 +38,23 @@ export function GalleryAdminNew() {
             setLoading(true);
             const token = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
 
-            const [imagesData, categoriesRes] = await Promise.all([
+            const [imagesData, categoriesResponse] = await Promise.all([
                 galleryApi.getAllImages(),
                 fetch(`${API_BASE_URL}/api/categories/gallery`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
-                }).then(r => r.json())
+                })
             ]);
 
+            if (!categoriesResponse.ok) {
+                console.error('Categories request failed:', categoriesResponse.status);
+                setImages(imagesData);
+                setCategories([]);
+                return;
+            }
+
+            const categoriesRes = await categoriesResponse.json();
             setImages(imagesData);
             setCategories(categoriesRes || []);
 
