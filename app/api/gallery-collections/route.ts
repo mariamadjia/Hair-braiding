@@ -107,6 +107,24 @@ export async function POST(request: Request) {
       );
 
       if (category) {
+        // Convert proxy URLs back to backend URLs for saving
+        const backendUrls = updatedCollection.images
+          .map((url: string) => {
+            if (url.includes('/api/proxy-image?url=')) {
+              const urlParam = url.split('url=')[1];
+              const decodedUrl = decodeURIComponent(urlParam);
+              if (decodedUrl.includes('/api/gallery/image/')) {
+                const filename = decodedUrl.split('/').pop();
+                return `/Gallery/uploads/${filename}`;
+              }
+              return decodedUrl;
+            }
+            return url;
+          })
+          .filter((url: string) => url !== null && url !== '');
+
+        console.log(`Updating category ${category.id} with images:`, backendUrls);
+
         // Update the category's flipping images
         const updateResponse = await fetch(`${API_URL}/api/categories/${category.id}/flipping-images`, {
           method: 'PUT',
@@ -114,11 +132,14 @@ export async function POST(request: Request) {
             'Content-Type': 'application/json',
             'Authorization': authHeader
           },
-          body: JSON.stringify(updatedCollection.images)
+          body: JSON.stringify(backendUrls)
         });
 
         if (!updateResponse.ok) {
-          console.error(`Failed to update category ${category.id}`);
+          const errorText = await updateResponse.text();
+          console.error(`Failed to update category ${category.id}:`, errorText);
+        } else {
+          console.log(`Successfully updated category ${category.id}`);
         }
       }
     }
