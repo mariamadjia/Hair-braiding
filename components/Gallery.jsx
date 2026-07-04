@@ -16,12 +16,17 @@ export default function Gallery() {
     const loadCollections = async () => {
       try {
         const res = await fetch('/api/gallery-collections');
+        if (!res.ok) {
+          throw new Error('Failed to fetch gallery collections');
+        }
         const data = await res.json();
         if (data.collections) {
           setCollections(data.collections);
         }
       } catch (error) {
         console.error('Failed to load gallery collections:', error);
+        // Set empty collections on error to prevent infinite loading
+        setCollections([]);
       } finally {
         setLoading(false);
       }

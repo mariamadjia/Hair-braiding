@@ -4,13 +4,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 async function getCategories() {
   try {
-    const response = await fetch(`${API_URL}/api/categories`, {
+    const response = await fetch(`${API_URL}/api/categories/gallery`, {
       cache: 'no-store'
     });
     if (!response.ok) {
       throw new Error('Failed to fetch categories');
     }
-    return await response.json();
+    const data = await response.json();
+    // Return in the same format as before for compatibility
+    return { categories: data, defaultBookingUrl: 'https://calendly.com/djonretglo' };
   } catch (error) {
     console.error('Error fetching categories:', error);
     return { categories: [], defaultBookingUrl: '' };

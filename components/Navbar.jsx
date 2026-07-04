@@ -44,11 +44,8 @@ export default function Navbar() {
         <div className="fixed inset-x-0 top-[64px] z-40 bg-[#2C1810] text-white md:hidden">
           <nav className="flex flex-col gap-6 px-8 py-8 text-[14px] uppercase tracking-[0.22em]">
             <a href="/" onClick={() => setOpen(false)}>Home</a>
-            <a href="/about" onClick={() => setOpen(false)}>About</a>
             <a href="/gallery" onClick={() => setOpen(false)}>Gallery</a>
             <a href="/services" onClick={() => setOpen(false)}>Services</a>
-            <a href="/education" onClick={() => setOpen(false)}>Education</a>
-            <a href="/shop" onClick={() => setOpen(false)}>Shop</a>
             <a href="/contact" onClick={() => setOpen(false)}>Contact</a>
           </nav>
         </div>

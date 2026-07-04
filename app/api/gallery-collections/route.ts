@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 // GET - Retrieve gallery collections from categories with flipping images
 export async function GET() {
   try {
-    // Fetch categories from backend (includes flippingImages)
-    const response = await fetch('http://localhost:8080/api/categories');
+    // Fetch categories from backend using the lightweight gallery endpoint
+    const response = await fetch(`${API_URL}/api/categories/gallery`, {
+      cache: 'no-store'
+    });
     if (!response.ok) {
       throw new Error('Failed to fetch categories');
     }
     
-    const categoriesData = await response.json();
-    const categories = categoriesData.categories || [];
+    const categories = await response.json();
     
     // Extract flipping images from categories to create gallery collections
     const collections = categories.map((category: any) => {
@@ -40,7 +43,7 @@ export async function POST(request: Request) {
     const { collections: updatedCollections } = await request.json();
     
     // Fetch current categories to get their IDs
-    const response = await fetch('http://localhost:8080/api/categories', {
+    const response = await fetch(`${API_URL}/api/categories`, {
       headers: { 'Authorization': authHeader }
     });
     if (!response.ok) {
@@ -57,11 +60,8 @@ export async function POST(request: Request) {
       );
       
       if (category) {
-        console.log(`Updating flipping images for category: ${category.name}`);
-        console.log(`New images:`, updatedCollection.images);
-        
         // Update the category's flipping images
-        await fetch(`http://localhost:8080/api/categories/${category.id}/flipping-images`, {
+        await fetch(`${API_URL}/api/categories/${category.id}/flipping-images`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
