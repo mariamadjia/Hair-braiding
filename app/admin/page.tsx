@@ -36,8 +36,8 @@ export default function AdminPage() {
 
     const loadCategories = async (jwtToken: string) => {
         try {
-            // Fetch categories from Spring Boot backend
-            const json = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/categories`, {
+            // Fetch categories from Spring Boot backend using admin endpoint to avoid circular references
+            const json = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/categories/admin`, {
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
                     'Content-Type': 'application/json'
@@ -56,7 +56,7 @@ export default function AdminPage() {
                 }
                 return res.json();
             });
-            
+
             setData(json);
             setError("");
         } catch (err: any) {
