@@ -8,22 +8,21 @@ import Footer from '@/components/Footer';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-// Helper function to convert image URLs to backend API format
-const getImageUrl = (imageUrl) => {
-  if (!imageUrl) return '';
-  
-  // Convert Gallery path to direct image serving endpoint
+// Helper function to convert image URLs to proxy endpoint for authentication
+const toProxyUrl = (imageUrl) => {
+  if (!imageUrl) return null;
+  // If already a proxy URL, return as is
+  if (imageUrl.includes('/api/proxy-image?url=')) return imageUrl;
+  // If it's a Gallery path, convert to proxy
   if (imageUrl.startsWith('/Gallery/uploads/')) {
     const filename = imageUrl.split('/').pop();
-    return `${API_BASE_URL}/api/gallery/image/${filename}`;
+    return `/api/proxy-image?url=${encodeURIComponent(`${API_BASE_URL}/api/gallery/image/${filename}`)}`;
   }
-  
-  // If it's a relative path, prepend backend URL
-  if (imageUrl.startsWith('/')) {
-    return `${API_BASE_URL}${imageUrl}`;
+  // If it's already a full URL with the backend, convert to proxy
+  if (imageUrl.startsWith(API_BASE_URL)) {
+    return `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
   }
-  
-  // Return as-is if it's already a full URL
+  // Otherwise return as is (local public assets)
   return imageUrl;
 };
 
@@ -64,31 +63,18 @@ export default function GalleryPage({
     const fetchGalleryData = async () => {
       try {
         setLoading(true);
-        console.log('Fetching from:', API_BASE_URL);
-        
         const [imagesRes, categoriesRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/gallery`),
-          fetch(`${API_BASE_URL}/api/categories`)
+          fetch(`${API_BASE_URL}/api/categories/gallery`)
         ]);
-        
-        console.log('Images response status:', imagesRes.status);
-        console.log('Categories response status:', categoriesRes.status);
-        
-        if (!imagesRes.ok || !categoriesRes.ok) {
-          throw new Error(`HTTP error! Images: ${imagesRes.status}, Categories: ${categoriesRes.status}`);
-        }
         
         const images = await imagesRes.json();
         const categoriesData = await categoriesRes.json();
         
-        console.log('Loaded images:', images.length);
-        console.log('Loaded categories:', categoriesData.categories?.length);
-        
         setGalleryImages(images);
-        setCategories(categoriesData.categories || []);
+        setCategories(categoriesData || []);
       } catch (error) {
         console.error('Failed to load gallery:', error);
-        alert('Failed to load gallery: ' + error.message);
       } finally {
         setLoading(false);
       }
@@ -120,30 +106,30 @@ export default function GalleryPage({
         ? sub.images 
         : (subImages.length > 0 ? subImages.map(img => img.imageUrl) : (sub.image ? [sub.image] : []));
       
-      // Convert all image URLs to backend API format
-      const backendImageArray = imageArray.map(getImageUrl);
+      // Convert all image URLs to proxy URLs
+      const proxyImageArray = imageArray.map(toProxyUrl);
       
       return {
         id: sub.id,
         name: sub.name,
         slug: sub.slug,
-        image: getImageUrl(imageArray[0] || sub.image || (subImages[0] ? subImages[0].imageUrl : null)),
-        images: backendImageArray
+        image: toProxyUrl(imageArray[0] || sub.image || (subImages[0] ? subImages[0].imageUrl : null)),
+        images: proxyImageArray
       };
     });
     
     // Use flipping images from backend, or fallback to first 5 images
     const flippingImages = cat.flippingImages && cat.flippingImages.length > 0
-      ? cat.flippingImages.map(getImageUrl)
-      : categoryImages.slice(0, 5).map(img => getImageUrl(img.imageUrl));
+      ? cat.flippingImages.map(toProxyUrl)
+      : categoryImages.slice(0, 5).map(img => toProxyUrl(img.imageUrl));
     const firstImage = categoryImages[0];
     
     return {
       id: cat.id,
       slug: cat.slug,
       title: cat.name,
-      image: getImageUrl(firstImage ? firstImage.imageUrl : cat.image),
-      images: flippingImages.length > 0 ? flippingImages : (firstImage ? [getImageUrl(firstImage.imageUrl)] : []), // Images for flipping
+      image: toProxyUrl(firstImage ? firstImage.imageUrl : cat.image),
+      images: flippingImages.length > 0 ? flippingImages : (firstImage ? [toProxyUrl(firstImage.imageUrl)] : []), // Images for flipping
       link: `/${cat.slug}`,
       tags: [cat.name, 'Protective Styles'],
       subcategoryData

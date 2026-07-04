@@ -15,25 +15,20 @@ export async function GET() {
     
     try {
       const backendRes = await fetch(`${API_BASE_URL}/api/gallery?isHero=true`, {
-        next: { revalidate: 60 } // Cache for 60 seconds to improve performance
+        cache: 'no-store' // Don't cache - always get fresh data
       });
       
       if (backendRes.ok) {
         backendAvailable = true;
         const data = await backendRes.json();
         
-        // Extract imageUrl from gallery items and convert to direct image serving endpoint
+        // Extract imageUrl from gallery items and convert to proxy endpoint
         if (Array.isArray(data) && data.length > 0) {
           backendImages = data.map((item: any) => {
             const imageUrl = item.imageUrl;
-            // Convert Gallery path to direct image serving endpoint
-            if (imageUrl && imageUrl.startsWith('/Gallery/uploads/')) {
-              const filename = imageUrl.split('/').pop();
-              return `${API_BASE_URL}/api/gallery/image/${filename}`;
-            }
-            // If it's a relative path, prepend backend URL
-            if (imageUrl && imageUrl.startsWith('/')) {
-              return `${API_BASE_URL}${imageUrl}`;
+            // Use proxy endpoint to handle authentication
+            if (imageUrl) {
+              return `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
             }
             return imageUrl;
           });

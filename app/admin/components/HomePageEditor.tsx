@@ -100,8 +100,9 @@ export function HomePageEditor() {
   };
 
   useEffect(() => {
-    loadHomepageSettings(); // Combined single call instead of multiple
+    loadHeroImages();
     loadGalleryCollections();
+    loadWelcomeItems();
     // Load hero video settings from localStorage
     if (typeof window !== 'undefined') {
       const savedVideoSrc = localStorage.getItem('hero_video_src');
@@ -121,13 +122,11 @@ export function HomePageEditor() {
     localStorage.setItem('hero_use_video', String(useHeroVideo));
   }, [heroVideoSrc, useHeroVideo]);
 
-  const loadHomepageSettings = async () => {
+  const loadHeroImages = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/homepage-settings`);
       if (res.ok) {
         const data = await res.json();
-        
-        // Load hero images
         if (data.heroImages) {
           const images = JSON.parse(data.heroImages);
           // Convert Gallery paths to new image serving endpoint
@@ -153,8 +152,19 @@ export function HomePageEditor() {
           });
           setHeroImages(convertedImages);
         }
-        
-        // Load welcome items
+      }
+    } catch (error) {
+      console.error('Failed to load hero images:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadWelcomeItems = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/homepage-settings`);
+      if (res.ok) {
+        const data = await res.json();
         if (data.welcomeItems) {
           const items = JSON.parse(data.welcomeItems);
           if (items.length > 0) {
@@ -163,9 +173,7 @@ export function HomePageEditor() {
         }
       }
     } catch (error) {
-      console.error('Failed to load homepage settings:', error);
-    } finally {
-      setLoading(false);
+      console.error('Failed to load welcome items:', error);
     }
   };
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, GripVertical, Trash2, Plus } from "lucide-react";
-import { GalleryImage, getImageUrl } from "@/lib/api/gallery";
+import { GalleryImage } from "@/lib/api/gallery";
 
 interface FlippingImagesModalProps {
     category: {
