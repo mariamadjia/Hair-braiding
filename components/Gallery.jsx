@@ -166,6 +166,10 @@ export default function Gallery() {
                           alt={`${item.title} ${currentIndex + 1}`}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           style={{ backfaceVisibility: 'hidden' }}
+                          onError={(e) => {
+                            console.error('Image load error:', item.images[currentIndex]);
+                            console.error('Image source:', e.currentTarget.src);
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-neutral-100 text-neutral-400 text-sm">
