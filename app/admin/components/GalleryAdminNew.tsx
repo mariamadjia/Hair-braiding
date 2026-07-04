@@ -54,12 +54,13 @@ export function GalleryAdminNew() {
                 return;
             }
 
-            const categoriesRes = await categoriesResponse.json();
+            const categoriesText = await categoriesResponse.text();
+            const categoriesData = categoriesText ? JSON.parse(categoriesText) : [];
             setImages(imagesData);
-            setCategories(categoriesRes || []);
+            setCategories(categoriesData || []);
 
             // Transform categories to include flipping images (same as public gallery)
-            const transformedCategories = categoriesRes.map((cat: any) => {
+            const transformedCategories = categoriesData.map((cat: any) => {
                 const categoryImages = imagesData.filter((img: GalleryImage) => img.categoryId === cat.id);
                 const firstImage = categoryImages[0];
 
