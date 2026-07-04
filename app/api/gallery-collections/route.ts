@@ -41,8 +41,8 @@ export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('Authorization') || '';
     const { collections: updatedCollections } = await request.json();
-    
-    // Fetch current categories to get their IDs
+
+    // Fetch current categories to get their IDs (need full data for IDs)
     const response = await fetch(`${API_URL}/api/categories`, {
       headers: { 'Authorization': authHeader }
     });
@@ -51,27 +51,31 @@ export async function POST(request: Request) {
     }
     const categoriesData = await response.json();
     const categories = categoriesData.categories || [];
-    
+
     // Update each category's flipping images
     for (const updatedCollection of updatedCollections) {
       // Find matching category by slug or title
-      const category = categories.find((cat: any) => 
+      const category = categories.find((cat: any) =>
         cat.slug === updatedCollection.slug || cat.name === updatedCollection.title
       );
-      
+
       if (category) {
         // Update the category's flipping images
-        await fetch(`${API_URL}/api/categories/${category.id}/flipping-images`, {
+        const updateResponse = await fetch(`${API_URL}/api/categories/${category.id}/flipping-images`, {
           method: 'PUT',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'Authorization': authHeader
           },
           body: JSON.stringify(updatedCollection.images)
         });
+
+        if (!updateResponse.ok) {
+          console.error(`Failed to update category ${category.id}`);
+        }
       }
     }
-    
+
     return NextResponse.json({ message: 'Flipping images updated successfully' }, { status: 200 });
   } catch (error) {
     console.error('Error saving gallery collections updates:', error);
