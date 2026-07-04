@@ -62,7 +62,9 @@ export async function GET() {
         images = [category.image];
         console.log(`Using category cover image for ${category.name}`);
       } else {
-        console.log(`No images found for ${category.name}`);
+        console.log(`No images found for ${category.name} - skipping from gallery`);
+        // Return null to filter out categories with no images
+        return null;
       }
 
       console.log(`Images for ${category.name}:`, images);
@@ -77,7 +79,7 @@ export async function GET() {
         slug: category.slug,
         images: [...new Set(proxyImages)], // Remove duplicates
       };
-    });
+    }).filter((collection): collection is NonNullable<typeof collection> => collection !== null);
 
     console.log('Final collections:', JSON.stringify(collections, null, 2));
 
