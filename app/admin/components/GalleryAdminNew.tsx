@@ -6,6 +6,7 @@ import { Edit, Trash2, Plus } from "lucide-react";
 import { galleryApi, GalleryImage } from '@/lib/api/gallery';
 import { API_BASE_URL } from '@/lib/config/api';
 import { FlippingImagesModal } from "./FlippingImagesModal";
+import { toProxyUrl, fromProxyUrl } from '@/lib/utils/image';
 
 interface Category {
     id: number;
@@ -62,8 +63,8 @@ export function GalleryAdminNew() {
 
                 return {
                     ...cat,
-                    image: firstImage ? firstImage.imageUrl : cat.image,
-                    images: flippingImages.length > 0 ? flippingImages : (firstImage ? [firstImage.imageUrl] : [])
+                    image: toProxyUrl(firstImage ? firstImage.imageUrl : cat.image),
+                    images: flippingImages.length > 0 ? flippingImages.map(toProxyUrl) : (firstImage ? [toProxyUrl(firstImage.imageUrl)] : [])
                 };
             });
 
@@ -80,6 +81,23 @@ export function GalleryAdminNew() {
             console.error("Failed to load data:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const updateCategoryDisplayOrder = async (categoryId: number, displayOrder: number) => {
+        try {
+            const token = localStorage.getItem('auth_token');
+            await fetch(`${API_BASE_URL}/api/categories/${categoryId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({ displayOrder: displayOrder.toString() }),
+            });
+        } catch (error) {
+            console.error('Failed to update display order:', error);
+            throw error;
         }
     };
 
@@ -113,17 +131,20 @@ export function GalleryAdminNew() {
         if (!selectedCategoryForFlipping) return;
 
         try {
+            // Convert proxy URLs back to backend URLs for saving
+            const backendUrls = imageUrls.map(fromProxyUrl);
+
             // Save to backend
-            await galleryApi.updateCategoryFlippingImages(selectedCategoryForFlipping.id, imageUrls);
-            
-            // Update local state
-            const updatedCategories = categories.map(cat => 
-                cat.id === selectedCategoryForFlipping.id 
+            await galleryApi.updateCategoryFlippingImages(selectedCategoryForFlipping.id, backendUrls);
+
+            // Update local state with proxy URLs for display
+            const updatedCategories = categories.map(cat =>
+                cat.id === selectedCategoryForFlipping.id
                     ? { ...cat, images: imageUrls }
                     : cat
             );
             setCategories(updatedCategories);
-            
+
             setFlippingModalOpen(false);
             setSelectedCategoryForFlipping(null);
         } catch (error) {
@@ -151,26 +172,22 @@ export function GalleryAdminNew() {
 
     const handleDragEnd = async () => {
         if (draggedIndex === null) return;
-        
+
+        const originalCategories = [...categories];
+        setDraggedIndex(null);
+
         try {
-            const token = localStorage.getItem('auth_token');
-            
             // Update display order for all categories
-            for (let i = 0; i < categories.length; i++) {
-                await fetch(`${API_BASE_URL}/api/categories/${categories[i].id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    },
-                    body: JSON.stringify({ displayOrder: i.toString() }),
-                });
-            }
+            const updatePromises = categories.map((cat, index) =>
+                updateCategoryDisplayOrder(cat.id, index)
+            );
+            await Promise.all(updatePromises);
         } catch (error) {
             console.error('Failed to update order:', error);
+            // Rollback on error
+            setCategories(originalCategories);
+            alert('Failed to save order. Please try again.');
         }
-        
-        setDraggedIndex(null);
     };
 
     // Auto-rotate images for category cards (same as public gallery)

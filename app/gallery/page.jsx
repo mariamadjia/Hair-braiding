@@ -5,26 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Search, Plus, Minus, ChevronLeft, ChevronRight, X, Pencil } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { toProxyUrl } from '@/lib/utils/image';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-// Helper function to convert image URLs to proxy endpoint for authentication
-const toProxyUrl = (imageUrl) => {
-  if (!imageUrl) return null;
-  // If already a proxy URL, return as is
-  if (imageUrl.includes('/api/proxy-image?url=')) return imageUrl;
-  // If it's a Gallery path, convert to proxy
-  if (imageUrl.startsWith('/Gallery/uploads/')) {
-    const filename = imageUrl.split('/').pop();
-    return `/api/proxy-image?url=${encodeURIComponent(`${API_BASE_URL}/api/gallery/image/${filename}`)}`;
-  }
-  // If it's already a full URL with the backend, convert to proxy
-  if (imageUrl.startsWith(API_BASE_URL)) {
-    return `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
-  }
-  // Otherwise return as is (local public assets)
-  return imageUrl;
-};
 
 /**
  * @param {{

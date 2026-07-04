@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, GripVertical, Trash2, Plus } from "lucide-react";
 import { GalleryImage } from "@/lib/api/gallery";
+import { toProxyUrl } from "@/lib/utils/image";
 
 interface FlippingImagesModalProps {
     category: {
@@ -19,6 +20,7 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
     const [selectedImages, setSelectedImages] = useState<string[]>(category.images || []);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [showImagePicker, setShowImagePicker] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     const MIN_IMAGES = 2;
     const MAX_IMAGES = 5;
@@ -66,12 +68,17 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
         setShowImagePicker(false);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (selectedImages.length < MIN_IMAGES) {
             alert(`Please select at least ${MIN_IMAGES} images.`);
             return;
         }
-        onSave(selectedImages);
+        setSaving(true);
+        try {
+            await onSave(selectedImages);
+        } finally {
+            setSaving(false);
+        }
     };
 
     const availableImages = allCategoryImages.filter(
@@ -144,7 +151,7 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
                                         {/* Image */}
                                         <div className="aspect-square bg-neutral-100">
                                             <img
-                                                src={imageUrl}
+                                                src={toProxyUrl(imageUrl)}
                                                 alt={`Image ${index + 1}`}
                                                 className="w-full h-full object-cover"
                                             />
@@ -208,7 +215,7 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
                                             className="aspect-square bg-neutral-100 rounded-lg overflow-hidden hover:ring-2 hover:ring-neutral-900 transition-all"
                                         >
                                             <img
-                                                src={image.imageUrl}
+                                                src={toProxyUrl(image.imageUrl)}
                                                 alt={image.title}
                                                 className="w-full h-full object-cover"
                                             />
@@ -238,10 +245,10 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
                         </button>
                         <button
                             onClick={handleSave}
-                            disabled={selectedImages.length < MIN_IMAGES}
+                            disabled={selectedImages.length < MIN_IMAGES || saving}
                             className="px-4 py-2 bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                            Save Changes
+                            {saving ? 'Saving...' : 'Save Changes'}
                         </button>
                     </div>
                 </div>
