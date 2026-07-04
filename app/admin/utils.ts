@@ -1,4 +1,6 @@
 import type { BookingItem, LengthOption } from "@/lib/booking-types";
+import { galleryApi } from "@/lib/api/gallery";
+import { getAuthToken } from "@/lib/utils/auth";
 
 export function slugify(s: string) {
     return s.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -13,16 +15,14 @@ export function emptyLengthOption(): LengthOption {
 }
 
 export async function uploadFile(file: File, token: string): Promise<string> {
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        headers: { 
-            "Authorization": `Bearer ${token}`
-        },
-        body: formData,
-    });
-    const json = await res.json();
-    if (!json.url) throw new Error(json.error ?? "Upload failed");
-    return json.url;
+    try {
+        const result = await galleryApi.uploadImage({
+            file,
+            title: file.name,
+        });
+        return result.imageUrl;
+    } catch (error) {
+        console.error('Upload failed:', error);
+        throw new Error(error instanceof Error ? error.message : "Upload failed");
+    }
 }
