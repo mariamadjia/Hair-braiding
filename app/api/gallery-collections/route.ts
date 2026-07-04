@@ -44,20 +44,25 @@ export async function GET() {
 
     // Extract flipping images from categories to create gallery collections
     const collections = categories.map((category: any) => {
-      console.log(`Processing category: ${category.name}, flippingImages:`, category.flippingImages, 'image:', category.image);
+      console.log(`Processing category: ${category.name}, id: ${category.id}, flippingImages:`, category.flippingImages, 'image:', category.image);
 
       // Get gallery images for this category
       const categoryImages = galleryImages.filter((img: any) => img.categoryId === category.id);
-      const firstImage = categoryImages[0];
+      console.log(`Category ${category.name} has ${categoryImages.length} gallery images`);
 
       // Use flipping images from backend, or fallback to first 5 gallery images, or category cover image
       let images: string[] = [];
       if (category.flippingImages && category.flippingImages.length > 0) {
         images = category.flippingImages;
+        console.log(`Using flipping images for ${category.name}`);
       } else if (categoryImages.length > 0) {
         images = categoryImages.slice(0, 5).map((img: any) => img.imageUrl);
+        console.log(`Using gallery images for ${category.name}`);
       } else if (category.image) {
         images = [category.image];
+        console.log(`Using category cover image for ${category.name}`);
+      } else {
+        console.log(`No images found for ${category.name}`);
       }
 
       console.log(`Images for ${category.name}:`, images);
