@@ -36,8 +36,22 @@ export async function GET(req: NextRequest) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('Backend error response:', errorText);
-            return NextResponse.json({ error: `Backend returned ${response.status}: ${errorText}` }, { status: response.status });
+            console.error('Backend admin endpoint error:', errorText, '- falling back to regular endpoint');
+
+            // Fallback to regular endpoint if admin endpoint fails
+            console.log('Fetching categories from fallback endpoint:', `${API_URL}/api/categories`);
+            const fallbackResponse = await fetch(`${API_URL}/api/categories`);
+            console.log('Fallback response status:', fallbackResponse.status);
+
+            if (!fallbackResponse.ok) {
+                const fallbackError = await fallbackResponse.text();
+                console.error('Fallback endpoint also failed:', fallbackError);
+                return NextResponse.json({ error: `Both endpoints failed. Admin: ${response.status}, Fallback: ${fallbackResponse.status}` }, { status: 500 });
+            }
+
+            const data = await fallbackResponse.json();
+            console.log('Fallback response data keys:', Object.keys(data));
+            return NextResponse.json(data);
         }
 
         const data = await response.json();
@@ -45,7 +59,18 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(data);
     } catch (error) {
         console.error('Failed to fetch categories from backend:', error);
-        return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
+
+        // Try fallback on catch as well
+        try {
+            console.log('Attempting fallback after error:', `${API_URL}/api/categories`);
+            const fallbackResponse = await fetch(`${API_URL}/api/categories`);
+            const data = await fallbackResponse.json();
+            console.log('Fallback successful after error');
+            return NextResponse.json(data);
+        } catch (fallbackError) {
+            console.error('Fallback also failed:', fallbackError);
+            return NextResponse.json({ error: "Failed to fetch categories from both endpoints" }, { status: 500 });
+        }
     }
 }
 
