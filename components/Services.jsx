@@ -38,7 +38,7 @@ export default async function Services() {
       <section className="bg-[#FFF5EE] dark:bg-neutral-900 pb-24 md:pb-32">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
           <div className="divide-y divide-[#ecdcc0] dark:divide-neutral-700">
-            {categories.map((cat, idx) => (
+            {Array.isArray(categories) && categories.length > 0 ? categories.map((cat, idx) => (
               <div
                 key={`${cat.slug}-${idx}`}
                 className="group flex items-center justify-between py-8 md:py-10 transition-all duration-300 hover:bg-white/80 dark:hover:bg-neutral-800/50"
@@ -62,7 +62,11 @@ export default async function Services() {
                   <a href={`/booking/${cat.slug}`}>Book Now</a>
                 </Button>
               </div>
-            ))}
+            )) : (
+              <div className="py-12 text-center text-neutral-500">
+                <p>No services available at this time.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
