@@ -44,12 +44,21 @@ export function EditorPanel({ data, selection, setSelection, token, onUpdate }: 
         return <RootEditor data={data} headers={headers} mutate={mutate} setSelection={setSelection} />;
     }
 
-    const cat = data.categories.find((c) => c.slug === selection.catSlug)!;
+    const cat = data.categories.find((c) => c.slug === selection.catSlug);
+
+    if (!cat) {
+        return <div className="p-4 text-red-600">Category not found. Please go back and try again.</div>;
+    }
 
     if (selection.type === "category") {
         return <CategoryEditor cat={cat} token={token} headers={headers} mutate={mutate} setSelection={setSelection} />;
     }
 
-    const sub = (cat.subcategories ?? []).find((s) => s.slug === selection.subSlug)!;
+    const sub = (cat.subcategories ?? []).find((s) => s.slug === selection.subSlug);
+
+    if (!sub) {
+        return <div className="p-4 text-red-600">Subcategory not found. Please go back and try again.</div>;
+    }
+
     return <SubcategoryEditor cat={cat} sub={sub} token={token} headers={headers} mutate={mutate} setSelection={setSelection} onUpdate={onUpdate} />;
 }
