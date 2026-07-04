@@ -140,7 +140,9 @@ export function GalleryAdminNew() {
 
         try {
             // Convert proxy URLs back to backend URLs for saving
-            const backendUrls = imageUrls.map(fromProxyUrl);
+            const backendUrls = imageUrls
+                .map(fromProxyUrl)
+                .filter((url): url is string => url !== null && url !== '');
 
             // Save to backend
             await galleryApi.updateCategoryFlippingImages(selectedCategoryForFlipping.id, backendUrls);

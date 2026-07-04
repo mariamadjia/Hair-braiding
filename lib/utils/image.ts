@@ -19,8 +19,8 @@ export const toProxyUrl = (imageUrl: string | null | undefined): string => {
 };
 
 // Helper function to convert proxy URLs back to backend URLs for saving
-export const fromProxyUrl = (imageUrl: string | null | undefined): string | null => {
-  if (!imageUrl) return null;
+export const fromProxyUrl = (imageUrl: string | null | undefined): string => {
+  if (!imageUrl) return '';
   // If it's a proxy URL, extract the original URL
   if (imageUrl.includes('/api/proxy-image?url=')) {
     const urlParam = imageUrl.split('url=')[1];
