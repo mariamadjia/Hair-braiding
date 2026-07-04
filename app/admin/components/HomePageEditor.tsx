@@ -49,6 +49,7 @@ export function HomePageEditor() {
   const [selectedCollectionIndices, setSelectedCollectionIndices] = useState<number[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<number, number>>({});
   const [isFlipping, setIsFlipping] = useState<Record<number, boolean>>({});
+  const [loadingCollections, setLoadingCollections] = useState(false);
 
   // Helper function to get auth token
   const getAuthToken = () => {
@@ -190,6 +191,7 @@ export function HomePageEditor() {
   };
 
   const loadAllCollections = async () => {
+    setLoadingCollections(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/categories/gallery`);
       if (res.ok) {
@@ -209,6 +211,8 @@ export function HomePageEditor() {
       }
     } catch (error) {
       console.error('Failed to load all collections:', error);
+    } finally {
+      setLoadingCollections(false);
     }
   };
 
@@ -1113,26 +1117,31 @@ export function HomePageEditor() {
 
             {/* Modal Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-6">
-                {/* Selected Collections Preview */}
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
-                    Selected Collections Preview
-                  </label>
-                  <div className="grid grid-cols-4 gap-4">
-                    {Array.from({ length: 4 }).map((_, index) => {
-                      const selectedCollection = allCollections[selectedCollectionIndices[index]];
-                      return (
-                        <div
-                          key={index}
-                          className="aspect-[4/5] bg-neutral-100 dark:bg-neutral-700 rounded-lg overflow-hidden border-2 border-neutral-200 dark:border-neutral-600"
-                        >
-                          {selectedCollection ? (
-                            <div className="relative w-full h-full">
-                              {selectedCollection.images[0] && (
-                                <img
-                                  src={selectedCollection.images[0]}
-                                  alt={selectedCollection.title}
+              {loadingCollections ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-neutral-500 dark:text-neutral-400">Loading collections...</div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Selected Collections Preview */}
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+                      Selected Collections Preview
+                    </label>
+                    <div className="grid grid-cols-4 gap-4">
+                      {Array.from({ length: 4 }).map((_, index) => {
+                        const selectedCollection = allCollections[selectedCollectionIndices[index]];
+                        return (
+                          <div
+                            key={index}
+                            className="aspect-[4/5] bg-neutral-100 dark:bg-neutral-700 rounded-lg overflow-hidden border-2 border-neutral-200 dark:border-neutral-600"
+                          >
+                            {selectedCollection ? (
+                              <div className="relative w-full h-full">
+                                {selectedCollection.images[0] && (
+                                  <img
+                                    src={selectedCollection.images[0]}
+                                    alt={selectedCollection.title}
                                   className="w-full h-full object-cover"
                                 />
                               )}
@@ -1244,6 +1253,7 @@ export function HomePageEditor() {
                   </div>
                 </div>
               </div>
+              )}
             </div>
 
             {/* Modal Footer */}
