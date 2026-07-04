@@ -191,11 +191,11 @@ export function HomePageEditor() {
 
   const loadAllCollections = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/categories`);
+      const res = await fetch(`${API_BASE_URL}/api/categories/gallery`);
       if (res.ok) {
         const data = await res.json();
         // Transform categories to collection format
-        const collections = (data.categories || []).map((cat: any) => ({
+        const collections = (data || []).map((cat: any) => ({
           title: cat.name,
           slug: cat.slug,
           images: cat.flippingImages && cat.flippingImages.length > 0 ? cat.flippingImages : (cat.image ? [cat.image] : []),
