@@ -135,10 +135,12 @@ export function RootEditor({ data, headers, mutate, setSelection }: {
             <div className="space-y-2">
                 {data.categories.map((cat, index) => {
                     const hasSubcategories = cat.subcategories && cat.subcategories.length > 0;
-                    const totalServices = hasSubcategories 
+                    const totalServices = hasSubcategories
                         ? cat.subcategories!.reduce((acc, sub) => acc + (sub.items?.length || 0), 0)
                         : (cat.items?.length || 0);
                     const hasImage = !!cat.image;
+                    const subcategories = cat.subcategories || [];
+                    const items = cat.items || [];
                     
                     return (
                         <div 
@@ -183,7 +185,7 @@ export function RootEditor({ data, headers, mutate, setSelection }: {
                                 <div className="flex items-center gap-3 mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                                     {hasSubcategories ? (
                                         <>
-                                            <span>{cat.subcategories!.length} subcategories</span>
+                                            <span>{subcategories.length} subcategories</span>
                                             <span>•</span>
                                         </>
                                     ) : null}
