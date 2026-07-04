@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Hero from "./Hero";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 export default function HeroWrapper() {
   const [heroVideoSrc, setHeroVideoSrc] = useState<string>('');
   const [useHeroVideo, setUseHeroVideo] = useState(false);
@@ -12,8 +14,8 @@ export default function HeroWrapper() {
     // Load hero settings from API
     const loadHeroSettings = async () => {
       try {
-        const res = await fetch('http://localhost:8080/api/homepage-settings');
-        
+        const res = await fetch(`${API_URL}/api/homepage-settings`);
+
         if (!res.ok) {
           console.error('API request failed:', res.status);
           return;
@@ -26,7 +28,7 @@ export default function HeroWrapper() {
         }
 
         const data = JSON.parse(text);
-        
+
         if (data.heroVideoSrc) {
           setHeroVideoSrc(data.heroVideoSrc);
         }
