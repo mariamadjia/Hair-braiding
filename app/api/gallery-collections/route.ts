@@ -35,14 +35,30 @@ export async function GET() {
     const categories = await response.json();
     console.log('Gallery categories response:', JSON.stringify(categories, null, 2));
 
+    // Fetch gallery images for all categories
+    const galleryResponse = await fetch(`${API_URL}/api/gallery`, {
+      cache: 'no-store'
+    });
+    const galleryImages = galleryResponse.ok ? await galleryResponse.json() : [];
+    console.log('Gallery images count:', galleryImages.length);
+
     // Extract flipping images from categories to create gallery collections
     const collections = categories.map((category: any) => {
       console.log(`Processing category: ${category.name}, flippingImages:`, category.flippingImages, 'image:', category.image);
 
-      // Use actual flipping images from backend, or fallback to the category cover image
-      const images: string[] = category.flippingImages && category.flippingImages.length > 0
-        ? category.flippingImages
-        : (category.image ? [category.image] : []);
+      // Get gallery images for this category
+      const categoryImages = galleryImages.filter((img: any) => img.categoryId === category.id);
+      const firstImage = categoryImages[0];
+
+      // Use flipping images from backend, or fallback to first 5 gallery images, or category cover image
+      let images: string[] = [];
+      if (category.flippingImages && category.flippingImages.length > 0) {
+        images = category.flippingImages;
+      } else if (categoryImages.length > 0) {
+        images = categoryImages.slice(0, 5).map((img: any) => img.imageUrl);
+      } else if (category.image) {
+        images = [category.image];
+      }
 
       console.log(`Images for ${category.name}:`, images);
 
