@@ -1,8 +1,8 @@
 import { API_BASE_URL } from '../config/api';
 
 // Helper function to convert image URLs to proxy endpoint for authentication
-export const toProxyUrl = (imageUrl: string | null | undefined): string | null => {
-  if (!imageUrl) return null;
+export const toProxyUrl = (imageUrl: string | null | undefined): string => {
+  if (!imageUrl) return '';
   // If already a proxy URL, return as is
   if (imageUrl.includes('/api/proxy-image?url=')) return imageUrl;
   // If it's a Gallery path, convert to proxy
