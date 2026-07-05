@@ -5,7 +5,7 @@ import HeroWrapper from "@/components/HeroWrapper"
 import Welcome from "@/components/Welcome"
 import Gallery from "@/components/Gallery"
 import FlipBook from "@/components/FlipBook3D"
-import Footer from "@/components/Footer"
+import FooterWrapper from "@/components/FooterWrapper"
 
 export default function Home() {
   return (
@@ -16,7 +16,7 @@ export default function Home() {
       <Welcome />
       <Gallery />
       <FlipBook />
-      <Footer />
+      <FooterWrapper />
     </>
   );
 }
