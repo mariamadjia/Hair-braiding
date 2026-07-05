@@ -24,48 +24,65 @@ export default function AdminCategoryDetailPage() {
 
     const loadCategoryData = async () => {
         try {
-            // Fetch category by slug (includes subcategories)
-            const categoryRes = await fetch(`${API_BASE_URL}/api/categories/slug/${params.slug}`);
+            setLoading(true);
+
+            const categoryRes = await fetch(
+                `${API_BASE_URL}/api/categories/slug/${params.slug}`
+            );
+
+            if (!categoryRes.ok) {
+                throw new Error("Failed to load category");
+            }
+
             const categoryData = await categoryRes.json();
             setCategory(categoryData);
 
-            // Fetch all gallery images
-            const imagesRes = await fetch(`${API_BASE_URL}/api/gallery`);
-            const allImages = await imagesRes.json();
+            const imagesRes = await fetch(
+                `${API_BASE_URL}/api/gallery/category/${categoryData.id}`
+            );
 
-            // Filter images for this category
-            const categoryImages = allImages.filter(img => img.categoryId === categoryData.id);
+            if (!imagesRes.ok) {
+                throw new Error("Failed to load category images");
+            }
+
+            const categoryImages = await imagesRes.json();
             setImages(categoryImages);
 
-            // Use actual subcategories from category data, enhanced with gallery images
-            const subcategoriesWithImages = (categoryData.subcategories || []).map(sub => {
-                // Find gallery images for this subcategory and sort by displayOrder
-                const subImages = categoryImages
-                    .filter(img => img.subcategoryId === sub.id)
-                    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
-                
-                return {
-                    id: sub.id,
-                    name: sub.name,
-                    slug: sub.slug,
-                    image: sub.image,
-                    displayOrder: sub.displayOrder || 0,
-                    images: subImages
-                };
-            });
-            
-            // Sort by displayOrder (null values go to end, then sort by ID)
-            const sortedSubcategories = subcategoriesWithImages.sort((a, b) => {
-                if (a.displayOrder === null && b.displayOrder === null) return a.id - b.id;
-                if (a.displayOrder === null) return 1;
-                if (b.displayOrder === null) return -1;
-                return a.displayOrder - b.displayOrder;
-            });
-            
-            setSubcategories(sortedSubcategories);
-            setLoading(false);
+            const subcategoriesWithImages = (categoryData.subcategories || []).map(
+                (sub) => {
+                    const subImages = categoryImages
+                        .filter((img) => img.subcategoryId === sub.id)
+                        .sort(
+                            (a, b) =>
+                                (a.displayOrder || 0) - (b.displayOrder || 0)
+                        );
+
+                    return {
+                        id: sub.id,
+                        name: sub.name,
+                        slug: sub.slug,
+                        image: sub.image,
+                        displayOrder: sub.displayOrder || 0,
+                        images: subImages,
+                    };
+                }
+            );
+
+            setSubcategories(
+                subcategoriesWithImages.sort((a, b) => {
+                    if (a.displayOrder === null && b.displayOrder === null) {
+                        return a.id - b.id;
+                    }
+
+                    if (a.displayOrder === null) return 1;
+                    if (b.displayOrder === null) return -1;
+
+                    return a.displayOrder - b.displayOrder;
+                })
+            );
         } catch (error) {
-            console.error('Failed to load category:', error);
+            console.error("Failed to load category:", error);
+        } finally {
             setLoading(false);
         }
     };
