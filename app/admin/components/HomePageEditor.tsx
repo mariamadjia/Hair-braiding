@@ -65,17 +65,20 @@ export function HomePageEditor() {
   };
 
   // Helper function to convert media URLs to backend URLs
-  const getMediaUrl = (url?: string | null) => {
+  const resolveMediaUrl = (url?: string | null) => {
     if (!url) return "";
 
+    // Already a full Render URL
     if (url.startsWith("http://") || url.startsWith("https://")) {
       return url;
     }
 
+    // New saved format
     if (url.startsWith("/api/gallery/image/")) {
       return `${API_BASE_URL}${url}`;
     }
 
+    // Old saved format
     if (url.startsWith("/Gallery/uploads/")) {
       const filename = url.split("/").filter(Boolean).pop();
 
@@ -84,10 +87,7 @@ export function HomePageEditor() {
         : "";
     }
 
-    if (url.startsWith("/")) {
-      return `${API_BASE_URL}${url}`;
-    }
-
+    // Keep frontend public files unchanged, such as /welcome/video1.MOV
     return url;
   };
 
@@ -136,24 +136,7 @@ export function HomePageEditor() {
     loadHeroImages();
     loadGalleryCollections();
     loadWelcomeItems();
-    // Load hero video settings from localStorage
-    if (typeof window !== 'undefined') {
-      const savedVideoSrc = localStorage.getItem('hero_video_src');
-      const savedUseVideo = localStorage.getItem('hero_use_video');
-      if (savedVideoSrc) {
-        setHeroVideoSrc(savedVideoSrc);
-      }
-      if (savedUseVideo === 'true') {
-        setUseHeroVideo(true);
-      }
-    }
   }, []);
-
-  // Save hero video settings to localStorage when they change
-  useEffect(() => {
-    localStorage.setItem('hero_video_src', heroVideoSrc);
-    localStorage.setItem('hero_use_video', String(useHeroVideo));
-  }, [heroVideoSrc, useHeroVideo]);
 
   const loadHeroImages = async () => {
     try {
@@ -221,23 +204,31 @@ export function HomePageEditor() {
   const loadWelcomeItems = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/homepage-settings`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.welcomeItems) {
-          const items = JSON.parse(data.welcomeItems);
-          if (items.length > 0) {
-            setWelcomeItems(items);
-          }
-        }
-        if (data.heroVideoSrc) {
-          setHeroVideoSrc(getMediaUrl(data.heroVideoSrc));
-        }
-        if (data.useHeroVideo !== undefined) {
-          setUseHeroVideo(Boolean(data.useHeroVideo));
+
+      if (!res.ok) {
+        return;
+      }
+
+      const data = await res.json();
+
+      // Load video settings from the database, not old browser storage.
+      setHeroVideoSrc(resolveMediaUrl(data.heroVideoSrc));
+      setUseHeroVideo(Boolean(data.useHeroVideo));
+
+      if (data.welcomeItems) {
+        const items = JSON.parse(data.welcomeItems);
+
+        if (Array.isArray(items) && items.length > 0) {
+          setWelcomeItems(
+            items.map((item: WelcomeItem) => ({
+              ...item,
+              src: resolveMediaUrl(item.src),
+            }))
+          );
         }
       }
     } catch (error) {
-      console.error('Failed to load welcome items:', error);
+      console.error("Failed to load homepage settings:", error);
     }
   };
 
