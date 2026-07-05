@@ -1,17 +1,20 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import GalleryPage from '@/app/gallery/page';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AdminGalleryPage() {
   const router = useRouter();
 
-  const handleEdit = (item) => {
-    const categorySlug = item.slug || item.link?.replace(/^\/+/, '');
-    if (!categorySlug) return;
+  useEffect(() => {
+    router.replace("/admin?section=gallery");
+  }, [router]);
 
-    router.push(`/admin?section=categories&category=${encodeURIComponent(categorySlug)}`);
-  };
-
-  return <GalleryPage editMode onEdit={handleEdit} />;
+  return (
+    <div className="flex h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-900">
+      <p className="text-neutral-500 dark:text-neutral-400">
+        Opening Gallery Manager...
+      </p>
+    </div>
+  );
 }

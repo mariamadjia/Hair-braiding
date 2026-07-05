@@ -40,11 +40,7 @@ export function GalleryAdminNew() {
 
             const [imagesData, categoriesResponse] = await Promise.all([
                 galleryApi.getAllImages(),
-                fetch(`${API_BASE_URL}/api/categories/gallery`, {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
+                fetch(`${API_BASE_URL}/api/categories/gallery-cards`)
             ]);
 
             if (!categoriesResponse.ok) {
