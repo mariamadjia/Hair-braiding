@@ -12,11 +12,16 @@ type BackendImage = {
   imageUrl?: string;
 };
 
-function toPublicImageUrl(imageUrl?: string): string | null {
-  if (!imageUrl) return null;
+function toPublicHeroImageUrl(imageUrl?: string): string | null {
+  if (!imageUrl) {
+    return null;
+  }
 
-  // Already a complete URL
-  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+  // Supports a full URL if the backend ever returns one.
+  if (
+    imageUrl.startsWith("http://") ||
+    imageUrl.startsWith("https://")
+  ) {
     return imageUrl;
   }
 
@@ -26,11 +31,13 @@ function toPublicImageUrl(imageUrl?: string): string | null {
     return `${BACKEND_API_URL}${imageUrl}`;
   }
 
-  // Old database format:
+  // Existing database format:
   // /Gallery/uploads/filename.jpg
   const filename = imageUrl.split("/").filter(Boolean).pop();
 
-  if (!filename) return null;
+  if (!filename) {
+    return null;
+  }
 
   return `${BACKEND_API_URL}/api/gallery/image/${encodeURIComponent(filename)}`;
 }
@@ -42,7 +49,9 @@ export async function GET() {
     try {
       const backendRes = await fetch(
         `${BACKEND_API_URL}/api/gallery?isHero=true`,
-        { cache: "no-store" }
+        {
+          cache: "no-store",
+        }
       );
 
       if (backendRes.ok) {
@@ -52,7 +61,7 @@ export async function GET() {
 
         const images = Array.isArray(data)
           ? data
-              .map((item) => toPublicImageUrl(item.imageUrl))
+              .map((item) => toPublicHeroImageUrl(item.imageUrl))
               .filter((url): url is string => Boolean(url))
               .slice(0, MAX_HERO_IMAGES)
           : [];
@@ -68,18 +77,19 @@ export async function GET() {
       console.error("Hero backend request failed:", error);
     }
 
-    // Local fallback only if backend is unavailable or has no Hero images
+    // Local fallback images only when the backend is unavailable
+    // or there are no Hero images in the backend.
     const heroDirectory = path.join(process.cwd(), "public", "hero");
 
     if (fs.existsSync(heroDirectory)) {
-      const files = fs
+      const imageFiles = fs
         .readdirSync(heroDirectory)
         .filter((file) => /\.(jpg|jpeg|png|gif|webp)$/i.test(file))
         .slice(0, MAX_HERO_IMAGES);
 
-      if (files.length > 0) {
+      if (imageFiles.length > 0) {
         return NextResponse.json({
-          images: files.map((file) => `/hero/${file}`),
+          images: imageFiles.map((file) => `/hero/${file}`),
           source: backendAvailable
             ? "filesystem-fallback"
             : "filesystem",
@@ -92,7 +102,7 @@ export async function GET() {
       source: "none",
     });
   } catch (error) {
-    console.error("Error loading Hero images:", error);
+    console.error("Error loading hero images:", error);
 
     return NextResponse.json({
       images: [],
