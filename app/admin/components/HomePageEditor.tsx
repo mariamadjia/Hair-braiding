@@ -215,6 +215,12 @@ export function HomePageEditor() {
       setHeroVideoSrc(resolveMediaUrl(data.heroVideoSrc));
       setUseHeroVideo(Boolean(data.useHeroVideo));
 
+      setFooterVideoSrc(
+        data.footerVideoSrc
+          ? resolveMediaUrl(data.footerVideoSrc)
+          : "/Footer/IMG_2004.mov"
+      );
+
       if (data.welcomeItems) {
         const items = JSON.parse(data.welcomeItems);
 
@@ -429,39 +435,70 @@ export function HomePageEditor() {
     try {
       const token = getAuthToken();
 
-      const headers: HeadersInit = {};
+      const uploadHeaders: HeadersInit = {};
 
       if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+        uploadHeaders["Authorization"] = `Bearer ${token}`;
       }
 
-      // Upload directly to Render, not through Vercel.
-      const res = await fetch(`${API_BASE_URL}/api/upload/welcome-video`, {
-        method: "POST",
-        headers,
-        body: formData,
-      });
+      // Direct upload to Render — avoids Vercel's 413 file-size limit.
+      const uploadRes = await fetch(
+        `${API_BASE_URL}/api/upload/welcome-video`,
+        {
+          method: "POST",
+          headers: uploadHeaders,
+          body: formData,
+        }
+      );
 
-      if (!res.ok) {
-        const message = await res.text();
-        throw new Error(message || `Upload failed: ${res.status}`);
+      if (!uploadRes.ok) {
+        const message = await uploadRes.text();
+        throw new Error(message || "Footer video upload failed.");
       }
 
-      const data = await res.json();
+      const uploadData = await uploadRes.json();
 
-      const rawVideoUrl = data.url || data.path || data.videoPath;
-      const resolvedVideoUrl = resolveMediaUrl(rawVideoUrl);
+      const savedVideoPath =
+        uploadData.url || uploadData.path || uploadData.videoPath;
 
-      if (!resolvedVideoUrl) {
-        throw new Error("No usable video URL returned from upload");
+      if (!savedVideoPath) {
+        throw new Error("No video URL was returned from the upload.");
+      }
+
+      const resolvedVideoUrl = resolveMediaUrl(savedVideoPath);
+
+      const saveRes = await fetch(
+        `${API_BASE_URL}/api/homepage-settings/footer-video`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            footerVideoSrc: savedVideoPath,
+          }),
+        }
+      );
+
+      if (!saveRes.ok) {
+        const message = await saveRes.text();
+        throw new Error(
+          message || "Video uploaded, but Footer setting could not be saved."
+        );
       }
 
       setFooterVideoSrc(resolvedVideoUrl);
 
-      alert("Footer video uploaded successfully.");
+      alert("Footer video uploaded and saved successfully.");
     } catch (error) {
       console.error("Footer video upload failed:", error);
-      alert("Footer video upload failed.");
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Footer video upload failed."
+      );
     } finally {
       setFooterVideoUploading(false);
     }
