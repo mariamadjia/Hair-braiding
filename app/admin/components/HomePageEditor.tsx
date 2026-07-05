@@ -22,8 +22,13 @@ interface GalleryCollection {
   slug: string;
 }
 
+interface HeroImage {
+  id: number;
+  imageUrl: string;
+}
+
 export function HomePageEditor() {
-  const [heroImages, setHeroImages] = useState<string[]>([]);
+  const [heroImages, setHeroImages] = useState<HeroImage[]>([]);
   const [heroVideoSrc, setHeroVideoSrc] = useState<string>('');
   const [useHeroVideo, setUseHeroVideo] = useState(false);
   const [heroVideoUploading, setHeroVideoUploading] = useState(false);
@@ -138,29 +143,38 @@ export function HomePageEditor() {
         console.log("Admin hero API count:", Array.isArray(data) ? data.length : 0);
 
         if (Array.isArray(data) && data.length > 0) {
-          const convertedImages = data.map((image: any) => {
-            const imageUrl = image.imageUrl;
+          const convertedImages: HeroImage[] = data
+            .map((image: any) => {
+              const rawUrl = image.imageUrl;
 
-            if (!imageUrl) return "";
+              if (!rawUrl || image.id == null) {
+                return null;
+              }
 
-            if (imageUrl.startsWith("/api/gallery/image/")) {
-              return `${API_BASE_URL}${imageUrl}`;
-            }
+              let displayUrl = "";
 
-            if (imageUrl.startsWith("/Gallery/uploads/")) {
-              const filename = imageUrl.split("/").filter(Boolean).pop();
+              if (rawUrl.startsWith("/api/gallery/image/")) {
+                displayUrl = `${API_BASE_URL}${rawUrl}`;
+              } else if (rawUrl.startsWith("/Gallery/uploads/")) {
+                const filename = rawUrl.split("/").filter(Boolean).pop();
 
-              return filename
-                ? `${API_BASE_URL}/api/gallery/image/${encodeURIComponent(filename)}`
-                : "";
-            }
+                displayUrl = filename
+                  ? `${API_BASE_URL}/api/gallery/image/${encodeURIComponent(filename)}`
+                  : "";
+              } else if (rawUrl.startsWith("/")) {
+                displayUrl = `${API_BASE_URL}${rawUrl}`;
+              } else {
+                displayUrl = rawUrl;
+              }
 
-            if (imageUrl.startsWith("/")) {
-              return `${API_BASE_URL}${imageUrl}`;
-            }
-
-            return imageUrl;
-          }).filter(Boolean);
+              return displayUrl
+                ? {
+                    id: image.id,
+                    imageUrl: displayUrl,
+                  }
+                : null;
+            })
+            .filter((image): image is HeroImage => image !== null);
 
           console.log("Converted Hero images:", convertedImages);
           console.log("Converted Hero image count:", convertedImages.length);
@@ -484,52 +498,40 @@ export function HomePageEditor() {
     }
   };
 
-  const handleDeleteImage = async (imagePath: string) => {
+  const handleDeleteImage = async (image: HeroImage) => {
+    const confirmed = window.confirm(
+      "Delete this Hero image permanently? It will be removed from the carousel, database, and server uploads."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     try {
       const token = getAuthToken();
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+
+      const headers: HeadersInit = {};
+
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers["Authorization"] = `Bearer ${token}`;
       }
 
-      // Remove from local state
-      const updatedImages = heroImages.filter(img => img !== imagePath);
-      const originalImages = [...heroImages];
-      setHeroImages(updatedImages);
-
-      // Delete from filesystem
-      const deleteRes = await fetch('/api/delete-hero-image', {
-        method: 'DELETE',
+      const res = await fetch(`${API_BASE_URL}/api/gallery/${image.id}`, {
+        method: "DELETE",
         headers,
-        body: JSON.stringify({ imagePath }),
       });
 
-      if (!deleteRes.ok) {
-        // Rollback local state if delete fails
-        setHeroImages(originalImages);
-        throw new Error('Failed to delete image file');
+      if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || "Failed to delete Hero image");
       }
 
-      // Update backend homepage settings
-      const settingsRes = await fetch(`${API_BASE_URL}/api/homepage-settings/hero-images`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ heroImages: JSON.stringify(updatedImages) }),
-      });
+      await loadHeroImages();
 
-      if (!settingsRes.ok) {
-        // Rollback local state if backend update fails
-        setHeroImages(originalImages);
-        throw new Error('Failed to update homepage settings');
-      }
-
-      alert('Hero image deleted successfully!');
+      alert("Hero image permanently deleted.");
     } catch (error) {
-      console.error('Failed to delete image:', error);
-      alert('Failed to delete image');
+      console.error("Failed to delete Hero image:", error);
+      alert("The Hero image could not be deleted.");
     }
   };
 
@@ -772,24 +774,25 @@ export function HomePageEditor() {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {heroImages.map((image, index) => (
                           <div
-                            key={index}
+                            key={image.id}
                             className="relative group aspect-[4/5] bg-neutral-100 dark:bg-neutral-700 rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-600"
                           >
                             <img
-                              src={image}
+                              src={image.imageUrl}
                               alt={`Hero image ${index + 1}`}
                               className="w-full h-full object-cover"
                             />
-                            
+
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <button
                                 onClick={() => handleDeleteImage(image)}
                                 className="p-3 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors"
+                                aria-label={`Permanently delete Hero image ${index + 1}`}
                               >
                                 <Trash2 className="h-5 w-5" />
                               </button>
                             </div>
-                            
+
                             <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                               #{index + 1}
                             </div>
