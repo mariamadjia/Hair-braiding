@@ -14,7 +14,9 @@ interface Category {
     slug: string;
     image?: string;
     summary?: string;
-    images?: string[]; // Flipping images array
+    images?: string[]; // Browser-ready card images (proxy URLs)
+    rawImages?: string[]; // Original URLs for saving back to backend
+    fallbackImages?: string[]; // Existing subcategory cover photos
 }
 
 export function GalleryAdminNew() {
@@ -55,20 +57,40 @@ export function GalleryAdminNew() {
             setImages(imagesData);
             setCategories(categoriesData || []);
 
-            // Transform categories to include flipping images (same as public gallery)
+            // Transform categories to include card images
             const transformedCategories = categoriesData.map((cat: any) => {
                 const categoryImages = imagesData.filter((img: GalleryImage) => img.categoryId === cat.id);
                 const firstImage = categoryImages[0];
 
-                // Use flipping images from backend, or fallback to first 5 images
-                const flippingImages = cat.flippingImages && cat.flippingImages.length > 0
-                    ? cat.flippingImages
-                    : categoryImages.slice(0, 5).map((img: GalleryImage) => img.imageUrl);
+                const manualImages = cat.flippingImages ?? [];
+                const fallbackImages = cat.fallbackImages ?? [];
+
+                const rawCardImages =
+                    manualImages.length > 0
+                        ? manualImages
+                        : fallbackImages.length > 0
+                            ? fallbackImages
+                            : categoryImages.slice(0, 5).map((img: GalleryImage) => img.imageUrl);
+
+                const firstImageUrl =
+                    rawCardImages[0] ||
+                    firstImage?.imageUrl ||
+                    cat.image ||
+                    "";
 
                 return {
                     ...cat,
-                    image: toProxyUrl(firstImage ? firstImage.imageUrl : cat.image),
-                    images: flippingImages.length > 0 ? flippingImages.map(toProxyUrl) : (firstImage ? [toProxyUrl(firstImage.imageUrl)] : [])
+
+                    image: firstImageUrl ? toProxyUrl(firstImageUrl) : "",
+
+                    // Used only for showing images on the card.
+                    images: rawCardImages.map(toProxyUrl),
+
+                    // Keep original URLs for saving back to Spring Boot.
+                    rawImages: rawCardImages,
+
+                    // Keep fallback candidates available for the editor modal.
+                    fallbackImages,
                 };
             });
 
@@ -143,10 +165,11 @@ export function GalleryAdminNew() {
             // Save to backend
             await galleryApi.updateCategoryFlippingImages(selectedCategoryForFlipping.id, backendUrls);
 
-            // Update local state with proxy URLs for display
+            // Update local state: images are proxy URLs for display,
+            // rawImages are originals for any future save.
             const updatedCategories = categories.map(cat =>
                 cat.id === selectedCategoryForFlipping.id
-                    ? { ...cat, images: imageUrls }
+                    ? { ...cat, images: imageUrls.map(toProxyUrl), rawImages: imageUrls }
                     : cat
             );
             setCategories(updatedCategories);
@@ -330,8 +353,15 @@ export function GalleryAdminNew() {
             {/* Flipping Images Modal */}
             {flippingModalOpen && selectedCategoryForFlipping && (
                 <FlippingImagesModal
-                    category={selectedCategoryForFlipping}
-                    allCategoryImages={getCategoryImages(selectedCategoryForFlipping.id)}
+                    category={{
+                        id: selectedCategoryForFlipping.id,
+                        name: selectedCategoryForFlipping.name,
+                        images: selectedCategoryForFlipping.rawImages ?? [],
+                    }}
+                    allCategoryImages={images.filter(
+                        (image) => image.categoryId === selectedCategoryForFlipping.id
+                    )}
+                    fallbackImageUrls={selectedCategoryForFlipping.fallbackImages ?? []}
                     onClose={() => {
                         setFlippingModalOpen(false);
                         setSelectedCategoryForFlipping(null);

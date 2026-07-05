@@ -5,10 +5,13 @@ const API_URL = process.env.BACKEND_API_URL || 'http://localhost:8080';
 // GET - Retrieve gallery collections from categories with flipping images
 export async function GET() {
   try {
-    // Fetch categories with images from backend in a single call
-    const response = await fetch(`${API_URL}/api/categories/gallery?includeImages=true&limit=5`, {
-      cache: 'no-store'
-    });
+    // Fetch lightweight category cards with flipping + fallback images
+    const response = await fetch(
+      `${API_URL}/api/categories/gallery-cards`,
+      {
+        cache: 'no-store'
+      }
+    );
     if (!response.ok) {
       console.error('Backend gallery endpoint failed:', response.status);
       throw new Error('Failed to fetch categories');
@@ -18,24 +21,30 @@ export async function GET() {
     console.log('Gallery categories response:', JSON.stringify(categories, null, 2));
 
     // Transform categories to collections format
-    const collections = categories.map((category: any) => {
-      console.log(`Processing category: ${category.name}, id: ${category.id}, flippingImages:`, category.flippingImages);
+    const collections = categories
+      .map((category: any) => {
+        console.log(`Processing category: ${category.name}, id: ${category.id}, flippingImages:`, category.flippingImages);
 
-      // Use flipping images from backend if available, otherwise empty array
-      const images = category.flippingImages || [];
+        const imageUrls =
+          category.flippingImages?.length > 0
+            ? category.flippingImages
+            : category.fallbackImages ?? [];
 
-      console.log(`Images for ${category.name}:`, images);
+        console.log(`Images for ${category.name}:`, imageUrls);
 
-      return {
-        title: category.name,
-        slug: category.slug,
-        images: [...new Set(images)], // Remove duplicates
-      };
-    });
+        return {
+          id: category.id,
+          title: category.name,
+          slug: category.slug,
+          images: [...new Set(imageUrls)], // Remove duplicates
+        };
+      })
+      .filter((collection: any) => collection.images.length > 0)
+      .slice(0, 4);
 
     console.log('Final collections:', JSON.stringify(collections, null, 2));
 
-    return NextResponse.json({ collections: collections.slice(0, 4) });
+    return NextResponse.json({ collections });
   } catch (error) {
     console.error('Error fetching gallery collections:', error);
     return NextResponse.json({ collections: [] });

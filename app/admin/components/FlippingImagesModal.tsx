@@ -12,17 +12,24 @@ interface FlippingImagesModalProps {
         images?: string[];
     };
     allCategoryImages: GalleryImage[];
+    fallbackImageUrls?: string[];
     onClose: () => void;
     onSave: (imageUrls: string[]) => void;
 }
 
-export function FlippingImagesModal({ category, allCategoryImages, onClose, onSave }: FlippingImagesModalProps) {
+export function FlippingImagesModal({
+  category,
+  allCategoryImages,
+  fallbackImageUrls = [],
+  onClose,
+  onSave,
+}: FlippingImagesModalProps) {
     const [selectedImages, setSelectedImages] = useState<string[]>(category.images || []);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [showImagePicker, setShowImagePicker] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    const MIN_IMAGES = 3;
+    const MIN_IMAGES = 2;
     const MAX_IMAGES = 5;
 
     const handleDragStart = (index: number) => {
@@ -56,16 +63,17 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
     };
 
     const handleAddImage = (imageUrl: string) => {
-        const proxyUrl = toProxyUrl(imageUrl);
         if (selectedImages.length >= MAX_IMAGES) {
             alert(`Maximum ${MAX_IMAGES} images allowed.`);
             return;
         }
-        if (selectedImages.includes(proxyUrl)) {
+
+        if (selectedImages.includes(imageUrl)) {
             alert("This image is already selected.");
             return;
         }
-        setSelectedImages([...selectedImages, proxyUrl]);
+
+        setSelectedImages([...selectedImages, imageUrl]);
         setShowImagePicker(false);
     };
 
@@ -82,8 +90,15 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
         }
     };
 
-    const availableImages = allCategoryImages.filter(
-        img => !selectedImages.includes(toProxyUrl(img.imageUrl))
+    const allSelectableImageUrls = Array.from(
+        new Set([
+            ...fallbackImageUrls,
+            ...allCategoryImages.map((image) => image.imageUrl),
+        ])
+    );
+
+    const availableImages = allSelectableImageUrls.filter(
+        (imageUrl) => !selectedImages.includes(imageUrl)
     );
 
     return (
@@ -193,7 +208,7 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
                         <div className="mt-6 border-t border-neutral-200 pt-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-sm font-medium text-neutral-700">
-                                    Select from Category Images ({availableImages.length} available)
+                                    Select from Category Photos ({availableImages.length} available)
                                 </h4>
                                 <button
                                     onClick={() => setShowImagePicker(false)}
@@ -209,15 +224,15 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
                                 </p>
                             ) : (
                                 <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-64 overflow-y-auto">
-                                    {availableImages.map((image) => (
+                                    {availableImages.map((imageUrl) => (
                                         <button
-                                            key={image.id}
-                                            onClick={() => handleAddImage(image.imageUrl)}
+                                            key={imageUrl}
+                                            onClick={() => handleAddImage(imageUrl)}
                                             className="aspect-square bg-neutral-100 rounded-lg overflow-hidden hover:ring-2 hover:ring-neutral-900 transition-all"
                                         >
                                             <img
-                                                src={toProxyUrl(image.imageUrl)}
-                                                alt={image.title}
+                                                src={toProxyUrl(imageUrl)}
+                                                alt="Category image"
                                                 className="w-full h-full object-cover"
                                             />
                                         </button>
