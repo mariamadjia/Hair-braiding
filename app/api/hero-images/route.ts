@@ -6,8 +6,6 @@ const BACKEND_API_URL = (
   process.env.BACKEND_API_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
 
-console.log('BACKEND_API_URL:', BACKEND_API_URL);
-
 const MAX_HERO_IMAGES = 5;
 
 type BackendImage = {
@@ -56,9 +54,6 @@ export async function GET() {
         }
       );
 
-      console.log("Hero backend status:", backendRes.status);
-      console.log("Hero backend URL:", `${BACKEND_API_URL}/api/gallery?isHero=true`);
-
       if (backendRes.ok) {
         backendAvailable = true;
 
@@ -71,24 +66,15 @@ export async function GET() {
               .slice(0, MAX_HERO_IMAGES)
           : [];
 
-        console.log("Hero images returned:", images.length);
-
         if (images.length > 0) {
           return NextResponse.json({
             images,
             source: "backend",
           });
         }
-      } else {
-        const errorText = await backendRes.text();
-        console.error(
-          "Hero backend request failed:",
-          backendRes.status,
-          errorText
-        );
       }
     } catch (error) {
-      console.error("Hero backend connection error:", error);
+      console.error("Hero backend request failed:", error);
     }
 
     // Local fallback images only when the backend is unavailable
