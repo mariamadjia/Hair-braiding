@@ -507,10 +507,17 @@ export function HomePageEditor() {
       if (res.ok) {
         const data = await res.json();
         const videoUrl = data.url || data.path || data.videoPath;
-        setHeroVideoSrc(videoUrl);
-        setUseHeroVideo(true); // Automatically enable video mode
-        // Save to database
-        await saveHomepageSettings(videoUrl, true);
+
+        const resolvedVideoUrl = resolveMediaUrl(videoUrl);
+
+        if (!resolvedVideoUrl) {
+          throw new Error("No usable video URL returned from upload");
+        }
+
+        setHeroVideoSrc(resolvedVideoUrl);
+        setUseHeroVideo(true);
+
+        await saveHomepageSettings(resolvedVideoUrl, true);
       } else {
         throw new Error(`Upload failed: ${res.status}`);
       }
