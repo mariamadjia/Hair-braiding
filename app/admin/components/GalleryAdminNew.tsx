@@ -17,6 +17,8 @@ interface Category {
     images?: string[]; // Browser-ready card images (proxy URLs)
     rawImages?: string[]; // Original URLs for saving back to backend
     fallbackImages?: string[]; // Existing subcategory cover photos
+    flippingImages?: string[];
+    displayOrder?: number;
 }
 
 export function GalleryAdminNew() {
@@ -29,6 +31,7 @@ export function GalleryAdminNew() {
     const [isFlipping, setIsFlipping] = useState<{ [key: number]: boolean }>({});
     const [flippingModalOpen, setFlippingModalOpen] = useState(false);
     const [selectedCategoryForFlipping, setSelectedCategoryForFlipping] = useState<Category | null>(null);
+    const [selectedCategoryImages, setSelectedCategoryImages] = useState<GalleryImage[]>([]);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
     useEffect(() => {
@@ -38,71 +41,53 @@ export function GalleryAdminNew() {
     const loadData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
 
-            const [imagesData, categoriesResponse] = await Promise.all([
-                galleryApi.getAllImages(),
-                fetch(`${API_BASE_URL}/api/categories/gallery-cards`)
-            ]);
+            const categoriesResponse = await fetch(
+                `${API_BASE_URL}/api/categories/gallery-cards`
+            );
 
             if (!categoriesResponse.ok) {
-                console.error('Categories request failed:', categoriesResponse.status);
-                setImages(imagesData);
-                setCategories([]);
-                return;
+                throw new Error(
+                    `Failed to load gallery categories: ${categoriesResponse.status}`
+                );
             }
 
-            const categoriesText = await categoriesResponse.text();
-            const categoriesData = categoriesText ? JSON.parse(categoriesText) : [];
-            setImages(imagesData);
-            setCategories(categoriesData || []);
+            const categoriesData = await categoriesResponse.json();
 
-            // Transform categories to include card images
-            const transformedCategories = categoriesData.map((cat: any) => {
-                const categoryImages = imagesData.filter((img: GalleryImage) => img.categoryId === cat.id);
-                const firstImage = categoryImages[0];
+            const transformedCategories = categoriesData
+                .map((cat: any) => {
+                    const rawImages =
+                        cat.flippingImages?.length > 0
+                            ? cat.flippingImages
+                            : cat.fallbackImages ?? [];
 
-                const manualImages = cat.flippingImages ?? [];
-                const fallbackImages = cat.fallbackImages ?? [];
+                    return {
+                        ...cat,
 
-                const rawCardImages =
-                    manualImages.length > 0
-                        ? manualImages
-                        : categoryImages.slice(0, 5).map((img: GalleryImage) => img.imageUrl);
+                        // Keep original paths for saving to the backend later.
+                        rawImages,
 
-                const firstImageUrl =
-                    rawCardImages[0] ||
-                    firstImage?.imageUrl ||
-                    cat.image ||
-                    "";
+                        // Browser-ready image URLs for the cards.
+                        images: rawImages.map(toProxyUrl),
 
-                return {
-                    ...cat,
+                        image: rawImages[0] ? toProxyUrl(rawImages[0]) : "",
+                    };
+                })
+                .sort((a: any, b: any) => {
+                    if (a.displayOrder === null && b.displayOrder === null) {
+                        return a.id - b.id;
+                    }
 
-                    image: firstImageUrl ? toProxyUrl(firstImageUrl) : "",
+                    if (a.displayOrder === null) return 1;
+                    if (b.displayOrder === null) return -1;
 
-                    // Used only for showing images on the card.
-                    images: rawCardImages.map(toProxyUrl),
+                    return a.displayOrder - b.displayOrder;
+                });
 
-                    // Keep original URLs for saving back to Spring Boot.
-                    rawImages: rawCardImages,
-
-                    // Keep fallback candidates available for the editor modal.
-                    fallbackImages,
-                };
-            });
-
-            // Sort by displayOrder (null values go to end, then sort by ID)
-            const sortedCategories = transformedCategories.sort((a: any, b: any) => {
-                if (a.displayOrder === null && b.displayOrder === null) return a.id - b.id;
-                if (a.displayOrder === null) return 1;
-                if (b.displayOrder === null) return -1;
-                return a.displayOrder - b.displayOrder;
-            });
-
-            setCategories(sortedCategories);
+            setCategories(transformedCategories);
         } catch (error) {
-            console.error("Failed to load data:", error);
+            console.error("Failed to load Admin Gallery:", error);
+            setCategories([]);
         } finally {
             setLoading(false);
         }
@@ -145,10 +130,17 @@ export function GalleryAdminNew() {
         setEditingCategory(editingCategory === categoryId ? null : categoryId);
     };
 
-    const handleOpenFlippingModal = (category: Category) => {
-        console.log('Opening flipping modal for category:', category);
+    const handleOpenFlippingModal = async (category: Category) => {
         setSelectedCategoryForFlipping(category);
+        setSelectedCategoryImages([]);
         setFlippingModalOpen(true);
+
+        try {
+            const categoryImages = await galleryApi.getImagesByCategory(category.id);
+            setSelectedCategoryImages(categoryImages);
+        } catch (error) {
+            console.error("Failed to load category Gallery images:", error);
+        }
     };
 
     const handleSaveFlippingImages = async (imageUrls: string[]) => {
@@ -257,7 +249,7 @@ export function GalleryAdminNew() {
             <div className="bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-8 py-6 shrink-0">
                 <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Gallery Management</h1>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                    {categories.length} categories • {images.length} total images
+                    {categories.length} categories
                 </p>
             </div>
 
@@ -317,6 +309,8 @@ export function GalleryAdminNew() {
                                                 <img
                                                     src={currentImage}
                                                     alt={category.name}
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                     style={{ backfaceVisibility: 'hidden' }}
                                                 />
@@ -356,13 +350,12 @@ export function GalleryAdminNew() {
                         name: selectedCategoryForFlipping.name,
                         images: selectedCategoryForFlipping.rawImages ?? [],
                     }}
-                    allCategoryImages={images.filter(
-                        (image) => image.categoryId === selectedCategoryForFlipping.id
-                    )}
+                    allCategoryImages={selectedCategoryImages}
                     fallbackImageUrls={selectedCategoryForFlipping.fallbackImages ?? []}
                     onClose={() => {
                         setFlippingModalOpen(false);
                         setSelectedCategoryForFlipping(null);
+                        setSelectedCategoryImages([]);
                     }}
                     onSave={handleSaveFlippingImages}
                 />

@@ -37,7 +37,6 @@ export default function GalleryPage({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [cardImageIndexes, setCardImageIndexes] = useState({});
   const [isFlipping, setIsFlipping] = useState({});
-  const [galleryImages, setGalleryImages] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,15 +45,16 @@ export default function GalleryPage({
     const fetchGalleryData = async () => {
       try {
         setLoading(true);
-        const [imagesRes, categoriesRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/gallery`),
-          fetch(`${API_BASE_URL}/api/categories/gallery`)
-        ]);
-        
-        const images = await imagesRes.json();
+        const categoriesRes = await fetch(
+          `${API_BASE_URL}/api/categories/gallery`
+        );
+
+        if (!categoriesRes.ok) {
+          throw new Error("Failed to load Gallery categories");
+        }
+
         const categoriesData = await categoriesRes.json();
-        
-        setGalleryImages(images);
+
         setCategories(categoriesData || []);
       } catch (error) {
         console.error('Failed to load gallery:', error);
@@ -76,139 +76,47 @@ export default function GalleryPage({
   ];
 
   // Transform backend data into gallery format
-  const galleryCategories = categories.map(cat => {
-    const categoryImages = galleryImages.filter(img => img.categoryId === cat.id);
-    
-    // Use actual subcategories from category data, enhanced with gallery images
-    const subcategoryData = (cat.subcategories || []).map(sub => {
-      // Find gallery images for this subcategory
-      const subImages = categoryImages.filter(img => img.subcategoryId === sub.id);
-      
-      // Prioritize: subcategory.images > gallery images > single subcategory.image
-      const imageArray = (sub.images && sub.images.length > 0) 
-        ? sub.images 
-        : (subImages.length > 0 ? subImages.map(img => img.imageUrl) : (sub.image ? [sub.image] : []));
-      
-      // Convert all image URLs to proxy URLs
-      const proxyImageArray = imageArray.map(toProxyUrl);
-      
+  const galleryCategories = categories.map((cat) => {
+    const subcategoryData = (cat.subcategories || []).map((sub) => {
+      const rawImages =
+        Array.isArray(sub.images) && sub.images.length > 0
+          ? sub.images
+          : sub.image
+            ? [sub.image]
+            : [];
+
       return {
         id: sub.id,
         name: sub.name,
         slug: sub.slug,
-        image: toProxyUrl(imageArray[0] || sub.image || (subImages[0] ? subImages[0].imageUrl : null)),
-        images: proxyImageArray
+        rawImages,
+        image: rawImages[0] ? toProxyUrl(rawImages[0]) : "",
+        images: rawImages.map(toProxyUrl),
       };
     });
-    
-    // Use flipping images from backend, or fallback to first 5 images
-    const flippingImages = cat.flippingImages && cat.flippingImages.length > 0
-      ? cat.flippingImages.map(toProxyUrl)
-      : categoryImages.slice(0, 5).map(img => toProxyUrl(img.imageUrl));
-    const firstImage = categoryImages[0];
-    
+
+    const fallbackImages = subcategoryData
+      .flatMap((subcategory) => subcategory.rawImages)
+      .filter(Boolean)
+      .slice(0, 5);
+
+    const rawCardImages =
+      cat.flippingImages?.length > 0
+        ? cat.flippingImages
+        : fallbackImages;
+
     return {
       id: cat.id,
       slug: cat.slug,
       title: cat.name,
-      image: toProxyUrl(firstImage ? firstImage.imageUrl : cat.image),
-      images: flippingImages.length > 0 ? flippingImages : (firstImage ? [toProxyUrl(firstImage.imageUrl)] : []), // Images for flipping
+      image: rawCardImages[0] ? toProxyUrl(rawCardImages[0]) : "",
+      images: rawCardImages.map(toProxyUrl),
       link: `/${cat.slug}`,
-      tags: [cat.name, 'Protective Styles'],
-      subcategoryData
+      tags: [cat.name, "Protective Styles"],
+      subcategoryData,
     };
   });
 
-  const fallbackGalleryCategories = [
-    {
-      title: 'Twists',
-      image: '/Gallery/Twists/IMG_1585.JPG',
-      link: '/twists',
-      tags: ['Twists', 'Protective Styles'],
-      subcategoryData: [
-        { name: '2-Strands Twists', slug: '2-strands-twists', image: '/Gallery/Twists/2-strands-twists/IMG_9101.jpg', images: ['/Gallery/Twists/2-strands-twists/IMG_9101.jpg', '/Gallery/Twists/2-strands-twists/IMG_9102.jpg'] },
-        { name: 'Bohemian Marley Twists', slug: 'bohemian-marley-twists', image: '/Gallery/Twists/Bohemian-marley twists/IMG_9054.jpg', images: ['/Gallery/Twists/Bohemian-marley twists/IMG_9054.jpg'] },
-        { name: 'Havana Marley Twists', slug: 'havana-marley-twists', image: '/Gallery/Twists/Havana-marley-twists/IMG_9048.jpg', images: ['/Gallery/Twists/Havana-marley-twists/IMG_9048.jpg'] },
-        { name: 'Islands Twists', slug: 'islands-twists', image: '/Gallery/Twists/Islands-Twists/IMG_9052.jpg', images: ['/Gallery/Twists/Islands-Twists/IMG_9052.jpg'] },
-        { name: 'Kinky Twists', slug: 'kinky-twists', image: '/Gallery/Twists/kinky-twists/IMG_1602.JPG', images: ['/Gallery/Twists/kinky-twists/IMG_1602.JPG'] },
-        { name: 'Passion Twists', slug: 'passion-twists', image: '/Gallery/Twists/passion-twists/IMG_9049.jpg', images: ['/Gallery/Twists/passion-twists/IMG_9049.jpg', '/Gallery/Twists/passion-twists/IMG_9105.jpg', '/Gallery/Twists/passion-twists/IMG_9106.jpg', '/Gallery/Twists/passion-twists/IMG_9126.jpg'] },
-        { name: 'Senegalese Twists', slug: 'senegalese-twists', image: '/Gallery/Twists/senegalese-twists /IMG_9111.jpg', images: ['/Gallery/Twists/senegalese-twists /IMG_9111.jpg', '/Gallery/Twists/senegalese-twists /IMG_9120.jpg', '/Gallery/Twists/senegalese-twists /IMG_9121.jpg', '/Gallery/Twists/senegalese-twists /IMG_9122.jpg'] },
-        { name: 'Spring Twists', slug: 'spring-twists', image: '/Gallery/Twists/spring-twists/IMG_9123.jpg', images: ['/Gallery/Twists/spring-twists/IMG_9123.jpg', '/Gallery/Twists/spring-twists/IMG_9124.jpg', '/Gallery/Twists/spring-twists/IMG_9125.jpg'] },
-      ],
-    },
-    {
-      title: 'Box Braids',
-      image: '/Gallery/Box-Braids /IMG_9170.jpg',
-      link: '/box-braids',
-      tags: ['Braids', 'Protective Styles'],
-      subcategoryData: [
-        { name: 'Classic Box Braids', slug: 'classic-box-braids', image: '/Gallery/Box-Braids /Box-Braids/IMG_9176.jpg', images: ['/Gallery/Box-Braids /Box-Braids/IMG_9176.jpg', '/Gallery/Box-Braids /Box-Braids/IMG_9178.jpg', '/Gallery/Box-Braids /Box-Braids/IMG_9179.jpg', '/Gallery/Box-Braids /Box-Braids/IMG_9183.jpg'] },
-        { name: 'Knotless', slug: 'knotless', image: '/Gallery/Box-Braids /knotless/IMG_9219.jpg', images: ['/Gallery/Box-Braids /knotless/IMG_9219.jpg', '/Gallery/Box-Braids /knotless/IMG_9220.jpg', '/Gallery/Box-Braids /knotless/IMG_9221.jpg', '/Gallery/Box-Braids /knotless/IMG_9222.jpg', '/Gallery/Box-Braids /knotless/IMG_9223.jpg'] },
-        { name: 'Goddess Braids', slug: 'goddess-braids', image: '/Gallery/Box-Braids /goddess braids/IMG_9174.jpg', images: ['/Gallery/Box-Braids /goddess braids/IMG_9174.jpg', '/Gallery/Box-Braids /goddess braids/IMG_9175.jpg', '/Gallery/Box-Braids /goddess braids/IMG_9180.jpg', '/Gallery/Box-Braids /goddess braids/IMG_9220.jpg'] },
-        { name: 'Bohemian French Curl', slug: 'bohemian-french-curl', image: '/Gallery/Box-Braids /Bohemian french curl/IMG_9190.jpg', images: ['/Gallery/Box-Braids /Bohemian french curl/IMG_9190.jpg', '/Gallery/Box-Braids /Bohemian french curl/IMG_9191.jpg', '/Gallery/Box-Braids /Bohemian french curl/IMG_9199.jpg'] },
-        { name: 'French Curls', slug: 'french-curls', image: '/Gallery/Box-Braids /French curls/IMG_7654.JPEG', images: ['/Gallery/Box-Braids /French curls/IMG_7654.JPEG'] },
-        { name: 'Bohemian', slug: 'bohemian', image: '/Gallery/Box-Braids /Bohemian/IMG_9207.jpg', images: ['/Gallery/Box-Braids /Bohemian/IMG_9207.jpg', '/Gallery/Box-Braids /Bohemian/IMG_9208.jpg', '/Gallery/Box-Braids /Bohemian/IMG_9213.jpg', '/Gallery/Box-Braids /Bohemian/IMG_9214.jpg', '/Gallery/Box-Braids /Bohemian/IMG_9216.jpg'] },
-        { name: 'Bora Bora', slug: 'bora-bora', image: '/Gallery/Box-Braids /bora bora/IMG_9180.jpg', images: ['/Gallery/Box-Braids /bora bora/IMG_9180.jpg', '/Gallery/Box-Braids /bora bora/IMG_9181.jpg', '/Gallery/Box-Braids /bora bora/IMG_9189.jpg', '/Gallery/Box-Braids /bora bora/IMG_9190.jpg', '/Gallery/Box-Braids /bora bora/IMG_9191.jpg'] },
-      ],
-    },
-    {
-      title: 'Conrows',
-      image: '/Gallery/Conrows/IMG_9321.jpg',
-      link: '/conrows',
-      tags: ['Braids', 'Protective Styles'],
-      subcategoryData: [
-        { name: 'Feedin Conrows', slug: 'feedin-conrows', image: '/Gallery/Conrows/Feedin Conrows/IMG_9325.jpg', images: ['/Gallery/Conrows/Feedin Conrows/IMG_9325.jpg', '/Gallery/Conrows/Feedin Conrows/IMG_9324.jpg', '/Gallery/Conrows/Feedin Conrows/IMG_9323.jpg', '/Gallery/Conrows/Feedin Conrows/IMG_0112.JPG', '/Gallery/Conrows/Feedin Conrows/IMG_9304.jpg', '/Gallery/Conrows/Feedin Conrows/IMG_9305.jpg', '/Gallery/Conrows/Feedin Conrows/IMG_9310.jpg', '/Gallery/Conrows/Feedin Conrows/IMG_9311.jpg', '/Gallery/Conrows/Feedin Conrows/IMG_9312.jpg'] },
-        { name: 'Flip-Over Conrows', slug: 'flip-over-conrows', image: '/Gallery/Conrows/Flip-Over Conrows/IMG_9316.jpg', images: ['/Gallery/Conrows/Flip-Over Conrows/IMG_9316.jpg', '/Gallery/Conrows/Flip-Over Conrows/IMG_9317.jpg'] },
-        { name: 'Half-Half Conrows', slug: 'half-half-conrows', image: '/Gallery/Conrows/Half-Half Conrows/IMG_9303.jpg', images: ['/Gallery/Conrows/Half-Half Conrows/IMG_9303.jpg', '/Gallery/Conrows/Half-Half Conrows/IMG_9306.jpg', '/Gallery/Conrows/Half-Half Conrows/IMG_9307.jpg', '/Gallery/Conrows/Half-Half Conrows/IMG_9320.jpg', '/Gallery/Conrows/Half-Half Conrows/IMG_9321.jpg', '/Gallery/Conrows/Half-Half Conrows/IMG.JPEG'] },
-        { name: 'Straight Back', slug: 'straight-back', image: '/Gallery/Conrows/Straight Back/IMG_1593.JPG', images: ['/Gallery/Conrows/Straight Back/IMG_1593.JPG', '/Gallery/Conrows/Straight Back/IMG_9299.jpg', '/Gallery/Conrows/Straight Back/IMG_9300.jpg', '/Gallery/Conrows/Straight Back/IMG_9301.jpg'] },
-        { name: 'Updo Ponytail', slug: 'updo-ponytail', image: '/Gallery/Conrows/Updo Ponytail/IMG_9297.JPG', images: ['/Gallery/Conrows/Updo Ponytail/IMG_2688.JPG', '/Gallery/Conrows/Updo Ponytail/IMG_1296.JPG', '/Gallery/Conrows/Updo Ponytail/IMG_1556.JPG', '/Gallery/Conrows/Updo Ponytail/IMG_1570.JPG', '/Gallery/Conrows/Updo Ponytail/IMG_1594.JPG', '/Gallery/Conrows/Updo Ponytail/IMG_9295.jpg', '/Gallery/Conrows/Updo Ponytail/IMG_9296.jpg', '/Gallery/Conrows/Updo Ponytail/IMG_9297.jpg', '/Gallery/Conrows/Updo Ponytail/IMG_9308.jpg', '/Gallery/Conrows/Updo Ponytail/IMG_9309.jpg'] },
-      ],
-    },
-    {
-      title: 'Miracle Knots',
-      image: '/Gallery/Miracle-knots/Miracle-weaves/IMG_9365.jpg',
-      link: '/miracle-knots',
-      tags: ['Braids', 'Protective Styles'],
-      subcategoryData: [
-        { name: 'Miracle Weaves', slug: 'miracle-weaves', image: '/Gallery/Miracle-knots/Miracle-weaves/IMG_9365.jpg', images: ['/Gallery/Miracle-knots/Miracle-weaves/IMG_9365.jpg', '/Gallery/Miracle-knots/Miracle-weaves/IMG_9362.jpg'] },
-        { name: 'Magic Knots', slug: 'magic-knots', image: '/Gallery/Miracle-knots/Magic-knots/IMG_9355.jpg', images: ['/Gallery/Miracle-knots/Magic-knots/IMG_9355.jpg', '/Gallery/Miracle-knots/Magic-knots/IMG_9356.jpg', '/Gallery/Miracle-knots/Magic-knots/IMG_9354.jpg', '/Gallery/Miracle-knots/Magic-knots/IMG_9353.jpg'] },
-      ],
-    },
-    {
-      title: 'Crochets',
-      image: '/Gallery/Crochets/Single/IMG_9381.jpg',
-      link: '/crochets',
-      tags: ['Crochet', 'Protective Styles'],
-      subcategoryData: [
-        { name: 'Single', slug: 'single', image: '/Gallery/Crochets/Single/IMG_9381.jpg', images: ['/Gallery/Crochets/Single/IMG_9381.jpg', '/Gallery/Crochets/Single/IMG_9380.jpg', '/Gallery/Crochets/Single/IMG_9382.jpg'] },
-        { name: 'Pre-Braided', slug: 'pre-braided', image: '/Gallery/Crochets/pre-braided/IMG_9367.jpg', images: ['/Gallery/Crochets/pre-braided/IMG_9367.jpg', '/Gallery/Crochets/pre-braided/IMG_9372.jpg', '/Gallery/Crochets/pre-braided/IMG_9373.jpg', '/Gallery/Crochets/pre-braided/IMG_9374.jpg'] },
-        { name: 'Loose Hair', slug: 'loose-hair', image: '/Gallery/Crochets/Loose hair/IMG_9366.jpg', images: ['/Gallery/Crochets/Loose hair/IMG_9366.jpg'] },
-        { name: 'Pre-Twisted', slug: 'pre-twisted', image: '/Gallery/Crochets/pre-twisted/IMG_9375.jpg', images: ['/Gallery/Crochets/pre-twisted/IMG_9375.jpg'] },
-        { name: 'Half & Half Crochet with Braids', slug: 'half-half-crochet-braids', image: '/Gallery/Crochets/half&half crochet with braids/IMG_9383.jpg', images: ['/Gallery/Crochets/half&half crochet with braids/IMG_9383.jpg', '/Gallery/Crochets/half&half crochet with braids/IMG_9384.jpg'] },
-      ],
-    },
-    {
-      title: 'Locs',
-      image: '/Gallery/Locs/Butterfly/IMG_9387.jpg',
-      link: '/locs',
-      tags: ['Locs', 'Protective Styles'],
-      subcategoryData: [
-        { name: 'Butterfly', slug: 'butterfly', image: '/Gallery/Locs/Butterfly/IMG_9387.jpg', images: ['/Gallery/Locs/Butterfly/IMG_9387.jpg'] },
-        { name: 'Soft', slug: 'soft', image: '/Gallery/Locs/Soft/IMG_9385.jpg', images: ['/Gallery/Locs/Soft/IMG_9385.jpg', '/Gallery/Locs/Soft/IMG_9386.jpg'] },
-      ],
-    },
-    {
-      title: 'Men',
-      image: '/Gallery/Men/2-stranded-twist/IMG_0133.JPG',
-      link: '/men',
-      tags: ['Twists', 'Braids', 'Protective Styles'],
-      images: ['/Gallery/Men/2-stranded-twist/IMG_0133.JPG', '/Gallery/Men/Conrows/IMG_9419.jpg'],
-      subcategoryData: [
-        { name: '2-Stranded Twist', slug: '2-stranded-twist', image: '/Gallery/Men/2-stranded-twist/IMG_0133.JPG', images: ['/Gallery/Men/2-stranded-twist/IMG_0133.JPG', '/Gallery/Men/2-stranded-twist/IMG_9450.jpg'] },
-        { name: 'Conrows', slug: 'conrows', image: '/Gallery/Men/Conrows/IMG_9419.jpg', images: ['/Gallery/Men/Conrows/IMG_9419.jpg', '/Gallery/Men/Conrows/IMG_9444.jpg', '/Gallery/Men/Conrows/IMG_9445.jpg', '/Gallery/Men/Conrows/IMG_9446.jpg', '/Gallery/Men/Conrows/IMG_9447.jpg'] },
-      ],
-    },
-  ];
 
   const getDisplayItems = () => {
     // If subcategories are selected via checkboxes, show only those
@@ -599,6 +507,8 @@ export default function GalleryPage({
                               <img
                                 src={currentImage}
                                 alt={item.title}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 style={{ backfaceVisibility: 'hidden' }}
                               />
