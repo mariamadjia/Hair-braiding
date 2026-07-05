@@ -40,7 +40,11 @@ export function GalleryAdminNew() {
 
             const [imagesData, categoriesResponse] = await Promise.all([
                 galleryApi.getAllImages(),
-                fetch(`${API_BASE_URL}/api/categories/gallery-cards`)
+                fetch(`${API_BASE_URL}/api/categories/gallery-cards`, {
+                    headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                })
             ]);
 
             if (!categoriesResponse.ok) {
