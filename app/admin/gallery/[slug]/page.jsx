@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ChevronLeft, Edit, Trash2, Plus } from 'lucide-react';
+import { API_BASE_URL } from "@/lib/config/api";
 import { EditSubcategoryModal } from '../../components/EditSubcategoryModal';
 import { CreateSubcategoryModal } from '../../components/CreateSubcategoryModal';
 
@@ -24,12 +25,12 @@ export default function AdminCategoryDetailPage() {
     const loadCategoryData = async () => {
         try {
             // Fetch category by slug (includes subcategories)
-            const categoryRes = await fetch(`http://localhost:8080/api/categories/slug/${params.slug}`);
+            const categoryRes = await fetch(`${API_BASE_URL}/api/categories/slug/${params.slug}`);
             const categoryData = await categoryRes.json();
             setCategory(categoryData);
 
             // Fetch all gallery images
-            const imagesRes = await fetch('http://localhost:8080/api/gallery');
+            const imagesRes = await fetch(`${API_BASE_URL}/api/gallery`);
             const allImages = await imagesRes.json();
 
             // Filter images for this category
@@ -78,7 +79,7 @@ export default function AdminCategoryDetailPage() {
             const token = localStorage.getItem('auth_token');
             
             // Create subcategory
-            const response = await fetch('http://localhost:8080/api/subcategories', {
+            const response = await fetch(`${API_BASE_URL}/api/subcategories`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -128,7 +129,7 @@ export default function AdminCategoryDetailPage() {
             
             // Update display order for all subcategories
             for (let i = 0; i < subcategories.length; i++) {
-                await fetch(`http://localhost:8080/api/subcategories/${subcategories[i].id}`, {
+                await fetch(`${API_BASE_URL}/api/subcategories/${subcategories[i].id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -149,7 +150,7 @@ export default function AdminCategoryDetailPage() {
             const token = localStorage.getItem('auth_token');
             
             // Update subcategory name
-            const updateResponse = await fetch(`http://localhost:8080/api/subcategories/${editingSubcategory.id}`, {
+            const updateResponse = await fetch(`${API_BASE_URL}/api/subcategories/${editingSubcategory.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -164,7 +165,7 @@ export default function AdminCategoryDetailPage() {
 
             // Delete removed images
             for (const imageId of deletedImageIds) {
-                await fetch(`http://localhost:8080/api/gallery/${imageId}`, {
+                await fetch(`${API_BASE_URL}/api/gallery/${imageId}`, {
                     method: 'DELETE',
                     headers: {
                         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -174,7 +175,7 @@ export default function AdminCategoryDetailPage() {
 
             // Update image display orders
             for (let i = 0; i < imageIds.length; i++) {
-                await fetch(`http://localhost:8080/api/gallery/${imageIds[i]}`, {
+                await fetch(`${API_BASE_URL}/api/gallery/${imageIds[i]}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -262,7 +263,7 @@ export default function AdminCategoryDetailPage() {
                                         if (confirm(`Delete ${subcategory.name}? This will also delete all associated images.`)) {
                                             try {
                                                 const token = localStorage.getItem('auth_token');
-                                                const response = await fetch(`http://localhost:8080/api/subcategories/${subcategory.id}`, {
+                                                const response = await fetch(`${API_BASE_URL}/api/subcategories/${subcategory.id}`, {
                                                     method: 'DELETE',
                                                     headers: {
                                                         ...(token ? { Authorization: `Bearer ${token}` } : {}),
