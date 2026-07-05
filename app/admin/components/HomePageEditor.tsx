@@ -466,10 +466,15 @@ export function HomePageEditor() {
 
       if (res.ok) {
         const data = await res.json();
-        const videoUrl = data.url || data.path || data.videoPath;
-        // Only update temporary state, not actual welcomeItems
-        setTempWelcomeItemSrc(videoUrl);
-        // Increment timestamp to force video reload
+
+        const rawVideoUrl = data.url || data.path || data.videoPath;
+        const resolvedVideoUrl = resolveMediaUrl(rawVideoUrl);
+
+        if (!resolvedVideoUrl) {
+          throw new Error("No usable video URL returned from upload");
+        }
+
+        setTempWelcomeItemSrc(resolvedVideoUrl);
         setVideoTimestamp(Date.now());
       } else {
         throw new Error(`Upload failed: ${res.status}`);
