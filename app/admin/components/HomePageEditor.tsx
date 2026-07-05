@@ -125,37 +125,53 @@ export function HomePageEditor() {
 
   const loadHeroImages = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/homepage-settings`);
+      console.log("Admin API_BASE_URL:", API_BASE_URL);
+
+      const res = await fetch(`${API_BASE_URL}/api/gallery?isHero=true`);
+
+      console.log("Admin hero response status:", res.status);
+
       if (res.ok) {
         const data = await res.json();
-        if (data.heroImages) {
-          const images = JSON.parse(data.heroImages);
-          // Convert Gallery paths to new image serving endpoint
-          const convertedImages = images.map((imageUrl: string) => {
-            // Handle proxy-image format
-            if (imageUrl.includes('/api/proxy-image?url=')) {
-              const urlParam = imageUrl.split('url=')[1];
-              const decodedUrl = decodeURIComponent(urlParam);
-              if (decodedUrl.startsWith('/Gallery/uploads/')) {
-                const filename = decodedUrl.split('/').pop();
-                return `${API_BASE_URL}/api/gallery/image/${filename}`;
-              }
-              return decodedUrl;
-            }
-            // Handle direct Gallery paths
-            if (imageUrl.startsWith('/Gallery/uploads/')) {
-              const filename = imageUrl.split('/').pop();
-              return `${API_BASE_URL}/api/gallery/image/${filename}`;
-            } else if (imageUrl.startsWith('/')) {
+
+        console.log("Admin hero API data:", data);
+        console.log("Admin hero API count:", Array.isArray(data) ? data.length : 0);
+
+        if (Array.isArray(data) && data.length > 0) {
+          const convertedImages = data.map((image: any) => {
+            const imageUrl = image.imageUrl;
+
+            if (!imageUrl) return "";
+
+            if (imageUrl.startsWith("/api/gallery/image/")) {
               return `${API_BASE_URL}${imageUrl}`;
             }
+
+            if (imageUrl.startsWith("/Gallery/uploads/")) {
+              const filename = imageUrl.split("/").filter(Boolean).pop();
+
+              return filename
+                ? `${API_BASE_URL}/api/gallery/image/${encodeURIComponent(filename)}`
+                : "";
+            }
+
+            if (imageUrl.startsWith("/")) {
+              return `${API_BASE_URL}${imageUrl}`;
+            }
+
             return imageUrl;
-          });
+          }).filter(Boolean);
+
+          console.log("Converted Hero images:", convertedImages);
+          console.log("Converted Hero image count:", convertedImages.length);
+
           setHeroImages(convertedImages);
+        } else {
+          setHeroImages([]);
         }
       }
     } catch (error) {
-      console.error('Failed to load hero images:', error);
+      console.error("Failed to load hero images:", error);
     } finally {
       setLoading(false);
     }
@@ -302,62 +318,14 @@ export function HomePageEditor() {
       });
       
       if (res.ok) {
-        const data = await res.json();
-        const imageUrl = data.path || data.imageUrl || data.url;
-
-        if (!imageUrl) {
-          throw new Error('No image URL returned from upload');
-        }
-
-        // Convert to proxy URL for proper authentication
-        let displayUrl;
-        if (imageUrl.startsWith('/Gallery/uploads/')) {
-          const filename = imageUrl.split('/').pop();
-          displayUrl = `/api/proxy-image?url=${encodeURIComponent(`${API_BASE_URL}/api/gallery/image/${filename}`)}`;
-        } else if (imageUrl.startsWith(API_BASE_URL)) {
-          displayUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
-        } else {
-          displayUrl = imageUrl;
-        }
-
-        // Add the new image to heroImages array
-        const updatedImages = [...heroImages, displayUrl];
-        setHeroImages(updatedImages);
-
-        // Convert proxy URLs back to Gallery paths for saving
-        const galleryPaths = updatedImages.map((url) => {
-          if (url.includes('/api/proxy-image?url=')) {
-            const urlParam = url.split('url=')[1];
-            const decodedUrl = decodeURIComponent(urlParam);
-            if (decodedUrl.includes('/api/gallery/image/')) {
-              const filename = decodedUrl.split('/').pop();
-              return `/Gallery/uploads/${filename}`;
-            }
-            return decodedUrl;
-          }
-          return url;
-        });
-
-        // Save to backend with all images
-        const settingsRes = await fetch(`${API_BASE_URL}/api/homepage-settings/hero-images`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ heroImages: JSON.stringify(galleryPaths) }),
-        });
-        
-        if (!settingsRes.ok) {
-          // Rollback local state if backend update fails
-          setHeroImages(heroImages);
-          throw new Error('Failed to update homepage settings');
-        }
-        
-        alert('Hero image uploaded successfully!');
+        await loadHeroImages();
+        alert("Hero image uploaded successfully!");
       } else {
-        const error = await res.json().catch(() => ({ error: 'Upload failed' }));
-        alert(error.error || 'Failed to upload image');
+        const error = await res.json().catch(() => ({
+          error: "Upload failed",
+        }));
+
+        alert(error.error || "Failed to upload image");
       }
     } catch (error) {
       console.error('Failed to upload image:', error);

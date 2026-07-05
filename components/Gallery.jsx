@@ -166,8 +166,6 @@ export default function Gallery() {
                           alt={`${item.title} ${currentIndex + 1}`}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           style={{ backfaceVisibility: 'hidden' }}
-                          loading="lazy"
-                          decoding="async"
                           onError={(e) => {
                             console.error('Image load error:', item.images[currentIndex]);
                             console.error('Image source:', e.currentTarget.src);
