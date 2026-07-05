@@ -68,9 +68,7 @@ export function GalleryAdminNew() {
                 const rawCardImages =
                     manualImages.length > 0
                         ? manualImages
-                        : fallbackImages.length > 0
-                            ? fallbackImages
-                            : categoryImages.slice(0, 5).map((img: GalleryImage) => img.imageUrl);
+                        : categoryImages.slice(0, 5).map((img: GalleryImage) => img.imageUrl);
 
                 const firstImageUrl =
                     rawCardImages[0] ||
