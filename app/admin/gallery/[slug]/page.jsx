@@ -250,7 +250,7 @@ export default function AdminCategoryDetailPage() {
                                 {category.name}
                             </h1>
                             <p className="text-neutral-600 dark:text-neutral-400 mt-2">
-                                {subcategories.length} subcategories • {images.length} images
+                                {subcategories.length} subcategories • {images.length} uploaded Gallery images
                             </p>
                         </div>
                         
@@ -319,17 +319,26 @@ export default function AdminCategoryDetailPage() {
                             {/* Subcategory Card */}
                             <div className="border-2 border-black dark:border-neutral-600 p-4 mb-3 hover:border-neutral-600 dark:hover:border-neutral-400 transition-colors">
                                 <div className="aspect-[4/5] bg-neutral-200 overflow-hidden">
-                                    {subcategory.images[0] ? (
-                                        <img
-                                            src={subcategory.images[0].imageUrl}
-                                            alt={subcategory.name}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-neutral-400">
-                                            No images
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const cardImageUrl =
+                                            subcategory.images?.[0]?.imageUrl ||
+                                            subcategory.image ||
+                                            "";
+
+                                        return cardImageUrl ? (
+                                            <img
+                                                src={cardImageUrl}
+                                                alt={subcategory.name}
+                                                loading="lazy"
+                                                decoding="async"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-neutral-400">
+                                                No images
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
 
@@ -339,7 +348,7 @@ export default function AdminCategoryDetailPage() {
                                     {subcategory.name}
                                 </h3>
                                 <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-4">
-                                    {subcategory.images.length} images
+                                    {subcategory.images?.length || (subcategory.image ? 1 : 0)} images
                                 </p>
                                 
                                 <button
