@@ -136,7 +136,12 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
                         </p>
                     </div>
                     
-                    <MultiImageUploader images={images} token={token} onChange={(urls) => { setImages(urls); setDirty(true); }} />
+                    <MultiImageUploader
+                        images={images}
+                        token={token}
+                        categoryId={cat.id}
+                        onChange={(urls: string[]) => { setImages(urls); setDirty(true); }}
+                    />
                     
                     {/* Status Indicator */}
                     <div className="mt-3">

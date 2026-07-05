@@ -6,7 +6,21 @@ import { inp, lbl, btnP, btnS } from "../constants";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { LengthOptionsEditor } from "./LengthOptionsEditor";
 
-export function ItemForm({ initial, token, onSave, onCancel }: { initial: BookingItem; token: string; onSave: (item: BookingItem) => void; onCancel: () => void }) {
+export function ItemForm({
+  initial,
+  token,
+  categoryId,
+  subcategoryId,
+  onSave,
+  onCancel,
+}: {
+  initial: BookingItem;
+  token: string;
+  categoryId?: number;
+  subcategoryId?: number;
+  onSave: (item: BookingItem) => void;
+  onCancel: () => void;
+}) {
     const [item, setItem] = useState<BookingItem>(initial);
     const set = (field: keyof BookingItem, val: unknown) => setItem((prev) => ({ ...prev, [field]: val }));
 
@@ -16,7 +30,13 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
     return (
         <div className="border border-neutral-200 rounded-sm p-3 space-y-2.5 bg-neutral-50">
             <div><label className={lbl}>Size *</label><input className={inp} value={item.name} onChange={(e) => set("name", e.target.value)} /></div>
-            <MultiImageUploader images={allImages} token={token} onChange={setImages} />
+            <MultiImageUploader
+                images={allImages}
+                token={token}
+                categoryId={categoryId}
+                subcategoryId={subcategoryId}
+                onChange={setImages}
+            />
             <LengthOptionsEditor options={item.lengthOptions ?? []} onChange={(opts) => set("lengthOptions", opts)} />
             <div className="flex gap-2 pt-1">
                 <button type="button" onClick={() => {

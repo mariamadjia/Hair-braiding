@@ -16,16 +16,32 @@ export function emptyLengthOption(): LengthOption {
     return { name: "", price: "$", notes: "$50.00 deposit required" };
 }
 
-export async function uploadFile(file: File, token: string): Promise<string> {
-    try {
-        const result = await galleryApi.uploadImage({
-            file,
-            title: file.name,
-        });
-        // Convert backend URL to proxy URL for proper authentication
-        return toProxyUrl(result.imageUrl);
-    } catch (error) {
-        console.error('Upload failed:', error);
-        throw new Error(error instanceof Error ? error.message : "Upload failed");
-    }
+type GalleryImageRelationship = {
+  categoryId?: number;
+  subcategoryId?: number;
+  serviceItemId?: number;
+};
+
+export async function uploadFile(
+  file: File,
+  token: string,
+  relationship: GalleryImageRelationship = {}
+): Promise<string> {
+  try {
+    const result = await galleryApi.uploadImage({
+      file,
+      title: file.name,
+      categoryId: relationship.categoryId,
+      subcategoryId: relationship.subcategoryId,
+      serviceItemId: relationship.serviceItemId,
+    });
+
+    return toProxyUrl(result.imageUrl);
+  } catch (error) {
+    console.error("Upload failed:", error);
+
+    throw new Error(
+      error instanceof Error ? error.message : "Upload failed"
+    );
+  }
 }

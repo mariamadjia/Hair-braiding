@@ -22,7 +22,7 @@ export function FlippingImagesModal({ category, allCategoryImages, onClose, onSa
     const [showImagePicker, setShowImagePicker] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    const MIN_IMAGES = 2;
+    const MIN_IMAGES = 3;
     const MAX_IMAGES = 5;
 
     const handleDragStart = (index: number) => {

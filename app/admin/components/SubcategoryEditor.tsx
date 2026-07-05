@@ -6,8 +6,7 @@ import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { emptyItem } from "../utils";
 import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
-import { ImageUploader } from "./ImageUploader";
-import { MultiImageUploader } from "./MultiImageUploader";
+import { toProxyUrl } from "@/lib/utils/image";
 import { ItemForm } from "./ItemForm";
 import { ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -65,9 +64,10 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 if (response.ok) {
                     const allImages = await response.json();
                     // Filter images that belong to this category and subcategory
-                    const filtered = allImages.filter((img: GalleryImage) => 
-                        img.categoryId === cat.id && 
-                        img.subcategoryName?.toLowerCase() === sub.name.toLowerCase()
+                    const filtered = allImages.filter(
+                        (img: GalleryImage) =>
+                            img.categoryId === cat.id &&
+                            img.subcategoryId === sub.id
                     );
                     setGalleryImages(filtered);
                     
@@ -122,9 +122,10 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             const galleryResponse = await fetch(`${API_BASE_URL}/api/gallery`);
             if (galleryResponse.ok) {
                 const allImages = await galleryResponse.json();
-                const filtered = allImages.filter((img: any) => 
-                    img.categoryId === cat.id && 
-                    img.subcategoryName?.toLowerCase() === sub.name.toLowerCase()
+                const filtered = allImages.filter(
+                    (img: any) =>
+                        img.categoryId === cat.id &&
+                        img.subcategoryId === sub.id
                 );
                 setGalleryImages(filtered);
             }
@@ -158,9 +159,10 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             const galleryResponse = await fetch(`${API_BASE_URL}/api/gallery`);
             if (galleryResponse.ok) {
                 const allImages = await galleryResponse.json();
-                const filtered = allImages.filter((img: any) => 
-                    img.categoryId === cat.id && 
-                    img.subcategoryName?.toLowerCase() === sub.name.toLowerCase()
+                const filtered = allImages.filter(
+                    (img: any) =>
+                        img.categoryId === cat.id &&
+                        img.subcategoryId === sub.id
                 );
                 setGalleryImages(filtered);
             }
@@ -274,9 +276,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                 <div className="flex gap-2 overflow-x-auto pb-2">
                                     {galleryImages.map((img) => (
                                         <div key={img.id} className="relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border-2 border-neutral-200 dark:border-neutral-700 group">
-                                            <img 
-                                                src={img.imageUrl} 
-                                                alt={img.title || 'Gallery image'} 
+                                            <img
+                                                src={toProxyUrl(img.imageUrl)}
+                                                alt={img.title || "Gallery image"}
                                                 className="w-full h-full object-cover"
                                             />
                                             <button
@@ -340,7 +342,14 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
                     {addingItem && (
                         <div className="mb-4">
-                            <ItemForm initial={emptyItem()} token={token} onSave={(item) => saveItem(item, null)} onCancel={() => setAddingItem(false)} />
+                            <ItemForm
+                                initial={emptyItem()}
+                                token={token}
+                                categoryId={cat.id}
+                                subcategoryId={sub.id}
+                                onSave={(item) => saveItem(item, null)}
+                                onCancel={() => setAddingItem(false)}
+                            />
                         </div>
                     )}
 
@@ -348,7 +357,14 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                     {sortItemsBySize(sub.items).map(({ item, originalIdx }) => (
                         <div key={originalIdx}>
                             {editingIdx === originalIdx ? (
-                                <ItemForm initial={item} token={token} onSave={(updated) => saveItem(updated, originalIdx)} onCancel={() => setEditingIdx(null)} />
+                                <ItemForm
+                                    initial={item}
+                                    token={token}
+                                    categoryId={cat.id}
+                                    subcategoryId={sub.id}
+                                    onSave={(updated) => saveItem(updated, originalIdx)}
+                                    onCancel={() => setEditingIdx(null)}
+                                />
                             ) : (
                                 <div className="rounded-xl border-2 border-neutral-200 dark:border-neutral-700 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-900 dark:to-neutral-800 overflow-hidden shadow-md hover:shadow-xl transition-all">
                                     <div className="group flex items-center gap-4 p-5 hover:bg-white dark:hover:bg-neutral-900 transition-colors">

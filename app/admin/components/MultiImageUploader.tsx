@@ -4,7 +4,21 @@ import { useState } from "react";
 import { lbl, btnS } from "../constants";
 import { uploadFile } from "../utils";
 
-export function MultiImageUploader({ images, token, onChange }: { images: string[]; token: string; onChange: (urls: string[]) => void }) {
+export function MultiImageUploader({
+  images,
+  token,
+  categoryId,
+  subcategoryId,
+  serviceItemId,
+  onChange,
+}: {
+  images: string[];
+  token: string;
+  categoryId?: number;
+  subcategoryId?: number;
+  serviceItemId?: number;
+  onChange: (urls: string[]) => void;
+}) {
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState("");
 
@@ -13,7 +27,15 @@ export function MultiImageUploader({ images, token, onChange }: { images: string
         if (!files.length) return;
         setUploading(true); setError("");
         try {
-            const urls = await Promise.all(files.map((f) => uploadFile(f, token)));
+            const urls = await Promise.all(
+                files.map((file) =>
+                    uploadFile(file, token, {
+                        categoryId,
+                        subcategoryId,
+                        serviceItemId,
+                    })
+                )
+            );
             onChange([...images, ...urls]);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Upload failed");

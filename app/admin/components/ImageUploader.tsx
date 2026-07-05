@@ -4,7 +4,21 @@ import { useState } from "react";
 import { lbl, btnS } from "../constants";
 import { uploadFile } from "../utils";
 
-export function ImageUploader({ value, token, onChange }: { value?: string; token: string; onChange: (url: string) => void }) {
+export function ImageUploader({
+  value,
+  token,
+  categoryId,
+  subcategoryId,
+  serviceItemId,
+  onChange,
+}: {
+  value?: string;
+  token: string;
+  categoryId?: number;
+  subcategoryId?: number;
+  serviceItemId?: number;
+  onChange: (url: string) => void;
+}) {
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState("");
 
@@ -12,7 +26,15 @@ export function ImageUploader({ value, token, onChange }: { value?: string; toke
         const file = e.target.files?.[0];
         if (!file) return;
         setUploading(true); setError("");
-        try { onChange(await uploadFile(file, token)); }
+        try {
+            onChange(
+                await uploadFile(file, token, {
+                    categoryId,
+                    subcategoryId,
+                    serviceItemId,
+                })
+            );
+        }
         catch (err: unknown) { setError(err instanceof Error ? err.message : "Upload failed"); }
         finally { setUploading(false); }
     };
