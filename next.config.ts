@@ -26,10 +26,6 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/Gallery/:path*',
-        destination: `${API_URL}/Gallery/:path*`,
-      },
-      {
         source: '/api/gallery/image/:path*',
         destination: `${API_URL}/api/gallery/image/:path*`,
       },
