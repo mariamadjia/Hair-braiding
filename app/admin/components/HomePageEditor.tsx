@@ -64,6 +64,33 @@ export function HomePageEditor() {
     return null;
   };
 
+  // Helper function to convert media URLs to backend URLs
+  const getMediaUrl = (url?: string | null) => {
+    if (!url) return "";
+
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+
+    if (url.startsWith("/api/gallery/image/")) {
+      return `${API_BASE_URL}${url}`;
+    }
+
+    if (url.startsWith("/Gallery/uploads/")) {
+      const filename = url.split("/").filter(Boolean).pop();
+
+      return filename
+        ? `${API_BASE_URL}/api/gallery/image/${encodeURIComponent(filename)}`
+        : "";
+    }
+
+    if (url.startsWith("/")) {
+      return `${API_BASE_URL}${url}`;
+    }
+
+    return url;
+  };
+
   // Automatic flipping for collections
   useEffect(() => {
     const interval = setInterval(() => {
@@ -201,6 +228,12 @@ export function HomePageEditor() {
           if (items.length > 0) {
             setWelcomeItems(items);
           }
+        }
+        if (data.heroVideoSrc) {
+          setHeroVideoSrc(getMediaUrl(data.heroVideoSrc));
+        }
+        if (data.useHeroVideo !== undefined) {
+          setUseHeroVideo(Boolean(data.useHeroVideo));
         }
       }
     } catch (error) {
