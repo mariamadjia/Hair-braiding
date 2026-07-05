@@ -414,28 +414,54 @@ export function HomePageEditor() {
     }
   };
 
-  const handleFooterVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFooterVideoUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
+
     if (!file) return;
 
     setFooterVideoUploading(true);
+
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     try {
-      const res = await fetch('/api/upload-welcome-video', {
-        method: 'POST',
+      const token = getAuthToken();
+
+      const headers: HeadersInit = {};
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      // Upload directly to Render, not through Vercel.
+      const res = await fetch(`${API_BASE_URL}/api/upload/welcome-video`, {
+        method: "POST",
+        headers,
         body: formData,
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        const videoUrl = data.url || data.path;
-        setFooterVideoSrc(videoUrl);
+      if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || `Upload failed: ${res.status}`);
       }
+
+      const data = await res.json();
+
+      const rawVideoUrl = data.url || data.path || data.videoPath;
+      const resolvedVideoUrl = resolveMediaUrl(rawVideoUrl);
+
+      if (!resolvedVideoUrl) {
+        throw new Error("No usable video URL returned from upload");
+      }
+
+      setFooterVideoSrc(resolvedVideoUrl);
+
+      alert("Footer video uploaded successfully.");
     } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload video');
+      console.error("Footer video upload failed:", error);
+      alert("Footer video upload failed.");
     } finally {
       setFooterVideoUploading(false);
     }
