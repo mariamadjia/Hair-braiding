@@ -1,67 +1,101 @@
-import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const BACKEND_API_URL = (
+  process.env.BACKEND_API_URL || "http://localhost:8080"
+).replace(/\/$/, "");
 
-// Default fallback images - these will show when backend is down
+const MAX_HERO_IMAGES = 5;
 
+function toPublicHeroImageUrl(imageUrl?: string): string | null {
+  if (!imageUrl) return null;
+
+  // Already a full URL
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    return imageUrl;
+  }
+
+  // New database format:
+  // /api/gallery/image/filename.jpg
+  if (imageUrl.startsWith("/api/gallery/image/")) {
+    return `${BACKEND_API_URL}${imageUrl}`;
+  }
+
+  // Old database format:
+  // /Gallery/uploads/filename.jpg
+  const filename = imageUrl.split("/").filter(Boolean).pop();
+
+  if (!filename) {
+    return null;
+  }
+
+  return `${BACKEND_API_URL}/api/gallery/image/${encodeURIComponent(filename)}`;
+}
 
 export async function GET() {
   try {
-    // First, try to get hero images from gallery endpoint
     let backendAvailable = false;
-    let backendImages: string[] = [];
-    
+
     try {
-      const backendRes = await fetch(`${API_BASE_URL}/api/gallery?isHero=true`, {
-        cache: 'no-store' // Don't cache - always get fresh data
-      });
-      
+      const backendRes = await fetch(
+        `${BACKEND_API_URL}/api/gallery?isHero=true`,
+        { cache: "no-store" }
+      );
+
       if (backendRes.ok) {
         backendAvailable = true;
+
         const data = await backendRes.json();
-        
-        // Extract imageUrl from gallery items and convert to proxy endpoint
+
         if (Array.isArray(data) && data.length > 0) {
-          backendImages = data.map((item: any) => {
-            const imageUrl = item.imageUrl;
-            // Use proxy endpoint to handle authentication
-            if (imageUrl) {
-              return `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
-            }
-            return imageUrl;
+          const images = data
+            .map((item: { imageUrl?: string }) =>
+              toPublicHeroImageUrl(item.imageUrl)
+            )
+            .filter((url: string | null): url is string => Boolean(url))
+            .slice(0, MAX_HERO_IMAGES);
+
+          return NextResponse.json({
+            images,
+            source: "backend",
           });
-          return NextResponse.json({ images: backendImages, source: 'backend' });
         }
       }
-    } catch (backendError) {
-      console.log('Backend unavailable, falling back to filesystem');
+    } catch (error) {
+      console.error("Backend unavailable:", error);
     }
 
-    // Fallback: Use filesystem images when:
-    // 1. Backend is DOWN, OR
-    // 2. Backend is UP but has no images configured (empty array)
-    const heroDirectory = path.join(process.cwd(), 'public', 'hero');
+    // Local fallback images
+    const heroDirectory = path.join(process.cwd(), "public", "hero");
+
     if (fs.existsSync(heroDirectory)) {
       const files = fs.readdirSync(heroDirectory);
-      const imageFiles = files.filter(file => 
-        /\.(jpg|jpeg|png|gif|webp)$/i.test(file)
-      );
-      
+
+      const imageFiles = files
+        .filter((file) => /\.(jpg|jpeg|png|gif|webp)$/i.test(file))
+        .slice(0, MAX_HERO_IMAGES);
+
       if (imageFiles.length > 0) {
-        const imagePaths = imageFiles.map(file => `/hero/${file}`);
-        return NextResponse.json({ 
-          images: imagePaths, 
-          source: backendAvailable ? 'filesystem-fallback' : 'filesystem' 
+        return NextResponse.json({
+          images: imageFiles.map((file) => `/hero/${file}`),
+          source: backendAvailable
+            ? "filesystem-fallback"
+            : "filesystem",
         });
       }
     }
 
-    // Final fallback: Return empty array if no images found
-    return NextResponse.json({ images: [], source: 'none' });
+    return NextResponse.json({
+      images: [],
+      source: "none",
+    });
   } catch (error) {
-    console.error('Error reading hero images:', error);
-    return NextResponse.json({ images: [], source: 'error' });
+    console.error("Error reading hero images:", error);
+
+    return NextResponse.json({
+      images: [],
+      source: "error",
+    });
   }
 }
