@@ -330,6 +330,9 @@ export function GalleryAdminNew() {
                                     </h3>
                                     
                                     <button
+                                        onMouseEnter={() => {
+                                            router.prefetch(`/admin/gallery/${category.slug}`);
+                                        }}
                                         onClick={() => router.push(`/admin/gallery/${category.slug}`)}
                                         className="inline-block px-6 py-2.5 bg-neutral-900 text-white text-xs uppercase tracking-[0.15em] font-semibold hover:bg-neutral-800 transition-all"
                                     >

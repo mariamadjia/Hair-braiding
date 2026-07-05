@@ -22,64 +22,76 @@ export default function AdminCategoryDetailPage() {
         loadCategoryData();
     }, [params.slug]);
 
+    const loadCategoryImagesInBackground = async (categoryId) => {
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/gallery/category/${categoryId}`
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to load category gallery images");
+            }
+
+            const categoryImages = await response.json();
+
+            setImages(categoryImages);
+
+            setSubcategories((currentSubcategories) =>
+                currentSubcategories.map((subcategory) => {
+                    const subcategoryImages = categoryImages
+                        .filter((image) => image.subcategoryId === subcategory.id)
+                        .sort(
+                            (a, b) =>
+                                (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+                        );
+
+                    return {
+                        ...subcategory,
+                        images: subcategoryImages,
+                    };
+                })
+            );
+        } catch (error) {
+            console.error("Failed to load category gallery images:", error);
+        }
+    };
+
     const loadCategoryData = async () => {
         try {
             setLoading(true);
 
-            const categoryRes = await fetch(
+            const categoryResponse = await fetch(
                 `${API_BASE_URL}/api/categories/slug/${params.slug}`
             );
 
-            if (!categoryRes.ok) {
+            if (!categoryResponse.ok) {
                 throw new Error("Failed to load category");
             }
 
-            const categoryData = await categoryRes.json();
+            const categoryData = await categoryResponse.json();
+
+            const initialSubcategories = (categoryData.subcategories || [])
+                .map((subcategory) => ({
+                    id: subcategory.id,
+                    name: subcategory.name,
+                    slug: subcategory.slug,
+                    image: subcategory.image || "",
+                    displayOrder: subcategory.displayOrder ?? 0,
+
+                    // Render immediately using subcategory.image.
+                    // GalleryImage records load afterward in the background.
+                    images: [],
+                }))
+                .sort(
+                    (a, b) =>
+                        (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+                );
+
             setCategory(categoryData);
+            setSubcategories(initialSubcategories);
 
-            const imagesRes = await fetch(
-                `${API_BASE_URL}/api/gallery/category/${categoryData.id}`
-            );
-
-            if (!imagesRes.ok) {
-                throw new Error("Failed to load category images");
-            }
-
-            const categoryImages = await imagesRes.json();
-            setImages(categoryImages);
-
-            const subcategoriesWithImages = (categoryData.subcategories || []).map(
-                (sub) => {
-                    const subImages = categoryImages
-                        .filter((img) => img.subcategoryId === sub.id)
-                        .sort(
-                            (a, b) =>
-                                (a.displayOrder || 0) - (b.displayOrder || 0)
-                        );
-
-                    return {
-                        id: sub.id,
-                        name: sub.name,
-                        slug: sub.slug,
-                        image: sub.image,
-                        displayOrder: sub.displayOrder || 0,
-                        images: subImages,
-                    };
-                }
-            );
-
-            setSubcategories(
-                subcategoriesWithImages.sort((a, b) => {
-                    if (a.displayOrder === null && b.displayOrder === null) {
-                        return a.id - b.id;
-                    }
-
-                    if (a.displayOrder === null) return 1;
-                    if (b.displayOrder === null) return -1;
-
-                    return a.displayOrder - b.displayOrder;
-                })
-            );
+            // Start this request but do not make the whole page wait for it.
+            void loadCategoryImagesInBackground(categoryData.id);
         } catch (error) {
             console.error("Failed to load category:", error);
         } finally {
