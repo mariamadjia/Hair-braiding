@@ -250,27 +250,76 @@ export function HomePageEditor() {
     }
   };
 
+  const resolveGalleryCollectionImage = (url?: string) => {
+    if (!url) return "";
+
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+
+    // Older Render-upload paths need the backend image endpoint.
+    if (url.startsWith("/Gallery/uploads/")) {
+      const filename = url.split("/").filter(Boolean).pop();
+
+      return filename
+        ? `/api/gallery/image/${encodeURIComponent(filename)}`
+        : "";
+    }
+
+    // /Gallery/... legacy files are now served directly by Vercel.
+    // /api/gallery/image/... is rewritten to Render by next.config.ts.
+    return url;
+  };
+
   const loadAllCollections = async () => {
     setLoadingCollections(true);
+
     try {
-      const res = await fetch(`${API_BASE_URL}/api/categories/gallery`);
-      if (res.ok) {
-        const data = await res.json();
-        // Transform categories to collection format
-        const collections = (data || []).map((cat: any) => ({
-          title: cat.name,
-          slug: cat.slug,
-          images: cat.flippingImages && cat.flippingImages.length > 0 ? cat.flippingImages : (cat.image ? [cat.image] : []),
-        }));
-        setAllCollections(collections);
-        // Set selected indices based on current featured collections by matching titles
-        const featuredIndices = collections
-          .map((c: GalleryCollection, index: number) => galleryCollections.some(g => g.title === c.title) ? index : -1)
-          .filter((i: number): i is number => i !== -1);
-        setSelectedCollectionIndices(featuredIndices);
+      const res = await fetch(
+        `${API_BASE_URL}/api/categories/gallery-cards`
+      );
+
+      if (!res.ok) {
+        throw new Error(
+          `Failed to load Gallery collections: ${res.status}`
+        );
       }
+
+      const data = await res.json();
+
+      const collections: GalleryCollection[] = (data || []).map(
+        (category: any) => {
+          const rawImages =
+            category.flippingImages?.length > 0
+              ? category.flippingImages
+              : category.fallbackImages ?? [];
+
+          return {
+            title: category.name,
+            slug: category.slug,
+            images: rawImages
+              .map(resolveGalleryCollectionImage)
+              .filter(Boolean),
+          };
+        }
+      );
+
+      setAllCollections(collections);
+
+      const featuredIndices = collections
+        .map((collection, index) =>
+          galleryCollections.some(
+            (featured) => featured.title === collection.title
+          )
+            ? index
+            : -1
+        )
+        .filter((index): index is number => index !== -1);
+
+      setSelectedCollectionIndices(featuredIndices);
     } catch (error) {
-      console.error('Failed to load all collections:', error);
+      console.error("Failed to load all collections:", error);
+      setAllCollections([]);
     } finally {
       setLoadingCollections(false);
     }
