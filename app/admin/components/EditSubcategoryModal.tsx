@@ -13,7 +13,11 @@ interface EditSubcategoryModalProps {
     };
     categoryId: number;
     onClose: () => void;
-    onSave: (name: string, imageIds: number[], deletedImageIds: number[]) => void;
+    onSave: (
+        name: string,
+        imageIds: number[],
+        deletedImageIds: number[]
+    ) => Promise<void>;
 }
 
 export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave }: EditSubcategoryModalProps) {
@@ -22,6 +26,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
     const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     const handleDragStart = (index: number) => {
         setDraggedIndex(index);
@@ -96,19 +101,40 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (saving) return;
+
         if (!name.trim()) {
-            alert('Subcategory name is required');
+            alert("Subcategory name is required");
             return;
         }
-        
+
         if (images.length < 1) {
-            alert('Subcategory must have at least 1 image');
+            alert("Subcategory must have at least 1 image");
             return;
         }
-        
-        const imageIds = images.map(img => img.id);
-        onSave(name.trim(), imageIds, deletedImageIds);
+
+        setSaving(true);
+
+        try {
+            const imageIds = images.map((image) => image.id);
+
+            await onSave(
+                name.trim(),
+                imageIds,
+                deletedImageIds
+            );
+        } catch (error) {
+            console.error("Failed to save subcategory:", error);
+
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to save changes. Please try again."
+            );
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -125,8 +151,10 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                         </p>
                     </div>
                     <button
+                        type="button"
                         onClick={onClose}
-                        className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
+                        disabled={saving}
+                        className="p-2 hover:bg-neutral-100 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         <X className="h-5 w-5 text-neutral-600" />
                     </button>
@@ -187,8 +215,10 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
 
                                         {/* Delete Button */}
                                         <button
+                                            type="button"
                                             onClick={() => handleDelete(index)}
-                                            className="absolute bottom-2 right-2 p-2 bg-red-600 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
+                                            disabled={saving}
+                                            className="absolute bottom-2 right-2 p-2 bg-red-600 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </button>
@@ -210,7 +240,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                                 accept="image/*"
                                 onChange={handleFileUpload}
                                 className="hidden"
-                                disabled={uploading}
+                                disabled={uploading || saving}
                             />
                             <label
                                 htmlFor="image-upload"
@@ -250,17 +280,25 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                     </div>
                     <div className="flex gap-3">
                         <button
+                            type="button"
                             onClick={onClose}
-                            className="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-sm hover:bg-neutral-50 transition-colors"
+                            disabled={saving}
+                            className="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-sm hover:bg-neutral-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Cancel
                         </button>
                         <button
+                            type="button"
                             onClick={handleSave}
-                            disabled={!name.trim() || images.length < 1 || uploading}
+                            disabled={
+                                !name.trim() ||
+                                images.length < 1 ||
+                                uploading ||
+                                saving
+                            }
                             className="px-4 py-2 bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Save Changes
+                            {saving ? "Saving..." : "Save Changes"}
                         </button>
                     </div>
                 </div>

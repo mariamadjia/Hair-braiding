@@ -174,52 +174,117 @@ export default function AdminCategoryDetailPage() {
         setDraggedIndex(null);
     };
 
-    const handleSaveSubcategory = async (name, imageIds, deletedImageIds) => {
+    const handleSaveSubcategory = async (
+        name,
+        imageIds,
+        deletedImageIds
+    ) => {
+        if (!editingSubcategory) return;
+
+        const token =
+            localStorage.getItem("auth_token") ||
+            sessionStorage.getItem("auth_token");
+
+        const authHeaders = token
+            ? { Authorization: `Bearer ${token}` }
+            : {};
+
+        const jsonHeaders = {
+            "Content-Type": "application/json",
+            ...authHeaders,
+        };
+
         try {
-            const token = localStorage.getItem('auth_token');
-            
-            // Update subcategory name
-            const updateResponse = await fetch(`${API_BASE_URL}/api/subcategories/${editingSubcategory.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-                body: JSON.stringify({ name }),
-            });
+            const requests = [];
 
-            if (!updateResponse.ok) {
-                throw new Error('Failed to update subcategory');
+            if (name.trim() !== editingSubcategory.name.trim()) {
+                requests.push(
+                    fetch(
+                        `${API_BASE_URL}/api/subcategories/${editingSubcategory.id}`,
+                        {
+                            method: "PUT",
+                            headers: jsonHeaders,
+                            body: JSON.stringify({ name: name.trim() }),
+                        }
+                    ).then((response) => {
+                        if (!response.ok) {
+                            throw new Error("Failed to update subcategory name.");
+                        }
+                    })
+                );
             }
 
-            // Delete removed images
             for (const imageId of deletedImageIds) {
-                await fetch(`${API_BASE_URL}/api/gallery/${imageId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    },
-                });
+                requests.push(
+                    fetch(`${API_BASE_URL}/api/gallery/${imageId}`, {
+                        method: "DELETE",
+                        headers: authHeaders,
+                    }).then((response) => {
+                        if (!response.ok) {
+                            throw new Error("Failed to delete an image.");
+                        }
+                    })
+                );
             }
 
-            // Update image display orders
-            for (let i = 0; i < imageIds.length; i++) {
-                await fetch(`${API_BASE_URL}/api/gallery/${imageIds[i]}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    },
-                    body: JSON.stringify({ displayOrder: i }),
-                });
+            if (imageIds.length > 0) {
+                requests.push(
+                    fetch(`${API_BASE_URL}/api/gallery/reorder`, {
+                        method: "POST",
+                        headers: jsonHeaders,
+                        body: JSON.stringify(imageIds),
+                    }).then((response) => {
+                        if (!response.ok) {
+                            throw new Error("Failed to save image order.");
+                        }
+                    })
+                );
             }
-            
-            // Reload data
-            await loadCategoryData();
+
+            await Promise.all(requests);
+
+            const deletedIds = new Set(deletedImageIds);
+
+            const reorderedImages = imageIds
+                .map((imageId, index) => {
+                    const image = images.find((item) => item.id === imageId);
+
+                    return image
+                        ? { ...image, displayOrder: index }
+                        : null;
+                })
+                .filter(Boolean);
+
+            setImages((currentImages) =>
+                currentImages
+                    .filter((image) => !deletedIds.has(image.id))
+                    .map((image) => {
+                        const reordered = reorderedImages.find(
+                            (item) => item.id === image.id
+                        );
+
+                        return reordered ?? image;
+                    })
+            );
+
+            setSubcategories((currentSubcategories) =>
+                currentSubcategories.map((subcategory) => {
+                    if (subcategory.id !== editingSubcategory.id) {
+                        return subcategory;
+                    }
+
+                    return {
+                        ...subcategory,
+                        name: name.trim(),
+                        images: reorderedImages,
+                    };
+                })
+            );
+
             setEditingSubcategory(null);
         } catch (error) {
-            console.error('Failed to save subcategory:', error);
-            alert('Failed to save changes. Please try again.');
+            console.error("Failed to save subcategory:", error);
+            throw error;
         }
     };
 
