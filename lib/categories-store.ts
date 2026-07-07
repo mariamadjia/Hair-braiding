@@ -57,6 +57,30 @@ export async function readBookingData(): Promise<BookingCategory[]> {
     }
 }
 
+export async function readBookingCategory(slug: string): Promise<BookingCategory | null> {
+    try {
+        const response = await fetch(
+            `${API_URL}/api/booking/${encodeURIComponent(slug)}`,
+            {
+                next: { revalidate: 60 },
+            }
+        );
+
+        if (response.status === 404) {
+            return null;
+        }
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch booking category: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching booking category:', error);
+        return null;
+    }
+}
+
 export async function writeCategories(data: CategoriesData): Promise<void> {
     // This function is no longer needed since we're using the backend API
     // The admin panel updates the database directly
