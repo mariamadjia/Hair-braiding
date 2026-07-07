@@ -100,7 +100,10 @@ export default function AdminCategoryDetailPage() {
     };
 
     const handleEditSubcategory = (subcategory) => {
-        setEditingSubcategory(subcategory);
+        setEditingSubcategory({
+            ...subcategory,
+            images: subcategory.images ?? [],
+        });
     };
 
     const handleCreateSubcategory = async (name) => {

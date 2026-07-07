@@ -9,7 +9,7 @@ interface EditSubcategoryModalProps {
     subcategory: {
         id: number;
         name: string;
-        images: GalleryImage[];
+        images?: GalleryImage[];
     };
     categoryId: number;
     onClose: () => void;
@@ -22,11 +22,56 @@ interface EditSubcategoryModalProps {
 
 export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave }: EditSubcategoryModalProps) {
     const [name, setName] = useState(subcategory.name);
-    const [images, setImages] = useState<GalleryImage[]>(subcategory.images);
+    const [images, setImages] = useState<GalleryImage[]>(
+        () => subcategory.images ?? []
+    );
     const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [loadingImages, setLoadingImages] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadSubcategoryImages = async () => {
+            setName(subcategory.name);
+            setDeletedImageIds([]);
+            setImages(subcategory.images ?? []);
+            setLoadingImages(true);
+
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/api/gallery/subcategory/${subcategory.id}`
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to load subcategory images");
+                }
+
+                const data = await response.json();
+
+                if (!cancelled) {
+                    setImages(Array.isArray(data) ? data : []);
+                }
+            } catch (error) {
+                console.error(
+                    "Failed to load subcategory gallery images:",
+                    error
+                );
+            } finally {
+                if (!cancelled) {
+                    setLoadingImages(false);
+                }
+            }
+        };
+
+        loadSubcategoryImages();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [subcategory.id]);
 
     const handleDragStart = (index: number) => {
         setDraggedIndex(index);
@@ -182,11 +227,15 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                     {/* Images Section */}
                     <div>
                         <h4 className="text-sm font-medium text-neutral-700 mb-4">
-                            Images ({images.length})
+                            Images ({loadingImages ? "..." : images.length})
                         </h4>
 
                         {/* Images Grid */}
-                        {images.length > 0 ? (
+                        {loadingImages ? (
+                            <div className="mb-6 flex min-h-48 items-center justify-center border-2 border-dashed border-neutral-300 rounded-lg">
+                                <p className="text-neutral-500">Loading images...</p>
+                            </div>
+                        ) : images.length > 0 ? (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
                                 {images.map((image, index) => (
                                     <div
@@ -294,7 +343,8 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                                 !name.trim() ||
                                 images.length < 1 ||
                                 uploading ||
-                                saving
+                                saving ||
+                                loadingImages
                             }
                             className="px-4 py-2 bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
