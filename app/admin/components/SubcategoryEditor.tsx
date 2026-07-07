@@ -43,6 +43,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         return <div className="text-sm text-neutral-500">Subcategory not found</div>;
     }
 
+    const items = Array.isArray(sub.items) ? sub.items : [];
+
     const [name, setName] = useState(sub.name);
     const [image, setImage] = useState(sub.image ?? "");
     const [images, setImages] = useState(sub.images ?? []);
@@ -246,7 +248,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                     </div>
                     <span className="text-neutral-400 dark:text-neutral-500">•</span>
                     <span className="font-medium text-neutral-700 dark:text-neutral-300">
-                        {sub.items.length} {sub.items.length === 1 ? 'size' : 'sizes'}
+                        {items.length} {items.length === 1 ? 'size' : 'sizes'}
                     </span>
                 </div>
             </div>
@@ -354,7 +356,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                     )}
 
                     <div className="space-y-3">
-                    {sortItemsBySize(sub.items).map(({ item, originalIdx }) => (
+                    {sortItemsBySize(items).map(({ item, originalIdx }) => (
                         <div key={originalIdx}>
                             {editingIdx === originalIdx ? (
                                 <ItemForm
@@ -448,7 +450,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                             )}
                         </div>
                     ))}
-                        {sub.items.length === 0 && !addingItem && (
+                        {items.length === 0 && !addingItem && (
                             <div className="text-center py-16 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
                                 <Package className="w-16 h-16 text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
                                 <p className="text-base font-semibold text-neutral-600 dark:text-neutral-400 mb-2">No sizes yet</p>
