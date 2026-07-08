@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Edit } from 'lucide-react';
 
 const defaultItems = [
@@ -49,7 +50,14 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
           {/* Right: Three Images/Videos */}
           <div className="grid grid-cols-3 gap-4">
             {items.map((item, index) => (
-              <div key={index} className="space-y-4 relative">
+              <motion.div
+                key={index}
+                className="space-y-4 relative"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.8, delay: index * 0.35, ease: "easeOut" }}
+              >
                 {editMode && (
                   <button
                     onClick={() => onEditItem && onEditItem(index)}
@@ -111,7 +119,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                     {item.label}
                   </p>
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -129,7 +137,13 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
           </div>
 
           {/* First: Media Left, Text Right */}
-          <div className="grid grid-cols-2 gap-6 items-center">
+          <motion.div
+            className="grid grid-cols-2 gap-6 items-center"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 0 * 0.35, ease: "easeOut" }}
+          >
             <div className="relative">
               {editMode && (
                 <button
@@ -199,10 +213,16 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                 </p>
               )}
             </div>
-          </div>
+          </motion.div>
 
           {/* Second: Text Left, Media Right */}
-          <div className="grid grid-cols-2 gap-6 items-center">
+          <motion.div
+            className="grid grid-cols-2 gap-6 items-center"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 1 * 0.35, ease: "easeOut" }}
+          >
             <div className="flex items-center justify-center">
               {items[1].link ? (
                 <Link href={items[1].link}>
@@ -272,10 +292,16 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
 
           {/* Third: Media Left, Text Right */}
-          <div className="grid grid-cols-2 gap-6 items-center">
+          <motion.div
+            className="grid grid-cols-2 gap-6 items-center"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.8, delay: 2 * 0.35, ease: "easeOut" }}
+          >
             <div className="relative">
               {editMode && (
                 <button
@@ -345,7 +371,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                 </p>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
