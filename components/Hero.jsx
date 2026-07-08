@@ -141,7 +141,14 @@ export default function Hero({ videoSrc, useVideo }) {
       </div>
       
       {/* Vertical separator line in the middle */}
-      <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-[#2C1810]"></div>
+      <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px overflow-hidden">
+        <motion.div
+          className="w-full h-full bg-[#2C1810] origin-top"
+          initial={{ scaleY: 0 }}
+          animate={{ scaleY: 1 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+        />
+      </div>
       
       {/* Horizontal separator line at the bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-[#2C1810]"></div>

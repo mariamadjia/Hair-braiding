@@ -19,6 +19,16 @@
   animation: flipBack 0.8s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
 }
 
+/* ── Hero divider line draw animation ── */
+@keyframes drawLine {
+  0%   { transform: scaleY(0); }
+  100% { transform: scaleY(1); }
+}
+.animate-drawLine {
+  animation: drawLine 1.5s ease-out forwards;
+  transform-origin: top;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
