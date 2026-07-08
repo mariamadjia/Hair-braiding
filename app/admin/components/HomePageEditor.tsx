@@ -442,7 +442,7 @@ export function HomePageEditor() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch('/api/upload-hero-image', {
+      const res = await fetch(`${API_BASE_URL}/api/gallery/upload`, {
         method: 'POST',
         headers,
         body: formData,
@@ -450,7 +450,7 @@ export function HomePageEditor() {
 
       if (res.ok) {
         const data = await res.json();
-        const imageUrl = data.url || data.path;
+        const imageUrl = data.url || data.path || data.imageUrl;
 
         // Add the new image to the collection
         const newCollections = [...galleryCollections];
