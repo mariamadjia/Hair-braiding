@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import type { BookingCategory, BookingSubcategory, CategoriesData, BookingItem } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
-import { emptyItem } from "../utils";
+import { emptyItem, formatPrice } from "../utils";
 import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
@@ -389,8 +389,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                         <span className="font-semibold">{item.lengthOptions.length} {item.lengthOptions.length === 1 ? 'option' : 'options'}</span>
                                                         {item.lengthOptions.length > 0 && (
                                                             <span className="ml-2 text-neutral-700 dark:text-neutral-300 font-bold">
-                                                                • {item.lengthOptions[0].price}
-                                                                {item.lengthOptions.length > 1 && ` - ${item.lengthOptions[item.lengthOptions.length - 1].price}`}
+                                                                • {formatPrice(item.lengthOptions[0].price)}
+                                                                {item.lengthOptions.length > 1 && ` - ${formatPrice(item.lengthOptions[item.lengthOptions.length - 1].price)}`}
                                                             </span>
                                                         )}
                                                     </>
@@ -440,7 +440,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                 {item.lengthOptions.map((option, optIdx) => (
                                                     <div key={optIdx} className="flex items-center justify-between text-sm py-3 px-4 rounded-lg bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-700 shadow-sm hover:shadow-md transition-shadow">
                                                         <span className="font-medium text-neutral-700 dark:text-neutral-300">{option.name}</span>
-                                                        <span className="font-bold text-lg text-neutral-900 dark:text-white">{option.price}</span>
+                                                        <span className="font-bold text-lg text-neutral-900 dark:text-white">{formatPrice(option.price)}</span>
                                                     </div>
                                                 ))}
                                             </div>
