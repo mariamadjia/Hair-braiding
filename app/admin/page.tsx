@@ -84,7 +84,10 @@ export default function AdminPage() {
             // Just store in sessionStorage if not remembering
             if (!rememberMe) {
                 localStorage.removeItem("auth_token");
+                localStorage.removeItem("admin_user");
+
                 sessionStorage.setItem("auth_token", response.token);
+                sessionStorage.setItem("admin_user", JSON.stringify(response.admin));
             }
             
             await loadCategories(response.token);
