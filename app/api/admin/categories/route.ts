@@ -1,111 +1,41 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-function isAuthorized(req: NextRequest) {
-    // Check for x-admin-token (legacy)
-    const adminToken = req.headers.get("x-admin-token");
-    if (adminToken === process.env.ADMIN_SECRET) {
-        return true;
+export async function GET() {
+  try {
+    const res = await fetch(`${API_URL}/api/booking`, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: `Backend failed with status ${res.status}` },
+        { status: res.status }
+      );
     }
-    
-    // Check for Bearer token (JWT)
-    const authHeader = req.headers.get("authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-        return true;
-    }
-    
-    return false;
-}
 
-export async function GET(req: NextRequest) {
-    if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const data = await res.json();
 
-    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    const normalizedData = Array.isArray(data)
+      ? { categories: data }
+      : data;
 
-    try {
-        console.log('Fetching categories from backend admin endpoint:', `${API_URL}/api/categories/admin`);
-        const response = await fetch(`${API_URL}/api/categories/admin`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        console.log('Backend response status:', response.status);
+    return NextResponse.json(normalizedData, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    });
+  } catch (error) {
+    console.error("Failed to load admin categories:", error);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Backend admin endpoint error:', errorText, '- falling back to regular endpoint');
-
-            // Fallback to booking endpoint if admin endpoint fails (includes subcategory items)
-            console.log('Fetching categories from fallback endpoint:', `${API_URL}/api/booking`);
-            const fallbackResponse = await fetch(`${API_URL}/api/booking`, {
-                cache: 'no-store'
-            });
-            console.log('Fallback response status:', fallbackResponse.status);
-
-            if (!fallbackResponse.ok) {
-                const fallbackError = await fallbackResponse.text();
-                console.error('Fallback endpoint also failed:', fallbackError);
-                return NextResponse.json({ error: `Both endpoints failed. Admin: ${response.status}, Fallback: ${fallbackResponse.status}` }, { status: 500 });
-            }
-
-            const data = await fallbackResponse.json();
-            console.log('Fallback response data keys:', Object.keys(data));
-            return NextResponse.json(data);
-        }
-
-        const data = await response.json();
-        console.log('Backend response data keys:', Object.keys(data));
-        return NextResponse.json(data);
-    } catch (error) {
-        console.error('Failed to fetch categories from backend:', error);
-
-        // Try fallback on catch as well
-        try {
-            console.log('Attempting fallback after error:', `${API_URL}/api/booking`);
-            const fallbackResponse = await fetch(`${API_URL}/api/booking`, {
-                cache: 'no-store'
-            });
-            const data = await fallbackResponse.json();
-            console.log('Fallback successful after error');
-            return NextResponse.json(data);
-        } catch (fallbackError) {
-            console.error('Fallback also failed:', fallbackError);
-            return NextResponse.json({ error: "Failed to fetch categories from both endpoints" }, { status: 500 });
-        }
-    }
-}
-
-export async function POST(req: NextRequest) {
-    if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    
-    const category = await req.json();
-    const token = req.headers.get("authorization")?.replace("Bearer ", "");
-    
-    try {
-        const response = await fetch(`${API_URL}/api/categories`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(category)
-        });
-        
-        if (!response.ok) {
-            return NextResponse.json({ error: "Failed to create category" }, { status: response.status });
-        }
-        
-        // Return updated categories list
-        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await categoriesResponse.json();
-        return NextResponse.json(data);
-    } catch (error) {
-        console.error('Failed to create category:', error);
-        return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
-    }
+    return NextResponse.json(
+      { error: "Failed to load admin categories" },
+      { status: 500 }
+    );
+  }
 }
