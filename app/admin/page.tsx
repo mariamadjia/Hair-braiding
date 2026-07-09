@@ -11,6 +11,7 @@ import { ProfileSection } from "./components/ProfileSection";
 import { HomePageEditor } from "./components/HomePageEditor";
 import { ThemeProvider } from "./context/ThemeContext";
 import { authApi } from "@/lib/api/auth";
+import { API_BASE_URL } from "@/lib/config/api";
 import AppointmentManagement from "@/components/AppointmentManagement";
 import AvailabilitySettings from "@/components/AvailabilitySettings";
 import CustomerTable from "@/components/CustomerTable";
@@ -42,7 +43,7 @@ export default function AdminPage() {
                 return;
             }
 
-            const res = await fetch("/api/admin/categories", {
+            const res = await fetch(`${API_BASE_URL}/api/categories/admin`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${jwtToken}`,
