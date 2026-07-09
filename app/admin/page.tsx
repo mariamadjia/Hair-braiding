@@ -11,7 +11,6 @@ import { ProfileSection } from "./components/ProfileSection";
 import { HomePageEditor } from "./components/HomePageEditor";
 import { ThemeProvider } from "./context/ThemeContext";
 import { authApi } from "@/lib/api/auth";
-import { API_BASE_URL } from "@/lib/config/api";
 import AppointmentManagement from "@/components/AppointmentManagement";
 import AvailabilitySettings from "@/components/AvailabilitySettings";
 import CustomerTable from "@/components/CustomerTable";
@@ -37,30 +36,37 @@ export default function AdminPage() {
 
     const loadCategories = async (jwtToken: string) => {
         try {
-            // Fetch categories from Next.js API route (which handles backend communication and fallbacks)
-            const json = await fetch(`${API_BASE_URL}/api/categories/admin`, {
+            if (!jwtToken) {
+                setToken("");
+                setError("Session expired. Please log in again.");
+                return;
+            }
+
+            const res = await fetch("/api/admin/categories", {
+                method: "GET",
                 headers: {
                     Authorization: `Bearer ${jwtToken}`,
                     "Content-Type": "application/json",
                 },
-            }).then((res) => {
-                if (!res.ok) {
-                    if (res.status === 401 || res.status === 403) {
-                        localStorage.removeItem("auth_token");
-                        sessionStorage.removeItem("auth_token");
-                        setToken("");
-                        setError("Session expired. Please log in again.");
-                        throw new Error("Unauthorized");
-                    }
-                    throw new Error(`Failed to load categories: ${res.status}`);
-                }
-                return res.json();
+                cache: "no-store",
             });
 
+            if (!res.ok) {
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem("auth_token");
+                    sessionStorage.removeItem("auth_token");
+                    setToken("");
+                    setError("Session expired. Please log in again.");
+                    throw new Error("Unauthorized");
+                }
+                throw new Error(`Failed to load categories: ${res.status}`);
+            }
+
+            const json = await res.json();
             setData(json);
             setError("");
         } catch (err: any) {
-            if (err.message !== 'Unauthorized') {
+            if (err.message !== "Unauthorized") {
                 console.error("Failed to load categories:", err);
                 setError("Failed to load categories from backend. Please try again.");
             }
@@ -102,8 +108,10 @@ export default function AdminPage() {
         const checkAuthAndLoad = async () => {
             setIsAuthChecking(true);
             try {
-                const savedToken = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
-                if (savedToken && authApi.isAuthenticated()) {
+                const savedToken =
+                    sessionStorage.getItem("auth_token") ||
+                    localStorage.getItem("auth_token");
+                if (savedToken) {
                     setToken(savedToken);
                     await loadCategories(savedToken);
                 }
