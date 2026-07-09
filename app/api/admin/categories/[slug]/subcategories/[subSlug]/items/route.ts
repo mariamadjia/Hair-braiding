@@ -78,7 +78,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         
         // Fetch updated categories to return
         console.log('[POST ITEMS] Fetching updated categories...');
-        const categoriesResponse = await fetch(`${API_URL}/api/categories`, {
+        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
             headers: {
                 'Authorization': getAuthHeader(req),
                 'Content-Type': 'application/json'
@@ -154,7 +154,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
         }
         
         // Fetch updated categories to return
-        const categoriesResponse = await fetch(`${API_URL}/api/categories`, {
+        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
             headers: {
                 'Authorization': getAuthHeader(req),
                 'Content-Type': 'application/json'
@@ -215,7 +215,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
         }
         
         // Fetch updated categories to return
-        const categoriesResponse = await fetch(`${API_URL}/api/categories`, {
+        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
             headers: {
                 'Authorization': getAuthHeader(req),
                 'Content-Type': 'application/json'

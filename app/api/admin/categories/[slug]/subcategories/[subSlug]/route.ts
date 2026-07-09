@@ -61,7 +61,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
         }
         
         // Return updated categories list
-        const categoriesResponse = await fetch(`${API_URL}/api/categories`);
+        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await categoriesResponse.json();
         return NextResponse.json(data);
     } catch (error) {
@@ -108,7 +110,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
         }
         
         // Return updated categories list
-        const categoriesResponse = await fetch(`${API_URL}/api/categories`);
+        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await categoriesResponse.json();
         return NextResponse.json(data);
     } catch (error) {

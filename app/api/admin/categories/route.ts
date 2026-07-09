@@ -40,7 +40,9 @@ export async function GET(req: NextRequest) {
 
             // Fallback to regular endpoint if admin endpoint fails
             console.log('Fetching categories from fallback endpoint:', `${API_URL}/api/categories`);
-            const fallbackResponse = await fetch(`${API_URL}/api/categories`);
+            const fallbackResponse = await fetch(`${API_URL}/api/categories`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             console.log('Fallback response status:', fallbackResponse.status);
 
             if (!fallbackResponse.ok) {
@@ -63,7 +65,9 @@ export async function GET(req: NextRequest) {
         // Try fallback on catch as well
         try {
             console.log('Attempting fallback after error:', `${API_URL}/api/categories`);
-            const fallbackResponse = await fetch(`${API_URL}/api/categories`);
+            const fallbackResponse = await fetch(`${API_URL}/api/categories`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const data = await fallbackResponse.json();
             console.log('Fallback successful after error');
             return NextResponse.json(data);
@@ -95,7 +99,9 @@ export async function POST(req: NextRequest) {
         }
         
         // Return updated categories list
-        const categoriesResponse = await fetch(`${API_URL}/api/categories`);
+        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await categoriesResponse.json();
         return NextResponse.json(data);
     } catch (error) {

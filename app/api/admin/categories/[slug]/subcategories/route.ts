@@ -53,7 +53,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         }
         
         // Return updated categories list
-        const categoriesResponse = await fetch(`${API_URL}/api/categories`);
+        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await categoriesResponse.json();
         return NextResponse.json(data);
     } catch (error) {
