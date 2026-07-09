@@ -43,7 +43,7 @@ export default function AdminPage() {
                 return;
             }
 
-            const res = await fetch("/api/admin/categories", {
+            const res = await fetch(`${API_BASE_URL}/api/categories/admin`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${jwtToken}`,
