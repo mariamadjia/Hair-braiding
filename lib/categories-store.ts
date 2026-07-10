@@ -59,24 +59,31 @@ export async function readBookingData(): Promise<BookingCategory[]> {
 
 export async function readBookingCategory(slug: string): Promise<BookingCategory | null> {
     try {
+        console.log(`[readBookingCategory] Fetching: ${API_URL}/api/booking/${slug}`);
         const response = await fetch(
             `${API_URL}/api/booking/${encodeURIComponent(slug)}`,
             {
-                next: { revalidate: 300 },
+                cache: "no-store",
             }
         );
 
+        console.log(`[readBookingCategory] Response status: ${response.status}`);
+
         if (response.status === 404) {
+            console.log(`[readBookingCategory] Category not found: ${slug}`);
             return null;
         }
 
         if (!response.ok) {
+            console.error(`[readBookingCategory] Failed: ${response.status}`);
             throw new Error(`Failed to fetch booking category: ${response.status}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+        console.log(`[readBookingCategory] Success:`, data.name);
+        return data;
     } catch (error) {
-        console.error('Error fetching booking category:', error);
+        console.error('[readBookingCategory] Error:', error);
         return null;
     }
 }

@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { readBookingCategory } from "@/lib/categories-store";
 import CategoryPageClient from "./CategoryPageClient";
 
-export const revalidate = 300;
+export const revalidate = 60;
+export const dynamicParams = true;
 
 type Props = { params: Promise<{ slug: string }> };
 
