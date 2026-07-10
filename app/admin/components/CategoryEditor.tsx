@@ -33,10 +33,18 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
         setImages(cat.flippingImages ?? []);
         setDirty(false); 
         
-        // Fetch gallery images for this category
+        // Fetch gallery images for this category (optional - don't crash if it fails)
         const fetchGalleryImages = async () => {
+            if (!cat.id) {
+                console.log('[CategoryEditor] No category ID, skipping gallery fetch');
+                return;
+            }
+            
             try {
-                const response = await fetch(`${API_BASE_URL}/api/gallery/category/${cat.id}`);
+                const response = await fetch(`${API_BASE_URL}/api/gallery/category/${cat.id}`, {
+                    signal: AbortSignal.timeout(10000)
+                });
+                
                 if (response.ok) {
                     const images = await response.json();
                     setGalleryImages(images);
@@ -49,7 +57,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
                     }
                 }
             } catch (error) {
-                console.error('Failed to fetch gallery images:', error);
+                console.error('[CategoryEditor] Failed to fetch gallery images:', error);
             }
         };
         fetchGalleryImages();

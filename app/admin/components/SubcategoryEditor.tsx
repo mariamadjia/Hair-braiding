@@ -60,9 +60,16 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     // Fetch gallery images for this subcategory and auto-sync
     useEffect(() => {
         const fetchGalleryImages = async () => {
+            if (!cat.id) {
+                console.log('[SubcategoryEditor] No category ID, skipping gallery fetch');
+                return;
+            }
+            
             setLoadingGallery(true);
             try {
-                const response = await fetch(`${API_BASE_URL}/api/gallery`);
+                const response = await fetch(`${API_BASE_URL}/api/gallery`, {
+                    signal: AbortSignal.timeout(10000)
+                });
                 if (response.ok) {
                     const allImages = await response.json();
                     // Filter images that belong to this category and subcategory
@@ -80,7 +87,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                     }
                 }
             } catch (error) {
-                console.error('Failed to fetch gallery images:', error);
+                console.error('[SubcategoryEditor] Failed to fetch gallery images:', error);
             } finally {
                 setLoadingGallery(false);
             }
