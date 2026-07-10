@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import type { BookingCategory, BookingSubcategory, CategoriesData, BookingItem } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
-import { emptyItem, formatPrice } from "../utils";
+import { emptyItem } from "../utils";
+import { formatPrice } from "@/lib/utils/price";
 import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
 import { toProxyUrl } from "@/lib/utils/image";

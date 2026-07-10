@@ -9,6 +9,7 @@ import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { BookingCategory } from "@/lib/booking-types";
 import Navbar from "@/components/Navbar";
+import { formatPrice } from "@/lib/utils/price";
 
 export default function CategoryPageClient({ category }: { category: BookingCategory }) {
 
@@ -358,7 +359,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                                                 </div>
                                             </div>
                                             {option.price && (
-                                                <span className="text-base font-medium text-neutral-900">{option.price}</span>
+                                                <span className="text-base font-medium text-neutral-900">{formatPrice(option.price)}</span>
                                             )}
                                         </button>
                                         {isSelected && selectedItem?.hairTextures?.length ? (
