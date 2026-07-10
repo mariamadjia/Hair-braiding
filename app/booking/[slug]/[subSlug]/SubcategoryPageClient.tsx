@@ -9,6 +9,7 @@ import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { BookingCategory, BookingSubcategory, BookingItem } from "@/lib/booking-types";
 import Navbar from "@/components/Navbar";
+import { formatPrice } from "@/lib/utils/price";
 
 const SIZE_ORDER = ['XSmall', 'Small', 'Medium', 'Smedium', 'Large', 'Jumbo'];
 
@@ -197,8 +198,8 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                     {item.lengthOptions && item.lengthOptions.length > 0 && (
                                         <span className="font-medium">
                                             {item.lengthOptions.length === 1 
-                                                ? item.lengthOptions[0].price 
-                                                : `${item.lengthOptions[0].price} - ${item.lengthOptions[item.lengthOptions.length - 1].price}`
+                                                ? formatPrice(item.lengthOptions[0].price) 
+                                                : `${formatPrice(item.lengthOptions[0].price)} - ${formatPrice(item.lengthOptions[item.lengthOptions.length - 1].price)}`
                                             }
                                         </span>
                                     )}
@@ -371,7 +372,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                                     )}
                                                 </div>
                                             </div>
-                                            {option.price && <span className="text-base font-medium text-neutral-900">{option.price}</span>}
+                                            {option.price && <span className="text-base font-medium text-neutral-900">{formatPrice(option.price)}</span>}
                                         </button>
                                         {isSelected && selectedItem?.hairTextures?.length ? (
                                             <div className="pl-9 pr-4">
