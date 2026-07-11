@@ -133,9 +133,25 @@ export default function BookingCalendar({
         setLoading(false);
     };
 
+    const formatLocalDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    };
+
+    const formatLocalDateTime = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hour = String(date.getHours()).padStart(2, "0");
+        const minute = String(date.getMinutes()).padStart(2, "0");
+        return `${year}-${month}-${day}T${hour}:${minute}:00`;
+    };
+
     const fetchAvailableSlots = async (date: Date) => {
         try {
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = formatLocalDate(date);
             console.log('Fetching slots for date:', dateStr);
             
             const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}`, {
@@ -220,7 +236,7 @@ export default function BookingCalendar({
 
     const validateAvailability = async (date: Date, time: string): Promise<boolean> => {
         try {
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = formatLocalDate(date);
             const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}`, {
                 method: 'GET',
                 headers: {
@@ -348,7 +364,7 @@ export default function BookingCalendar({
         const appointmentDate = new Date(date);
         appointmentDate.setHours(hour, minute, 0, 0);
         
-        return appointmentDate.toISOString().split('.')[0];
+        return formatLocalDateTime(appointmentDate);
     };
 
     const goToPreviousMonth = () => {

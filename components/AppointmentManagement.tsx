@@ -53,8 +53,8 @@ export default function AppointmentManagement() {
         setError(null);
         try {
             const url = filter === 'ALL' 
-                ? '/api/bookings' 
-                : `/api/bookings?status=${filter}`;
+                ? '/api/appointments' 
+                : `/api/appointments?status=${filter}`;
             
             const token = getAuthToken();
             
