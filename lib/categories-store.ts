@@ -6,7 +6,7 @@ const API_URL = API_BASE_URL;
 export async function readCategories(): Promise<CategoriesData> {
     try {
         const response = await fetch(`${API_URL}/api/categories`, {
-            cache: "no-store",
+            next: { revalidate: 60 },
         });
         
         if (!response.ok) {
@@ -41,7 +41,7 @@ export async function readCategories(): Promise<CategoriesData> {
 export async function readBookingData(): Promise<BookingCategory[]> {
     try {
         const response = await fetch(`${API_URL}/api/booking`, {
-            cache: "no-store",
+            next: { revalidate: 60 },
         });
         
         if (!response.ok) {
@@ -63,7 +63,7 @@ export async function readBookingCategory(slug: string): Promise<BookingCategory
         const response = await fetch(
             `${API_URL}/api/booking/${encodeURIComponent(slug)}`,
             {
-                cache: "no-store",
+                next: { revalidate: 300 },
             }
         );
 
