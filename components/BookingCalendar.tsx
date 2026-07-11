@@ -138,7 +138,7 @@ export default function BookingCalendar({
             const dateStr = date.toISOString().split('T')[0];
             console.log('Fetching slots for date:', dateStr);
             
-            const response = await fetch(`http://localhost:8080/api/availability/slots?date=${dateStr}`, {
+            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -218,6 +218,34 @@ export default function BookingCalendar({
         setStep("details");
     };
 
+    const validateAvailability = async (date: Date, time: string): Promise<boolean> => {
+        try {
+            const dateStr = date.toISOString().split('T')[0];
+            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                console.error('Failed to validate availability');
+                return false;
+            }
+
+            const slots = await response.json();
+            const slot = slots.find((s: any) => {
+                const slotTime = formatTime24To12(new Date(s.startTime));
+                return slotTime === time;
+            });
+
+            return slot && slot.isAvailable && slot.availableSpots > 0;
+        } catch (error) {
+            console.error('Availability validation error:', error);
+            return false;
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedDate || !selectedTime) return;
@@ -227,6 +255,12 @@ export default function BookingCalendar({
         const appointmentDateTime = convertTimeToDateTime(selectedDate, selectedTime);
 
         try {
+            // Validate availability before booking
+            const isAvailable = await validateAvailability(selectedDate, selectedTime);
+            if (!isAvailable) {
+                throw new Error('This time slot is no longer available. Please select a different time.');
+            }
+
             const response = await fetch(`${API_BASE_URL}/api/appointments`, {
                 method: 'POST',
                 headers: {
@@ -258,6 +292,12 @@ export default function BookingCalendar({
         } catch (error) {
             console.error('Booking error:', error);
             alert(error instanceof Error ? error.message : 'Failed to create appointment. Please try again.');
+            // If availability failed, go back to time selection
+            if (error instanceof Error && error.message.includes('no longer available')) {
+                setStep("time");
+                setSelectedTime(null);
+                await fetchAvailableSlots(selectedDate);
+            }
         } finally {
             setLoading(false);
         }
