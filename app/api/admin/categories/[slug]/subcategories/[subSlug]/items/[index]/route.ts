@@ -20,55 +20,19 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
     }
     
     const { slug, subSlug, index } = await params;
-    const itemIndex = Number(index);
+    const itemId = Number(index);
     
-    console.log('[DELETE ITEM] Slug:', slug, 'SubSlug:', subSlug, 'Index:', itemIndex);
+    console.log('[DELETE ITEM] Slug:', slug, 'SubSlug:', subSlug, 'ItemId:', itemId);
+    
+    if (!itemId || isNaN(itemId)) {
+        return NextResponse.json({ error: "Invalid item ID" }, { status: 400 });
+    }
     
     try {
-        // First get the category to find IDs
-        const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
-            headers: {
-                'Authorization': getAuthHeader(req),
-                'Content-Type': 'application/json'
-            }
-        });
+        console.log('[DELETE ITEM] Deleting service ID:', itemId);
         
-        console.log('[DELETE ITEM] Category response status:', categoryResponse.status);
-        
-        if (!categoryResponse.ok) {
-            return NextResponse.json({ error: "Category not found" }, { status: 404 });
-        }
-        
-        const category = await categoryResponse.json();
-        const subcategory = category.subcategories?.find((s: any) => s.slug === subSlug);
-        
-        if (!subcategory) {
-            console.log('[DELETE ITEM] Subcategory not found');
-            return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
-        }
-        
-        // Use services endpoint to get items with IDs
-        const itemsResponse = await fetch(`${API_URL}/api/services/subcategory/${subcategory.id}`, {
-            headers: { 'Authorization': getAuthHeader(req) }
-        });
-        
-        let itemToDelete: any = null;
-        if (itemsResponse.ok) {
-            const items = await itemsResponse.json();
-            itemToDelete = items[itemIndex];
-        }
-        if (!itemToDelete || !itemToDelete.id) {
-            itemToDelete = subcategory.items?.[itemIndex];
-        }
-        if (!itemToDelete || !itemToDelete.id) {
-            console.log('[DELETE ITEM] Item not found at index:', itemIndex);
-            return NextResponse.json({ error: "Item not found or missing ID" }, { status: 404 });
-        }
-        
-        console.log('[DELETE ITEM] Deleting service ID:', itemToDelete.id);
-        
-        // Delete the service item
-        const response = await fetch(`${API_URL}/api/services/${itemToDelete.id}`, {
+        // Delete the service item directly by ID
+        const response = await fetch(`${API_URL}/api/services/${itemId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': getAuthHeader(req)

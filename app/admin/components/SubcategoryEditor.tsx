@@ -207,8 +207,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         }
     };
 
-    const deleteItem = async (idx: number) => {
-        await mutate("DELETE", `${base}/items/${idx}`);
+    const deleteItem = async (idx: number, itemId?: number) => {
+        await mutate("DELETE", `${base}/items/${itemId ?? idx}`);
     };
 
     const toggleExpand = (idx: number) => {
@@ -440,7 +440,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                             </button>
                                             <button 
                                                 type="button" 
-                                                onClick={() => deleteItem(originalIdx)} 
+                                                onClick={() => deleteItem(originalIdx, item.id)} 
                                                 className="p-2.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                                                 title="Delete"
                                             >
