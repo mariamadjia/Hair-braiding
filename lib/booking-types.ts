@@ -6,6 +6,7 @@ export type LengthOption = {
 };
 
 export type BookingItem = {
+    id?: number;
     name: string;
     price: string;
     description: string;
