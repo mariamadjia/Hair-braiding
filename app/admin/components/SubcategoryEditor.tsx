@@ -57,7 +57,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [loadingGallery, setLoadingGallery] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
-    const base = `/${cat.slug}/${sub.slug}`;
+    const base = `/${cat.slug}/subcategories/${sub.slug}`;
 
     useEffect(() => { setName(sub.name); setImage(sub.image ?? ""); setImages(sub.images ?? []); setDirty(false); }, [sub.slug]);
 
