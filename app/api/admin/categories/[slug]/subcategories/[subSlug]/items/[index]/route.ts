@@ -47,10 +47,22 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
             return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
         }
         
-        const itemToDelete = subcategory.items[itemIndex];
-        if (!itemToDelete) {
+        // Use services endpoint to get items with IDs
+        const itemsResponse = await fetch(`${API_URL}/api/services/subcategory/${subcategory.id}`, {
+            headers: { 'Authorization': getAuthHeader(req) }
+        });
+        
+        let itemToDelete: any = null;
+        if (itemsResponse.ok) {
+            const items = await itemsResponse.json();
+            itemToDelete = items[itemIndex];
+        }
+        if (!itemToDelete || !itemToDelete.id) {
+            itemToDelete = subcategory.items?.[itemIndex];
+        }
+        if (!itemToDelete || !itemToDelete.id) {
             console.log('[DELETE ITEM] Item not found at index:', itemIndex);
-            return NextResponse.json({ error: "Item not found" }, { status: 404 });
+            return NextResponse.json({ error: "Item not found or missing ID" }, { status: 404 });
         }
         
         console.log('[DELETE ITEM] Deleting service ID:', itemToDelete.id);

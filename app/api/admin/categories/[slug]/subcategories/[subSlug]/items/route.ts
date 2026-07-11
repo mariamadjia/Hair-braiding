@@ -200,7 +200,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
     const itemIndex = Number(url.pathname.split('/').pop());
     
     try {
-        // First get the category to find IDs
+        // Get subcategory ID from slug endpoint
         const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
             headers: {
                 'Authorization': getAuthHeader(req),
@@ -219,9 +219,21 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
             return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
         }
         
-        const itemToDelete = subcategory.items[itemIndex];
-        if (!itemToDelete) {
-            return NextResponse.json({ error: "Item not found" }, { status: 404 });
+        // Use services endpoint to get items with IDs
+        const itemsResponse = await fetch(`${API_URL}/api/services/subcategory/${subcategory.id}`, {
+            headers: { 'Authorization': getAuthHeader(req) }
+        });
+        
+        let itemToDelete: any = null;
+        if (itemsResponse.ok) {
+            const items = await itemsResponse.json();
+            itemToDelete = items[itemIndex];
+        }
+        if (!itemToDelete || !itemToDelete.id) {
+            itemToDelete = subcategory.items?.[itemIndex];
+        }
+        if (!itemToDelete || !itemToDelete.id) {
+            return NextResponse.json({ error: "Item not found or missing ID" }, { status: 404 });
         }
         
         // Delete the service item
