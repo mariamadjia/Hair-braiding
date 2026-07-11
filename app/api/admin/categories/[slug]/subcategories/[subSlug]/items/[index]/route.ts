@@ -86,12 +86,17 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
         console.log('[DELETE ITEM] Item deleted successfully');
         
         // Fetch updated categories to return
-        const categoriesResponse = await fetch(`${API_URL}/api/categories`, {
+        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
             headers: {
                 'Authorization': getAuthHeader(req),
                 'Content-Type': 'application/json'
             }
         });
+        
+        if (!categoriesResponse.ok) {
+            console.log('[DELETE ITEM] Failed to fetch updated categories, status:', categoriesResponse.status);
+            return NextResponse.json({ error: "Item deleted but failed to refresh categories" }, { status: categoriesResponse.status });
+        }
         
         const categoriesData = await categoriesResponse.json();
         console.log('[DELETE ITEM] Returning updated categories');
