@@ -110,8 +110,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
     console.log('[PUT ITEMS] Item index:', itemIndex, 'Item data:', JSON.stringify(item, null, 2));
     
     try {
-        // First get the category to find IDs
-        const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
+        // Use admin endpoint to get full category data with IDs
+        const categoryResponse = await fetch(`${API_URL}/api/categories/admin`, {
             headers: {
                 'Authorization': getAuthHeader(req),
                 'Content-Type': 'application/json'
@@ -122,7 +122,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             return NextResponse.json({ error: "Category not found" }, { status: 404 });
         }
         
-        const category = await categoryResponse.json();
+        const adminData = await categoryResponse.json();
+        const categories = adminData.categories || adminData;
+        const category = categories.find((c: any) => c.slug === slug);
+        
+        if (!category) {
+            return NextResponse.json({ error: "Category not found" }, { status: 404 });
+        }
+        
         const subcategory = category.subcategories?.find((s: any) => s.slug === subSlug);
         
         if (!subcategory) {
@@ -130,8 +137,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
         }
         
         const itemToUpdate = subcategory.items[itemIndex];
-        if (!itemToUpdate) {
-            return NextResponse.json({ error: "Item not found" }, { status: 404 });
+        if (!itemToUpdate || !itemToUpdate.id) {
+            return NextResponse.json({ error: "Item not found or missing ID" }, { status: 404 });
         }
         
         // Update the service item
