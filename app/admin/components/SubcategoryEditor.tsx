@@ -185,8 +185,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         }
     };
 
-    const base = `/${cat.slug}/subcategories/${sub.slug}`;
-
     const save = async () => {
         await mutate("PUT", base, { name, image });
         setDirty(false);
