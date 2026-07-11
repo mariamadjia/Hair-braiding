@@ -110,25 +110,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
     console.log('[PUT ITEMS] Item index:', itemIndex, 'Item data:', JSON.stringify(item, null, 2));
     
     try {
-        // Use admin endpoint to get full category data with IDs
-        const categoryResponse = await fetch(`${API_URL}/api/categories/admin`, {
+        // Use category slug endpoint to get IDs - it returns full entity with IDs
+        const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
             headers: {
                 'Authorization': getAuthHeader(req),
                 'Content-Type': 'application/json'
             }
         });
         
+        console.log('[PUT ITEMS] Category fetch status:', categoryResponse.status);
+        
         if (!categoryResponse.ok) {
             return NextResponse.json({ error: "Category not found" }, { status: 404 });
         }
         
-        const adminData = await categoryResponse.json();
-        const categories = adminData.categories || adminData;
-        const category = categories.find((c: any) => c.slug === slug);
-        
-        if (!category) {
-            return NextResponse.json({ error: "Category not found" }, { status: 404 });
-        }
+        const category = await categoryResponse.json();
+        console.log('[PUT ITEMS] Category ID:', category.id, 'Subcategories:', category.subcategories?.length);
         
         const subcategory = category.subcategories?.find((s: any) => s.slug === subSlug);
         
@@ -136,7 +133,26 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
         }
         
-        const itemToUpdate = subcategory.items[itemIndex];
+        console.log('[PUT ITEMS] Subcategory ID:', subcategory.id, 'Items:', subcategory.items?.length);
+        
+        // Get items by subcategory ID to ensure we have item IDs
+        const itemsResponse = await fetch(`${API_URL}/api/services/subcategory/${subcategory.id}`, {
+            headers: { 'Authorization': getAuthHeader(req) }
+        });
+        
+        let itemToUpdate: any = null;
+        if (itemsResponse.ok) {
+            const items = await itemsResponse.json();
+            itemToUpdate = items[itemIndex];
+            console.log('[PUT ITEMS] Found item via services endpoint:', itemToUpdate?.id);
+        }
+        
+        // Fallback: use item from subcategory directly
+        if (!itemToUpdate || !itemToUpdate.id) {
+            itemToUpdate = subcategory.items?.[itemIndex];
+            console.log('[PUT ITEMS] Fallback item:', itemToUpdate?.id);
+        }
+        
         if (!itemToUpdate || !itemToUpdate.id) {
             return NextResponse.json({ error: "Item not found or missing ID" }, { status: 404 });
         }
