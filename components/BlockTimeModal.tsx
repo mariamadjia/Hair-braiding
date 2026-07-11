@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Calendar, Clock, Trash2, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/lib/config/api";
 
 type BlockedSlot = {
     id: number;
@@ -44,7 +45,7 @@ export default function BlockTimeModal() {
             futureDate.setMonth(futureDate.getMonth() + 3);
 
             const response = await fetch(
-                `http://localhost:8080/api/availability/blocked-times?startDate=${now.toISOString()}&endDate=${futureDate.toISOString()}`,
+                `${API_BASE_URL}/api/availability/blocked-times?startDate=${now.toISOString()}&endDate=${futureDate.toISOString()}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -76,7 +77,7 @@ export default function BlockTimeModal() {
             const startDateTime = `${startDate}T${startTime}:00`;
             const endDateTime = `${endDate}T${endTime}:00`;
 
-            const response = await fetch('http://localhost:8080/api/availability/block-time', {
+            const response = await fetch(`${API_BASE_URL}/api/availability/block-time`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -118,7 +119,7 @@ export default function BlockTimeModal() {
 
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch(`http://localhost:8080/api/availability/blocked-times/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/availability/blocked-times/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
