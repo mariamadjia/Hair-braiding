@@ -13,6 +13,10 @@ function getAuthHeader(req: NextRequest) {
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ slug: string; subSlug: string; index: string }> }) {
     console.log('[DELETE ITEM] Request received');
+    console.log('[DELETE ITEM] Headers:', Object.fromEntries(req.headers.entries()));
+    
+    const authHeader = req.headers.get("authorization");
+    console.log('[DELETE ITEM] Auth header:', authHeader ? authHeader.substring(0, 20) + '...' : 'missing');
     
     if (!isAuthorized(req)) {
         console.log('[DELETE ITEM] Unauthorized');
