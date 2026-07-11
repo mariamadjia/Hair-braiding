@@ -184,6 +184,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             }
         });
         
+        if (!categoriesResponse.ok) {
+            console.log('[PUT ITEMS] Failed to fetch updated categories, status:', categoriesResponse.status);
+            return NextResponse.json({ error: "Failed to fetch updated categories after save" }, { status: categoriesResponse.status });
+        }
+        
         const categoriesData = await categoriesResponse.json();
         return NextResponse.json(categoriesData);
     } catch (error) {
