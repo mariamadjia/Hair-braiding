@@ -45,6 +45,10 @@ function CustomerTable({ onViewDetails }: CustomerTableProps) {
         setLoading(true);
         try {
             const token = getAuthToken();
+            console.log('CustomerTable - Token exists:', !!token);
+            console.log('CustomerTable - Token length:', token?.length);
+            console.log('CustomerTable - API URL:', `${API_BASE_URL}/api/customers?page=${page}&size=20`);
+
             const response = await fetch(`${API_BASE_URL}/api/customers?page=${page}&size=20`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -52,8 +56,12 @@ function CustomerTable({ onViewDetails }: CustomerTableProps) {
                 }
             });
 
+            console.log('CustomerTable - Response status:', response.status);
+            console.log('CustomerTable - Response ok:', response.ok);
+
             if (response.ok) {
                 const data = await response.json();
+                console.log('CustomerTable - Response data:', data);
                 // Handle both paginated and non-paginated responses
                 if (data.content) {
                     setCustomers(data.content);
@@ -64,7 +72,8 @@ function CustomerTable({ onViewDetails }: CustomerTableProps) {
                 }
             } else {
                 const errorData = await response.json().catch(() => ({}));
-                setError(errorData.error || errorData.message || 'Failed to fetch customers');
+                console.error('CustomerTable - Error response:', errorData);
+                setError(errorData.error || errorData.message || `Failed to fetch customers (Status: ${response.status})`);
             }
         } catch (error) {
             console.error('Error fetching customers:', error);
