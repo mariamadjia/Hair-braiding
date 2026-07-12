@@ -5,6 +5,7 @@ import { Calendar, Clock, User, Mail, Phone, MessageSquare, Check, X, Loader2, F
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getAuthToken } from "@/lib/utils/auth";
+import { API_BASE_URL } from "@/lib/config/api";
 import CalendarView from "./CalendarView";
 
 type Appointment = {
@@ -53,8 +54,8 @@ export default function AppointmentManagement() {
         setError(null);
         try {
             const url = filter === 'ALL' 
-                ? '/api/appointments' 
-                : `/api/appointments?status=${filter}`;
+                ? `${API_BASE_URL}/api/appointments` 
+                : `${API_BASE_URL}/api/appointments?status=${filter}`;
             
             const token = getAuthToken();
             
@@ -85,7 +86,7 @@ export default function AppointmentManagement() {
             setAppointments(data);
         } catch (error) {
             console.error('Error fetching appointments:', error);
-            setError(error instanceof Error ? error.message : 'Failed to connect to backend. Make sure the Java backend is running on http://localhost:8080');
+            setError(error instanceof Error ? error.message : 'Failed to connect to backend. Please try again later.');
         } finally {
             setLoading(false);
         }
@@ -98,7 +99,7 @@ export default function AppointmentManagement() {
         try {
             const token = getAuthToken();
             
-            const response = await fetch(`/api/appointments/${appointmentId}/approve`, {
+            const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/approve`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -130,7 +131,7 @@ export default function AppointmentManagement() {
         try {
             const token = getAuthToken();
             
-            const response = await fetch(`/api/appointments/${appointmentId}/deny`, {
+            const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/deny`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -248,9 +249,9 @@ export default function AppointmentManagement() {
                             <div className="bg-red-100 border border-red-200 rounded p-4 text-sm text-red-800">
                                 <p className="font-medium mb-2">To fix this:</p>
                                 <ol className="list-decimal list-inside space-y-1 ml-2">
-                                    <li>Open a terminal and navigate to: <code className="bg-red-200 px-1 rounded">/Users/gloriadjonret/Desktop/Backend-Braiding</code></li>
-                                    <li>Run: <code className="bg-red-200 px-1 rounded">./mvnw spring-boot:run</code></li>
-                                    <li>Wait for "Started BackendBraidingApplication" message</li>
+                                    <li>Check your internet connection</li>
+                                    <li>Verify you are logged in with a valid account</li>
+                                    <li>Contact support if the issue persists</li>
                                     <li>Click the retry button below</li>
                                 </ol>
                             </div>
