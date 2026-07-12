@@ -396,6 +396,26 @@ export default function AdminPage() {
         setData(updated);
     };
 
+    const refreshSubcategoryDetail = async (slug: string) => {
+        try {
+            const res = await fetch(`/api/admin/subcategories/${slug}`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                cache: "no-store",
+                signal: AbortSignal.timeout(15000)
+            });
+            if (res.ok) {
+                const fresh = await res.json();
+                setSubcategoryDetailsCache(prev => new Map(prev).set(slug, fresh));
+            }
+        } catch (err) {
+            console.error("Failed to refresh subcategory detail:", err);
+        }
+    };
+
     const handleSelectionChange = async (newSelection: Selection) => {
         setSelection(newSelection);
         // Category detail loading is now handled by CategoryEditor itself
@@ -632,6 +652,7 @@ export default function AdminPage() {
                                         isLoadingSubcategorySummaries={isLoadingSubcategorySummaries}
                                         isLoadingSubcategoryDetail={isLoadingSubcategoryDetail}
                                         loadingSubcategorySlug={loadingSubcategorySlug}
+                                        onSubcategoryUpdate={refreshSubcategoryDetail}
                                     />
                                 )}
                             </div>
