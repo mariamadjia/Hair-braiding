@@ -205,13 +205,56 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const saveItem = async (item: BookingItem, idx: number | null) => {
         try {
             if (idx !== null) {
-                await mutate("PUT", `${base}/items`, { itemIndex: idx, item });
+                // Editing existing item - optimistic update
+                const optimisticData = {
+                    ...data,
+                    categories: data.categories.map((c) => {
+                        if (c.slug !== cat.slug) return c;
+                        return {
+                            ...c,
+                            subcategories: c.subcategories?.map((s) => {
+                                if (s.slug !== sub.slug) return s;
+                                return {
+                                    ...s,
+                                    items: s.items.map((existingItem, index) => index === idx ? item : existingItem),
+                                };
+                            }),
+                        };
+                    }),
+                };
+                onUpdate(optimisticData);
+                setEditingIdx(null);
+                setSaveSuccess("Size saved successfully!");
+                
+                // Call backend in background
+                const updatedData = await mutate("PUT", `${base}/items`, { itemIndex: idx, item });
+                onUpdate(updatedData);
             } else {
-                await mutate("POST", `${base}/items`, item);
+                // Adding new item - optimistic update
+                const optimisticData = {
+                    ...data,
+                    categories: data.categories.map((c) => {
+                        if (c.slug !== cat.slug) return c;
+                        return {
+                            ...c,
+                            subcategories: c.subcategories?.map((s) => {
+                                if (s.slug !== sub.slug) return s;
+                                return {
+                                    ...s,
+                                    items: [...s.items, item],
+                                };
+                            }),
+                        };
+                    }),
+                };
+                onUpdate(optimisticData);
+                setAddingItem(false);
+                setSaveSuccess("Size added successfully!");
+                
+                // Call backend in background
+                const updatedData = await mutate("POST", `${base}/items`, item);
+                onUpdate(updatedData);
             }
-            setAddingItem(false);
-            setEditingIdx(null);
-            setSaveSuccess(idx !== null ? "Size saved successfully!" : "Size added successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
             console.error("Failed to save item:", error);
