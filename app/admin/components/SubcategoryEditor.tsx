@@ -80,16 +80,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         }
     }, [sub.slug]);
 
-    // Sync items from cache whenever sub.items changes (e.g. after backend assigns real IDs post-add)
+    // When cache refreshes after a POST, sync real backend IDs into local items state
     useEffect(() => {
         if (Array.isArray(sub.items) && sub.items.length > 0) {
             setItems(prev => {
-                // Only sync if backend now has IDs that local state is missing
                 const localMissingIds = prev.some(item => !item.id);
                 const backendHasIds = sub.items.every(item => item.id);
-                if (localMissingIds && backendHasIds) {
-                    return sub.items;
-                }
+                if (localMissingIds && backendHasIds) return sub.items;
                 return prev;
             });
         }
@@ -187,21 +184,17 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const saveItem = async (item: BookingItem, idx: number | null) => {
         try {
             if (idx !== null) {
-                // Optimistic: update local items immediately
                 setItems(prev => prev.map((existing, i) => i === idx ? item : existing));
                 setEditingIdx(null);
                 setSaveSuccess("Size saved successfully!");
                 setTimeout(() => setSaveSuccess(null), 3000);
-                // Sync backend in background
                 await mutate("PUT", `${base}/items`, { itemIndex: idx, item });
                 void onSubcategoryUpdate?.(sub.slug);
             } else {
-                // Optimistic: append new item immediately (without id)
                 setItems(prev => [...prev, item]);
                 setAddingItem(false);
                 setSaveSuccess("Size added successfully!");
                 setTimeout(() => setSaveSuccess(null), 3000);
-                // Await cache refresh so the new item gets its real backend id
                 await mutate("POST", `${base}/items`, item);
                 await onSubcategoryUpdate?.(sub.slug);
             }
@@ -224,7 +217,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         const itemName = items?.[idx]?.name ?? "this size";
         if (!confirm(`Delete "${itemName}"?`)) return;
         
-        // Optimistic: remove item from local state immediately
         setItems(prev => prev.filter((_, i) => i !== idx));
         setEditingIdx(null);
         setExpandedItems((prev) => {
