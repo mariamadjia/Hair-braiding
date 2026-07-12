@@ -28,6 +28,7 @@ export type BookingSubcategory = {
     image?: string;
     images?: string[];
     items: BookingItem[];
+    displayOrder?: number;
 };
 
 export type BookingCategory = {
