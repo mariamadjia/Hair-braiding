@@ -65,7 +65,7 @@ export async function apiClient<T>(
       console.error('Network error connecting to backend:', API_BASE_URL, error);
     }
     throw new ApiError(
-      `Cannot connect to backend at ${API_BASE_URL}. Make sure the Java backend is running.`,
+      `Network error: Unable to connect to backend. Please check your internet connection and try again.`,
       0,
       error
     );
