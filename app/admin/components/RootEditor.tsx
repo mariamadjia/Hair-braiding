@@ -14,7 +14,7 @@ type Selection =
 export function RootEditor({ categorySummaries, headers, mutate, setSelection }: {
     categorySummaries: CategorySummary[];
     headers: Record<string, string>;
-    mutate: (method: string, path: string, body?: object) => Promise<CategoriesData>;
+    mutate: (method: string, path: string, body?: object) => Promise<any>;
     setSelection: (s: Selection) => void;
 }) {
     const [adding, setAdding] = useState(false);

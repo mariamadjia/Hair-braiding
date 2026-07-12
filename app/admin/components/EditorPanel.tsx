@@ -47,7 +47,12 @@ export function EditorPanel({
 
     const mutate = async (method: string, path: string, body?: object): Promise<any> => {
         console.log(`[MUTATE] ${method} /api/admin/categories${path}`, body);
-        const res = await fetch(`/api/admin/categories${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+        const res = await fetch(`/api/admin/categories${path}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+            cache: "no-store",
+        });
         console.log(`[MUTATE] Response status: ${res.status}`);
         
         if (!res.ok) {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -97,15 +98,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         });
         
         if (!createResponse.ok) {
-            return NextResponse.json({ error: "Failed to create subcategory" }, { status: createResponse.status });
+            const errorText = await createResponse.text();
+            return NextResponse.json(
+                { error: errorText || "Failed to create subcategory" },
+                { status: createResponse.status }
+            );
         }
         
-        // Return updated categories list
-        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await categoriesResponse.json();
-        return NextResponse.json(data);
+        const createdSubcategory = await createResponse.json();
+        revalidatePath("/services");
+        revalidatePath("/booking");
+        revalidatePath("/booking/[slug]", "page");
+        revalidatePath("/booking/[slug]/[subSlug]", "page");
+
+        return NextResponse.json(createdSubcategory, { status: 201 });
     } catch (error) {
         console.error('Failed to create subcategory:', error);
         return NextResponse.json({ error: "Failed to create subcategory" }, { status: 500 });

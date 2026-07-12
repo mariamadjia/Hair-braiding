@@ -37,7 +37,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     sub: BookingSubcategory;
     token: string;
     headers: Record<string, string>;
-    mutate: (method: string, path: string, body?: object) => Promise<CategoriesData>;
+    mutate: (method: string, path: string, body?: object) => Promise<any>;
     setSelection: (s: Selection) => void;
     onUpdate: (data: CategoriesData) => void;
     data: CategoriesData;
@@ -191,11 +191,11 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 await mutate("PUT", `${base}/items`, { itemIndex: idx, item, itemId: items[idx]?.id, subcategoryId: sub.id });
                 void onSubcategoryUpdate?.(sub.slug);
             } else {
-                setItems(prev => [...prev, item]);
+                const createdItem = await mutate("POST", `${base}/items`, { ...item, subcategoryId: sub.id });
+                setItems(prev => [...prev, createdItem ?? item]);
                 setAddingItem(false);
                 setSaveSuccess("Size added successfully!");
                 setTimeout(() => setSaveSuccess(null), 3000);
-                await mutate("POST", `${base}/items`, { ...item, subcategoryId: sub.id });
                 await onSubcategoryUpdate?.(sub.slug);
             }
         } catch (error) {

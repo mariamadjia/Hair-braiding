@@ -18,7 +18,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     cat: BookingCategory;
     token: string;
     headers: Record<string, string>;
-    mutate: (method: string, path: string, body?: object) => Promise<CategoriesData>;
+    mutate: (method: string, path: string, body?: object) => Promise<any>;
     setSelection: (s: Selection) => void;
     onLoadSubcategorySummaries: (categorySlug: string, token: string) => Promise<SubcategorySummary[]>;
     onLoadSubcategoryDetail: (slug: string, token: string) => Promise<any>;
