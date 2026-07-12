@@ -86,6 +86,7 @@ export default function AdminPage() {
         try {
             const response = await authApi.login({ email, password });
             setToken(response.token);
+            setIsAuthChecking(false);
             
             // authApi.login already stores in localStorage as 'auth_token'
             // Just store in sessionStorage if not remembering
@@ -121,6 +122,8 @@ export default function AdminPage() {
                 } finally {
                     setIsAuthChecking(false);
                 }
+            } else {
+                setIsAuthChecking(false);
             }
 
             const params = new URLSearchParams(window.location.search);
