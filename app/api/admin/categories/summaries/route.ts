@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
     
+    console.log('[ADMIN CATEGORIES SUMMARIES] Auth header present:', !!authHeader);
     console.log('[ADMIN CATEGORIES SUMMARIES] Fetching from backend:', `${API_URL}/api/categories/admin/summaries`);
     
     const res = await fetch(`${API_URL}/api/categories/admin/summaries`, {

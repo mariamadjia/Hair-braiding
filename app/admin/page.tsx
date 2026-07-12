@@ -93,6 +93,8 @@ export default function AdminPage() {
             }
 
             setIsLoadingSummaries(true);
+            console.log('[ADMIN PAGE] Loading category summaries with token:', jwtToken.substring(0, 20) + '...');
+            
             const res = await fetch("/api/admin/categories/summaries", {
                 method: "GET",
                 headers: {
@@ -103,8 +105,11 @@ export default function AdminPage() {
                 signal: AbortSignal.timeout(10000)
             });
 
+            console.log('[ADMIN PAGE] Summaries response status:', res.status);
+
             if (!res.ok) {
                 if (res.status === 401 || res.status === 403) {
+                    console.error('[ADMIN PAGE] Unauthorized access to summaries');
                     localStorage.removeItem("auth_token");
                     sessionStorage.removeItem("auth_token");
                     setToken("");
@@ -115,6 +120,7 @@ export default function AdminPage() {
             }
 
             const summaries: CategorySummary[] = await res.json();
+            console.log('[ADMIN PAGE] Loaded summaries:', summaries.length);
             setCategorySummaries(summaries);
             setError("");
         } catch (err: any) {
