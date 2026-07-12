@@ -25,35 +25,32 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
     
     const { slug, subSlug } = await params;
     const updates = await req.json();
+    const { subcategoryId, ...updateData } = updates;
     const token = req.headers.get("authorization")?.replace("Bearer ", "");
     
     try {
-        // First get the category by slug to find its ID
-        const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`);
-        if (!categoryResponse.ok) {
-            return NextResponse.json({ error: "Category not found" }, { status: 404 });
-        }
-        const category = await categoryResponse.json();
-        
-        // Find the subcategory by slug to get its ID using the correct endpoint
-        const subcategoryResponse = await fetch(`${API_URL}/api/subcategories/category/${category.id}`);
-        if (!subcategoryResponse.ok) {
-            return NextResponse.json({ error: "Failed to fetch subcategories" }, { status: 500 });
-        }
-        const subcategories = await subcategoryResponse.json();
-        const subcategory = subcategories.find((s: any) => s.slug === subSlug);
-        if (!subcategory) {
-            return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
+        let resolvedSubcategoryId = subcategoryId;
+
+        if (!resolvedSubcategoryId) {
+            const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`);
+            if (!categoryResponse.ok) return NextResponse.json({ error: "Category not found" }, { status: 404 });
+            const category = await categoryResponse.json();
+            const subcategoryResponse = await fetch(`${API_URL}/api/subcategories/category/${category.id}`);
+            if (!subcategoryResponse.ok) return NextResponse.json({ error: "Failed to fetch subcategories" }, { status: 500 });
+            const subcategories = await subcategoryResponse.json();
+            const subcategory = subcategories.find((s: any) => s.slug === subSlug);
+            if (!subcategory) return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
+            resolvedSubcategoryId = subcategory.id;
         }
         
         // Update the subcategory
-        const updateResponse = await fetch(`${API_URL}/api/subcategories/${subcategory.id}`, {
+        const updateResponse = await fetch(`${API_URL}/api/subcategories/${resolvedSubcategoryId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(updates)
+            body: JSON.stringify(updateData)
         });
         
         if (!updateResponse.ok) {
@@ -72,28 +69,28 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
     
     const { slug, subSlug } = await params;
     const token = req.headers.get("authorization")?.replace("Bearer ", "");
-    
+
+    let resolvedSubcategoryId: number | null = null;
     try {
-        // First get the category by slug to find its ID
-        const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`);
-        if (!categoryResponse.ok) {
-            return NextResponse.json({ error: "Category not found" }, { status: 404 });
-        }
-        const category = await categoryResponse.json();
-        
-        // Find the subcategory by slug to get its ID using the correct endpoint
-        const subcategoryResponse = await fetch(`${API_URL}/api/subcategories/category/${category.id}`);
-        if (!subcategoryResponse.ok) {
-            return NextResponse.json({ error: "Failed to fetch subcategories" }, { status: 500 });
-        }
-        const subcategories = await subcategoryResponse.json();
-        const subcategory = subcategories.find((s: any) => s.slug === subSlug);
-        if (!subcategory) {
-            return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
+        const body = await req.json().catch(() => ({}));
+        resolvedSubcategoryId = body?.subcategoryId ?? null;
+    } catch {}
+
+    try {
+        if (!resolvedSubcategoryId) {
+            const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`);
+            if (!categoryResponse.ok) return NextResponse.json({ error: "Category not found" }, { status: 404 });
+            const category = await categoryResponse.json();
+            const subcategoryResponse = await fetch(`${API_URL}/api/subcategories/category/${category.id}`);
+            if (!subcategoryResponse.ok) return NextResponse.json({ error: "Failed to fetch subcategories" }, { status: 500 });
+            const subcategories = await subcategoryResponse.json();
+            const subcategory = subcategories.find((s: any) => s.slug === subSlug);
+            if (!subcategory) return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
+            resolvedSubcategoryId = subcategory.id;
         }
         
         // Delete the subcategory
-        const deleteResponse = await fetch(`${API_URL}/api/subcategories/${subcategory.id}`, {
+        const deleteResponse = await fetch(`${API_URL}/api/subcategories/${resolvedSubcategoryId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`

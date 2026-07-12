@@ -113,11 +113,11 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, subc
         setNewSubName(""); setAddingSub(false);
     };
 
-    const delSub = async (subSlug: string, subName: string) => {
+    const delSub = async (subSlug: string, subName: string, subId?: number) => {
         if (!confirm(`Delete subcategory "${subName}"?`)) return;
         setSaving(true);
         try {
-            await mutate("DELETE", `/${cat.slug}/subcategories/${subSlug}`);
+            await mutate("DELETE", `/${cat.slug}/subcategories/${subSlug}`, subId ? { subcategoryId: subId } : undefined);
             setSuccessMessage(`Subcategory "${subName}" deleted successfully!`);
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
@@ -283,7 +283,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, subc
                                     >
                                         Edit
                                     </button>
-                                    <button type="button" onClick={() => delSub(sub.slug, sub.name)} className={btnD}>×</button>
+                                    <button type="button" onClick={() => delSub(sub.slug, sub.name, sub.id)} className={btnD}>×</button>
                                 </div>
                             </div>
                         ))
