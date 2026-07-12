@@ -60,5 +60,5 @@ export function EditorPanel({ data, selection, setSelection, token, onUpdate }: 
         return <div className="p-4 text-red-600">Subcategory not found. Please go back and try again.</div>;
     }
 
-    return <SubcategoryEditor cat={cat} sub={sub} token={token} headers={headers} mutate={mutate} setSelection={setSelection} onUpdate={onUpdate} />;
+    return <SubcategoryEditor cat={cat} sub={sub} token={token} headers={headers} mutate={mutate} setSelection={setSelection} onUpdate={onUpdate} data={data} />;
 }

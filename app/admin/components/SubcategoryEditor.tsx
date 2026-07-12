@@ -31,7 +31,7 @@ type Selection =
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
 
-export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelection, onUpdate }: {
+export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelection, onUpdate, data }: {
     cat: BookingCategory;
     sub: BookingSubcategory;
     token: string;
@@ -39,6 +39,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     mutate: (method: string, path: string, body?: object) => Promise<CategoriesData>;
     setSelection: (s: Selection) => void;
     onUpdate: (data: CategoriesData) => void;
+    data: CategoriesData;
 }) {
     if (!sub) {
         return <div className="text-sm text-neutral-500">Subcategory not found</div>;
@@ -231,23 +232,40 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         const itemName = items?.[idx]?.name ?? "this size";
         if (!confirm(`Delete "${itemName}"?`)) return;
         
-        setSaving(true);
+        // 1. Immediately update UI with optimistic data
+        const optimisticData = {
+            ...data,
+            categories: data.categories.map((c) => {
+                if (c.slug !== cat.slug) return c;
+                return {
+                    ...c,
+                    subcategories: c.subcategories?.map((s) => {
+                        if (s.slug !== sub.slug) return s;
+                        return {
+                            ...s,
+                            items: s.items.filter((_, i) => i !== idx),
+                        };
+                    }),
+                };
+            }),
+        };
+        onUpdate(optimisticData);
+        setEditingIdx(null);
+        setExpandedItems((prev) => {
+            const next = new Set(prev);
+            next.delete(idx);
+            return next;
+        });
+        
+        // 2. Then call backend in background
         try {
             const updatedData = await mutate("DELETE", `${base}/items/${itemId}`);
             onUpdate(updatedData);
-            setEditingIdx(null);
-            setExpandedItems((prev) => {
-                const next = new Set(prev);
-                next.delete(idx);
-                return next;
-            });
             setSaveSuccess("Size deleted successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
             console.error("Failed to delete item:", error);
-            alert("Failed to delete size. Please try again.");
-        } finally {
-            setSaving(false);
+            alert("Delete failed. Please refresh the page.");
         }
     };
 
