@@ -204,6 +204,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
     const url = new URL(req.url);
     const itemIndex = Number(url.pathname.split('/').pop());
     
+    console.log('[DELETE ITEMS] Deleting item at index:', itemIndex, 'for subcategory:', subSlug);
+    
     try {
         // Get subcategory ID from slug endpoint
         const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
@@ -224,6 +226,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
             return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
         }
         
+        console.log('[DELETE ITEMS] Subcategory ID:', subcategory.id, 'Items count:', subcategory.items?.length);
+        
         // Use services endpoint to get items with IDs
         const itemsResponse = await fetch(`${API_URL}/api/services/subcategory/${subcategory.id}`, {
             headers: { 'Authorization': getAuthHeader(req) }
@@ -232,12 +236,17 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
         let itemToDelete: any = null;
         if (itemsResponse.ok) {
             const items = await itemsResponse.json();
+            console.log('[DELETE ITEMS] Services endpoint returned items:', items.length);
             itemToDelete = items[itemIndex];
+            console.log('[DELETE ITEMS] Item at index', itemIndex, 'from services:', itemToDelete?.id, itemToDelete?.name);
         }
         if (!itemToDelete || !itemToDelete.id) {
+            console.log('[DELETE ITEMS] Falling back to subcategory items');
             itemToDelete = subcategory.items?.[itemIndex];
+            console.log('[DELETE ITEMS] Item at index', itemIndex, 'from subcategory:', itemToDelete?.id, itemToDelete?.name);
         }
         if (!itemToDelete || !itemToDelete.id) {
+            console.error('[DELETE ITEMS] Item not found or missing ID at index:', itemIndex);
             return NextResponse.json({ error: "Item not found or missing ID" }, { status: 404 });
         }
         

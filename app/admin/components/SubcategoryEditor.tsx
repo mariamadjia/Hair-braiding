@@ -219,9 +219,18 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     };
 
     const deleteItem = async (idx: number, itemId?: number) => {
+        console.log('[SubcategoryEditor] deleteItem called with idx:', idx, 'itemId:', itemId);
+        
+        // Always use itemId if available, never rely on array index
+        if (!itemId) {
+            console.error('[SubcategoryEditor] No itemId provided, cannot delete safely');
+            alert("Cannot delete: item ID is missing. Please refresh and try again.");
+            return;
+        }
+        
         setSaving(true);
         try {
-            await mutate("DELETE", `${base}/items/${itemId ?? idx}`);
+            await mutate("DELETE", `${base}/items/${itemId}`);
             setSaveSuccess("Size deleted successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
