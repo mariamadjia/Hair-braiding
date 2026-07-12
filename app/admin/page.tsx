@@ -93,7 +93,7 @@ export default function AdminPage() {
             }
 
             setIsLoadingSummaries(true);
-            const res = await fetch("/api/categories/admin/summaries", {
+            const res = await fetch("/api/admin/categories/summaries", {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${jwtToken}`,
@@ -142,7 +142,7 @@ export default function AdminPage() {
 
             setIsLoadingCategoryDetail(true);
             setLoadingCategorySlug(slug);
-            const res = await fetch(`/api/categories/admin/${slug}`, {
+            const res = await fetch(`/api/admin/categories/${slug}`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${jwtToken}`,
