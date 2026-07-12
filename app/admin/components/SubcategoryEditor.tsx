@@ -228,9 +228,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             return;
         }
         
+        const itemName = sub.items?.[idx]?.name ?? "this size";
+        if (!confirm(`Delete "${itemName}"?`)) return;
+        
         setSaving(true);
         try {
-            await mutate("DELETE", `${base}/items/${itemId}`);
+            const updatedData = await mutate("DELETE", `${base}/items/${itemId}`);
+            onUpdate(updatedData);
             setSaveSuccess("Size deleted successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
