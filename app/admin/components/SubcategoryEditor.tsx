@@ -60,12 +60,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
 
-    useEffect(() => { 
-        setName(sub.name); 
-        setImage(sub.image ?? ""); 
-        setImages(sub.images ?? []); 
-        setDirty(false); 
-    }, [sub.slug, sub.name, sub.image, sub.images, sub.items]);
+    useEffect(() => { setName(sub.name); setImage(sub.image ?? ""); setImages(sub.images ?? []); setDirty(false); }, [sub.slug]);
 
     // Fetch gallery images for this subcategory and auto-sync
     useEffect(() => {
@@ -233,13 +228,19 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             return;
         }
         
-        const itemName = sub.items?.[idx]?.name ?? "this size";
+        const itemName = items?.[idx]?.name ?? "this size";
         if (!confirm(`Delete "${itemName}"?`)) return;
         
         setSaving(true);
         try {
             const updatedData = await mutate("DELETE", `${base}/items/${itemId}`);
             onUpdate(updatedData);
+            setEditingIdx(null);
+            setExpandedItems((prev) => {
+                const next = new Set(prev);
+                next.delete(idx);
+                return next;
+            });
             setSaveSuccess("Size deleted successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
