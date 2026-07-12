@@ -53,9 +53,14 @@ export default function AppointmentManagement() {
         setLoading(true);
         setError(null);
         try {
-            const url = filter === 'ALL' 
-                ? `${API_BASE_URL}/api/appointments` 
-                : `${API_BASE_URL}/api/appointments?status=${filter}`;
+            let url;
+            if (filter === 'ALL') {
+                url = `${API_BASE_URL}/api/appointments`;
+            } else if (filter === 'PENDING') {
+                url = `${API_BASE_URL}/api/appointments/pending`;
+            } else {
+                url = `${API_BASE_URL}/api/appointments/status/${filter}`;
+            }
             
             const token = getAuthToken();
             
