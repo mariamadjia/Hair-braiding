@@ -52,6 +52,7 @@ export type BookingCategory = {
     summary?: string;
     image?: string;
     flippingImages?: string[];
+    displayOrder?: number;
     items?: BookingItem[];
     subcategories?: BookingSubcategory[];
 };

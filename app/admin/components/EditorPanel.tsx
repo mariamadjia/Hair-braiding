@@ -80,12 +80,19 @@ export function EditorPanel({
         />;
     }
 
-    const cat = categoryDetailsCache.get(selection.catSlug);
+    // Build a minimal cat stub from categorySummaries if full detail not cached yet
+    const catDetail = categoryDetailsCache.get(selection.catSlug);
+    const catSummary = categorySummaries.find(s => s.slug === selection.catSlug);
+    const cat: BookingCategory | null = catDetail ?? (catSummary ? {
+        id: catSummary.id,
+        name: catSummary.name,
+        slug: catSummary.slug,
+        displayOrder: catSummary.displayOrder,
+        subcategories: [],
+        items: [],
+    } : null);
 
     if (!cat) {
-        if (isLoadingCategoryDetail && loadingCategorySlug === selection.catSlug) {
-            return <div className="p-4 text-neutral-500">Loading category details...</div>;
-        }
         return <div className="p-4 text-red-600">Category not found. Please go back and try again.</div>;
     }
 

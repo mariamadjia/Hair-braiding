@@ -398,11 +398,9 @@ export default function AdminPage() {
 
     const handleSelectionChange = async (newSelection: Selection) => {
         setSelection(newSelection);
-        
-        // Load category detail when selecting a category
-        if (newSelection.type === "category") {
-            await loadCategoryDetail(newSelection.catSlug, token);
-        }
+        // Category detail loading is now handled by CategoryEditor itself
+        // (it loads subcategory summaries when mounted)
+        // Do NOT call loadCategoryDetail here — that loads the full tree
     };
 
     const handleLoadCategoryDetail = async (slug: string) => {
