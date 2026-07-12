@@ -10,7 +10,7 @@ async function getServiceCategories() {
     const response = await fetch(
       `${API_URL}/api/categories/gallery-cards`,
       {
-        next: { revalidate: 300 },
+        next: { revalidate: 300, tags: ['categories'] },
       }
     );
 

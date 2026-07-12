@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         }
         
         console.log('[POST ITEMS] Service created successfully');
+        revalidateTag('categories');
         return NextResponse.json({ success: true }, { status: 201 });
     } catch (error: any) {
         console.error('Failed to create item:', error);
@@ -137,6 +139,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             return NextResponse.json({ error: error || "Failed to update item" }, { status: response.status });
         }
         
+        revalidateTag('categories');
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to update item:', error);

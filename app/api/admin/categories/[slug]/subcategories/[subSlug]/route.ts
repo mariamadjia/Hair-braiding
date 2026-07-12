@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 
 export const runtime = "nodejs";
 
@@ -57,6 +58,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             return NextResponse.json({ error: "Failed to update subcategory" }, { status: updateResponse.status });
         }
         
+        revalidateTag('categories');
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to update subcategory:', error);
@@ -101,6 +103,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
             return NextResponse.json({ error: "Failed to delete subcategory" }, { status: deleteResponse.status });
         }
         
+        revalidateTag('categories');
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to delete subcategory:', error);

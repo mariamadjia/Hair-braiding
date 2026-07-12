@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -52,6 +53,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
         }
         
         console.log('[DELETE ITEM] Item deleted successfully');
+        revalidateTag('categories');
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('[DELETE ITEM] Failed to delete item:', error);
