@@ -90,6 +90,13 @@ export default function AdminPage() {
         }
     };
 
+    // Warm up the backend on page load (prevents cold start delay)
+    const pingBackend = () => {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend-hairbraiding.onrender.com";
+        fetch(`${apiUrl}/api/health`, { cache: "no-store", signal: AbortSignal.timeout(60000) })
+            .catch(() => {});
+    };
+
     // New optimized loading functions
     const loadCategorySummaries = async (jwtToken: string) => {
         try {
@@ -348,6 +355,9 @@ export default function AdminPage() {
     };
 
     useEffect(() => {
+        // Fire a warm-up ping immediately on page load so the backend isn't cold when we need it
+        pingBackend();
+
         const checkAuthAndLoad = async () => {
             const savedToken =
                 sessionStorage.getItem("auth_token") ||
@@ -375,9 +385,8 @@ export default function AdminPage() {
                 setCurrentSection(section);
             }
 
-            if (section === "categories" && categorySlug) {
-                setSelection({ type: "category", catSlug: categorySlug });
-            }
+            // Note: do NOT auto-select a category from URL params; let the user click it.
+            // Doing so before summaries load shows a broken loading state.
         };
 
         checkAuthAndLoad();
@@ -422,7 +431,7 @@ export default function AdminPage() {
         setSelection({ type: "category", catSlug: categorySlug });
     };
 
-    if (!token) {
+    if (!token && !isAuthChecking) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-neutral-50 relative overflow-hidden">
                 <div 
@@ -512,10 +521,10 @@ export default function AdminPage() {
 
     if (isAuthChecking) return <div className="p-12 text-neutral-500">Loading…</div>;
 
-    const categories = data?.categories ?? [];
+    const categories = categorySummaries;
 
     // Compute what to show in the preview
-    const previewCat = selection.type !== "root" ? categories.find((c) => c.slug === selection.catSlug) : null;
+    const previewCat = selection.type !== "root" ? (data?.categories ?? []).find((c) => c.slug === selection.catSlug) : null;
     const previewSub = selection.type === "subcategory" && previewCat
         ? (previewCat.subcategories ?? []).find((s) => s.slug === selection.subSlug)
         : null;
