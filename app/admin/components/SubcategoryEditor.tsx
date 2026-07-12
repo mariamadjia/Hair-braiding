@@ -189,7 +189,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const save = async () => {
         setSaving(true);
         try {
-            await mutate("PUT", base, { name, image });
+            await mutate("PUT", base, { name, image, displayOrder: sub.displayOrder?.toString() });
             setDirty(false);
             setSaveSuccess("Subcategory saved successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);

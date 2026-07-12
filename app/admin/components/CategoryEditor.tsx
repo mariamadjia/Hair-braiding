@@ -90,7 +90,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
 
     const addSub = async () => {
         if (!newSubName.trim()) return;
-        await mutate("POST", `/${cat.slug}/subcategories`, { name: newSubName.trim(), slug: slugify(newSubName), items: [] });
+        await mutate("POST", `/${cat.slug}/subcategories`, { name: newSubName.trim(), categoryId: cat.id });
         setNewSubName(""); setAddingSub(false);
     };
 

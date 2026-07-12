@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 interface CreateSubcategoryModalProps {
     categoryId: number;
     onClose: () => void;
-    onCreate: (name: string) => void;
+    onCreate: (data: { name: string; categoryId: number }) => void;
 }
 
 export function CreateSubcategoryModal({ categoryId, onClose, onCreate }: CreateSubcategoryModalProps) {
@@ -18,7 +18,7 @@ export function CreateSubcategoryModal({ categoryId, onClose, onCreate }: Create
             return;
         }
         
-        onCreate(name.trim());
+        onCreate({ name: name.trim(), categoryId });
     };
 
     return (
