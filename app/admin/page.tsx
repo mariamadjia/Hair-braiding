@@ -100,7 +100,8 @@ export default function AdminPage() {
                 sessionStorage.setItem("admin_user", JSON.stringify(response.admin));
             }
             
-            await loadCategories(response.token);
+            // Load categories in background, do not block login
+            void loadCategories(response.token);
         } catch (err: any) {
             setError(err.message || "Invalid email or password.");
         } finally {
@@ -260,38 +261,10 @@ export default function AdminPage() {
 
     if (isAuthChecking) return <div className="p-12 text-neutral-500">Loading…</div>;
 
-    if (!data || !data.categories) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-                <div className="text-center space-y-4">
-                    <p className="text-neutral-500">Failed to load admin data.</p>
-                    {error && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-sm">
-                            <p className="text-sm text-red-600">{error}</p>
-                        </div>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            const savedToken = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token");
-                            if (savedToken) {
-                                loadCategories(savedToken);
-                            } else {
-                                setToken("");
-                                setError("Session expired. Please log in again.");
-                            }
-                        }}
-                        className="px-4 py-2 text-sm font-medium bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 transition-colors"
-                    >
-                        Retry
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    const categories = data?.categories ?? [];
 
     // Compute what to show in the preview
-    const previewCat = selection.type !== "root" ? data.categories.find((c) => c.slug === selection.catSlug) : null;
+    const previewCat = selection.type !== "root" ? categories.find((c) => c.slug === selection.catSlug) : null;
     const previewSub = selection.type === "subcategory" && previewCat
         ? (previewCat.subcategories ?? []).find((s) => s.slug === selection.subSlug)
         : null;
@@ -333,7 +306,7 @@ export default function AdminPage() {
                             {currentSection === "profile" && "Profile"}
                         </h1>
                         {currentSection === "categories" && (
-                            <span className="text-sm text-neutral-400">{data.categories.length} categories</span>
+                            <span className="text-sm text-neutral-400">{categories.length} categories</span>
                         )}
                     </div>
                 </div>
@@ -364,13 +337,29 @@ export default function AdminPage() {
                         {/* Services List - Matches Public Site */}
                         <section className="bg-[#FFF5EE] dark:bg-neutral-900 pb-24 md:pb-32">
                             <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-                                <EditorPanel
-                                    data={data}
-                                    selection={selection}
-                                    setSelection={setSelection}
-                                    token={token}
-                                    onUpdate={handleUpdate}
-                                />
+                                {!data || !data.categories ? (
+                                    <div className="bg-white border border-neutral-200 rounded-lg p-8 text-center">
+                                        <p className="text-neutral-500 mb-4">Loading services...</p>
+                                        {error && (
+                                            <p className="text-sm text-red-600 mb-4">{error}</p>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => loadCategories(token)}
+                                            className="px-4 py-2 text-sm font-medium bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 transition-colors"
+                                        >
+                                            Retry
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <EditorPanel
+                                        data={data!}
+                                        selection={selection}
+                                        setSelection={setSelection}
+                                        token={token}
+                                        onUpdate={handleUpdate}
+                                    />
+                                )}
                             </div>
                         </section>
                     </div>
