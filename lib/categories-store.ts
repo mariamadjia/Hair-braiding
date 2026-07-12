@@ -63,7 +63,8 @@ export async function readBookingCategory(slug: string): Promise<BookingCategory
         const response = await fetch(
             `${API_URL}/api/booking/${encodeURIComponent(slug)}`,
             {
-                next: { revalidate: 300, tags: ['categories'] },
+                next: { revalidate: 60, tags: ['categories'] },
+                signal: AbortSignal.timeout(15000),
             }
         );
 
@@ -75,7 +76,7 @@ export async function readBookingCategory(slug: string): Promise<BookingCategory
         }
 
         if (!response.ok) {
-            console.error(`[readBookingCategory] Failed: ${response.status}`);
+            // Throw so Next.js does NOT cache this as a 404 — it will retry on next request
             throw new Error(`Failed to fetch booking category: ${response.status}`);
         }
 
@@ -84,7 +85,8 @@ export async function readBookingCategory(slug: string): Promise<BookingCategory
         return data;
     } catch (error) {
         console.error('[readBookingCategory] Error:', error);
-        return null;
+        // Re-throw so Next.js does not cache a failed fetch as notFound()
+        throw error;
     }
 }
 
