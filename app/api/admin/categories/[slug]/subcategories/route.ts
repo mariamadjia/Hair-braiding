@@ -99,6 +99,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         
         if (!createResponse.ok) {
             const errorText = await createResponse.text();
+            console.error(`[POST SUBCATEGORY] Backend ${createResponse.status} for POST /api/subcategories:`, errorText);
+            console.error(`[POST SUBCATEGORY] Auth header sent: ${authHeader.substring(0, 30)}...`);
             return NextResponse.json(
                 { error: errorText || "Failed to create subcategory" },
                 { status: createResponse.status }
