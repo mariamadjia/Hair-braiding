@@ -181,14 +181,14 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 await mutate("PUT", `${base}/items`, { itemIndex: idx, item });
                 void onSubcategoryUpdate?.(sub.slug);
             } else {
-                // Optimistic: append new item immediately
+                // Optimistic: append new item immediately (without id)
                 setItems(prev => [...prev, item]);
                 setAddingItem(false);
                 setSaveSuccess("Size added successfully!");
                 setTimeout(() => setSaveSuccess(null), 3000);
-                // Sync backend in background
+                // Await cache refresh so the new item gets its real backend id
                 await mutate("POST", `${base}/items`, item);
-                void onSubcategoryUpdate?.(sub.slug);
+                await onSubcategoryUpdate?.(sub.slug);
             }
         } catch (error) {
             console.error("Failed to save item:", error);
