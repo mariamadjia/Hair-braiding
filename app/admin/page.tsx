@@ -355,9 +355,6 @@ export default function AdminPage() {
     };
 
     useEffect(() => {
-        // Fire a warm-up ping immediately on page load so the backend isn't cold when we need it
-        pingBackend();
-
         const checkAuthAndLoad = async () => {
             const savedToken =
                 sessionStorage.getItem("auth_token") ||
@@ -367,13 +364,19 @@ export default function AdminPage() {
                 setIsAuthChecking(true);
                 setToken(savedToken);
                 try {
-                    await loadCategorySummaries(savedToken);
+                    // Run warm-up ping and summaries fetch in parallel
+                    await Promise.all([
+                        pingBackend(),
+                        loadCategorySummaries(savedToken)
+                    ]);
                 } catch (err) {
                     console.error("Auth check failed:", err);
                 } finally {
                     setIsAuthChecking(false);
                 }
             } else {
+                // Still ping even if not logged in
+                pingBackend();
                 setIsAuthChecking(false);
             }
 
