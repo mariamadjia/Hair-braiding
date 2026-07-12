@@ -127,10 +127,10 @@ export default function AdminPage() {
         }
     };
 
-    const loadCategoryDetail = async (slug: string, jwtToken: string) => {
+    const loadCategoryDetail = async (slug: string, jwtToken: string): Promise<BookingCategory | null> => {
         // Check cache first
         if (categoryDetailsCache.has(slug)) {
-            return categoryDetailsCache.get(slug);
+            return categoryDetailsCache.get(slug) ?? null;
         }
 
         try {
@@ -262,6 +262,10 @@ export default function AdminPage() {
         if (newSelection.type === "category") {
             await loadCategoryDetail(newSelection.catSlug, token);
         }
+    };
+
+    const handleLoadCategoryDetail = async (slug: string) => {
+        return loadCategoryDetail(slug, token);
     };
 
     const handleLogout = () => {
@@ -479,7 +483,7 @@ export default function AdminPage() {
                                         onUpdate={handleUpdate}
                                         categorySummaries={categorySummaries}
                                         categoryDetailsCache={categoryDetailsCache}
-                                        onLoadCategoryDetail={loadCategoryDetail}
+                                        onLoadCategoryDetail={handleLoadCategoryDetail}
                                         isLoadingCategoryDetail={isLoadingCategoryDetail}
                                         loadingCategorySlug={loadingCategorySlug}
                                     />
