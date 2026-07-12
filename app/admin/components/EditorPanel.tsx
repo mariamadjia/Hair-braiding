@@ -1,6 +1,6 @@
 "use client";
 
-import type { CategoriesData, CategorySummary, SubcategorySummary, BookingCategory } from "@/lib/booking-types";
+import type { CategoriesData, CategorySummary, SubcategorySummary } from "@/lib/booking-types";
 import { RootEditor } from "./RootEditor";
 import { CategoryEditor } from "./CategoryEditor";
 import { SubcategoryEditor } from "./SubcategoryEditor";
@@ -17,11 +17,6 @@ export function EditorPanel({
     token, 
     onUpdate,
     categorySummaries,
-    categoryDetailsCache,
-    onLoadCategoryDetail,
-    isLoadingCategoryDetail,
-    loadingCategorySlug,
-    subcategorySummariesCache,
     subcategoryDetailsCache,
     onLoadSubcategorySummaries,
     onLoadSubcategoryDetail,
@@ -34,20 +29,15 @@ export function EditorPanel({
     selection: Selection;
     setSelection: (s: Selection) => void;
     token: string;
-    onUpdate: (data: CategoriesData) => void;
+    onUpdate: (data: CategoriesData | any) => void;
     categorySummaries: CategorySummary[];
-    categoryDetailsCache: Map<string, BookingCategory>;
-    onLoadCategoryDetail: (slug: string) => Promise<BookingCategory | null>;
-    isLoadingCategoryDetail: boolean;
-    loadingCategorySlug: string | null;
-    subcategorySummariesCache: Map<string, SubcategorySummary[]>;
     subcategoryDetailsCache: Map<string, any>;
     onLoadSubcategorySummaries: (categorySlug: string, token: string) => Promise<SubcategorySummary[]>;
     onLoadSubcategoryDetail: (slug: string, token: string) => Promise<any>;
     isLoadingSubcategorySummaries: boolean;
     isLoadingSubcategoryDetail: boolean;
     loadingSubcategorySlug: string | null;
-    onSubcategoryUpdate?: (slug: string) => Promise<void>;
+    onSubcategoryUpdate?: (slug: string) => Promise<any>;
 }) {
     const headers = { 
         "Content-Type": "application/json", 
@@ -55,7 +45,7 @@ export function EditorPanel({
         "Authorization": `Bearer ${token}`
     };
 
-    const mutate = async (method: string, path: string, body?: object) => {
+    const mutate = async (method: string, path: string, body?: object): Promise<any> => {
         console.log(`[MUTATE] ${method} /api/admin/categories${path}`, body);
         const res = await fetch(`/api/admin/categories${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
         console.log(`[MUTATE] Response status: ${res.status}`);
@@ -66,10 +56,16 @@ export function EditorPanel({
             throw new Error(`Failed to ${method} ${path}: ${res.status} ${errorText}`);
         }
         
-        const updated: CategoriesData = await res.json();
-        console.log(`[MUTATE] Success, categories updated`);
-        onUpdate(updated);
-        return updated;
+        const text = await res.text();
+        const result = text ? JSON.parse(text) : { success: true };
+        console.log(`[MUTATE] Success`);
+
+        // Only update data when a real category tree is returned
+        if (result && Array.isArray(result.categories)) {
+            onUpdate(result);
+        }
+
+        return result;
     };
 
     if (selection.type === "root") {
@@ -78,14 +74,12 @@ export function EditorPanel({
             headers={headers} 
             mutate={mutate} 
             setSelection={setSelection}
-            onLoadCategoryDetail={onLoadCategoryDetail}
         />;
     }
 
-    const catFromCache = categoryDetailsCache.get(selection.catSlug);
     const catFromSummary = categorySummaries.find(s => s.slug === selection.catSlug);
-    // Use cached detail if available, otherwise fall back to summary so we render immediately
-    const cat = catFromCache ?? (catFromSummary ? { ...catFromSummary, subcategories: [], flippingImages: [] } as any : null);
+    // Category selection renders immediately from the lightweight summary.
+    const cat = catFromSummary ? { ...catFromSummary, subcategories: [], flippingImages: [] } as any : null;
 
     if (!cat) {
         return <div className="p-4 text-red-600">Category not found. Please go back and try again.</div>;
@@ -98,13 +92,9 @@ export function EditorPanel({
             headers={headers} 
             mutate={mutate} 
             setSelection={setSelection}
-            subcategorySummariesCache={subcategorySummariesCache}
-            subcategoryDetailsCache={subcategoryDetailsCache}
             onLoadSubcategorySummaries={onLoadSubcategorySummaries}
             onLoadSubcategoryDetail={onLoadSubcategoryDetail}
             isLoadingSubcategorySummaries={isLoadingSubcategorySummaries}
-            isLoadingSubcategoryDetail={isLoadingSubcategoryDetail}
-            loadingSubcategorySlug={loadingSubcategorySlug}
         />;
     }
 

@@ -69,9 +69,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
             return NextResponse.json({ error: error || "Failed to create item" }, { status: response.status });
         }
         
+        let createdItem = await response.json().catch(() => null);
+
+        // If backend returns no body or no ID, fetch subcategory services to get the real item ID
+        if (!createdItem?.id) {
+            const itemsResponse = await fetch(`${API_URL}/api/services/subcategory/${resolvedSubcategoryId}`, {
+                headers: { 'Authorization': getAuthHeader(req) }
+            });
+            if (itemsResponse.ok) {
+                const items = await itemsResponse.json();
+                createdItem = [...items].reverse().find((service: any) => service.name === itemData.name) ?? null;
+            }
+        }
+
         console.log('[POST ITEMS] Service created successfully');
         revalidatePath('/', 'layout');
-        return NextResponse.json({ success: true }, { status: 201 });
+        return NextResponse.json(createdItem ?? { success: true }, { status: 201 });
     } catch (error: any) {
         console.error('Failed to create item:', error);
         console.error('Error details:', error.message, error.stack);
@@ -139,8 +152,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             return NextResponse.json({ error: error || "Failed to update item" }, { status: response.status });
         }
         
+        const updatedItem = await response.json().catch(() => ({ ...item, id: resolvedItemId }));
         revalidatePath('/', 'layout');
-        return NextResponse.json({ success: true });
+        return NextResponse.json(updatedItem);
     } catch (error) {
         console.error('Failed to update item:', error);
         return NextResponse.json({ error: "Failed to update item" }, { status: 500 });

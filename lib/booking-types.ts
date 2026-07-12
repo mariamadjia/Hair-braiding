@@ -13,6 +13,7 @@ export type SubcategorySummary = {
 };
 
 export type LengthOption = {
+    id?: number;
     name?: string;
     price?: string;
     duration?: string;

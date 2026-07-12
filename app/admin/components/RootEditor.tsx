@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { CategoriesData, BookingCategory, CategorySummary } from "@/lib/booking-types";
+import type { CategoriesData, CategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
 import { GripVertical, FolderTree, FileText, Image as ImageIcon } from "lucide-react";
@@ -11,12 +11,11 @@ type Selection =
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
 
-export function RootEditor({ categorySummaries, headers, mutate, setSelection, onLoadCategoryDetail }: {
+export function RootEditor({ categorySummaries, headers, mutate, setSelection }: {
     categorySummaries: CategorySummary[];
     headers: Record<string, string>;
     mutate: (method: string, path: string, body?: object) => Promise<CategoriesData>;
     setSelection: (s: Selection) => void;
-    onLoadCategoryDetail: (slug: string) => void;
 }) {
     const [adding, setAdding] = useState(false);
     const [name, setName] = useState("");
@@ -160,7 +159,8 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                             <button 
                                 type="button" 
                                 onClick={() => {
-                                    onLoadCategoryDetail(cat.slug);
+                                    // Do not load the full category tree here. CategoryEditor will
+                                    // load only lightweight subcategory summaries.
                                     setSelection({ type: "category", catSlug: cat.slug });
                                 }} 
                                 className="flex-1 text-left min-w-0"
@@ -177,7 +177,8 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                                 <button 
                                     type="button" 
                                     onClick={() => {
-                                        onLoadCategoryDetail(cat.slug);
+                                        // Do not load the full category tree here. CategoryEditor will
+                                        // load only lightweight subcategory summaries.
                                         setSelection({ type: "category", catSlug: cat.slug });
                                     }} 
                                     className={btnS}

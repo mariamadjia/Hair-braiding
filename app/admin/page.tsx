@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, lazy, Suspense } from "react";
-import type { CategoriesData, CategorySummary, SubcategorySummary, BookingCategory } from "@/lib/booking-types";
+import type { CategoriesData, CategorySummary, SubcategorySummary } from "@/lib/booking-types";
 import { EditorPanel } from "./components/EditorPanel";
 import { PreviewServicesList, PreviewCategoryDetail, PreviewSubcategoryDetail } from "./components/PreviewComponents";
 import { AdminSidebar } from "./components/AdminSidebar";
@@ -38,10 +38,7 @@ export default function AdminPage() {
     
     // New state for lazy loading
     const [categorySummaries, setCategorySummaries] = useState<CategorySummary[]>([]);
-    const [categoryDetailsCache, setCategoryDetailsCache] = useState<Map<string, BookingCategory>>(new Map());
     const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
-    const [isLoadingCategoryDetail, setIsLoadingCategoryDetail] = useState(false);
-    const [loadingCategorySlug, setLoadingCategorySlug] = useState<string | null>(null);
     
     // New state for subcategory lazy loading
     const [subcategorySummariesCache, setSubcategorySummariesCache] = useState<Map<string, SubcategorySummary[]>>(new Map());
@@ -144,61 +141,6 @@ export default function AdminPage() {
             }
         } finally {
             setIsLoadingSummaries(false);
-        }
-    };
-
-    const loadCategoryDetail = async (slug: string, jwtToken: string): Promise<BookingCategory | null> => {
-        // Check cache first
-        if (categoryDetailsCache.has(slug)) {
-            return categoryDetailsCache.get(slug) ?? null;
-        }
-
-        try {
-            if (!jwtToken) {
-                setToken("");
-                setError("Session expired. Please log in again.");
-                return null;
-            }
-
-            setIsLoadingCategoryDetail(true);
-            setLoadingCategorySlug(slug);
-            const res = await fetch(`/api/admin/categories/${slug}`, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${jwtToken}`,
-                    "Content-Type": "application/json",
-                },
-                cache: "no-store",
-                signal: AbortSignal.timeout(15000)
-            });
-
-            if (!res.ok) {
-                if (res.status === 401 || res.status === 403) {
-                    localStorage.removeItem("auth_token");
-                    sessionStorage.removeItem("auth_token");
-                    setToken("");
-                    setError("Session expired. Please log in again.");
-                    throw new Error("Unauthorized");
-                }
-                throw new Error(`Failed to load category detail: ${res.status}`);
-            }
-
-            const categoryDetail: BookingCategory = await res.json();
-            
-            // Cache the result
-            setCategoryDetailsCache(prev => new Map(prev).set(slug, categoryDetail));
-            
-            setError("");
-            return categoryDetail;
-        } catch (err: any) {
-            if (err.message !== "Unauthorized") {
-                console.error("Failed to load category detail:", err);
-                setError("Failed to load category detail from backend. Please try again.");
-            }
-            return null;
-        } finally {
-            setIsLoadingCategoryDetail(false);
-            setLoadingCategorySlug(null);
         }
     };
 
@@ -395,8 +337,12 @@ export default function AdminPage() {
         checkAuthAndLoad();
     }, []);
 
-    const handleUpdate = (updated: CategoriesData) => {
-        setData(updated);
+    const handleUpdate = (updated: CategoriesData | any) => {
+        // Some optimized mutation routes return { success: true } or a single saved item.
+        // Only replace the old full data state when a real category tree is returned.
+        if (updated && Array.isArray(updated.categories)) {
+            setData(updated as CategoriesData);
+        }
     };
 
     const refreshSubcategoryDetail = async (slug: string) => {
@@ -413,21 +359,18 @@ export default function AdminPage() {
             if (res.ok) {
                 const fresh = await res.json();
                 setSubcategoryDetailsCache(prev => new Map(prev).set(slug, fresh));
+                return fresh;
             }
         } catch (err) {
             console.error("Failed to refresh subcategory detail:", err);
         }
+        return null;
     };
 
     const handleSelectionChange = async (newSelection: Selection) => {
         setSelection(newSelection);
-        // Category detail loading is now handled by CategoryEditor itself
-        // (it loads subcategory summaries when mounted)
-        // Do NOT call loadCategoryDetail here — that loads the full tree
-    };
-
-    const handleLoadCategoryDetail = async (slug: string) => {
-        return loadCategoryDetail(slug, token);
+        // Category detail loading is now handled by CategoryEditor itself.
+        // It loads only subcategory summaries when mounted.
     };
 
     const handleLogout = () => {
@@ -638,17 +581,12 @@ export default function AdminPage() {
                                     </div>
                                 ) : (
                                     <EditorPanel
-                                        data={data!}
+                                        data={data ?? { defaultBookingUrl: "", categories: [] }}
                                         selection={selection}
                                         setSelection={handleSelectionChange}
                                         token={token}
                                         onUpdate={handleUpdate}
                                         categorySummaries={categorySummaries}
-                                        categoryDetailsCache={categoryDetailsCache}
-                                        onLoadCategoryDetail={handleLoadCategoryDetail}
-                                        isLoadingCategoryDetail={isLoadingCategoryDetail}
-                                        loadingCategorySlug={loadingCategorySlug}
-                                        subcategorySummariesCache={subcategorySummariesCache}
                                         subcategoryDetailsCache={subcategoryDetailsCache}
                                         onLoadSubcategorySummaries={loadSubcategorySummaries}
                                         onLoadSubcategoryDetail={loadSubcategoryDetail}
