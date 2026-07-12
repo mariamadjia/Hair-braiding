@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { CategoriesData, BookingCategory } from "@/lib/booking-types";
+import type { CategoriesData, BookingCategory, CategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
 import { GripVertical, FolderTree, FileText, Image as ImageIcon } from "lucide-react";
@@ -11,11 +11,12 @@ type Selection =
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
 
-export function RootEditor({ data, headers, mutate, setSelection }: {
-    data: CategoriesData;
+export function RootEditor({ categorySummaries, headers, mutate, setSelection, onLoadCategoryDetail }: {
+    categorySummaries: CategorySummary[];
     headers: Record<string, string>;
     mutate: (method: string, path: string, body?: object) => Promise<CategoriesData>;
     setSelection: (s: Selection) => void;
+    onLoadCategoryDetail: (slug: string) => void;
 }) {
     const [adding, setAdding] = useState(false);
     const [name, setName] = useState("");
@@ -57,21 +58,21 @@ export function RootEditor({ data, headers, mutate, setSelection }: {
             return;
         }
 
-        const reorderedCategories = [...data.categories];
-        const [draggedItem] = reorderedCategories.splice(draggedIndex, 1);
-        reorderedCategories.splice(dropIndex, 0, draggedItem);
+        const reorderedSummaries = [...categorySummaries];
+        const [draggedItem] = reorderedSummaries.splice(draggedIndex, 1);
+        reorderedSummaries.splice(dropIndex, 0, draggedItem);
 
         // Update display order for each category
         try {
             // Get category IDs in the new order
-            const categoryIds = reorderedCategories
+            const categoryIds = reorderedSummaries
                 .map(cat => cat.id)
                 .filter((id): id is number => id !== undefined);
             
             if (categoryIds.length === 0) {
                 // Fallback: update each category individually by slug
-                for (let i = 0; i < reorderedCategories.length; i++) {
-                    const cat = reorderedCategories[i];
+                for (let i = 0; i < reorderedSummaries.length; i++) {
+                    const cat = reorderedSummaries[i];
                     const response = await fetch(`/api/admin/categories/${cat.slug}`, {
                         method: 'PUT',
                         headers,
@@ -132,15 +133,7 @@ export function RootEditor({ data, headers, mutate, setSelection }: {
             )}
 
             <div className="space-y-2">
-                {data.categories.map((cat, index) => {
-                    const hasSubcategories = cat.subcategories && cat.subcategories.length > 0;
-                    const totalServices = hasSubcategories
-                        ? cat.subcategories!.reduce((acc, sub) => acc + (sub.items?.length || 0), 0)
-                        : (cat.items?.length || 0);
-                    const hasImage = !!cat.image;
-                    const subcategories = cat.subcategories || [];
-                    const items = cat.items || [];
-                    
+                {categorySummaries.map((cat, index) => {
                     return (
                         <div 
                             key={cat.slug} 
@@ -160,41 +153,37 @@ export function RootEditor({ data, headers, mutate, setSelection }: {
                             
                             {/* Category Icon */}
                             <div className="flex-shrink-0">
-                                {hasSubcategories ? (
-                                    <FolderTree className="w-5 h-5 text-blue-500" />
-                                ) : (
-                                    <FileText className="w-5 h-5 text-green-500" />
-                                )}
+                                <FolderTree className="w-5 h-5 text-blue-500" />
                             </div>
                             
                             {/* Category Info */}
                             <button 
                                 type="button" 
-                                onClick={() => setSelection({ type: "category", catSlug: cat.slug })} 
+                                onClick={() => {
+                                    onLoadCategoryDetail(cat.slug);
+                                    setSelection({ type: "category", catSlug: cat.slug });
+                                }} 
                                 className="flex-1 text-left min-w-0"
                             >
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-medium text-neutral-900 dark:text-white truncate">
                                         {cat.name}
                                     </span>
-                                    {hasImage && (
-                                        <ImageIcon className="w-3 h-3 text-neutral-400" />
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-3 mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                                    {hasSubcategories ? (
-                                        <>
-                                            <span>{subcategories.length} subcategories</span>
-                                            <span>•</span>
-                                        </>
-                                    ) : null}
-                                    <span>{totalServices} services</span>
                                 </div>
                             </button>
                             
                             {/* Actions */}
                             <div className="flex items-center gap-2 flex-shrink-0">
-                                <button type="button" onClick={() => setSelection({ type: "category", catSlug: cat.slug })} className={btnS}>Edit</button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => {
+                                        onLoadCategoryDetail(cat.slug);
+                                        setSelection({ type: "category", catSlug: cat.slug });
+                                    }} 
+                                    className={btnS}
+                                >
+                                    Edit
+                                </button>
                                 <button type="button" onClick={() => del(cat.slug, cat.name)} className={btnD}>×</button>
                             </div>
                         </div>

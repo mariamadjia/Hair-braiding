@@ -1,6 +1,6 @@
 "use client";
 
-import type { CategoriesData } from "@/lib/booking-types";
+import type { CategoriesData, CategorySummary, BookingCategory } from "@/lib/booking-types";
 import { RootEditor } from "./RootEditor";
 import { CategoryEditor } from "./CategoryEditor";
 import { SubcategoryEditor } from "./SubcategoryEditor";
@@ -10,12 +10,28 @@ type Selection =
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
 
-export function EditorPanel({ data, selection, setSelection, token, onUpdate }: {
+export function EditorPanel({ 
+    data, 
+    selection, 
+    setSelection, 
+    token, 
+    onUpdate,
+    categorySummaries,
+    categoryDetailsCache,
+    onLoadCategoryDetail,
+    isLoadingCategoryDetail,
+    loadingCategorySlug
+}: {
     data: CategoriesData;
     selection: Selection;
     setSelection: (s: Selection) => void;
     token: string;
     onUpdate: (data: CategoriesData) => void;
+    categorySummaries: CategorySummary[];
+    categoryDetailsCache: Map<string, BookingCategory>;
+    onLoadCategoryDetail: (slug: string) => Promise<BookingCategory | null>;
+    isLoadingCategoryDetail: boolean;
+    loadingCategorySlug: string | null;
 }) {
     const headers = { 
         "Content-Type": "application/json", 
@@ -41,12 +57,21 @@ export function EditorPanel({ data, selection, setSelection, token, onUpdate }: 
     };
 
     if (selection.type === "root") {
-        return <RootEditor data={data} headers={headers} mutate={mutate} setSelection={setSelection} />;
+        return <RootEditor 
+            categorySummaries={categorySummaries} 
+            headers={headers} 
+            mutate={mutate} 
+            setSelection={setSelection}
+            onLoadCategoryDetail={onLoadCategoryDetail}
+        />;
     }
 
-    const cat = data.categories.find((c) => c.slug === selection.catSlug);
+    const cat = categoryDetailsCache.get(selection.catSlug);
 
     if (!cat) {
+        if (isLoadingCategoryDetail && loadingCategorySlug === selection.catSlug) {
+            return <div className="p-4 text-neutral-500">Loading category details...</div>;
+        }
         return <div className="p-4 text-red-600">Category not found. Please go back and try again.</div>;
     }
 

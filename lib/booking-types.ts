@@ -1,3 +1,10 @@
+export type CategorySummary = {
+    id?: number;
+    name: string;
+    slug: string;
+    displayOrder?: number;
+};
+
 export type LengthOption = {
     name?: string;
     price?: string;

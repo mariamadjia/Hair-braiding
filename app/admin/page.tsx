@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, lazy, Suspense } from "react";
-import type { CategoriesData } from "@/lib/booking-types";
+import type { CategoriesData, CategorySummary, BookingCategory } from "@/lib/booking-types";
 import { EditorPanel } from "./components/EditorPanel";
 import { PreviewServicesList, PreviewCategoryDetail, PreviewSubcategoryDetail } from "./components/PreviewComponents";
 import { AdminSidebar } from "./components/AdminSidebar";
@@ -35,6 +35,13 @@ export default function AdminPage() {
     const [selection, setSelection] = useState<Selection>({ type: "root" });
     const [currentSection, setCurrentSection] = useState("dashboard");
     const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+    
+    // New state for lazy loading
+    const [categorySummaries, setCategorySummaries] = useState<CategorySummary[]>([]);
+    const [categoryDetailsCache, setCategoryDetailsCache] = useState<Map<string, BookingCategory>>(new Map());
+    const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
+    const [isLoadingCategoryDetail, setIsLoadingCategoryDetail] = useState(false);
+    const [loadingCategorySlug, setLoadingCategorySlug] = useState<string | null>(null);
 
     const loadCategories = async (jwtToken: string) => {
         try {
@@ -76,6 +83,105 @@ export default function AdminPage() {
         }
     };
 
+    // New optimized loading functions
+    const loadCategorySummaries = async (jwtToken: string) => {
+        try {
+            if (!jwtToken) {
+                setToken("");
+                setError("Session expired. Please log in again.");
+                return;
+            }
+
+            setIsLoadingSummaries(true);
+            const res = await fetch("/api/admin/categories/summaries", {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                    "Content-Type": "application/json",
+                },
+                cache: "no-store",
+                signal: AbortSignal.timeout(10000)
+            });
+
+            if (!res.ok) {
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem("auth_token");
+                    sessionStorage.removeItem("auth_token");
+                    setToken("");
+                    setError("Session expired. Please log in again.");
+                    throw new Error("Unauthorized");
+                }
+                throw new Error(`Failed to load category summaries: ${res.status}`);
+            }
+
+            const summaries: CategorySummary[] = await res.json();
+            setCategorySummaries(summaries);
+            setError("");
+        } catch (err: any) {
+            if (err.message !== "Unauthorized") {
+                console.error("Failed to load category summaries:", err);
+                setError("Failed to load category summaries from backend. Please try again.");
+            }
+        } finally {
+            setIsLoadingSummaries(false);
+        }
+    };
+
+    const loadCategoryDetail = async (slug: string, jwtToken: string) => {
+        // Check cache first
+        if (categoryDetailsCache.has(slug)) {
+            return categoryDetailsCache.get(slug);
+        }
+
+        try {
+            if (!jwtToken) {
+                setToken("");
+                setError("Session expired. Please log in again.");
+                return null;
+            }
+
+            setIsLoadingCategoryDetail(true);
+            setLoadingCategorySlug(slug);
+            const res = await fetch(`/api/admin/categories/${slug}`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                    "Content-Type": "application/json",
+                },
+                cache: "no-store",
+                signal: AbortSignal.timeout(15000)
+            });
+
+            if (!res.ok) {
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem("auth_token");
+                    sessionStorage.removeItem("auth_token");
+                    setToken("");
+                    setError("Session expired. Please log in again.");
+                    throw new Error("Unauthorized");
+                }
+                throw new Error(`Failed to load category detail: ${res.status}`);
+            }
+
+            const categoryDetail: BookingCategory = await res.json();
+            
+            // Cache the result
+            setCategoryDetailsCache(prev => new Map(prev).set(slug, categoryDetail));
+            
+            setError("");
+            return categoryDetail;
+        } catch (err: any) {
+            if (err.message !== "Unauthorized") {
+                console.error("Failed to load category detail:", err);
+                setError("Failed to load category detail from backend. Please try again.");
+            }
+            return null;
+        } finally {
+            setIsLoadingCategoryDetail(false);
+            setLoadingCategorySlug(null);
+        }
+    };
+
     const handleSignIn = async () => {
         if (!email.trim() || !password.trim()) {
             setError("Please enter both email and password.");
@@ -100,8 +206,8 @@ export default function AdminPage() {
                 sessionStorage.setItem("admin_user", JSON.stringify(response.admin));
             }
             
-            // Load categories in background, do not block login
-            void loadCategories(response.token);
+            // Load category summaries in background, do not block login
+            void loadCategorySummaries(response.token);
         } catch (err: any) {
             setError(err.message || "Invalid email or password.");
         } finally {
@@ -119,7 +225,7 @@ export default function AdminPage() {
                 setIsAuthChecking(true);
                 setToken(savedToken);
                 try {
-                    await loadCategories(savedToken);
+                    await loadCategorySummaries(savedToken);
                 } catch (err) {
                     console.error("Auth check failed:", err);
                 } finally {
@@ -147,6 +253,15 @@ export default function AdminPage() {
 
     const handleUpdate = (updated: CategoriesData) => {
         setData(updated);
+    };
+
+    const handleSelectionChange = async (newSelection: Selection) => {
+        setSelection(newSelection);
+        
+        // Load category detail when selecting a category
+        if (newSelection.type === "category") {
+            await loadCategoryDetail(newSelection.catSlug, token);
+        }
     };
 
     const handleLogout = () => {
@@ -337,15 +452,19 @@ export default function AdminPage() {
                         {/* Services List - Matches Public Site */}
                         <section className="bg-[#FFF5EE] dark:bg-neutral-900 pb-24 md:pb-32">
                             <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-                                {!data || !data.categories ? (
+                                {isLoadingSummaries ? (
                                     <div className="bg-white border border-neutral-200 rounded-lg p-8 text-center">
                                         <p className="text-neutral-500 mb-4">Loading services...</p>
+                                    </div>
+                                ) : categorySummaries.length === 0 ? (
+                                    <div className="bg-white border border-neutral-200 rounded-lg p-8 text-center">
+                                        <p className="text-neutral-500 mb-4">No services found</p>
                                         {error && (
                                             <p className="text-sm text-red-600 mb-4">{error}</p>
                                         )}
                                         <button
                                             type="button"
-                                            onClick={() => loadCategories(token)}
+                                            onClick={() => loadCategorySummaries(token)}
                                             className="px-4 py-2 text-sm font-medium bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 transition-colors"
                                         >
                                             Retry
@@ -355,9 +474,14 @@ export default function AdminPage() {
                                     <EditorPanel
                                         data={data!}
                                         selection={selection}
-                                        setSelection={setSelection}
+                                        setSelection={handleSelectionChange}
                                         token={token}
                                         onUpdate={handleUpdate}
+                                        categorySummaries={categorySummaries}
+                                        categoryDetailsCache={categoryDetailsCache}
+                                        onLoadCategoryDetail={loadCategoryDetail}
+                                        isLoadingCategoryDetail={isLoadingCategoryDetail}
+                                        loadingCategorySlug={loadingCategorySlug}
                                     />
                                 )}
                             </div>
