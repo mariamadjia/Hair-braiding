@@ -27,7 +27,8 @@ export function EditorPanel({
     onLoadSubcategoryDetail,
     isLoadingSubcategorySummaries,
     isLoadingSubcategoryDetail,
-    loadingSubcategorySlug
+    loadingSubcategorySlug,
+    onSubcategoryUpdate
 }: {
     data: CategoriesData;
     selection: Selection;
@@ -46,6 +47,7 @@ export function EditorPanel({
     isLoadingSubcategorySummaries: boolean;
     isLoadingSubcategoryDetail: boolean;
     loadingSubcategorySlug: string | null;
+    onSubcategoryUpdate: (slug: string) => Promise<void>;
 }) {
     const headers = { 
         "Content-Type": "application/json", 
@@ -122,5 +124,5 @@ export function EditorPanel({
         return <div className="p-4 text-red-600">Subcategory not found. Please go back and try again.</div>;
     }
 
-    return <SubcategoryEditor cat={cat} sub={sub} token={token} headers={headers} mutate={mutate} setSelection={setSelection} onUpdate={onUpdate} data={data} />;
+    return <SubcategoryEditor cat={cat} sub={sub} token={token} headers={headers} mutate={mutate} setSelection={setSelection} onUpdate={onUpdate} data={data} onSubcategoryUpdate={onSubcategoryUpdate} />;
 }

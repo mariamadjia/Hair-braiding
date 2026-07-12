@@ -32,7 +32,7 @@ type Selection =
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
 
-export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelection, onUpdate, data }: {
+export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelection, onUpdate, data, onSubcategoryUpdate }: {
     cat: BookingCategory;
     sub: BookingSubcategory;
     token: string;
@@ -41,6 +41,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     setSelection: (s: Selection) => void;
     onUpdate: (data: CategoriesData) => void;
     data: CategoriesData;
+    onSubcategoryUpdate?: (slug: string) => Promise<void>;
 }) {
     if (!sub) {
         return <div className="text-sm text-neutral-500">Subcategory not found</div>;
@@ -172,13 +173,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             if (idx !== null) {
                 setEditingIdx(null);
                 setSaveSuccess("Size saved successfully!");
-                const updatedData = await mutate("PUT", `${base}/items`, { itemIndex: idx, item });
-                if (updatedData) onUpdate(updatedData);
+                await mutate("PUT", `${base}/items`, { itemIndex: idx, item });
+                await onSubcategoryUpdate?.(sub.slug);
             } else {
                 setAddingItem(false);
                 setSaveSuccess("Size added successfully!");
-                const updatedData = await mutate("POST", `${base}/items`, item);
-                if (updatedData) onUpdate(updatedData);
+                await mutate("POST", `${base}/items`, item);
+                await onSubcategoryUpdate?.(sub.slug);
             }
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
@@ -207,10 +208,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             return next;
         });
         
-        // 2. Then call backend in background
         try {
-            const updatedData = await mutate("DELETE", `${base}/items/${itemId}`);
-            onUpdate(updatedData);
+            await mutate("DELETE", `${base}/items/${itemId}`);
+            await onSubcategoryUpdate?.(sub.slug);
             setSaveSuccess("Size deleted successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
