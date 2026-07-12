@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export const runtime = "nodejs";
 
@@ -19,6 +19,14 @@ function isAuthorized(req: NextRequest) {
     }
     
     return false;
+}
+
+function revalidatePublicBookingPages(slug: string, subSlug: string) {
+    revalidateTag("categories");
+    revalidatePath("/services");
+    revalidatePath("/booking");
+    revalidatePath(`/booking/${slug}`);
+    revalidatePath(`/booking/${slug}/${subSlug}`);
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug: string; subSlug: string }> }) {
@@ -58,7 +66,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             return NextResponse.json({ error: "Failed to update subcategory" }, { status: updateResponse.status });
         }
         
-        revalidatePath('/', 'layout');
+        revalidatePublicBookingPages(slug, subSlug);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to update subcategory:', error);
@@ -103,7 +111,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
             return NextResponse.json({ error: "Failed to delete subcategory" }, { status: deleteResponse.status });
         }
         
-        revalidatePath('/', 'layout');
+        revalidatePublicBookingPages(slug, subSlug);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to delete subcategory:', error);

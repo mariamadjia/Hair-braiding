@@ -63,7 +63,9 @@ export async function readBookingCategory(slug: string): Promise<BookingCategory
         const response = await fetch(
             `${API_URL}/api/booking/${encodeURIComponent(slug)}`,
             {
-                next: { revalidate: 60, tags: ['categories'] },
+                // Admin service edits should be visible immediately on public booking pages.
+                // Use no-store here because this endpoint is the source of truth for live pricing.
+                cache: "no-store",
                 signal: AbortSignal.timeout(15000),
             }
         );
@@ -88,6 +90,14 @@ export async function readBookingCategory(slug: string): Promise<BookingCategory
         // Re-throw so Next.js does not cache a failed fetch as notFound()
         throw error;
     }
+}
+
+export async function readBookingSubcategory(categorySlug: string, subSlug: string) {
+    const category = await readBookingCategory(categorySlug);
+    if (!category) return { category: null, subcategory: null };
+
+    const subcategory = (category.subcategories ?? []).find((sub) => sub.slug === subSlug) ?? null;
+    return { category, subcategory };
 }
 
 export async function writeCategories(data: CategoriesData): Promise<void> {

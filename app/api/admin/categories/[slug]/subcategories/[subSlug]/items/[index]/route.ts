@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -10,6 +10,14 @@ function isAuthorized(req: NextRequest) {
 
 function getAuthHeader(req: NextRequest) {
     return req.headers.get("authorization") || "";
+}
+
+function revalidatePublicBookingPages(slug: string, subSlug: string) {
+    revalidateTag("categories");
+    revalidatePath("/services");
+    revalidatePath("/booking");
+    revalidatePath(`/booking/${slug}`);
+    revalidatePath(`/booking/${slug}/${subSlug}`);
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ slug: string; subSlug: string; index: string }> }) {
@@ -53,7 +61,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
         }
         
         console.log('[DELETE ITEM] Item deleted successfully');
-        revalidatePath('/', 'layout');
+        revalidatePublicBookingPages(slug, subSlug);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('[DELETE ITEM] Failed to delete item:', error);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -10,6 +10,14 @@ function isAuthorized(req: NextRequest) {
 
 function getAuthHeader(req: NextRequest) {
     return req.headers.get("authorization") || "";
+}
+
+function revalidatePublicBookingPages(slug: string, subSlug: string) {
+    revalidateTag("categories");
+    revalidatePath("/services");
+    revalidatePath("/booking");
+    revalidatePath(`/booking/${slug}`);
+    revalidatePath(`/booking/${slug}/${subSlug}`);
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string; subSlug: string }> }) {
@@ -83,7 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         }
 
         console.log('[POST ITEMS] Service created successfully');
-        revalidatePath('/', 'layout');
+        revalidatePublicBookingPages(slug, subSlug);
         return NextResponse.json(createdItem ?? { success: true }, { status: 201 });
     } catch (error: any) {
         console.error('Failed to create item:', error);
@@ -153,7 +161,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
         }
         
         const updatedItem = await response.json().catch(() => ({ ...item, id: resolvedItemId }));
-        revalidatePath('/', 'layout');
+        revalidatePublicBookingPages(slug, subSlug);
         return NextResponse.json(updatedItem);
     } catch (error) {
         console.error('Failed to update item:', error);
@@ -227,6 +235,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
             return NextResponse.json({ error: error || "Failed to delete item" }, { status: response.status });
         }
         
+        revalidatePublicBookingPages(slug, subSlug);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to delete item:', error);
