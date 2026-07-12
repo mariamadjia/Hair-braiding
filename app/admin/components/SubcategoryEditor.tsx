@@ -66,24 +66,18 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     // Fetch gallery images for this subcategory and auto-sync
     useEffect(() => {
         const fetchGalleryImages = async () => {
-            if (!cat.id) {
-                console.log('[SubcategoryEditor] No category ID, skipping gallery fetch');
+            if (!sub.id) {
+                console.log('[SubcategoryEditor] No subcategory ID, skipping gallery fetch');
                 return;
             }
             
             setLoadingGallery(true);
             try {
-                const response = await fetch(`${API_BASE_URL}/api/gallery`, {
+                const response = await fetch(`${API_BASE_URL}/api/gallery/subcategory/${sub.id}`, {
                     signal: AbortSignal.timeout(10000)
                 });
                 if (response.ok) {
-                    const allImages = await response.json();
-                    // Filter images that belong to this category and subcategory
-                    const filtered = allImages.filter(
-                        (img: GalleryImage) =>
-                            img.categoryId === cat.id &&
-                            img.subcategoryId === sub.id
-                    );
+                    const filtered = await response.json();
                     setGalleryImages(filtered);
                     
                     // Auto-sync: if gallery has images, use them
@@ -99,7 +93,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             }
         };
         fetchGalleryImages();
-    }, [cat.id, sub.name]);
+    }, [sub.id]);
 
     const syncFromGallery = () => {
         if (galleryImages.length > 0) {
@@ -133,16 +127,10 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 throw new Error('Failed to upload image');
             }
             
-            // Re-fetch gallery images
-            const galleryResponse = await fetch(`${API_BASE_URL}/api/gallery`);
+            // Re-fetch gallery images for this subcategory only
+            const galleryResponse = await fetch(`${API_BASE_URL}/api/gallery/subcategory/${sub.id}`);
             if (galleryResponse.ok) {
-                const allImages = await galleryResponse.json();
-                const filtered = allImages.filter(
-                    (img: any) =>
-                        img.categoryId === cat.id &&
-                        img.subcategoryId === sub.id
-                );
-                setGalleryImages(filtered);
+                setGalleryImages(await galleryResponse.json());
             }
         } catch (error) {
             console.error('Failed to upload image:', error);
@@ -170,16 +158,10 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             // Remove from local state immediately
             setGalleryImages(prev => prev.filter(img => img.id !== imageId));
             
-            // Re-fetch gallery images to ensure sync
-            const galleryResponse = await fetch(`${API_BASE_URL}/api/gallery`);
+            // Re-fetch gallery images for this subcategory only
+            const galleryResponse = await fetch(`${API_BASE_URL}/api/gallery/subcategory/${sub.id}`);
             if (galleryResponse.ok) {
-                const allImages = await galleryResponse.json();
-                const filtered = allImages.filter(
-                    (img: any) =>
-                        img.categoryId === cat.id &&
-                        img.subcategoryId === sub.id
-                );
-                setGalleryImages(filtered);
+                setGalleryImages(await galleryResponse.json());
             }
         } catch (error) {
             console.error('Failed to delete image:', error);
