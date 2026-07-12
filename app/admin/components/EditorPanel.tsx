@@ -1,6 +1,6 @@
 "use client";
 
-import type { CategoriesData, CategorySummary, BookingCategory } from "@/lib/booking-types";
+import type { CategoriesData, CategorySummary, SubcategorySummary, BookingCategory } from "@/lib/booking-types";
 import { RootEditor } from "./RootEditor";
 import { CategoryEditor } from "./CategoryEditor";
 import { SubcategoryEditor } from "./SubcategoryEditor";
@@ -20,7 +20,14 @@ export function EditorPanel({
     categoryDetailsCache,
     onLoadCategoryDetail,
     isLoadingCategoryDetail,
-    loadingCategorySlug
+    loadingCategorySlug,
+    subcategorySummariesCache,
+    subcategoryDetailsCache,
+    onLoadSubcategorySummaries,
+    onLoadSubcategoryDetail,
+    isLoadingSubcategorySummaries,
+    isLoadingSubcategoryDetail,
+    loadingSubcategorySlug
 }: {
     data: CategoriesData;
     selection: Selection;
@@ -32,6 +39,13 @@ export function EditorPanel({
     onLoadCategoryDetail: (slug: string) => Promise<BookingCategory | null>;
     isLoadingCategoryDetail: boolean;
     loadingCategorySlug: string | null;
+    subcategorySummariesCache: Map<string, SubcategorySummary[]>;
+    subcategoryDetailsCache: Map<string, any>;
+    onLoadSubcategorySummaries: (categorySlug: string, token: string) => Promise<SubcategorySummary[]>;
+    onLoadSubcategoryDetail: (slug: string, token: string) => Promise<any>;
+    isLoadingSubcategorySummaries: boolean;
+    isLoadingSubcategoryDetail: boolean;
+    loadingSubcategorySlug: string | null;
 }) {
     const headers = { 
         "Content-Type": "application/json", 
@@ -76,12 +90,28 @@ export function EditorPanel({
     }
 
     if (selection.type === "category") {
-        return <CategoryEditor cat={cat} token={token} headers={headers} mutate={mutate} setSelection={setSelection} />;
+        return <CategoryEditor 
+            cat={cat} 
+            token={token} 
+            headers={headers} 
+            mutate={mutate} 
+            setSelection={setSelection}
+            subcategorySummariesCache={subcategorySummariesCache}
+            subcategoryDetailsCache={subcategoryDetailsCache}
+            onLoadSubcategorySummaries={onLoadSubcategorySummaries}
+            onLoadSubcategoryDetail={onLoadSubcategoryDetail}
+            isLoadingSubcategorySummaries={isLoadingSubcategorySummaries}
+            isLoadingSubcategoryDetail={isLoadingSubcategoryDetail}
+            loadingSubcategorySlug={loadingSubcategorySlug}
+        />;
     }
 
-    const sub = (cat.subcategories ?? []).find((s) => s.slug === selection.subSlug);
+    const sub = subcategoryDetailsCache.get(selection.subSlug);
 
     if (!sub) {
+        if (isLoadingSubcategoryDetail && loadingSubcategorySlug === selection.subSlug) {
+            return <div className="p-4 text-neutral-500">Loading subcategory details...</div>;
+        }
         return <div className="p-4 text-red-600">Subcategory not found. Please go back and try again.</div>;
     }
 

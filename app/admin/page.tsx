@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, lazy, Suspense } from "react";
-import type { CategoriesData, CategorySummary, BookingCategory } from "@/lib/booking-types";
+import type { CategoriesData, CategorySummary, SubcategorySummary, BookingCategory } from "@/lib/booking-types";
 import { EditorPanel } from "./components/EditorPanel";
 import { PreviewServicesList, PreviewCategoryDetail, PreviewSubcategoryDetail } from "./components/PreviewComponents";
 import { AdminSidebar } from "./components/AdminSidebar";
@@ -42,6 +42,13 @@ export default function AdminPage() {
     const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
     const [isLoadingCategoryDetail, setIsLoadingCategoryDetail] = useState(false);
     const [loadingCategorySlug, setLoadingCategorySlug] = useState<string | null>(null);
+    
+    // New state for subcategory lazy loading
+    const [subcategorySummariesCache, setSubcategorySummariesCache] = useState<Map<string, SubcategorySummary[]>>(new Map());
+    const [subcategoryDetailsCache, setSubcategoryDetailsCache] = useState<Map<string, any>>(new Map());
+    const [isLoadingSubcategorySummaries, setIsLoadingSubcategorySummaries] = useState(false);
+    const [isLoadingSubcategoryDetail, setIsLoadingSubcategoryDetail] = useState(false);
+    const [loadingSubcategorySlug, setLoadingSubcategorySlug] = useState<string | null>(null);
 
     const loadCategories = async (jwtToken: string) => {
         try {
@@ -185,6 +192,125 @@ export default function AdminPage() {
         } finally {
             setIsLoadingCategoryDetail(false);
             setLoadingCategorySlug(null);
+        }
+    };
+
+    // New subcategory loading functions
+    const loadSubcategorySummaries = async (categorySlug: string, jwtToken: string) => {
+        try {
+            if (!jwtToken) {
+                setToken("");
+                setError("Session expired. Please log in again.");
+                return [];
+            }
+
+            // Check cache first
+            if (subcategorySummariesCache.has(categorySlug)) {
+                return subcategorySummariesCache.get(categorySlug)!;
+            }
+
+            setIsLoadingSubcategorySummaries(true);
+            console.log('[ADMIN PAGE] Loading subcategory summaries for category:', categorySlug);
+            
+            const res = await fetch(`/api/admin/categories/${categorySlug}/subcategories`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                    "Content-Type": "application/json",
+                },
+                cache: "no-store",
+                signal: AbortSignal.timeout(10000)
+            });
+
+            console.log('[ADMIN PAGE] Subcategory summaries response status:', res.status);
+
+            if (!res.ok) {
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem("auth_token");
+                    sessionStorage.removeItem("auth_token");
+                    setToken("");
+                    setError("Session expired. Please log in again.");
+                    throw new Error("Unauthorized");
+                }
+                throw new Error(`Failed to load subcategory summaries: ${res.status}`);
+            }
+
+            const summaries: SubcategorySummary[] = await res.json();
+            console.log('[ADMIN PAGE] Loaded subcategory summaries:', summaries.length);
+            
+            // Cache the result
+            setSubcategorySummariesCache(prev => new Map(prev).set(categorySlug, summaries));
+            
+            setError("");
+            return summaries;
+        } catch (err: any) {
+            if (err.message !== "Unauthorized") {
+                console.error("Failed to load subcategory summaries:", err);
+                setError("Failed to load subcategory summaries from backend. Please try again.");
+            }
+            return [];
+        } finally {
+            setIsLoadingSubcategorySummaries(false);
+        }
+    };
+
+    const loadSubcategoryDetail = async (slug: string, jwtToken: string) => {
+        try {
+            if (!jwtToken) {
+                setToken("");
+                setError("Session expired. Please log in again.");
+                return null;
+            }
+
+            // Check cache first
+            if (subcategoryDetailsCache.has(slug)) {
+                return subcategoryDetailsCache.get(slug)!;
+            }
+
+            setIsLoadingSubcategoryDetail(true);
+            setLoadingSubcategorySlug(slug);
+            console.log('[ADMIN PAGE] Loading subcategory detail:', slug);
+            
+            const res = await fetch(`/api/admin/subcategories/${slug}`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                    "Content-Type": "application/json",
+                },
+                cache: "no-store",
+                signal: AbortSignal.timeout(15000)
+            });
+
+            console.log('[ADMIN PAGE] Subcategory detail response status:', res.status);
+
+            if (!res.ok) {
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem("auth_token");
+                    sessionStorage.removeItem("auth_token");
+                    setToken("");
+                    setError("Session expired. Please log in again.");
+                    throw new Error("Unauthorized");
+                }
+                throw new Error(`Failed to load subcategory detail: ${res.status}`);
+            }
+
+            const subcategoryDetail: any = await res.json();
+            console.log('[ADMIN PAGE] Loaded subcategory detail:', slug);
+            
+            // Cache the result
+            setSubcategoryDetailsCache(prev => new Map(prev).set(slug, subcategoryDetail));
+            
+            setError("");
+            return subcategoryDetail;
+        } catch (err: any) {
+            if (err.message !== "Unauthorized") {
+                console.error("Failed to load subcategory detail:", err);
+                setError("Failed to load subcategory detail from backend. Please try again.");
+            }
+            return null;
+        } finally {
+            setIsLoadingSubcategoryDetail(false);
+            setLoadingSubcategorySlug(null);
         }
     };
 
@@ -492,6 +618,13 @@ export default function AdminPage() {
                                         onLoadCategoryDetail={handleLoadCategoryDetail}
                                         isLoadingCategoryDetail={isLoadingCategoryDetail}
                                         loadingCategorySlug={loadingCategorySlug}
+                                        subcategorySummariesCache={subcategorySummariesCache}
+                                        subcategoryDetailsCache={subcategoryDetailsCache}
+                                        onLoadSubcategorySummaries={loadSubcategorySummaries}
+                                        onLoadSubcategoryDetail={loadSubcategoryDetail}
+                                        isLoadingSubcategorySummaries={isLoadingSubcategorySummaries}
+                                        isLoadingSubcategoryDetail={isLoadingSubcategoryDetail}
+                                        loadingSubcategorySlug={loadingSubcategorySlug}
                                     />
                                 )}
                             </div>

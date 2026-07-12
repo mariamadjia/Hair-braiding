@@ -5,6 +5,13 @@ export type CategorySummary = {
     displayOrder?: number;
 };
 
+export type SubcategorySummary = {
+    id?: number;
+    name: string;
+    slug: string;
+    displayOrder?: number;
+};
+
 export type LengthOption = {
     name?: string;
     price?: string;

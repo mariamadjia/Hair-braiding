@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
-import type { BookingCategory, CategoriesData } from "@/lib/booking-types";
+import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
 import { ChevronRight, FolderTree, FileText } from "lucide-react";
@@ -14,12 +14,19 @@ type Selection =
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
 
-export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
+export function CategoryEditor({ cat, token, headers, mutate, setSelection, subcategorySummariesCache, subcategoryDetailsCache, onLoadSubcategorySummaries, onLoadSubcategoryDetail, isLoadingSubcategorySummaries, isLoadingSubcategoryDetail, loadingSubcategorySlug }: {
     cat: BookingCategory;
     token: string;
     headers: Record<string, string>;
     mutate: (method: string, path: string, body?: object) => Promise<CategoriesData>;
     setSelection: (s: Selection) => void;
+    subcategorySummariesCache: Map<string, SubcategorySummary[]>;
+    subcategoryDetailsCache: Map<string, any>;
+    onLoadSubcategorySummaries: (categorySlug: string, token: string) => Promise<SubcategorySummary[]>;
+    onLoadSubcategoryDetail: (slug: string, token: string) => Promise<any>;
+    isLoadingSubcategorySummaries: boolean;
+    isLoadingSubcategoryDetail: boolean;
+    loadingSubcategorySlug: string | null;
 }) {
     const [name, setName] = useState(cat.name);
     const [images, setImages] = useState<string[]>(cat.flippingImages ?? []);
@@ -29,6 +36,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
     const [newSubName, setNewSubName] = useState("");
     const [saving, setSaving] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [subSummaries, setSubSummaries] = useState<SubcategorySummary[]>([]);
 
     useEffect(() => { 
         setName(cat.name); 
@@ -64,6 +72,17 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
         };
         fetchGalleryImages();
     }, [cat.slug, cat.id]);
+
+    // Load subcategory summaries when category is selected
+    useEffect(() => {
+        const loadSubs = async () => {
+            if (cat.slug) {
+                const summaries = await onLoadSubcategorySummaries(cat.slug, token);
+                setSubSummaries(summaries);
+            }
+        };
+        loadSubs();
+    }, [cat.slug, token, onLoadSubcategorySummaries]);
 
     const save = async () => {
         if (images.length < 3) {
@@ -225,36 +244,49 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
                 )}
 
                 <div className="space-y-2">
-                    {(cat.subcategories ?? []).map((sub) => (
-                        <div 
-                            key={sub.id || sub.slug} 
-                            className="flex items-center gap-3 p-3 rounded-sm border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-                        >
-                            <div className="flex-shrink-0">
-                                <FileText className="w-4 h-4 text-purple-500" />
-                            </div>
-                            <button 
-                                type="button" 
-                                onClick={() => setSelection({ type: "subcategory", catSlug: cat.slug, subSlug: sub.slug })} 
-                                className="flex-1 text-left min-w-0"
+                    {isLoadingSubcategorySummaries ? (
+                        <div className="p-3 text-sm text-neutral-500">Loading subcategories...</div>
+                    ) : subSummaries.length === 0 ? (
+                        <div className="p-3 text-sm text-neutral-500">No subcategories yet</div>
+                    ) : (
+                        subSummaries.map((sub) => (
+                            <div 
+                                key={sub.id || sub.slug} 
+                                className="flex items-center gap-3 p-3 rounded-sm border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                             >
-                                <div className="text-sm font-medium text-neutral-900 dark:text-white truncate">
-                                    {sub.name}
+                                <div className="flex-shrink-0">
+                                    <FileText className="w-4 h-4 text-purple-500" />
                                 </div>
-                                <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                                    {sub.items?.length || 0} services
+                                <button 
+                                    type="button" 
+                                    onClick={async () => {
+                                        await onLoadSubcategoryDetail(sub.slug, token);
+                                        setSelection({ type: "subcategory", catSlug: cat.slug, subSlug: sub.slug });
+                                    }} 
+                                    className="flex-1 text-left min-w-0"
+                                >
+                                    <div className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                                        {sub.name}
+                                    </div>
+                                    <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                                        Click to edit
+                                    </div>
+                                </button>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <button 
+                                        type="button" 
+                                        onClick={async () => {
+                                            await onLoadSubcategoryDetail(sub.slug, token);
+                                            setSelection({ type: "subcategory", catSlug: cat.slug, subSlug: sub.slug });
+                                        }} 
+                                        className={btnS}
+                                    >
+                                        Edit
+                                    </button>
+                                    <button type="button" onClick={() => delSub(sub.slug, sub.name)} className={btnD}>×</button>
                                 </div>
-                            </button>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                                <button type="button" onClick={() => setSelection({ type: "subcategory", catSlug: cat.slug, subSlug: sub.slug })} className={btnS}>Edit</button>
-                                <button type="button" onClick={() => delSub(sub.slug, sub.name)} className={btnD}>×</button>
                             </div>
-                        </div>
-                    ))}
-                    {(cat.subcategories ?? []).length === 0 && (
-                        <div className="text-center py-8 text-sm text-neutral-400 dark:text-neutral-500 italic">
-                            No subcategories yet. Click "+ Add" to create one.
-                        </div>
+                        ))
                     )}
                 </div>
             </div>
