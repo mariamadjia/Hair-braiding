@@ -80,6 +80,21 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         }
     }, [sub.slug]);
 
+    // Sync items from cache whenever sub.items changes (e.g. after backend assigns real IDs post-add)
+    useEffect(() => {
+        if (Array.isArray(sub.items) && sub.items.length > 0) {
+            setItems(prev => {
+                // Only sync if backend now has IDs that local state is missing
+                const localMissingIds = prev.some(item => !item.id);
+                const backendHasIds = sub.items.every(item => item.id);
+                if (localMissingIds && backendHasIds) {
+                    return sub.items;
+                }
+                return prev;
+            });
+        }
+    }, [sub.items]);
+
     const syncFromGallery = () => {
         if (galleryImages.length > 0) {
             const galleryUrls = galleryImages.map(img => img.imageUrl);
