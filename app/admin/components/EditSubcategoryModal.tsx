@@ -114,7 +114,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
 
         setUploading(true);
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
             
             for (let i = 0; i < files.length; i++) {
                 const formData = new FormData();

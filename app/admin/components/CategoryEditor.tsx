@@ -27,6 +27,8 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
     const [dirty, setDirty] = useState(false);
     const [addingSub, setAddingSub] = useState(false);
     const [newSubName, setNewSubName] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     useEffect(() => { 
         setName(cat.name); 
@@ -72,8 +74,18 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
             alert("Maximum 5 photos allowed.");
             return;
         }
-        await mutate("PUT", `/${cat.slug}`, { name, flippingImages: images });
-        setDirty(false);
+        setSaving(true);
+        try {
+            await mutate("PUT", `/${cat.slug}`, { name, flippingImages: images });
+            setDirty(false);
+            setSuccessMessage("Category saved successfully!");
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (error) {
+            console.error("Failed to save category:", error);
+            alert("Failed to save category. Please try again.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     const addSub = async () => {
@@ -84,7 +96,17 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
 
     const delSub = async (subSlug: string, subName: string) => {
         if (!confirm(`Delete subcategory "${subName}"?`)) return;
-        await mutate("DELETE", `/${cat.slug}/subcategories/${subSlug}`);
+        setSaving(true);
+        try {
+            await mutate("DELETE", `/${cat.slug}/subcategories/${subSlug}`);
+            setSuccessMessage(`Subcategory "${subName}" deleted successfully!`);
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (error) {
+            console.error("Failed to delete subcategory:", error);
+            alert("Failed to delete subcategory. Please try again.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     const totalServices = (cat.subcategories ?? []).reduce((acc, sub) => acc + (sub.items?.length || 0), 0);
@@ -92,6 +114,14 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
 
     return (
         <div className="space-y-5">
+            {/* Success Message Banner */}
+            {successMessage && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-sm flex items-center gap-2">
+                    <span className="text-green-600 dark:text-green-400">✓</span>
+                    <span className="text-sm font-medium">{successMessage}</span>
+                </div>
+            )}
+
             {/* Breadcrumb Navigation */}
             <nav className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
                 <button 
@@ -173,7 +203,9 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection }: {
                     </div>
                 </div>
                 
-                {dirty && <button type="button" onClick={save} className={btnP} disabled={images.length < 3 || images.length > 5}>Save changes</button>}
+                {dirty && <button type="button" onClick={save} className={btnP} disabled={images.length < 3 || images.length > 5 || saving}>
+                    {saving ? 'Saving...' : 'Save changes'}
+                </button>}
             </div>
 
             <div className="border-t border-neutral-100 dark:border-neutral-700 pt-4 space-y-3">

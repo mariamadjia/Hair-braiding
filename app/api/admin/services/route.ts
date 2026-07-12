@@ -24,7 +24,12 @@ export async function GET(req: NextRequest) {
     if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     
     try {
-        const response = await fetch(`${API_URL}/api/services`);
+        const response = await fetch(`${API_URL}/api/services`, {
+            signal: AbortSignal.timeout(10000)
+        });
+        if (!response.ok) {
+            return NextResponse.json({ error: "Failed to get services" }, { status: response.status });
+        }
         const data = await response.json();
         return NextResponse.json(data);
     } catch (error) {
@@ -46,7 +51,8 @@ export async function POST(req: NextRequest) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(service)
+            body: JSON.stringify(service),
+            signal: AbortSignal.timeout(10000)
         });
         
         if (!response.ok) {

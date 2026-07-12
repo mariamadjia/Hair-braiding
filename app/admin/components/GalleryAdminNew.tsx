@@ -95,8 +95,8 @@ export function GalleryAdminNew() {
 
     const updateCategoryDisplayOrder = async (categoryId: number, displayOrder: number) => {
         try {
-            const token = localStorage.getItem('auth_token');
-            await fetch(`${API_BASE_URL}/api/categories/${categoryId}`, {
+            const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+            const response = await fetch(`${API_BASE_URL}/api/categories/${categoryId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -104,6 +104,9 @@ export function GalleryAdminNew() {
                 },
                 body: JSON.stringify({ displayOrder: displayOrder.toString() }),
             });
+            if (!response.ok) {
+                throw new Error(`Failed to update display order: ${response.status}`);
+            }
         } catch (error) {
             console.error('Failed to update display order:', error);
             throw error;

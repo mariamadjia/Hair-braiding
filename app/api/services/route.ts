@@ -18,7 +18,12 @@ export async function GET(req: NextRequest) {
             url = `${API_URL}/api/services/subcategory/${subcategoryId}`;
         }
         
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            signal: AbortSignal.timeout(10000)
+        });
+        if (!response.ok) {
+            return NextResponse.json({ error: "Failed to get services" }, { status: response.status });
+        }
         const data = await response.json();
         return NextResponse.json(data);
     } catch (error) {

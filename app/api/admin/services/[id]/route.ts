@@ -26,7 +26,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     
     try {
-        const response = await fetch(`${API_URL}/api/services/${id}`);
+        const response = await fetch(`${API_URL}/api/services/${id}`, {
+            signal: AbortSignal.timeout(10000)
+        });
         if (!response.ok) {
             return NextResponse.json({ error: "Service not found" }, { status: 404 });
         }
@@ -52,7 +54,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(updates)
+            body: JSON.stringify(updates),
+            signal: AbortSignal.timeout(10000)
         });
         
         if (!response.ok) {
@@ -78,7 +81,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`
-            }
+            },
+            signal: AbortSignal.timeout(10000)
         });
         
         if (!response.ok) {

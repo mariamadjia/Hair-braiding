@@ -356,13 +356,18 @@ export function HomePageEditor() {
 
   const saveGalleryCollections = async (collections: GalleryCollection[]) => {
     try {
-      await fetch('/api/gallery-collections', {
+      const res = await fetch('/api/gallery-collections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ collections }),
       });
+      if (!res.ok) {
+        console.error('Failed to save gallery collections:', res.status);
+        throw new Error(`Failed to save gallery collections: ${res.status}`);
+      }
     } catch (error) {
       console.error('Failed to save gallery collections:', error);
+      throw error;
     }
   };
 

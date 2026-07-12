@@ -55,6 +55,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
     const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
     const [loadingGallery, setLoadingGallery] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
@@ -186,8 +187,18 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     };
 
     const save = async () => {
-        await mutate("PUT", base, { name, image });
-        setDirty(false);
+        setSaving(true);
+        try {
+            await mutate("PUT", base, { name, image });
+            setDirty(false);
+            setSaveSuccess("Subcategory saved successfully!");
+            setTimeout(() => setSaveSuccess(null), 3000);
+        } catch (error) {
+            console.error("Failed to save subcategory:", error);
+            alert("Failed to save subcategory. Please try again.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     const saveItem = async (item: BookingItem, idx: number | null) => {
@@ -208,7 +219,17 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     };
 
     const deleteItem = async (idx: number, itemId?: number) => {
-        await mutate("DELETE", `${base}/items/${itemId ?? idx}`);
+        setSaving(true);
+        try {
+            await mutate("DELETE", `${base}/items/${itemId ?? idx}`);
+            setSaveSuccess("Size deleted successfully!");
+            setTimeout(() => setSaveSuccess(null), 3000);
+        } catch (error) {
+            console.error("Failed to delete item:", error);
+            alert("Failed to delete size. Please try again.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     const toggleExpand = (idx: number) => {
@@ -225,6 +246,14 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
     return (
         <div className="space-y-6">
+            {/* Success Message Banner */}
+            {saveSuccess && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-sm flex items-center gap-2">
+                    <span className="text-green-600 dark:text-green-400">✓</span>
+                    <span className="text-sm font-medium">{saveSuccess}</span>
+                </div>
+            )}
+
             {/* Header */}
             <div>
                 <h2 className="text-lg font-bold text-neutral-900 dark:text-white uppercase tracking-wide mb-2">Subcategory Editor</h2>
@@ -328,9 +357,10 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                             <button 
                                 type="button" 
                                 onClick={save} 
-                                className="w-full px-6 py-3.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg uppercase tracking-wide"
+                                disabled={saving}
+                                className="w-full px-6 py-3.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                ✓ Save Changes
+                                {saving ? 'Saving...' : '✓ Save Changes'}
                             </button>
                         )}
                     </div>

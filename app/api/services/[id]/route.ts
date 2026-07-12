@@ -8,7 +8,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     
     try {
-        const response = await fetch(`${API_URL}/api/services/${id}`);
+        const response = await fetch(`${API_URL}/api/services/${id}`, {
+            signal: AbortSignal.timeout(10000)
+        });
         if (!response.ok) {
             return NextResponse.json({ error: "Service not found" }, { status: 404 });
         }

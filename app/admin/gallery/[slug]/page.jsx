@@ -106,9 +106,16 @@ export default function AdminCategoryDetailPage() {
         });
     };
 
+    const getAuthToken = () => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        }
+        return null;
+    };
+
     const handleCreateSubcategory = async (name) => {
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = getAuthToken();
             
             // Create subcategory
             const response = await fetch(`${API_BASE_URL}/api/subcategories`, {
@@ -157,7 +164,7 @@ export default function AdminCategoryDetailPage() {
         if (draggedIndex === null) return;
         
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = getAuthToken();
             
             // Update display order for all subcategories
             for (let i = 0; i < subcategories.length; i++) {
@@ -184,9 +191,7 @@ export default function AdminCategoryDetailPage() {
     ) => {
         if (!editingSubcategory) return;
 
-        const token =
-            localStorage.getItem("auth_token") ||
-            sessionStorage.getItem("auth_token");
+        const token = getAuthToken();
 
         const authHeaders = token
             ? { Authorization: `Bearer ${token}` }
@@ -359,7 +364,7 @@ export default function AdminCategoryDetailPage() {
                                     onClick={async () => {
                                         if (confirm(`Delete ${subcategory.name}? This will also delete all associated images.`)) {
                                             try {
-                                                const token = localStorage.getItem('auth_token');
+                                                const token = getAuthToken();
                                                 const response = await fetch(`${API_BASE_URL}/api/subcategories/${subcategory.id}`, {
                                                     method: 'DELETE',
                                                     headers: {
