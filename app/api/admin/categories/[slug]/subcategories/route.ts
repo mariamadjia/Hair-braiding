@@ -74,7 +74,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     
     const { slug } = await params;
     const subcategory = await req.json();
-    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    const authHeader = req.headers.get("authorization") || "";
     
     try {
         // First get the category by slug to find its ID
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': authHeader
             },
             body: JSON.stringify({
                 name: subcategory.name,
