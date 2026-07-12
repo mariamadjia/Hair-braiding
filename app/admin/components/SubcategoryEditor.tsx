@@ -60,7 +60,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
 
-    useEffect(() => { setName(sub.name); setImage(sub.image ?? ""); setImages(sub.images ?? []); setDirty(false); }, [sub.slug]);
+    useEffect(() => { 
+        setName(sub.name); 
+        setImage(sub.image ?? ""); 
+        setImages(sub.images ?? []); 
+        setDirty(false); 
+    }, [sub.slug, sub.name, sub.image, sub.images, sub.items]);
 
     // Fetch gallery images for this subcategory and auto-sync
     useEffect(() => {
