@@ -82,12 +82,12 @@ export function EditorPanel({
         />;
     }
 
-    const cat = categoryDetailsCache.get(selection.catSlug);
+    const catFromCache = categoryDetailsCache.get(selection.catSlug);
+    const catFromSummary = categorySummaries.find(s => s.slug === selection.catSlug);
+    // Use cached detail if available, otherwise fall back to summary so we render immediately
+    const cat = catFromCache ?? (catFromSummary ? { ...catFromSummary, subcategories: [], flippingImages: [] } as any : null);
 
     if (!cat) {
-        if (isLoadingCategoryDetail && loadingCategorySlug === selection.catSlug) {
-            return <div className="p-4 text-neutral-500">Loading category details...</div>;
-        }
         return <div className="p-4 text-red-600">Category not found. Please go back and try again.</div>;
     }
 
