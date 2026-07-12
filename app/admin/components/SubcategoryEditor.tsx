@@ -170,55 +170,15 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const saveItem = async (item: BookingItem, idx: number | null) => {
         try {
             if (idx !== null) {
-                // Editing existing item - optimistic update
-                const optimisticData = {
-                    ...data,
-                    categories: data.categories.map((c) => {
-                        if (c.slug !== cat.slug) return c;
-                        return {
-                            ...c,
-                            subcategories: c.subcategories?.map((s) => {
-                                if (s.slug !== sub.slug) return s;
-                                return {
-                                    ...s,
-                                    items: s.items.map((existingItem, index) => index === idx ? item : existingItem),
-                                };
-                            }),
-                        };
-                    }),
-                };
-                onUpdate(optimisticData);
                 setEditingIdx(null);
                 setSaveSuccess("Size saved successfully!");
-                
-                // Call backend in background
                 const updatedData = await mutate("PUT", `${base}/items`, { itemIndex: idx, item });
-                onUpdate(updatedData);
+                if (updatedData) onUpdate(updatedData);
             } else {
-                // Adding new item - optimistic update
-                const optimisticData = {
-                    ...data,
-                    categories: data.categories.map((c) => {
-                        if (c.slug !== cat.slug) return c;
-                        return {
-                            ...c,
-                            subcategories: c.subcategories?.map((s) => {
-                                if (s.slug !== sub.slug) return s;
-                                return {
-                                    ...s,
-                                    items: [...s.items, item],
-                                };
-                            }),
-                        };
-                    }),
-                };
-                onUpdate(optimisticData);
                 setAddingItem(false);
                 setSaveSuccess("Size added successfully!");
-                
-                // Call backend in background
                 const updatedData = await mutate("POST", `${base}/items`, item);
-                onUpdate(updatedData);
+                if (updatedData) onUpdate(updatedData);
             }
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
@@ -240,24 +200,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         const itemName = items?.[idx]?.name ?? "this size";
         if (!confirm(`Delete "${itemName}"?`)) return;
         
-        // 1. Immediately update UI with optimistic data
-        const optimisticData = {
-            ...data,
-            categories: data.categories.map((c) => {
-                if (c.slug !== cat.slug) return c;
-                return {
-                    ...c,
-                    subcategories: c.subcategories?.map((s) => {
-                        if (s.slug !== sub.slug) return s;
-                        return {
-                            ...s,
-                            items: s.items.filter((_, i) => i !== idx),
-                        };
-                    }),
-                };
-            }),
-        };
-        onUpdate(optimisticData);
         setEditingIdx(null);
         setExpandedItems((prev) => {
             const next = new Set(prev);
