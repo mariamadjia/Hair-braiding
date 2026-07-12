@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -13,7 +13,6 @@ function getAuthHeader(req: NextRequest) {
 }
 
 function revalidatePublicBookingPages(slug: string, subSlug: string) {
-    revalidateTag("categories");
     revalidatePath("/services");
     revalidatePath("/booking");
     revalidatePath(`/booking/${slug}`);

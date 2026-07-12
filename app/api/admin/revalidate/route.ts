@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 
 function isAuthorized(req: NextRequest) {
     const authHeader = req.headers.get("authorization");
@@ -11,7 +11,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    revalidateTag("categories");
     revalidatePath("/services");
     revalidatePath("/booking");
     revalidatePath("/booking/[slug]", "page");
