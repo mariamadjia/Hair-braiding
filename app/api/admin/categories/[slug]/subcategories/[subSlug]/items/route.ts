@@ -75,20 +75,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         }
         
         console.log('[POST ITEMS] Service created successfully');
-        
-        // Fetch updated categories to return
-        console.log('[POST ITEMS] Fetching updated categories...');
-        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
-            headers: {
-                'Authorization': getAuthHeader(req),
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        console.log('[POST ITEMS] Categories response status:', categoriesResponse.status);
-        const categoriesData = await categoriesResponse.json();
-        console.log('[POST ITEMS] Returning categories data with', categoriesData.categories?.length, 'categories');
-        return NextResponse.json(categoriesData);
+        return NextResponse.json({ success: true }, { status: 201 });
     } catch (error: any) {
         console.error('Failed to create item:', error);
         console.error('Error details:', error.message, error.stack);
@@ -176,21 +163,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             return NextResponse.json({ error: error || "Failed to update item" }, { status: response.status });
         }
         
-        // Fetch updated categories to return
-        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
-            headers: {
-                'Authorization': getAuthHeader(req),
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (!categoriesResponse.ok) {
-            console.log('[PUT ITEMS] Failed to fetch updated categories, status:', categoriesResponse.status);
-            return NextResponse.json({ error: "Failed to fetch updated categories after save" }, { status: categoriesResponse.status });
-        }
-        
-        const categoriesData = await categoriesResponse.json();
-        return NextResponse.json(categoriesData);
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to update item:', error);
         return NextResponse.json({ error: "Failed to update item" }, { status: 500 });
@@ -263,16 +236,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
             return NextResponse.json({ error: error || "Failed to delete item" }, { status: response.status });
         }
         
-        // Fetch updated categories to return
-        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
-            headers: {
-                'Authorization': getAuthHeader(req),
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const categoriesData = await categoriesResponse.json();
-        return NextResponse.json(categoriesData);
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to delete item:', error);
         return NextResponse.json({ error: "Failed to delete item" }, { status: 500 });

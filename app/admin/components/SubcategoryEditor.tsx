@@ -47,7 +47,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         return <div className="text-sm text-neutral-500">Subcategory not found</div>;
     }
 
-    const items = Array.isArray(sub.items) ? sub.items : [];
+    const [items, setItems] = useState<BookingItem[]>(Array.isArray(sub.items) ? sub.items : []);
 
     const [name, setName] = useState(sub.name);
     const [image, setImage] = useState(sub.image ?? "");
@@ -69,6 +69,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         setName(sub.name);
         setImage(sub.image ?? "");
         setDirty(false);
+        setItems(Array.isArray(sub.items) ? sub.items : []);
         // Seed gallery images from the already-loaded subcategory detail (no extra fetch)
         const preloaded = (sub.galleryImages ?? []) as GalleryImage[];
         setGalleryImages(preloaded);
@@ -171,17 +172,24 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const saveItem = async (item: BookingItem, idx: number | null) => {
         try {
             if (idx !== null) {
+                // Optimistic: update local items immediately
+                setItems(prev => prev.map((existing, i) => i === idx ? item : existing));
                 setEditingIdx(null);
                 setSaveSuccess("Size saved successfully!");
+                setTimeout(() => setSaveSuccess(null), 3000);
+                // Sync backend in background
                 await mutate("PUT", `${base}/items`, { itemIndex: idx, item });
-                await onSubcategoryUpdate?.(sub.slug);
+                void onSubcategoryUpdate?.(sub.slug);
             } else {
+                // Optimistic: append new item immediately
+                setItems(prev => [...prev, item]);
                 setAddingItem(false);
                 setSaveSuccess("Size added successfully!");
+                setTimeout(() => setSaveSuccess(null), 3000);
+                // Sync backend in background
                 await mutate("POST", `${base}/items`, item);
-                await onSubcategoryUpdate?.(sub.slug);
+                void onSubcategoryUpdate?.(sub.slug);
             }
-            setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
             console.error("Failed to save item:", error);
             alert("Failed to save size. Please check the console for details.");
@@ -201,18 +209,20 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         const itemName = items?.[idx]?.name ?? "this size";
         if (!confirm(`Delete "${itemName}"?`)) return;
         
+        // Optimistic: remove item from local state immediately
+        setItems(prev => prev.filter((_, i) => i !== idx));
         setEditingIdx(null);
         setExpandedItems((prev) => {
             const next = new Set(prev);
             next.delete(idx);
             return next;
         });
-        
+        setSaveSuccess("Size deleted successfully!");
+        setTimeout(() => setSaveSuccess(null), 3000);
+
         try {
             await mutate("DELETE", `${base}/items/${itemId}`);
-            await onSubcategoryUpdate?.(sub.slug);
-            setSaveSuccess("Size deleted successfully!");
-            setTimeout(() => setSaveSuccess(null), 3000);
+            void onSubcategoryUpdate?.(sub.slug);
         } catch (error) {
             console.error("Failed to delete item:", error);
             alert("Delete failed. Please refresh the page.");
