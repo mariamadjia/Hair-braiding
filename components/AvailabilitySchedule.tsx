@@ -410,104 +410,49 @@ export default function AvailabilitySchedule() {
 
         try {
             const token = getAuthToken();
-            
+
             if (!token) {
-                setError('No authentication token found. Please log in again.');
-                setSaving(false);
+                setError("No authentication token found. Please log in again.");
                 return;
             }
 
-            // Save each day's schedule
-            for (const day of schedule) {
-                if (!day.isAvailable) {
-                    // Save as closed - save empty time slots array
-                    await fetch(`${API_BASE_URL}/api/time-slots/${day.dayOfWeek}`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify([])
-                    });
-                    
-                    // Also update business hours to mark as closed
-                    await fetch(`${API_BASE_URL}/api/availability/business-hours`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            dayOfWeek: day.dayOfWeek,
-                            openTime: '00:00:00',
-                            closeTime: '00:00:00',
-                            isOpen: false
-                        })
-                    });
-                } else {
-                    // Save individual time slots with their capacities
-                    if (day.timeSlots.length > 0) {
-                        const slotsPayload = day.timeSlots.map(slot => ({
+            const payload = {
+                days: schedule.map((day) => ({
+                    dayOfWeek: day.dayOfWeek,
+                    isAvailable: day.isAvailable,
+                    timeSlots: day.isAvailable
+                        ? day.timeSlots.map((slot) => ({
                             dayOfWeek: day.dayOfWeek,
                             startTime: slot.startTime,
                             endTime: slot.endTime,
-                            capacity: slot.capacity
-                        }));
-                        
-                        console.log(`Saving ${day.dayOfWeek} slots:`, slotsPayload);
-                        
-                        const response = await fetch(`${API_BASE_URL}/api/time-slots/${day.dayOfWeek}`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json',
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                                'Accept': 'application/json',
-                                'Accept-Language': 'en-US,en;q=0.9',
-                                'Sec-Fetch-Dest': 'empty',
-                                'Sec-Fetch-Mode': 'cors',
-                                'Sec-Fetch-Site': 'cross-site'
-                            },
-                            body: JSON.stringify(slotsPayload)
-                        });
-                        
-                        console.log(`${day.dayOfWeek} save response:`, response.status);
-                        
-                        if (!response.ok) {
-                            throw new Error(`Failed to save ${day.dayOfWeek}`);
-                        }
-                        
-                        // Also update business hours with overall time range
-                        const openTime = day.timeSlots[0].startTime;
-                        const closeTime = day.timeSlots[day.timeSlots.length - 1].endTime;
-                        
-                        await fetch(`${API_BASE_URL}/api/availability/business-hours`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                dayOfWeek: day.dayOfWeek,
-                                openTime: openTime + ':00',
-                                closeTime: closeTime + ':00',
-                                isOpen: true
-                            })
-                        });
-                    }
-                }
+                            capacity: slot.capacity,
+                        }))
+                        : [],
+                })),
+            };
+
+            const response = await fetch(`${API_BASE_URL}/api/availability/schedule`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to save schedule: ${response.status}`);
             }
 
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
-            
-            // Dispatch event to notify booking calendar to refresh
-            window.dispatchEvent(new CustomEvent('settingsUpdated', { 
-                detail: { businessHoursUpdated: true }
+
+            window.dispatchEvent(new CustomEvent("settingsUpdated", {
+                detail: { businessHoursUpdated: true },
             }));
         } catch (error) {
-            console.error('Error saving schedule:', error);
-            setError('Failed to save schedule');
+            console.error("Error saving schedule:", error);
+            setError("Failed to save schedule");
         } finally {
             setSaving(false);
         }
