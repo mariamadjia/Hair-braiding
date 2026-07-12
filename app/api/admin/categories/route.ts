@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       method: "GET",
       cache: "no-store",
       headers: authHeader ? { "Authorization": authHeader } : {},
-      signal: AbortSignal.timeout(10000)
+      signal: AbortSignal.timeout(30000)
     });
 
     console.log('[ADMIN CATEGORIES] Backend response status:', res.status);

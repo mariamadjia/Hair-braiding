@@ -44,7 +44,7 @@ export async function apiClient<T>(
   try {
     const response = await fetch(url, {
       ...config,
-      signal: AbortSignal.timeout(10000) // 10 second timeout
+      signal: AbortSignal.timeout(30000) // 30 second timeout
     });
     
     if (!response.ok) {

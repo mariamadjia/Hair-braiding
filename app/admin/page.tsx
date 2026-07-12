@@ -49,7 +49,7 @@ export default function AdminPage() {
                     "Content-Type": "application/json",
                 },
                 cache: "no-store",
-                signal: AbortSignal.timeout(10000)
+                signal: AbortSignal.timeout(30000)
             });
 
             if (!res.ok) {
