@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { Calendar, Clock, User, Mail, Phone, MessageSquare, Check, X, Loader2, Filter, List, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -36,7 +36,7 @@ type Appointment = {
     updatedAt: string;
 };
 
-export default function AppointmentManagement() {
+function AppointmentManagement() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'DENIED'>('PENDING');
@@ -44,10 +44,12 @@ export default function AppointmentManagement() {
     const [error, setError] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
 
     useEffect(() => {
         fetchAppointments();
-    }, [filter]);
+    }, [filter, page]);
 
     const fetchAppointments = async () => {
         setLoading(true);
@@ -55,11 +57,11 @@ export default function AppointmentManagement() {
         try {
             let url;
             if (filter === 'ALL') {
-                url = `${API_BASE_URL}/api/appointments`;
+                url = `${API_BASE_URL}/api/appointments?page=${page}&size=20`;
             } else if (filter === 'PENDING') {
-                url = `${API_BASE_URL}/api/appointments/pending`;
+                url = `${API_BASE_URL}/api/appointments/pending?page=${page}&size=20`;
             } else {
-                url = `${API_BASE_URL}/api/appointments/status/${filter}`;
+                url = `${API_BASE_URL}/api/appointments/status/${filter}?page=${page}&size=20`;
             }
             
             const token = getAuthToken();
@@ -88,7 +90,14 @@ export default function AppointmentManagement() {
             }
             
             const data = await response.json();
-            setAppointments(data);
+            // Handle both paginated and non-paginated responses
+            if (data.content) {
+                setAppointments(data.content);
+                setTotalPages(data.totalPages);
+            } else {
+                setAppointments(data);
+                setTotalPages(1);
+            }
         } catch (error) {
             console.error('Error fetching appointments:', error);
             setError(error instanceof Error ? error.message : 'Failed to connect to backend. Please try again later.');
@@ -428,6 +437,33 @@ export default function AppointmentManagement() {
                     ))}
                 </div>
             )}
+
+            {/* Pagination Controls */}
+            {!loading && !error && totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-neutral-200">
+                    <div className="text-sm text-neutral-600">
+                        Page {page + 1} of {totalPages}
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                            className="px-4 py-2 text-sm border border-neutral-300 rounded-sm hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Previous
+                        </button>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                            disabled={page === totalPages - 1}
+                            className="px-4 py-2 text-sm border border-neutral-300 rounded-sm hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+
+export default memo(AppointmentManagement);

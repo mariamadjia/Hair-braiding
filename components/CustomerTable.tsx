@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import { getAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
@@ -20,21 +20,32 @@ interface CustomerTableProps {
     onViewDetails: (customerId: number) => void;
 }
 
-export default function CustomerTable({ onViewDetails }: CustomerTableProps) {
+function CustomerTable({ onViewDetails }: CustomerTableProps) {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+
+    // Debounce search term
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
     useEffect(() => {
         fetchCustomers();
-    }, []);
+    }, [page]);
 
     const fetchCustomers = async () => {
         setLoading(true);
         try {
             const token = getAuthToken();
-            const response = await fetch(`${API_BASE_URL}/api/customers`, {
+            const response = await fetch(`${API_BASE_URL}/api/customers?page=${page}&size=20`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -43,13 +54,21 @@ export default function CustomerTable({ onViewDetails }: CustomerTableProps) {
 
             if (response.ok) {
                 const data = await response.json();
-                setCustomers(data);
+                // Handle both paginated and non-paginated responses
+                if (data.content) {
+                    setCustomers(data.content);
+                    setTotalPages(data.totalPages);
+                } else {
+                    setCustomers(data);
+                    setTotalPages(1);
+                }
             } else {
-                setError('Failed to fetch customers');
+                const errorData = await response.json().catch(() => ({}));
+                setError(errorData.error || errorData.message || 'Failed to fetch customers');
             }
         } catch (error) {
             console.error('Error fetching customers:', error);
-            setError('Failed to fetch customers');
+            setError('Failed to connect to server. Please try again later.');
         } finally {
             setLoading(false);
         }
@@ -66,7 +85,7 @@ export default function CustomerTable({ onViewDetails }: CustomerTableProps) {
     };
 
     const filteredCustomers = customers.filter(customer => {
-        const searchLower = searchTerm.toLowerCase();
+        const searchLower = debouncedSearchTerm.toLowerCase();
         const fullName = `${customer.firstName} ${customer.lastName}`.toLowerCase();
         return fullName.includes(searchLower) || 
                customer.email.toLowerCase().includes(searchLower) ||
@@ -154,6 +173,33 @@ export default function CustomerTable({ onViewDetails }: CustomerTableProps) {
                 <span>Total Customers: {customers.length}</span>
                 <span>Showing: {filteredCustomers.length}</span>
             </div>
+
+            {/* Pagination Controls */}
+            {!loading && !error && totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-neutral-200">
+                    <div className="text-sm text-neutral-600">
+                        Page {page + 1} of {totalPages}
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                            className="px-4 py-2 text-sm border border-neutral-300 rounded-sm hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Previous
+                        </button>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                            disabled={page === totalPages - 1}
+                            className="px-4 py-2 text-sm border border-neutral-300 rounded-sm hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+
+export default memo(CustomerTable);

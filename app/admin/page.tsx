@@ -1,20 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import type { CategoriesData } from "@/lib/booking-types";
 import { EditorPanel } from "./components/EditorPanel";
 import { PreviewServicesList, PreviewCategoryDetail, PreviewSubcategoryDetail } from "./components/PreviewComponents";
 import { AdminSidebar } from "./components/AdminSidebar";
-import { Dashboard } from "./components/Dashboard";
-import { GalleryAdminNew } from "./components/GalleryAdminNew";
-import { ProfileSection } from "./components/ProfileSection";
-import { HomePageEditor } from "./components/HomePageEditor";
 import { ThemeProvider } from "./context/ThemeContext";
 import { authApi } from "@/lib/api/auth";
-import AppointmentManagement from "@/components/AppointmentManagement";
-import AvailabilitySettings from "@/components/AvailabilitySettings";
-import CustomerTable from "@/components/CustomerTable";
-import CustomerDetails from "@/components/CustomerDetails";
+
+// Lazy load heavy components
+const Dashboard = lazy(() => import("./components/Dashboard").then(m => ({ default: m.Dashboard })));
+const GalleryAdminNew = lazy(() => import("./components/GalleryAdminNew").then(m => ({ default: m.GalleryAdminNew })));
+const ProfileSection = lazy(() => import("./components/ProfileSection").then(m => ({ default: m.ProfileSection })));
+const HomePageEditor = lazy(() => import("./components/HomePageEditor").then(m => ({ default: m.HomePageEditor })));
+const AppointmentManagement = lazy(() => import("@/components/AppointmentManagement").then(m => ({ default: m.default })));
+const AvailabilitySettings = lazy(() => import("@/components/AvailabilitySettings").then(m => ({ default: m.default })));
+const CustomerTable = lazy(() => import("@/components/CustomerTable").then(m => ({ default: m.default })));
+const CustomerDetails = lazy(() => import("@/components/CustomerDetails").then(m => ({ default: m.default })));
 
 type Selection =
     | { type: "root" }
@@ -339,7 +341,9 @@ export default function AdminPage() {
                 {/* Content based on section */}
                 {currentSection === "dashboard" && (
                     <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
-                        <Dashboard />
+                        <Suspense fallback={<div className="p-12 text-neutral-500">Loading dashboard…</div>}>
+                            <Dashboard />
+                        </Suspense>
                     </div>
                 )}
 
@@ -374,49 +378,61 @@ export default function AdminPage() {
 
                 {currentSection === "gallery" && (
                     <div className="flex-1 overflow-hidden">
-                        <GalleryAdminNew />
+                        <Suspense fallback={<div className="p-12 text-neutral-500">Loading gallery…</div>}>
+                            <GalleryAdminNew />
+                        </Suspense>
                     </div>
                 )}
 
                 {currentSection === "homepage" && (
                     <div className="flex-1 overflow-hidden">
-                        <HomePageEditor />
+                        <Suspense fallback={<div className="p-12 text-neutral-500">Loading homepage editor…</div>}>
+                            <HomePageEditor />
+                        </Suspense>
                     </div>
                 )}
 
                 {currentSection === "profile" && (
-                    <ProfileSection 
-                        adminName={adminName}
-                        adminEmail={adminUser?.email}
-                    />
+                    <Suspense fallback={<div className="p-12 text-neutral-500">Loading profile…</div>}>
+                        <ProfileSection 
+                            adminName={adminName}
+                            adminEmail={adminUser?.email}
+                        />
+                    </Suspense>
                 )}
 
                 {currentSection === "bookings" && (
                     <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
-                        <AppointmentManagement />
+                        <Suspense fallback={<div className="p-12 text-neutral-500">Loading appointments…</div>}>
+                            <AppointmentManagement />
+                        </Suspense>
                     </div>
                 )}
 
                 {currentSection === "availability" && (
                     <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
-                        <AvailabilitySettings />
+                        <Suspense fallback={<div className="p-12 text-neutral-500">Loading availability settings…</div>}>
+                            <AvailabilitySettings />
+                        </Suspense>
                     </div>
                 )}
 
                 {currentSection === "customers" && (
                     <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
-                        {selectedCustomerId ? (
-                            <div className="p-8">
-                                <CustomerDetails
-                                    customerId={selectedCustomerId}
-                                    onBack={() => setSelectedCustomerId(null)}
-                                />
-                            </div>
-                        ) : (
-                            <div className="p-8">
-                                <CustomerTable onViewDetails={setSelectedCustomerId} />
-                            </div>
-                        )}
+                        <Suspense fallback={<div className="p-12 text-neutral-500">Loading customers…</div>}>
+                            {selectedCustomerId ? (
+                                <div className="p-8">
+                                    <CustomerDetails
+                                        customerId={selectedCustomerId}
+                                        onBack={() => setSelectedCustomerId(null)}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="p-8">
+                                    <CustomerTable onViewDetails={setSelectedCustomerId} />
+                                </div>
+                            )}
+                        </Suspense>
                     </div>
                 )}
 

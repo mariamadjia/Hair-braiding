@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { getAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
@@ -33,7 +33,7 @@ interface CustomerDetailsProps {
     onBack: () => void;
 }
 
-export default function CustomerDetails({ customerId, onBack }: CustomerDetailsProps) {
+function CustomerDetails({ customerId, onBack }: CustomerDetailsProps) {
     const [customer, setCustomer] = useState<CustomerDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -90,7 +90,7 @@ export default function CustomerDetails({ customerId, onBack }: CustomerDetailsP
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'CONFIRMED':
+            case 'APPROVED':
                 return 'bg-green-100 text-green-700';
             case 'PENDING':
                 return 'bg-yellow-100 text-yellow-700';
@@ -98,6 +98,8 @@ export default function CustomerDetails({ customerId, onBack }: CustomerDetailsP
                 return 'bg-red-100 text-red-700';
             case 'CANCELLED':
                 return 'bg-neutral-100 text-neutral-700';
+            case 'COMPLETED':
+                return 'bg-blue-100 text-blue-700';
             default:
                 return 'bg-neutral-100 text-neutral-700';
         }
@@ -202,3 +204,5 @@ export default function CustomerDetails({ customerId, onBack }: CustomerDetailsP
         </div>
     );
 }
+
+export default memo(CustomerDetails);
