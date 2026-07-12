@@ -42,7 +42,10 @@ export async function apiClient<T>(
   }
 
   try {
-    const response = await fetch(url, config);
+    const response = await fetch(url, {
+      ...config,
+      signal: AbortSignal.timeout(10000) // 10 second timeout
+    });
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

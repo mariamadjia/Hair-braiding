@@ -106,31 +106,32 @@ export default function AdminPage() {
 
     useEffect(() => {
         const checkAuthAndLoad = async () => {
-            setIsAuthChecking(true);
-            try {
-                const savedToken =
-                    sessionStorage.getItem("auth_token") ||
-                    localStorage.getItem("auth_token");
-                if (savedToken) {
-                    setToken(savedToken);
+            const savedToken =
+                sessionStorage.getItem("auth_token") ||
+                localStorage.getItem("auth_token");
+            
+            if (savedToken) {
+                setIsAuthChecking(true);
+                setToken(savedToken);
+                try {
                     await loadCategories(savedToken);
+                } catch (err) {
+                    console.error("Auth check failed:", err);
+                } finally {
+                    setIsAuthChecking(false);
                 }
+            }
 
-                const params = new URLSearchParams(window.location.search);
-                const section = params.get("section");
-                const categorySlug = params.get("category");
+            const params = new URLSearchParams(window.location.search);
+            const section = params.get("section");
+            const categorySlug = params.get("category");
 
-                if (section) {
-                    setCurrentSection(section);
-                }
+            if (section) {
+                setCurrentSection(section);
+            }
 
-                if (section === "categories" && categorySlug) {
-                    setSelection({ type: "category", catSlug: categorySlug });
-                }
-            } catch (err) {
-                console.error("Auth check failed:", err);
-            } finally {
-                setIsAuthChecking(false);
+            if (section === "categories" && categorySlug) {
+                setSelection({ type: "category", catSlug: categorySlug });
             }
         };
 
@@ -163,7 +164,7 @@ export default function AdminPage() {
         setSelection({ type: "category", catSlug: categorySlug });
     };
 
-    if (!token || isAuthChecking) {
+    if (!token) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-neutral-50 relative overflow-hidden">
                 <div 
