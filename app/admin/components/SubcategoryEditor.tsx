@@ -7,6 +7,7 @@ import { emptyItem } from "../utils";
 import { formatPrice } from "@/lib/utils/price";
 import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
+import type { GalleryImageItem } from "@/lib/booking-types";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ItemForm } from "./ItemForm";
 import { ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp } from "lucide-react";
@@ -54,46 +55,28 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [addingItem, setAddingItem] = useState(false);
     const [editingIdx, setEditingIdx] = useState<number | null>(null);
     const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
-    const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+    const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(
+        (sub.galleryImages ?? []) as GalleryImage[]
+    );
     const [loadingGallery, setLoadingGallery] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
 
-    useEffect(() => { setName(sub.name); setImage(sub.image ?? ""); setImages(sub.images ?? []); setDirty(false); }, [sub.slug]);
-
-    // Fetch gallery images for this subcategory and auto-sync
     useEffect(() => {
-        const fetchGalleryImages = async () => {
-            if (!sub.id) {
-                console.log('[SubcategoryEditor] No subcategory ID, skipping gallery fetch');
-                return;
-            }
-            
-            setLoadingGallery(true);
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/gallery/subcategory/${sub.id}`, {
-                    signal: AbortSignal.timeout(10000)
-                });
-                if (response.ok) {
-                    const filtered = await response.json();
-                    setGalleryImages(filtered);
-                    
-                    // Auto-sync: if gallery has images, use them
-                    if (filtered.length > 0) {
-                        const galleryUrls = filtered.map((img: GalleryImage) => img.imageUrl);
-                        setImages(galleryUrls);
-                    }
-                }
-            } catch (error) {
-                console.error('[SubcategoryEditor] Failed to fetch gallery images:', error);
-            } finally {
-                setLoadingGallery(false);
-            }
-        };
-        fetchGalleryImages();
-    }, [sub.id]);
+        setName(sub.name);
+        setImage(sub.image ?? "");
+        setDirty(false);
+        // Seed gallery images from the already-loaded subcategory detail (no extra fetch)
+        const preloaded = (sub.galleryImages ?? []) as GalleryImage[];
+        setGalleryImages(preloaded);
+        if (preloaded.length > 0) {
+            setImages(preloaded.map(img => img.imageUrl));
+        } else {
+            setImages(sub.images ?? []);
+        }
+    }, [sub.slug]);
 
     const syncFromGallery = () => {
         if (galleryImages.length > 0) {

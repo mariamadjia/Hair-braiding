@@ -34,6 +34,17 @@ export type BookingItem = {
     hairTextures?: string[];
 };
 
+export type GalleryImageItem = {
+    id: number;
+    imageUrl: string;
+    thumbnailUrl?: string;
+    title?: string;
+    altText?: string;
+    displayOrder?: number;
+    subcategoryId?: number;
+    subcategoryName?: string;
+};
+
 export type BookingSubcategory = {
     id?: number;
     name: string;
@@ -43,6 +54,7 @@ export type BookingSubcategory = {
     images?: string[];
     items: BookingItem[];
     displayOrder?: number;
+    galleryImages?: GalleryImageItem[];
 };
 
 export type BookingCategory = {
