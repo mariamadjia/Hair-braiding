@@ -60,12 +60,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             return NextResponse.json({ error: "Failed to update subcategory" }, { status: updateResponse.status });
         }
         
-        // Return updated categories list
-        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await categoriesResponse.json();
-        return NextResponse.json(data);
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to update subcategory:', error);
         return NextResponse.json({ error: "Failed to update subcategory" }, { status: 500 });
@@ -109,12 +104,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
             return NextResponse.json({ error: "Failed to delete subcategory" }, { status: deleteResponse.status });
         }
         
-        // Return updated categories list
-        const categoriesResponse = await fetch(`${API_URL}/api/categories/admin`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await categoriesResponse.json();
-        return NextResponse.json(data);
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to delete subcategory:', error);
         return NextResponse.json({ error: "Failed to delete subcategory" }, { status: 500 });

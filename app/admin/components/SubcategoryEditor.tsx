@@ -188,14 +188,14 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 setEditingIdx(null);
                 setSaveSuccess("Size saved successfully!");
                 setTimeout(() => setSaveSuccess(null), 3000);
-                await mutate("PUT", `${base}/items`, { itemIndex: idx, item });
+                await mutate("PUT", `${base}/items`, { itemIndex: idx, item, itemId: items[idx]?.id, subcategoryId: sub.id });
                 void onSubcategoryUpdate?.(sub.slug);
             } else {
                 setItems(prev => [...prev, item]);
                 setAddingItem(false);
                 setSaveSuccess("Size added successfully!");
                 setTimeout(() => setSaveSuccess(null), 3000);
-                await mutate("POST", `${base}/items`, item);
+                await mutate("POST", `${base}/items`, { ...item, subcategoryId: sub.id });
                 await onSubcategoryUpdate?.(sub.slug);
             }
         } catch (error) {
@@ -228,7 +228,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         setTimeout(() => setSaveSuccess(null), 3000);
 
         try {
-            await mutate("DELETE", `${base}/items/${itemId}`);
+            await mutate("DELETE", `${base}/items/${itemId}`, undefined);
             void onSubcategoryUpdate?.(sub.slug);
         } catch (error) {
             console.error("Failed to delete item:", error);

@@ -21,41 +21,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     
     const { slug, subSlug } = await params;
     const item = await req.json();
-    
-    console.log('[POST ITEMS] Item data:', JSON.stringify(item, null, 2));
-    console.log('[POST ITEMS] Category slug:', slug, 'Subcategory slug:', subSlug);
+    const { subcategoryId, ...itemData } = item;
+
+    console.log('[POST ITEMS] Category slug:', slug, 'Subcategory slug:', subSlug, 'subcategoryId:', subcategoryId);
     
     try {
-        // First get the category to find its ID
-        console.log('[POST ITEMS] Fetching category...');
-        const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
-            headers: {
-                'Authorization': getAuthHeader(req),
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        console.log('[POST ITEMS] Category response status:', categoryResponse.status);
-        
-        if (!categoryResponse.ok) {
-            return NextResponse.json({ error: "Category not found" }, { status: 404 });
+        let resolvedSubcategoryId = subcategoryId;
+        let resolvedCategoryId: number | null = null;
+
+        // Only do the expensive slug lookup if IDs weren't provided
+        if (!resolvedSubcategoryId) {
+            console.log('[POST ITEMS] subcategoryId missing, fetching category...');
+            const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
+                headers: { 'Authorization': getAuthHeader(req), 'Content-Type': 'application/json' }
+            });
+            if (!categoryResponse.ok) return NextResponse.json({ error: "Category not found" }, { status: 404 });
+            const category = await categoryResponse.json();
+            resolvedCategoryId = category.id;
+            const subcategory = category.subcategories?.find((s: any) => s.slug === subSlug);
+            if (!subcategory) return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
+            resolvedSubcategoryId = subcategory.id;
         }
-        
-        const category = await categoryResponse.json();
-        const subcategory = category.subcategories?.find((s: any) => s.slug === subSlug);
-        
-        if (!subcategory) {
-            return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
-        }
-        
-        // Create the service item with category and subcategory IDs
+
         const itemWithIds = {
-            ...item,
-            category: { id: category.id },
-            subcategory: { id: subcategory.id }
+            ...itemData,
+            ...(resolvedCategoryId ? { category: { id: resolvedCategoryId } } : {}),
+            subcategory: { id: resolvedSubcategoryId }
         };
-        
-        console.log('[POST ITEMS] Creating service with data:', JSON.stringify(itemWithIds, null, 2));
+
+        console.log('[POST ITEMS] Creating service with subcategoryId:', resolvedSubcategoryId);
         
         const response = await fetch(`${API_URL}/api/services`, {
             method: 'POST',
@@ -92,61 +86,41 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
     }
     
     const { slug, subSlug } = await params;
-    const { itemIndex, item } = await req.json();
-    
-    console.log('[PUT ITEMS] Item index:', itemIndex, 'Item data:', JSON.stringify(item, null, 2));
-    
+    const { itemIndex, item, itemId, subcategoryId } = await req.json();
+
+    console.log('[PUT ITEMS] itemId:', itemId, 'subcategoryId:', subcategoryId, 'itemIndex:', itemIndex);
+
     try {
-        // Use category slug endpoint to get IDs - it returns full entity with IDs
-        const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
-            headers: {
-                'Authorization': getAuthHeader(req),
-                'Content-Type': 'application/json'
+        let resolvedItemId = itemId;
+
+        // Only do expensive lookups if itemId wasn't provided
+        if (!resolvedItemId) {
+            console.log('[PUT ITEMS] itemId missing, falling back to slug lookup...');
+            const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
+                headers: { 'Authorization': getAuthHeader(req), 'Content-Type': 'application/json' }
+            });
+            if (!categoryResponse.ok) return NextResponse.json({ error: "Category not found" }, { status: 404 });
+            const category = await categoryResponse.json();
+            const subcategory = category.subcategories?.find((s: any) => s.slug === subSlug);
+            if (!subcategory) return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
+
+            const itemsResponse = await fetch(`${API_URL}/api/services/subcategory/${subcategory.id}`, {
+                headers: { 'Authorization': getAuthHeader(req) }
+            });
+            if (itemsResponse.ok) {
+                const items = await itemsResponse.json();
+                resolvedItemId = items[itemIndex]?.id ?? subcategory.items?.[itemIndex]?.id;
+            } else {
+                resolvedItemId = subcategory.items?.[itemIndex]?.id;
             }
-        });
-        
-        console.log('[PUT ITEMS] Category fetch status:', categoryResponse.status);
-        
-        if (!categoryResponse.ok) {
-            return NextResponse.json({ error: "Category not found" }, { status: 404 });
         }
-        
-        const category = await categoryResponse.json();
-        console.log('[PUT ITEMS] Category ID:', category.id, 'Subcategories:', category.subcategories?.length);
-        
-        const subcategory = category.subcategories?.find((s: any) => s.slug === subSlug);
-        
-        if (!subcategory) {
-            return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
-        }
-        
-        console.log('[PUT ITEMS] Subcategory ID:', subcategory.id, 'Items:', subcategory.items?.length);
-        
-        // Get items by subcategory ID to ensure we have item IDs
-        const itemsResponse = await fetch(`${API_URL}/api/services/subcategory/${subcategory.id}`, {
-            headers: { 'Authorization': getAuthHeader(req) }
-        });
-        
-        let itemToUpdate: any = null;
-        if (itemsResponse.ok) {
-            const items = await itemsResponse.json();
-            itemToUpdate = items[itemIndex];
-            console.log('[PUT ITEMS] Found item via services endpoint:', itemToUpdate?.id);
-        }
-        
-        // Fallback: use item from subcategory directly
-        if (!itemToUpdate || !itemToUpdate.id) {
-            itemToUpdate = subcategory.items?.[itemIndex];
-            console.log('[PUT ITEMS] Fallback item:', itemToUpdate?.id);
-        }
-        
-        if (!itemToUpdate || !itemToUpdate.id) {
+
+        if (!resolvedItemId) {
             return NextResponse.json({ error: "Item not found or missing ID" }, { status: 404 });
         }
-        
-        // Update the service item
-        console.log('[PUT ITEMS] Updating service ID:', itemToUpdate.id);
-        const response = await fetch(`${API_URL}/api/services/${itemToUpdate.id}`, {
+
+        console.log('[PUT ITEMS] Updating service ID:', resolvedItemId);
+        const response = await fetch(`${API_URL}/api/services/${resolvedItemId}`, {
             method: 'PUT',
             headers: {
                 'Authorization': getAuthHeader(req),
