@@ -7,6 +7,11 @@ import Welcome from "@/components/Welcome";
 import Gallery from "@/components/Gallery";
 import Footer from "@/components/Footer";
 import { API_BASE_URL } from "@/lib/config/api";
+import {
+  fetchCategoryDisplayPhotos,
+  getDisplayImages,
+  saveCategoryFlippingImages,
+} from "@/lib/api/categoryDisplayPhotos";
 
 interface WelcomeItem {
   type: 'video' | 'image';
@@ -17,6 +22,7 @@ interface WelcomeItem {
 }
 
 interface GalleryCollection {
+  id: number;
   title: string;
   images: string[];
   slug: string;
@@ -241,11 +247,19 @@ export function HomePageEditor() {
 
   const loadGalleryCollections = async () => {
     try {
-      const res = await fetch('/api/gallery-collections');
-      const data = await res.json();
-      if (data.collections) {
-        setGalleryCollections(data.collections);
-      }
+      const categories = await fetchCategoryDisplayPhotos();
+
+      const collections: GalleryCollection[] = categories
+        .map((category) => ({
+          id: category.id,
+          title: category.name,
+          slug: category.slug,
+          images: getDisplayImages(category),
+        }))
+        .filter((collection) => collection.images.length > 0)
+        .slice(0, 4);
+
+      setGalleryCollections(collections);
     } catch (error) {
       console.error('Failed to load gallery collections:', error);
     }
@@ -276,34 +290,14 @@ export function HomePageEditor() {
     setLoadingCollections(true);
 
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/categories/gallery-cards`
-      );
+      const categories = await fetchCategoryDisplayPhotos();
 
-      if (!res.ok) {
-        throw new Error(
-          `Failed to load Gallery collections: ${res.status}`
-        );
-      }
-
-      const data = await res.json();
-
-      const collections: GalleryCollection[] = (data || []).map(
-        (category: any) => {
-          const rawImages =
-            category.flippingImages?.length > 0
-              ? category.flippingImages
-              : category.fallbackImages ?? [];
-
-          return {
-            title: category.name,
-            slug: category.slug,
-            images: rawImages
-              .map(resolveGalleryCollectionImage)
-              .filter(Boolean),
-          };
-        }
-      );
+      const collections: GalleryCollection[] = categories.map((category) => ({
+        id: category.id,
+        title: category.name,
+        slug: category.slug,
+        images: getDisplayImages(category),
+      }));
 
       setAllCollections(collections);
 
@@ -361,27 +355,8 @@ export function HomePageEditor() {
     setSavingGalleryCollections(true);
 
     try {
-      const token = getAuthToken();
-
-      if (!token) {
-        alert("Your admin session expired. Please sign out and sign back in.");
-        return false;
-      }
-
-      const res = await fetch('/api/gallery-collections', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ collections }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error('Failed to save gallery collections:', res.status, text);
-        alert('Failed to save gallery collection changes.');
-        return false;
+      for (const collection of collections) {
+        await saveCategoryFlippingImages(collection.id, collection.images);
       }
 
       return true;

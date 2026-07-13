@@ -8,6 +8,7 @@ import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
 import { ChevronRight, FolderTree, FileText } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
+import { saveCategoryFlippingImages } from "@/lib/api/categoryDisplayPhotos";
 
 type Selection =
     | { type: "root" }
@@ -62,7 +63,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     if ((!cat.flippingImages || cat.flippingImages.length === 0) && images.length >= 3) {
                         const autoImages = images.slice(0, 5).map((img: GalleryImage) => img.imageUrl);
                         setImages(autoImages);
-                        setDirty(true);
+                        setDirty(false);
                     }
                 }
             } catch (error) {
@@ -94,7 +95,14 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         }
         setSaving(true);
         try {
-            await mutate("PUT", `/${cat.slug}`, { name, flippingImages: images });
+            await mutate("PUT", `/${cat.slug}`, { name });
+
+            if (!cat.id) {
+                alert("Category ID is missing. Cannot save flipping images.");
+                return;
+            }
+
+            await saveCategoryFlippingImages(cat.id, images);
             setDirty(false);
             setSuccessMessage("Category saved successfully!");
             setTimeout(() => setSuccessMessage(null), 3000);

@@ -6,7 +6,12 @@ import { Edit, Trash2, Plus } from "lucide-react";
 import { galleryApi, GalleryImage } from '@/lib/api/gallery';
 import { API_BASE_URL } from '@/lib/config/api';
 import { FlippingImagesModal } from "./FlippingImagesModal";
-import { toProxyUrl, fromProxyUrl } from '@/lib/utils/image';
+import { toProxyUrl } from '@/lib/utils/image';
+import {
+  fetchCategoryDisplayPhotos,
+  getDisplayImages,
+  saveCategoryFlippingImages,
+} from "@/lib/api/categoryDisplayPhotos";
 
 interface Category {
     id: number;
@@ -42,35 +47,27 @@ export function GalleryAdminNew() {
         try {
             setLoading(true);
 
-            const categoriesResponse = await fetch(
-                `${API_BASE_URL}/api/categories/gallery-cards`
-            );
+            const [imagesData, categoriesData] = await Promise.all([
+                galleryApi.getAllImages(),
+                fetchCategoryDisplayPhotos(),
+            ]);
 
-            if (!categoriesResponse.ok) {
-                throw new Error(
-                    `Failed to load gallery categories: ${categoriesResponse.status}`
-                );
-            }
-
-            const categoriesData = await categoriesResponse.json();
+            setImages(imagesData);
 
             const transformedCategories = categoriesData
                 .map((cat: any) => {
-                    const rawImages =
-                        cat.flippingImages?.length > 0
-                            ? cat.flippingImages
-                            : cat.fallbackImages ?? [];
+                    const displayImages = getDisplayImages(cat);
 
                     return {
                         ...cat,
 
                         // Keep original paths for saving to the backend later.
-                        rawImages,
+                        rawImages: cat.flippingImages || [],
 
                         // Browser-ready image URLs for the cards.
-                        images: rawImages.map(toProxyUrl),
+                        images: displayImages,
 
-                        image: rawImages[0] ? toProxyUrl(rawImages[0]) : "",
+                        image: displayImages[0] || toProxyUrl(cat.image),
                     };
                 })
                 .sort((a: any, b: any) => {
@@ -150,22 +147,12 @@ export function GalleryAdminNew() {
         if (!selectedCategoryForFlipping) return;
 
         try {
-            // Convert proxy URLs back to backend URLs for saving
-            const backendUrls = imageUrls
-                .map(fromProxyUrl)
-                .filter((url): url is string => url !== null && url !== '');
-
-            // Save to backend
-            await galleryApi.updateCategoryFlippingImages(selectedCategoryForFlipping.id, backendUrls);
-
-            // Update local state: images are proxy URLs for display,
-            // rawImages are originals for any future save.
-            const updatedCategories = categories.map(cat =>
-                cat.id === selectedCategoryForFlipping.id
-                    ? { ...cat, images: imageUrls.map(toProxyUrl), rawImages: imageUrls }
-                    : cat
+            await saveCategoryFlippingImages(
+                selectedCategoryForFlipping.id,
+                imageUrls
             );
-            setCategories(updatedCategories);
+
+            await loadData();
 
             setFlippingModalOpen(false);
             setSelectedCategoryForFlipping(null);
