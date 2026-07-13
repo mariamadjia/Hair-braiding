@@ -55,6 +55,7 @@ export function HomePageEditor() {
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<number, number>>({});
   const [isFlipping, setIsFlipping] = useState<Record<number, boolean>>({});
   const [loadingCollections, setLoadingCollections] = useState(false);
+  const [savingGalleryCollections, setSavingGalleryCollections] = useState(false);
 
   // Helper function to get auth token
   const getAuthToken = () => {
@@ -355,6 +356,10 @@ export function HomePageEditor() {
   };
 
   const saveGalleryCollections = async (collections: GalleryCollection[]) => {
+    if (savingGalleryCollections) return false;
+
+    setSavingGalleryCollections(true);
+
     try {
       const token = getAuthToken();
 
@@ -379,14 +384,13 @@ export function HomePageEditor() {
         return false;
       }
 
-      await loadGalleryCollections();
-      await loadAllCollections();
-
       return true;
     } catch (error) {
       console.error('Failed to save gallery collections:', error);
       alert('Failed to save gallery collection changes.');
       return false;
+    } finally {
+      setSavingGalleryCollections(false);
     }
   };
 
@@ -1242,22 +1246,31 @@ export function HomePageEditor() {
             {/* Modal Footer */}
             <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 shrink-0 flex gap-3">
               <button
+                type="button"
+                disabled={savingGalleryCollections}
                 onClick={() => setEditingCollectionIndex(null)}
-                className="flex-1 px-4 py-2 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 text-sm rounded-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                className="flex-1 px-4 py-2 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 text-sm rounded-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
+                type="button"
+                disabled={savingGalleryCollections}
                 onClick={async () => {
+                  if (savingGalleryCollections) return;
+
                   const saved = await saveGalleryCollections(galleryCollections);
 
                   if (!saved) return;
 
                   setEditingCollectionIndex(null);
+
+                  void loadGalleryCollections();
+                  void loadAllCollections();
                 }}
-                className="flex-1 px-4 py-2 bg-neutral-900 dark:bg-neutral-700 text-white text-sm rounded-sm hover:bg-neutral-800 dark:hover:bg-neutral-600 transition-colors"
+                className="flex-1 px-4 py-2 bg-neutral-900 dark:bg-neutral-700 text-white text-sm rounded-sm hover:bg-neutral-800 dark:hover:bg-neutral-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Save Changes
+                {savingGalleryCollections ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
@@ -1433,13 +1446,19 @@ export function HomePageEditor() {
             {/* Modal Footer */}
             <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 shrink-0 flex gap-3">
               <button
+                type="button"
+                disabled={savingGalleryCollections}
                 onClick={() => setIsGalleryEditOpen(false)}
-                className="flex-1 px-4 py-2 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 text-sm rounded-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                className="flex-1 px-4 py-2 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 text-sm rounded-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
+                type="button"
+                disabled={savingGalleryCollections || selectedCollectionIndices.length !== 4}
                 onClick={async () => {
+                  if (savingGalleryCollections) return;
+
                   const selectedCollections = selectedCollectionIndices.map(i => allCollections[i]);
 
                   setGalleryCollections(selectedCollections);
@@ -1449,15 +1468,17 @@ export function HomePageEditor() {
                   if (!saved) return;
 
                   setIsGalleryEditOpen(false);
+
+                  void loadGalleryCollections();
+                  void loadAllCollections();
                 }}
-                disabled={selectedCollectionIndices.length !== 4}
-                className={`flex-1 px-4 py-2 text-white text-sm rounded-sm transition-colors ${
+                className={`flex-1 px-4 py-2 text-white text-sm rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                   selectedCollectionIndices.length === 4
                     ? 'bg-neutral-900 dark:bg-neutral-700 hover:bg-neutral-800 dark:hover:bg-neutral-600'
                     : 'bg-neutral-300 dark:bg-neutral-600 cursor-not-allowed'
                 }`}
               >
-                Save Changes
+                {savingGalleryCollections ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
