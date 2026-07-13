@@ -3,6 +3,8 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ChevronLeft, Edit, Trash2, Plus } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/config/api';
+import { toProxyUrl } from '@/lib/utils/image';
 
 export default function CategoryDetailPage() {
     const params = useParams();
@@ -20,12 +22,12 @@ export default function CategoryDetailPage() {
     const loadCategoryData = async () => {
         try {
             // Fetch category by slug
-            const categoryRes = await fetch(`http://localhost:8080/api/categories/slug/${params.slug}`);
+            const categoryRes = await fetch(`${API_BASE_URL}/api/categories/slug/${params.slug}`);
             const categoryData = await categoryRes.json();
             setCategory(categoryData);
 
             // Fetch all images
-            const imagesRes = await fetch('http://localhost:8080/api/gallery');
+            const imagesRes = await fetch(`${API_BASE_URL}/api/gallery`);
             const allImages = await imagesRes.json();
 
             // Filter images for this category
@@ -144,7 +146,7 @@ export default function CategoryDetailPage() {
                                 <div className="aspect-[4/5] bg-neutral-200 overflow-hidden">
                                     {subcategory.images[0] ? (
                                         <img
-                                            src={subcategory.images[0].imageUrl}
+                                            src={toProxyUrl(subcategory.images[0].imageUrl)}
                                             alt={subcategory.name}
                                             className="w-full h-full object-cover"
                                         />
