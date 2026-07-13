@@ -356,18 +356,37 @@ export function HomePageEditor() {
 
   const saveGalleryCollections = async (collections: GalleryCollection[]) => {
     try {
+      const token = getAuthToken();
+
+      if (!token) {
+        alert("Your admin session expired. Please sign out and sign back in.");
+        return false;
+      }
+
       const res = await fetch('/api/gallery-collections', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ collections }),
       });
+
       if (!res.ok) {
-        console.error('Failed to save gallery collections:', res.status);
-        throw new Error(`Failed to save gallery collections: ${res.status}`);
+        const text = await res.text();
+        console.error('Failed to save gallery collections:', res.status, text);
+        alert('Failed to save gallery collection changes.');
+        return false;
       }
+
+      await loadGalleryCollections();
+      await loadAllCollections();
+
+      return true;
     } catch (error) {
       console.error('Failed to save gallery collections:', error);
-      throw error;
+      alert('Failed to save gallery collection changes.');
+      return false;
     }
   };
 
@@ -1177,9 +1196,20 @@ export function HomePageEditor() {
                         />
                         <button
                           onClick={() => {
-                            const newCollections = [...galleryCollections];
-                            newCollections[editingCollectionIndex].images.splice(imgIndex, 1);
-                            setGalleryCollections(newCollections);
+                            if (editingCollectionIndex === null) return;
+
+                            setGalleryCollections((prev) =>
+                              prev.map((collection, collectionIndex) =>
+                                collectionIndex === editingCollectionIndex
+                                  ? {
+                                      ...collection,
+                                      images: collection.images.filter(
+                                        (_, currentImageIndex) => currentImageIndex !== imgIndex
+                                      ),
+                                    }
+                                  : collection
+                              )
+                            );
                           }}
                           className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                         >
@@ -1219,7 +1249,10 @@ export function HomePageEditor() {
               </button>
               <button
                 onClick={async () => {
-                  await saveGalleryCollections(galleryCollections);
+                  const saved = await saveGalleryCollections(galleryCollections);
+
+                  if (!saved) return;
+
                   setEditingCollectionIndex(null);
                 }}
                 className="flex-1 px-4 py-2 bg-neutral-900 dark:bg-neutral-700 text-white text-sm rounded-sm hover:bg-neutral-800 dark:hover:bg-neutral-600 transition-colors"
@@ -1406,9 +1439,15 @@ export function HomePageEditor() {
                 Cancel
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   const selectedCollections = selectedCollectionIndices.map(i => allCollections[i]);
+
                   setGalleryCollections(selectedCollections);
+
+                  const saved = await saveGalleryCollections(selectedCollections);
+
+                  if (!saved) return;
+
                   setIsGalleryEditOpen(false);
                 }}
                 disabled={selectedCollectionIndices.length !== 4}

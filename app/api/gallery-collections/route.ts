@@ -54,7 +54,12 @@ export async function GET() {
 // POST - Update category flipping images from homepage editor
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('Authorization') || '';
+    const authHeader = request.headers.get('authorization') || '';
+
+    if (!authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { collections: updatedCollections } = await request.json();
 
     console.log('POST /api/gallery-collections received:', JSON.stringify(updatedCollections, null, 2));
@@ -104,9 +109,16 @@ export async function POST(request: Request) {
           const errorText = await updateResponse.text();
           console.error(`Failed to update category ${category.id}:`, errorText);
           console.error(`Update response status:`, updateResponse.status);
-        } else {
-          console.log(`Successfully updated category ${category.id}`);
+          return NextResponse.json(
+            {
+              error: `Failed to update category ${category.name}`,
+              details: errorText,
+            },
+            { status: updateResponse.status }
+          );
         }
+
+        console.log(`Successfully updated category ${category.id}`);
       }
     }
 
