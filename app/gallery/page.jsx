@@ -38,6 +38,7 @@ export default function GalleryPage({
   const [cardImageIndexes, setCardImageIndexes] = useState({});
   const [isFlipping, setIsFlipping] = useState({});
   const [categories, setCategories] = useState([]);
+  const [galleryImages, setGalleryImages] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch gallery images from backend
@@ -45,17 +46,20 @@ export default function GalleryPage({
     const fetchGalleryData = async () => {
       try {
         setLoading(true);
-        const categoriesRes = await fetch(
-          `${API_BASE_URL}/api/categories/gallery`
-        );
+        const [categoriesRes, galleryRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/categories/gallery`),
+          fetch(`${API_BASE_URL}/api/gallery`),
+        ]);
 
         if (!categoriesRes.ok) {
           throw new Error("Failed to load Gallery categories");
         }
 
         const categoriesData = await categoriesRes.json();
+        const allGalleryImages = galleryRes.ok ? await galleryRes.json() : [];
 
         setCategories(categoriesData || []);
+        setGalleryImages(Array.isArray(allGalleryImages) ? allGalleryImages : []);
       } catch (error) {
         console.error('Failed to load gallery:', error);
       } finally {
@@ -78,12 +82,20 @@ export default function GalleryPage({
   // Transform backend data into gallery format
   const galleryCategories = categories.map((cat) => {
     const subcategoryData = (cat.subcategories || []).map((sub) => {
+      // Prefer real gallery images uploaded in the admin SubcategoryEditor,
+      // then fall back to the legacy subcategory.image / sub.images fields.
+      const subGalleryImages = galleryImages
+        .filter((img) => img.subcategoryId === sub.id)
+        .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+
       const rawImages =
-        Array.isArray(sub.images) && sub.images.length > 0
-          ? sub.images
-          : sub.image
-            ? [sub.image]
-            : [];
+        subGalleryImages.length > 0
+          ? subGalleryImages.map((img) => img.imageUrl)
+          : Array.isArray(sub.images) && sub.images.length > 0
+            ? sub.images
+            : sub.image
+              ? [sub.image]
+              : [];
 
       return {
         id: sub.id,
