@@ -1,31 +1,15 @@
 import CategoryPageTemplate from '@/components/CategoryPageTemplate';
+import { getCategoryPageData } from '@/lib/categories-store';
 
-const locsCategories = [
-  {
-    name: 'Butterfly',
-    slug: 'butterfly',
-    image: '/Gallery/Locs/Butterfly/IMG_9387.jpg',
-    images: [
-      '/Gallery/Locs/Butterfly/IMG_9387.jpg',
-    ],
-  },
-  {
-    name: 'Soft',
-    slug: 'soft',
-    image: '/Gallery/Locs/Soft/IMG_9385.jpg',
-    images: [
-      '/Gallery/Locs/Soft/IMG_9385.jpg',
-      '/Gallery/Locs/Soft/IMG_9386.jpg',
-    ],
-  },
-];
+export const dynamic = 'force-dynamic';
 
-export default function LocsPage() {
+export default async function LocsPage() {
+  const { categoryName, categorySlug, subcategories } = await getCategoryPageData('locs');
   return (
     <CategoryPageTemplate
-      categoryName="Locs"
-      categorySlug="locs"
-      subcategories={locsCategories}
+      categoryName={categoryName}
+      categorySlug={categorySlug}
+      subcategories={subcategories}
     />
   );
 }
