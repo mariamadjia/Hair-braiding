@@ -45,40 +45,40 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         setName(cat.name); 
         setImages((cat.flippingImages ?? []).map(toProxyUrl));
         setDirty(false); 
-        
-        // Fetch gallery images for this category (optional - don't crash if it fails)
-        const fetchGalleryImages = async () => {
-            if (!cat.id) {
-                console.log('[CategoryEditor] No category ID, skipping gallery fetch');
-                return;
-            }
-            
+
+        // Fetch the full category detail from the admin endpoint so we always
+        // show the real backend flippingImages, not a stale or empty summary.
+        const fetchCategoryDetail = async () => {
+            if (!cat.slug) return;
+
             try {
-                const response = await fetch(`${API_BASE_URL}/api/gallery/category/${cat.id}`, {
-                    signal: AbortSignal.timeout(10000)
+                const response = await fetch(`/api/admin/categories/${cat.slug}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                    cache: "no-store",
+                    signal: AbortSignal.timeout(15000)
                 });
-                
-                if (response.ok) {
-                    const galleryImages = await response.json();
-                    setGalleryImages(galleryImages);
-                    
-                    // Auto-populate flipping images if empty
-                    if ((!cat.flippingImages || cat.flippingImages.length === 0) && galleryImages.length >= 3) {
-                        const autoImages = galleryImages
-                            .slice(0, 5)
-                            .map((img: GalleryImage) => toProxyUrl(img.imageUrl));
-                        setImages(autoImages);
-                        // These are fallback display images only. Do not mark dirty
-                        // automatically so fallback images do not pretend to be saved.
-                        setDirty(false);
-                    }
+
+                if (!response.ok) {
+                    console.error('[CategoryEditor] Failed to fetch category detail:', response.status);
+                    return;
                 }
+
+                const detail = await response.json();
+                console.log('[CategoryEditor] Fetched category detail flippingImages:', detail.flippingImages);
+
+                setImages((detail.flippingImages ?? []).map(toProxyUrl));
+                setGalleryImages((detail.galleryImages ?? []) as GalleryImage[]);
             } catch (error) {
-                console.error('[CategoryEditor] Failed to fetch gallery images:', error);
+                console.error('[CategoryEditor] Failed to fetch category detail:', error);
             }
         };
-        fetchGalleryImages();
-    }, [cat.slug, cat.id]);
+
+        fetchCategoryDetail();
+    }, [cat.slug, cat.id, token]);
 
     // Load subcategory summaries when category is selected
     useEffect(() => {

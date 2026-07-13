@@ -288,8 +288,9 @@ export default function AdminPage() {
                 sessionStorage.setItem("admin_user", JSON.stringify(response.admin));
             }
             
-            // Load category summaries in background, do not block login
+            // Load category summaries and full category data in background, do not block login
             void loadCategorySummaries(response.token);
+            void loadCategories(response.token);
         } catch (err: any) {
             setError(err.message || "Invalid email or password.");
         } finally {
@@ -307,10 +308,11 @@ export default function AdminPage() {
                 setIsAuthChecking(true);
                 setToken(savedToken);
                 try {
-                    // Run warm-up ping and summaries fetch in parallel
+                    // Run warm-up ping and summaries + full categories fetch in parallel
                     await Promise.all([
                         pingBackend(),
-                        loadCategorySummaries(savedToken)
+                        loadCategorySummaries(savedToken),
+                        loadCategories(savedToken)
                     ]);
                 } catch (err) {
                     console.error("Auth check failed:", err);
@@ -480,8 +482,6 @@ export default function AdminPage() {
 
     const handleSelectionChange = async (newSelection: Selection) => {
         setSelection(newSelection);
-        // Category detail loading is now handled by CategoryEditor itself.
-        // It loads only subcategory summaries when mounted.
     };
 
     const handleLogout = () => {
