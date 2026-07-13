@@ -79,10 +79,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             return NextResponse.json({ error: "Failed to update category" }, { status: updateResponse.status });
         }
         
-        // Return updated categories list
-        const categoriesResponse = await fetch(`${API_URL}/api/categories`);
-        const data = await categoriesResponse.json();
-        return NextResponse.json(data);
+        const updated = await updateResponse.json().catch(() => ({ success: true }));
+        return NextResponse.json(updated);
     } catch (error) {
         console.error('Failed to update category:', error);
         return NextResponse.json({ error: "Failed to update category" }, { status: 500 });
@@ -115,10 +113,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
             return NextResponse.json({ error: "Failed to delete category" }, { status: deleteResponse.status });
         }
         
-        // Return updated categories list
-        const categoriesResponse = await fetch(`${API_URL}/api/categories`);
-        const data = await categoriesResponse.json();
-        return NextResponse.json(data);
+        return NextResponse.json({ success: true, slug });
     } catch (error) {
         console.error('Failed to delete category:', error);
         return NextResponse.json({ error: "Failed to delete category" }, { status: 500 });
