@@ -1,18 +1,9 @@
 import { notFound } from "next/navigation";
-import { readBookingCategory, readCategories } from "@/lib/categories-store";
+import { readBookingCategory } from "@/lib/categories-store";
 import CategoryPageClient from "./CategoryPageClient";
 
-export const revalidate = 60;
-export const dynamicParams = true;
-
-export async function generateStaticParams() {
-    try {
-        const { categories } = await readCategories();
-        return categories.map((cat) => ({ slug: cat.slug }));
-    } catch {
-        return [];
-    }
-}
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type Props = { params: Promise<{ slug: string }> };
 

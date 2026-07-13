@@ -23,6 +23,19 @@ function isAuthorized(req: NextRequest) {
     return false;
 }
 
+
+function revalidatePublicServices(slug: string, subSlug?: string) {
+    revalidatePath("/services");
+    revalidatePath("/booking");
+    revalidatePath("/booking/[slug]", "page");
+    revalidatePath("/booking/[slug]/[subSlug]", "page");
+    revalidatePath(`/booking/${slug}`);
+    if (subSlug) {
+        revalidatePath(`/booking/${slug}/${subSlug}`);
+    }
+}
+
+
 // GET: Fetch subcategory summaries for a category
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
     if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -108,10 +121,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         }
         
         const createdSubcategory = await createResponse.json();
-        revalidatePath("/services");
-        revalidatePath("/booking");
-        revalidatePath("/booking/[slug]", "page");
-        revalidatePath("/booking/[slug]/[subSlug]", "page");
+        revalidatePublicServices(slug, createdSubcategory?.slug);
 
         return NextResponse.json(createdSubcategory, { status: 201 });
     } catch (error) {

@@ -15,6 +15,8 @@ function getAuthHeader(req: NextRequest) {
 function revalidatePublicBookingPages(slug: string, subSlug: string) {
     revalidatePath("/services");
     revalidatePath("/booking");
+    revalidatePath("/booking/[slug]", "page");
+    revalidatePath("/booking/[slug]/[subSlug]", "page");
     revalidatePath(`/booking/${slug}`);
     revalidatePath(`/booking/${slug}/${subSlug}`);
 }

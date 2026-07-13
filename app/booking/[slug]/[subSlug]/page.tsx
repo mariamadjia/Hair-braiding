@@ -3,6 +3,7 @@ import { readBookingSubcategory } from "@/lib/categories-store";
 import SubcategoryPageClient from "./SubcategoryPageClient";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type Props = { params: Promise<{ slug: string; subSlug: string }> };
 

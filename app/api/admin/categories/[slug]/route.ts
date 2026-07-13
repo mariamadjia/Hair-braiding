@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 export const runtime = "nodejs";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+function revalidatePublicServices(slug?: string) {
+    revalidatePath("/services");
+    revalidatePath("/booking");
+    revalidatePath("/booking/[slug]", "page");
+    revalidatePath("/booking/[slug]/[subSlug]", "page");
+    if (slug) {
+        revalidatePath(`/booking/${slug}`);
+    }
+}
 
 function isAuthorized(req: NextRequest) {
     // Check for x-admin-token (legacy)
@@ -80,6 +91,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
         }
         
         const updated = await updateResponse.json().catch(() => ({ success: true }));
+        revalidatePublicServices(slug);
         return NextResponse.json(updated);
     } catch (error) {
         console.error('Failed to update category:', error);
@@ -113,7 +125,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
             return NextResponse.json({ error: "Failed to delete category" }, { status: deleteResponse.status });
         }
         
-        return NextResponse.json({ success: true, slug });
+        revalidatePublicServices(slug);
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to delete category:', error);
         return NextResponse.json({ error: "Failed to delete category" }, { status: 500 });

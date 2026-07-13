@@ -21,9 +21,11 @@ function isAuthorized(req: NextRequest) {
     return false;
 }
 
-function revalidatePublicBookingPages(slug: string, subSlug: string) {
+function revalidatePublicServices(slug: string, subSlug: string) {
     revalidatePath("/services");
     revalidatePath("/booking");
+    revalidatePath("/booking/[slug]", "page");
+    revalidatePath("/booking/[slug]/[subSlug]", "page");
     revalidatePath(`/booking/${slug}`);
     revalidatePath(`/booking/${slug}/${subSlug}`);
 }
@@ -65,7 +67,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
             return NextResponse.json({ error: "Failed to update subcategory" }, { status: updateResponse.status });
         }
         
-        revalidatePublicBookingPages(slug, subSlug);
+        revalidatePublicServices(slug, subSlug);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to update subcategory:', error);
@@ -110,7 +112,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
             return NextResponse.json({ error: "Failed to delete subcategory" }, { status: deleteResponse.status });
         }
         
-        revalidatePublicBookingPages(slug, subSlug);
+        revalidatePublicServices(slug, subSlug);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Failed to delete subcategory:', error);
