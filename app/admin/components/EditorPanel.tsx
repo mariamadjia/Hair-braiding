@@ -95,6 +95,9 @@ export function EditorPanel({
             headers={headers} 
             mutate={mutate} 
             setSelection={setSelection}
+            onCategoryCreated={onCategoryCreated}
+            onCategoryDeleted={onCategoryDeleted}
+            onCategorySummariesRefresh={onCategorySummariesRefresh}
         />;
     }
 
@@ -116,6 +119,9 @@ export function EditorPanel({
             onLoadSubcategorySummaries={onLoadSubcategorySummaries}
             onLoadSubcategoryDetail={onLoadSubcategoryDetail}
             isLoadingSubcategorySummaries={isLoadingSubcategorySummaries}
+            onSubcategoryCreated={onSubcategoryCreated}
+            onSubcategoryDeleted={onSubcategoryDeleted}
+            onSubcategorySummariesRefresh={onSubcategorySummariesRefresh}
         />;
     }
 

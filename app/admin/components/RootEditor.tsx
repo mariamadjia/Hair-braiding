@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { CategoriesData, CategorySummary } from "@/lib/booking-types";
+import type { CategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
 import { GripVertical, FolderTree, FileText, Image as ImageIcon } from "lucide-react";
@@ -11,11 +11,14 @@ type Selection =
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
 
-export function RootEditor({ categorySummaries, headers, mutate, setSelection }: {
+export function RootEditor({ categorySummaries, headers, mutate, setSelection, onCategoryCreated, onCategoryDeleted, onCategorySummariesRefresh }: {
     categorySummaries: CategorySummary[];
     headers: Record<string, string>;
     mutate: (method: string, path: string, body?: object) => Promise<any>;
     setSelection: (s: Selection) => void;
+    onCategoryCreated?: (summary: CategorySummary) => void;
+    onCategoryDeleted?: (slug: string) => void;
+    onCategorySummariesRefresh?: () => Promise<any>;
 }) {
     const [adding, setAdding] = useState(false);
     const [name, setName] = useState("");
@@ -24,13 +27,19 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection }:
 
     const add = async () => {
         if (!name.trim()) return;
-        await mutate("POST", "", { name: name.trim(), slug: slugify(name), subcategories: [] });
+        const created = await mutate("POST", "", { name: name.trim(), slug: slugify(name), subcategories: [] });
         setName(""); setAdding(false);
+        if (created && (created.slug || created.name)) {
+            onCategoryCreated?.(created as CategorySummary);
+        } else {
+            await onCategorySummariesRefresh?.();
+        }
     };
 
     const del = async (slug: string, catName: string) => {
         if (!confirm(`Delete "${catName}" and all its content?`)) return;
         await mutate("DELETE", `/${slug}`);
+        onCategoryDeleted?.(slug);
     };
 
     const handleDragStart = (e: React.DragEvent, index: number) => {

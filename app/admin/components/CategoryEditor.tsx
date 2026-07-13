@@ -14,7 +14,7 @@ type Selection =
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
 
-export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLoadSubcategorySummaries, onLoadSubcategoryDetail, isLoadingSubcategorySummaries }: {
+export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLoadSubcategorySummaries, onLoadSubcategoryDetail, isLoadingSubcategorySummaries, onSubcategoryCreated, onSubcategoryDeleted, onSubcategorySummariesRefresh }: {
     cat: BookingCategory;
     token: string;
     headers: Record<string, string>;
@@ -23,6 +23,9 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     onLoadSubcategorySummaries: (categorySlug: string, token: string) => Promise<SubcategorySummary[]>;
     onLoadSubcategoryDetail: (slug: string, token: string) => Promise<any>;
     isLoadingSubcategorySummaries: boolean;
+    onSubcategoryCreated?: (categorySlug: string, summary: SubcategorySummary) => void;
+    onSubcategoryDeleted?: (categorySlug: string, subSlug: string) => void;
+    onSubcategorySummariesRefresh?: (categorySlug: string) => Promise<any>;
 }) {
     const [name, setName] = useState(cat.name);
     const [images, setImages] = useState<string[]>(cat.flippingImages ?? []);
@@ -105,8 +108,16 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
 
     const addSub = async () => {
         if (!newSubName.trim()) return;
-        await mutate("POST", `/${cat.slug}/subcategories`, { name: newSubName.trim(), categoryId: cat.id });
+        const created = await mutate("POST", `/${cat.slug}/subcategories`, { name: newSubName.trim(), categoryId: cat.id });
         setNewSubName(""); setAddingSub(false);
+        if (created && (created.slug || created.name)) {
+            const summary: SubcategorySummary = { id: created.id, name: created.name, slug: created.slug ?? slugify(newSubName), displayOrder: created.displayOrder };
+            onSubcategoryCreated?.(cat.slug, summary);
+            setSubSummaries(prev => [...prev, summary]);
+        } else {
+            const fresh = await onSubcategorySummariesRefresh?.(cat.slug);
+            if (fresh) setSubSummaries(fresh);
+        }
     };
 
     const delSub = async (subSlug: string, subName: string, subId?: number) => {
@@ -114,6 +125,8 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         setSaving(true);
         try {
             await mutate("DELETE", `/${cat.slug}/subcategories/${subSlug}`, subId ? { subcategoryId: subId } : undefined);
+            onSubcategoryDeleted?.(cat.slug, subSlug);
+            setSubSummaries(prev => prev.filter(s => s.slug !== subSlug));
             setSuccessMessage(`Subcategory "${subName}" deleted successfully!`);
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
