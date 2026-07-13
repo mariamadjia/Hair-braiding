@@ -101,9 +101,14 @@ export function EditorPanel({
         />;
     }
 
+    // Prefer full category data (includes flippingImages) over the lightweight summary.
+    const catFromData = data.categories.find(c => c.slug === selection.catSlug);
     const catFromSummary = categorySummaries.find(s => s.slug === selection.catSlug);
-    // Category selection renders immediately from the lightweight summary.
-    const cat = catFromSummary ? { ...catFromSummary, subcategories: [], flippingImages: [] } as any : null;
+    const cat = catFromData
+        ? { ...catFromData, subcategories: catFromData.subcategories ?? [] } as any
+        : catFromSummary
+            ? { ...catFromSummary, subcategories: [], flippingImages: [] } as any
+            : null;
 
     if (!cat) {
         return <div className="p-4 text-red-600">Category not found. Please go back and try again.</div>;

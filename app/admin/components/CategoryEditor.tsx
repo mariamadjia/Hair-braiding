@@ -115,7 +115,9 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 .map(fromProxyUrl)
                 .filter((url): url is string => Boolean(url));
 
+            console.log('[CategoryEditor] Saving flipping images for category', cat.id, backendUrls);
             await galleryApi.updateCategoryFlippingImages(cat.id, backendUrls);
+            console.log('[CategoryEditor] Flipping images saved successfully');
 
             setImages(backendUrls.map(toProxyUrl));
             setDirty(false);
