@@ -8,7 +8,8 @@ import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
 import { ChevronRight, FolderTree, FileText } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
-import { saveCategoryFlippingImages } from "@/lib/api/categoryDisplayPhotos";
+import { galleryApi } from "@/lib/api/gallery";
+import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
 
 type Selection =
     | { type: "root" }
@@ -29,7 +30,9 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     onSubcategorySummariesRefresh?: (categorySlug: string) => Promise<any>;
 }) {
     const [name, setName] = useState(cat.name);
-    const [images, setImages] = useState<string[]>(cat.flippingImages ?? []);
+    const [images, setImages] = useState<string[]>(() =>
+        (cat.flippingImages ?? []).map(toProxyUrl)
+    );
     const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
     const [dirty, setDirty] = useState(false);
     const [addingSub, setAddingSub] = useState(false);
@@ -40,7 +43,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
 
     useEffect(() => { 
         setName(cat.name); 
-        setImages(cat.flippingImages ?? []);
+        setImages((cat.flippingImages ?? []).map(toProxyUrl));
         setDirty(false); 
         
         // Fetch gallery images for this category (optional - don't crash if it fails)
@@ -56,13 +59,17 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 });
                 
                 if (response.ok) {
-                    const images = await response.json();
-                    setGalleryImages(images);
+                    const galleryImages = await response.json();
+                    setGalleryImages(galleryImages);
                     
                     // Auto-populate flipping images if empty
-                    if ((!cat.flippingImages || cat.flippingImages.length === 0) && images.length >= 3) {
-                        const autoImages = images.slice(0, 5).map((img: GalleryImage) => img.imageUrl);
+                    if ((!cat.flippingImages || cat.flippingImages.length === 0) && galleryImages.length >= 3) {
+                        const autoImages = galleryImages
+                            .slice(0, 5)
+                            .map((img: GalleryImage) => toProxyUrl(img.imageUrl));
                         setImages(autoImages);
+                        // These are fallback display images only. Do not mark dirty
+                        // automatically so fallback images do not pretend to be saved.
                         setDirty(false);
                     }
                 }
@@ -93,16 +100,24 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             alert("Maximum 5 photos allowed.");
             return;
         }
+        if (!cat.id) {
+            alert("Category ID is missing. Cannot save flipping images.");
+            return;
+        }
+
         setSaving(true);
         try {
+            // Save category name separately
             await mutate("PUT", `/${cat.slug}`, { name });
 
-            if (!cat.id) {
-                alert("Category ID is missing. Cannot save flipping images.");
-                return;
-            }
+            // Save photos using the same dedicated endpoint as Gallery admin
+            const backendUrls = images
+                .map(fromProxyUrl)
+                .filter((url): url is string => Boolean(url));
 
-            await saveCategoryFlippingImages(cat.id, images);
+            await galleryApi.updateCategoryFlippingImages(cat.id, backendUrls);
+
+            setImages(backendUrls.map(toProxyUrl));
             setDirty(false);
             setSuccessMessage("Category saved successfully!");
             setTimeout(() => setSuccessMessage(null), 3000);

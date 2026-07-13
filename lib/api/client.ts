@@ -1,5 +1,6 @@
 // API client configuration
 import { API_BASE_URL } from '../config/api';
+import { getAuthToken } from '../utils/auth';
 
 export class ApiError extends Error {
   constructor(
@@ -32,7 +33,7 @@ export async function apiClient<T>(
 
   // Add auth token if available
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('auth_token');
+    const token = getAuthToken();
     if (token) {
       config.headers = {
         ...config.headers,
