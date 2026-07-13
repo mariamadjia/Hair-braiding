@@ -36,19 +36,30 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const [photoImageIndex, setPhotoImageIndex] = useState(0);
     const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
     const items = sortItemsBySize(subcategory.items ?? []);
+    const subcategoryGalleryImageUrls =
+        subcategory.galleryImages && subcategory.galleryImages.length > 0
+            ? subcategory.galleryImages
+                  .map((image) => image.imageUrl)
+                  .filter((url): url is string => Boolean(url))
+            : [];
+
     const subcategoryImages = (
         subcategory.images && subcategory.images.length > 0
             ? subcategory.images
-            : subcategory.image
-                ? [subcategory.image]
-                : []
+            : subcategoryGalleryImageUrls.length > 0
+                ? subcategoryGalleryImageUrls
+                : subcategory.image
+                    ? [subcategory.image]
+                    : []
     ).filter(Boolean).map(toProxyUrl);
     const heroImage = subcategoryImages[0] ?? null;
 
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
     const lengthOptions = selectedItem?.lengthOptions ?? [];
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
-    const photoGallery = photoItem?.images?.length ? photoItem.images : photoItem?.image ? [photoItem.image] : [];
+    const photoGallery = (photoItem?.images?.length ? photoItem.images : photoItem?.image ? [photoItem.image] : [])
+        .filter(Boolean)
+        .map(toProxyUrl);
     const hasMultiplePhotos = photoGallery.length > 1;
 
     const openModalForItem = (index: number) => {
