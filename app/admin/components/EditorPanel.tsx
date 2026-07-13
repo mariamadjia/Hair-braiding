@@ -23,7 +23,15 @@ export function EditorPanel({
     isLoadingSubcategorySummaries,
     isLoadingSubcategoryDetail,
     loadingSubcategorySlug,
-    onSubcategoryUpdate
+    onSubcategoryUpdate,
+    onCategoryCreated,
+    onCategoryDeleted,
+    onCategoryUpdated,
+    onCategorySummariesRefresh,
+    onSubcategoryCreated,
+    onSubcategoryDeleted,
+    onSubcategoryUpdated,
+    onSubcategorySummariesRefresh,
 }: {
     data: CategoriesData;
     selection: Selection;
@@ -38,6 +46,14 @@ export function EditorPanel({
     isLoadingSubcategoryDetail: boolean;
     loadingSubcategorySlug: string | null;
     onSubcategoryUpdate?: (slug: string) => Promise<any>;
+    onCategoryCreated?: (summary: CategorySummary) => void;
+    onCategoryDeleted?: (slug: string) => void;
+    onCategoryUpdated?: (summary: CategorySummary) => void;
+    onCategorySummariesRefresh?: () => Promise<any>;
+    onSubcategoryCreated?: (categorySlug: string, summary: SubcategorySummary) => void;
+    onSubcategoryDeleted?: (categorySlug: string, subSlug: string) => void;
+    onSubcategoryUpdated?: (categorySlug: string, summary: SubcategorySummary) => void;
+    onSubcategorySummariesRefresh?: (categorySlug: string) => Promise<any>;
 }) {
     const headers = { 
         "Content-Type": "application/json", 

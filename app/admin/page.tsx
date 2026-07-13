@@ -43,6 +43,7 @@ export default function AdminPage() {
     // New state for subcategory lazy loading
     const [subcategorySummariesCache, setSubcategorySummariesCache] = useState<Map<string, SubcategorySummary[]>>(new Map());
     const [subcategoryDetailsCache, setSubcategoryDetailsCache] = useState<Map<string, any>>(new Map());
+    const [categoryDetailsCache, setCategoryDetailsCache] = useState<Map<string, any>>(new Map());
     const [isLoadingSubcategorySummaries, setIsLoadingSubcategorySummaries] = useState(false);
     const [isLoadingSubcategoryDetail, setIsLoadingSubcategoryDetail] = useState(false);
     const [loadingSubcategorySlug, setLoadingSubcategorySlug] = useState<string | null>(null);
@@ -345,6 +346,116 @@ export default function AdminPage() {
         }
     };
 
+    const upsertCategorySummary = (summary: CategorySummary) => {
+        setCategorySummaries((prev) => {
+            const existingIndex = prev.findIndex((cat) => cat.slug === summary.slug || (summary.id && cat.id === summary.id));
+            if (existingIndex === -1) {
+                return [...prev, summary].sort((a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999));
+            }
+
+            const next = [...prev];
+            next[existingIndex] = { ...next[existingIndex], ...summary };
+            return next.sort((a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999));
+        });
+    };
+
+    const removeCategorySummary = (slug: string) => {
+        setCategorySummaries((prev) => prev.filter((cat) => cat.slug !== slug));
+        setCategoryDetailsCache((prev) => {
+            const next = new Map(prev);
+            next.delete(slug);
+            return next;
+        });
+        setSubcategorySummariesCache((prev) => {
+            const next = new Map(prev);
+            next.delete(slug);
+            return next;
+        });
+        if (selection.type !== "root" && selection.catSlug === slug) {
+            setSelection({ type: "root" });
+        }
+    };
+
+    const upsertSubcategorySummary = (categorySlug: string, summary: SubcategorySummary) => {
+        setSubcategorySummariesCache((prev) => {
+            const next = new Map(prev);
+            const current = next.get(categorySlug) ?? [];
+            const existingIndex = current.findIndex((sub) => sub.slug === summary.slug || (summary.id && sub.id === summary.id));
+
+            if (existingIndex === -1) {
+                next.set(categorySlug, [...current, summary].sort((a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999)));
+            } else {
+                const updated = [...current];
+                updated[existingIndex] = { ...updated[existingIndex], ...summary };
+                next.set(categorySlug, updated.sort((a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999)));
+            }
+
+            return next;
+        });
+
+        setCategoryDetailsCache((prev) => {
+            const cat = prev.get(categorySlug);
+            if (!cat) return prev;
+
+            const currentSubs = cat.subcategories ?? [];
+            const existingIndex = currentSubs.findIndex((sub: any) => sub.slug === summary.slug || (summary.id && sub.id === summary.id));
+            const nextSubs = [...currentSubs];
+
+            if (existingIndex === -1) {
+                nextSubs.push({ ...summary, items: [] } as any);
+            } else {
+                nextSubs[existingIndex] = { ...nextSubs[existingIndex], ...summary };
+            }
+
+            const next = new Map(prev);
+            next.set(categorySlug, { ...cat, subcategories: nextSubs });
+            return next;
+        });
+    };
+
+    const removeSubcategorySummary = (categorySlug: string, subSlug: string) => {
+        setSubcategorySummariesCache((prev) => {
+            const next = new Map(prev);
+            next.set(categorySlug, (next.get(categorySlug) ?? []).filter((sub) => sub.slug !== subSlug));
+            return next;
+        });
+
+        setSubcategoryDetailsCache((prev) => {
+            const next = new Map(prev);
+            next.delete(subSlug);
+            return next;
+        });
+
+        setCategoryDetailsCache((prev) => {
+            const cat = prev.get(categorySlug);
+            if (!cat) return prev;
+
+            const next = new Map(prev);
+            next.set(categorySlug, {
+                ...cat,
+                subcategories: (cat.subcategories ?? []).filter((sub: any) => sub.slug !== subSlug),
+            });
+            return next;
+        });
+
+        if (selection.type === "subcategory" && selection.catSlug === categorySlug && selection.subSlug === subSlug) {
+            setSelection({ type: "category", catSlug: categorySlug });
+        }
+    };
+
+    const refreshSubcategorySummaries = async (categorySlug: string) => {
+        setSubcategorySummariesCache((prev) => {
+            const next = new Map(prev);
+            next.delete(categorySlug);
+            return next;
+        });
+        return loadSubcategorySummaries(categorySlug, token);
+    };
+
+    const refreshCategorySummaries = async () => {
+        return loadCategorySummaries(token);
+    };
+
     const refreshSubcategoryDetail = async (slug: string) => {
         try {
             const res = await fetch(`/api/admin/subcategories/${slug}`, {
@@ -593,6 +704,14 @@ export default function AdminPage() {
                                         isLoadingSubcategorySummaries={isLoadingSubcategorySummaries}
                                         isLoadingSubcategoryDetail={isLoadingSubcategoryDetail}
                                         loadingSubcategorySlug={loadingSubcategorySlug}
+                                        onCategoryCreated={upsertCategorySummary}
+                                        onCategoryDeleted={removeCategorySummary}
+                                        onCategoryUpdated={upsertCategorySummary}
+                                        onCategorySummariesRefresh={refreshCategorySummaries}
+                                        onSubcategoryCreated={upsertSubcategorySummary}
+                                        onSubcategoryDeleted={removeSubcategorySummary}
+                                        onSubcategoryUpdated={upsertSubcategorySummary}
+                                        onSubcategorySummariesRefresh={refreshSubcategorySummaries}
                                         onSubcategoryUpdate={refreshSubcategoryDetail}
                                     />
                                 )}
