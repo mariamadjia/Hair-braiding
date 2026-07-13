@@ -9,6 +9,7 @@ interface EditSubcategoryModalProps {
     subcategory: {
         id: number;
         name: string;
+        image?: string;
         images?: GalleryImage[];
     };
     categoryId: number;
@@ -49,10 +50,38 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                     throw new Error("Failed to load subcategory images");
                 }
 
-                const data = await response.json();
+                let data: GalleryImage[] = await response.json();
+                data = Array.isArray(data) ? data : [];
+
+                // If no gallery records exist but the subcategory has a raw image URL,
+                // register it as a gallery record so it appears in the modal.
+                if (data.length === 0 && subcategory.image) {
+                    try {
+                        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+                        const registerRes = await fetch(`${API_BASE_URL}/api/gallery/register-url`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                            },
+                            body: JSON.stringify({
+                                imageUrl: subcategory.image,
+                                title: subcategory.name,
+                                subcategoryId: subcategory.id,
+                                categoryId,
+                            }),
+                        });
+                        if (registerRes.ok) {
+                            const registered = await registerRes.json();
+                            data = [registered];
+                        }
+                    } catch (regErr) {
+                        console.error("Failed to register existing subcategory image:", regErr);
+                    }
+                }
 
                 if (!cancelled) {
-                    setImages(Array.isArray(data) ? data : []);
+                    setImages(data);
                 }
             } catch (error) {
                 console.error(
