@@ -41,7 +41,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     setSelection: (s: Selection) => void;
     onUpdate: (data: CategoriesData) => void;
     data: CategoriesData;
-    onSubcategoryUpdate?: (slug: string) => Promise<void>;
+    onSubcategoryUpdate?: (slug: string) => Promise<any>;
 }) {
     if (!sub) {
         return <div className="text-sm text-neutral-500">Subcategory not found</div>;
@@ -127,7 +127,16 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             // Re-fetch gallery images for this subcategory only
             const galleryResponse = await fetch(`${API_BASE_URL}/api/gallery/subcategory/${sub.id}`);
             if (galleryResponse.ok) {
-                setGalleryImages(await galleryResponse.json());
+                const freshGallery = await galleryResponse.json();
+                setGalleryImages(freshGallery);
+                const galleryUrls = freshGallery.map((img: GalleryImage) => img.imageUrl);
+                setImages(galleryUrls);
+            }
+
+            // Refresh parent subcategory detail so image/subcategory state stays in sync
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.image) {
+                setImage(freshSub.image);
             }
         } catch (error) {
             console.error('Failed to upload image:', error);
@@ -154,11 +163,20 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             
             // Remove from local state immediately
             setGalleryImages(prev => prev.filter(img => img.id !== imageId));
-            
+
             // Re-fetch gallery images for this subcategory only
             const galleryResponse = await fetch(`${API_BASE_URL}/api/gallery/subcategory/${sub.id}`);
             if (galleryResponse.ok) {
-                setGalleryImages(await galleryResponse.json());
+                const freshGallery = await galleryResponse.json();
+                setGalleryImages(freshGallery);
+                const galleryUrls = freshGallery.map((img: GalleryImage) => img.imageUrl);
+                setImages(galleryUrls);
+            }
+
+            // Refresh parent subcategory detail so image/subcategory state stays in sync
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.image !== undefined) {
+                setImage(freshSub.image ?? "");
             }
         } catch (error) {
             console.error('Failed to delete image:', error);
@@ -170,6 +188,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         setSaving(true);
         try {
             await mutate("PUT", base, { name, image, displayOrder: sub.displayOrder?.toString(), subcategoryId: sub.id });
+            await onSubcategoryUpdate?.(sub.slug);
             setDirty(false);
             setSaveSuccess("Subcategory saved successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);

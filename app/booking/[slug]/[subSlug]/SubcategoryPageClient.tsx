@@ -11,7 +11,6 @@ import type { BookingCategory, BookingSubcategory, BookingItem } from "@/lib/boo
 import Navbar from "@/components/Navbar";
 import { formatPrice } from "@/lib/utils/price";
 import { toProxyUrl } from "@/lib/utils/image";
-import { API_BASE_URL } from "@/lib/config/api";
 
 const SIZE_ORDER = ['XSmall', 'Small', 'Medium', 'Smedium', 'Large', 'Jumbo'];
 
@@ -36,10 +35,16 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const [photoItemIndex, setPhotoItemIndex] = useState<number | null>(null);
     const [photoImageIndex, setPhotoImageIndex] = useState(0);
     const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
-    const [subGalleryImages, setSubGalleryImages] = useState<string[]>([]);
-    const [subGalleryLoading, setSubGalleryLoading] = useState(true);
     const items = sortItemsBySize(subcategory.items ?? []);
-    
+    const subcategoryImages = (
+        subcategory.images && subcategory.images.length > 0
+            ? subcategory.images
+            : subcategory.image
+                ? [subcategory.image]
+                : []
+    ).filter(Boolean).map(toProxyUrl);
+    const heroImage = subcategoryImages[0] ?? null;
+
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
     const lengthOptions = selectedItem?.lengthOptions ?? [];
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
@@ -99,30 +104,6 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     };
 
     useEffect(() => {
-        const fetchSubGallery = async () => {
-            if (!subcategory.id) return;
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/gallery/subcategory/${subcategory.id}`, {
-                    cache: "no-store",
-                });
-                if (res.ok) {
-                    const images = await res.json();
-                    setSubGalleryImages(
-                        Array.isArray(images)
-                            ? images.map((img: any) => toProxyUrl(img.imageUrl)).filter(Boolean)
-                            : []
-                    );
-                }
-            } catch (error) {
-                console.error("Failed to load subcategory gallery:", error);
-            } finally {
-                setSubGalleryLoading(false);
-            }
-        };
-        fetchSubGallery();
-    }, [subcategory.id]);
-
-    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
                 if (photoItemIndex !== null) {
@@ -177,10 +158,10 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
             <Navbar />
             <section className="relative overflow-hidden bg-[#FFF5EE] py-24 md:py-32 text-neutral-900">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
-                    {(subGalleryImages[0] || subcategory.image) && (
+                    {heroImage && (
                         <div className="relative h-64 w-full max-w-xl mx-auto mb-6 rounded-sm overflow-hidden">
                             <Image
-                                src={subGalleryImages[0] || subcategory.image || ""}
+                                src={heroImage}
                                 alt={subcategory.name}
                                 fill
                                 className="object-contain"
@@ -211,33 +192,31 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                 <div className="pointer-events-none absolute -top-20 right-10 h-56 w-56 rounded-full bg-amber-100/30 blur-3xl" aria-hidden="true" />
             </section>
 
+            {subcategoryImages.length > 1 && (
+                <section className="bg-[#FFF5EE] py-8 md:py-12">
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {subcategoryImages.map((image, index) => (
+                                <div
+                                    key={`${image}-${index}`}
+                                    className="relative aspect-[4/5] overflow-hidden rounded-sm"
+                                >
+                                    <Image
+                                        src={image}
+                                        alt={`${subcategory.name} ${index + 1}`}
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 768px) 50vw, 25vw"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+
             <section className="bg-[#FFF5EE] pb-24 md:pb-32">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl space-y-6">
-                    {/* Subcategory Gallery */}
-                    {subGalleryImages.length > 0 && (
-                        <div className="pb-8 border-b border-neutral-200/60">
-                            <h2 className="text-xs font-medium uppercase tracking-[0.3em] text-neutral-500 mb-4">
-                                Gallery
-                            </h2>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                {subGalleryImages.map((imgUrl, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="relative aspect-[4/5] rounded-sm overflow-hidden border border-neutral-200 bg-neutral-100"
-                                    >
-                                        <Image
-                                            src={imgUrl}
-                                            alt={`${subcategory.name} gallery ${idx + 1}`}
-                                            fill
-                                            className="object-cover"
-                                            sizes="(max-width: 768px) 50vw, 25vw"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
                     {items.map((item, index) => (
                         <div
                             key={`${item.name}-${index}`}
