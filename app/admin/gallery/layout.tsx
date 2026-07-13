@@ -13,8 +13,11 @@ export default function AdminGalleryLayout({
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        // Check authentication
-        const token = localStorage.getItem('auth_token');
+        // Check authentication in both storage types
+        const token =
+            localStorage.getItem('auth_token') ||
+            sessionStorage.getItem('auth_token');
+
         if (!token) {
             router.push('/admin');
         } else {
@@ -42,6 +45,9 @@ export default function AdminGalleryLayout({
                 }}
                 onLogout={() => {
                     localStorage.removeItem('auth_token');
+                    localStorage.removeItem('admin_user');
+                    sessionStorage.removeItem('auth_token');
+                    sessionStorage.removeItem('admin_user');
                     router.push('/admin');
                 }}
             />
