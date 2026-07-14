@@ -761,46 +761,51 @@ export function NewCategoryWizard({
                   >
                     <div className="p-5 space-y-5">
 
-                      {/* ── Subcategory name ── */}
-                      <div className="flex items-center gap-3">
-                        <Lock className="w-4 h-4 text-violet-500 shrink-0" aria-hidden />
-                        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 w-36 shrink-0">Subcategory name</span>
-                        <input
-                          aria-label={`Subcategory ${si + 1} name`}
-                          className={`flex-1 border rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 ${
-                            subInputError && !sub.name.trim() ? "border-red-400" : "border-neutral-300 dark:border-neutral-600"
-                          }`}
-                          value={sub.name}
-                          onChange={(e) => updateSubField(sub.uid, "name", e.target.value)}
-                          placeholder="e.g. Knotless"
-                        />
-                        {subEntries.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeSubRow(sub.uid)}
-                            aria-label={`Remove subcategory ${si + 1}`}
-                            className="ml-1 p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" aria-hidden />
-                          </button>
-                        )}
-                        {cardComplete && (
-                          <CheckCircle className="w-4 h-4 text-green-500 shrink-0" aria-label="Complete" />
-                        )}
-                      </div>
+                      {/* ── Name + Photos side by side ── */}
+                      <div className="grid grid-cols-2 gap-6 items-start">
+                        {/* Left: name */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="flex items-center gap-1.5 text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                              <Lock className="w-3.5 h-3.5 text-violet-500" aria-hidden /> Subcategory name
+                            </label>
+                            <div className="flex items-center gap-1">
+                              {cardComplete && <CheckCircle className="w-4 h-4 text-green-500" aria-label="Complete" />}
+                              {subEntries.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeSubRow(sub.uid)}
+                                  aria-label={`Remove subcategory ${si + 1}`}
+                                  className="p-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <input
+                            aria-label={`Subcategory ${si + 1} name`}
+                            className={`w-full border rounded-lg px-3 py-2.5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 ${
+                              subInputError && !sub.name.trim() ? "border-red-400" : "border-neutral-300 dark:border-neutral-600"
+                            }`}
+                            value={sub.name}
+                            onChange={(e) => updateSubField(sub.uid, "name", e.target.value)}
+                            placeholder="e.g. Knotless"
+                          />
+                        </div>
 
-                      {/* ── Photos ── */}
-                      <div className="flex items-start gap-3">
-                        <ImageIcon className="w-4 h-4 text-violet-500 shrink-0 mt-1" aria-hidden />
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 mb-2">Photos</p>
+                        {/* Right: photos */}
+                        <div>
+                          <label className="flex items-center gap-1.5 text-sm font-semibold text-neutral-700 dark:text-neutral-200 mb-1.5">
+                            <ImageIcon className="w-3.5 h-3.5 text-violet-500" aria-hidden /> Photos
+                          </label>
                           <div className="flex flex-wrap gap-2" role="list" aria-label={`Photos for subcategory ${si + 1}`}>
                             {sub.photos.map((file, pi) => (
                               <div key={pi} role="listitem" className="relative group shrink-0">
                                 <img
                                   src={getObjectUrl(file)}
                                   alt={file.name}
-                                  className="h-20 w-20 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700"
+                                  className="h-16 w-16 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700"
                                 />
                                 <button
                                   type="button"
@@ -815,10 +820,10 @@ export function NewCategoryWizard({
                             <label
                               tabIndex={0}
                               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
-                              className="cursor-pointer h-20 w-20 flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-lg bg-neutral-50 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400"
+                              className="cursor-pointer h-16 w-16 flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-lg bg-neutral-50 dark:bg-neutral-800 border-violet-300 dark:border-violet-700 hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400"
                             >
-                              <Plus className="w-5 h-5 text-neutral-400" aria-hidden />
-                              <span className="text-[10px] text-neutral-500">Add</span>
+                              <Plus className="w-4 h-4 text-violet-500" aria-hidden />
+                              <span className="text-[9px] text-violet-500 font-medium">Add</span>
                               <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => addPhotosToSub(sub.uid, e.target.files)} />
                             </label>
                           </div>
