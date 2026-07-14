@@ -127,7 +127,6 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
             {adding && (
                 <NewCategoryWizard
                     token={token}
-                    headers={headers}
                     mutate={mutate}
                     onDone={handleWizardDone}
                     onCancel={() => setAdding(false)}
