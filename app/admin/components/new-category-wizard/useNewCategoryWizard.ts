@@ -1,0 +1,393 @@
+import { useCallback, useRef, useState } from "react";
+import type { LengthOption } from "@/lib/booking-types";
+import { galleryApi } from "@/lib/api/gallery";
+import { fromProxyUrl } from "@/lib/utils/image";
+import { slugify, uploadFile } from "../../utils";
+import {
+  emptyLengthEntry,
+  emptySizeEntry,
+  emptySubEntry,
+  hasSizeData,
+  isSizeComplete,
+  type SubEntry,
+  type WizardProps,
+} from "./model";
+
+export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps, "token" | "mutate" | "onDone">) {
+  const [step, setStep] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [savePhase, setSavePhase] = useState<string | null>(null);
+  const [catName, setCatName] = useState("");
+  const [catNameError, setCatNameError] = useState("");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [subEntries, setSubEntries] = useState<SubEntry[]>([emptySubEntry()]);
+  const [subInputError, setSubInputError] = useState("");
+  const [createdCat, setCreatedCat] = useState<{ id: number; name: string; slug: string } | null>(null);
+  const [openSizeMenu, setOpenSizeMenu] = useState<string | null>(null);
+  const [customSizeSubUid, setCustomSizeSubUid] = useState<string | null>(null);
+  const [customSizeName, setCustomSizeName] = useState("");
+  const persistedSubs = useRef<Map<string, { slug: string; id: number; itemIds: Record<string, number> }>>(new Map());
+  const imageObjectUrls = useRef<Map<File, string>>(new Map());
+  const objectUrls = useRef<Map<File, string>>(new Map());
+  const draggedLength = useRef<{ subUid: string; sizeUid: string; lengthUid: string } | null>(null);
+
+  const clearError = () => setError(null);
+  const filledSubs = subEntries.filter((entry) => entry.name.trim().length >= 2);
+  const photoOk = imageFiles.length >= 3 && imageFiles.length <= 7;
+
+  const getImageObjectUrl = useCallback((file: File) => {
+    if (!imageObjectUrls.current.has(file)) imageObjectUrls.current.set(file, URL.createObjectURL(file));
+    return imageObjectUrls.current.get(file)!;
+  }, []);
+
+  const getObjectUrl = useCallback((file: File) => {
+    if (!objectUrls.current.has(file)) objectUrls.current.set(file, URL.createObjectURL(file));
+    return objectUrls.current.get(file)!;
+  }, []);
+
+  const addCategoryPhoto = (file?: File) => {
+    if (file) setImageFiles((prev) => [...prev, file]);
+  };
+
+  const removeCategoryPhoto = (index: number) => {
+    setImageFiles((prev) => {
+      const file = prev[index];
+      const url = imageObjectUrls.current.get(file);
+      if (url) {
+        URL.revokeObjectURL(url);
+        imageObjectUrls.current.delete(file);
+      }
+      return prev.filter((_, currentIndex) => currentIndex !== index);
+    });
+  };
+
+  const handleStep0Next = () => {
+    const trimmed = catName.trim();
+    if (!trimmed) { setCatNameError("Category name is required."); return; }
+    if (trimmed.length < 2) { setCatNameError("Name must be at least 2 characters."); return; }
+    setCatNameError("");
+    clearError();
+    setStep(1);
+  };
+
+  const handleStep1Next = () => {
+    if (imageFiles.length < 3) { setError("Add at least 3 photos to continue."); return; }
+    if (imageFiles.length > 7) { setError("Maximum 7 photos allowed."); return; }
+    clearError();
+    setStep(2);
+  };
+
+  const addSubRow = () => setSubEntries((prev) => [...prev, emptySubEntry()]);
+
+  const removeSubRow = (uid: string) => {
+    setSubEntries((prev) => {
+      const entry = prev.find((sub) => sub.uid === uid);
+      if (entry) {
+        [...entry.photos, ...entry.sizes.flatMap((size) => size.lengths.map((length) => length.photo).filter((file): file is File => Boolean(file)))].forEach((file) => {
+          const url = objectUrls.current.get(file);
+          if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(file); }
+        });
+      }
+      return prev.filter((sub) => sub.uid !== uid);
+    });
+  };
+
+  const addPhotosToSub = (uid: string, files: FileList | null) => {
+    if (!files) return;
+    const incoming = Array.from(files);
+    setSubEntries((prev) => prev.map((sub) => sub.uid === uid ? { ...sub, photos: [...sub.photos, ...incoming] } : sub));
+  };
+
+  const removePhotoFromSub = (uid: string, index: number) => {
+    setSubEntries((prev) => prev.map((sub) => {
+      if (sub.uid !== uid) return sub;
+      const file = sub.photos[index];
+      const url = objectUrls.current.get(file);
+      if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(file); }
+      return { ...sub, photos: sub.photos.filter((_, currentIndex) => currentIndex !== index) };
+    }));
+  };
+
+  const updateSubName = (uid: string, name: string) => {
+    setSubInputError("");
+    setSubEntries((prev) => prev.map((sub) => sub.uid === uid ? { ...sub, name } : sub));
+  };
+
+  const activateSize = (subUid: string, name: string) => {
+    const size = emptySizeEntry(name);
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: [...sub.sizes, size],
+      selectedSizeId: size.uid,
+      expandedSizeId: size.uid,
+    } : sub));
+  };
+
+  const commitCustomSize = (subUid: string) => {
+    const name = customSizeName.trim();
+    const sub = subEntries.find((entry) => entry.uid === subUid);
+    if (!name) return;
+    if (sub?.sizes.some((size) => size.name.trim().toLowerCase() === name.toLowerCase())) {
+      setError(`"${name}" is already available.`);
+      return;
+    }
+    activateSize(subUid, name);
+    setCustomSizeName("");
+    setCustomSizeSubUid(null);
+    clearError();
+  };
+
+  const updateSizeName = (subUid: string, sizeUid: string, name: string) => {
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => size.uid === sizeUid ? { ...size, name } : size),
+    } : sub));
+  };
+
+  const selectSize = (subUid: string, sizeUid: string) => {
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? { ...sub, selectedSizeId: sizeUid, expandedSizeId: sizeUid } : sub));
+  };
+
+  const toggleSize = (subUid: string, sizeUid: string) => {
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      selectedSizeId: sizeUid,
+      expandedSizeId: sub.expandedSizeId === sizeUid ? null : sizeUid,
+    } : sub));
+  };
+
+  const deleteSize = (subUid: string, sizeUid: string) => {
+    const removed = subEntries.find((entry) => entry.uid === subUid)?.sizes.find((size) => size.uid === sizeUid);
+    if (!removed) return;
+    if (hasSizeData(removed) && !window.confirm(`Remove ${removed.name} and all of its pricing details?`)) return;
+    removed.lengths.forEach((length) => {
+      if (!length.photo) return;
+      const url = objectUrls.current.get(length.photo);
+      if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(length.photo); }
+    });
+    setSubEntries((prev) => prev.map((entry) => {
+      if (entry.uid !== subUid) return entry;
+      const sizes = entry.sizes.filter((size) => size.uid !== sizeUid);
+      const fallbackId = sizes[0]?.uid ?? "";
+      return {
+        ...entry,
+        sizes,
+        selectedSizeId: entry.selectedSizeId === sizeUid ? fallbackId : entry.selectedSizeId,
+        expandedSizeId: entry.expandedSizeId === sizeUid ? (fallbackId || null) : entry.expandedSizeId,
+      };
+    }));
+  };
+
+  const togglePresetSize = (subUid: string, name: string) => {
+    const active = subEntries.find((sub) => sub.uid === subUid)?.sizes.find((size) => size.name.toLowerCase() === name.toLowerCase());
+    if (active) deleteSize(subUid, active.uid);
+    else activateSize(subUid, name);
+  };
+
+  const addLengthOption = (subUid: string, sizeUid: string) => {
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => size.uid === sizeUid ? { ...size, lengths: [...size.lengths, emptyLengthEntry()] } : size),
+    } : sub));
+  };
+
+  const updateLengthOption = (subUid: string, sizeUid: string, lengthUid: string, field: keyof LengthOption, value: string) => {
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => size.uid === sizeUid ? {
+        ...size,
+        touchedLengths: new Set(size.touchedLengths).add(lengthUid),
+        lengths: size.lengths.map((length) => length.uid === lengthUid ? { ...length, [field]: value } : length),
+      } : size),
+    } : sub));
+  };
+
+  const deleteLengthOption = (subUid: string, sizeUid: string, lengthUid: string) => {
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => {
+        if (size.uid !== sizeUid || size.lengths.length === 1) return size;
+        const removed = size.lengths.find((length) => length.uid === lengthUid);
+        if (removed?.photo) {
+          const url = objectUrls.current.get(removed.photo);
+          if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(removed.photo); }
+        }
+        const touchedLengths = new Set(size.touchedLengths);
+        touchedLengths.delete(lengthUid);
+        return { ...size, lengths: size.lengths.filter((length) => length.uid !== lengthUid), touchedLengths };
+      }),
+    } : sub));
+  };
+
+  const setLengthPhoto = (subUid: string, sizeUid: string, lengthUid: string, file?: File) => {
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => size.uid === sizeUid ? {
+        ...size,
+        lengths: size.lengths.map((length) => {
+          if (length.uid !== lengthUid) return length;
+          if (length.photo) {
+            const oldUrl = objectUrls.current.get(length.photo);
+            if (oldUrl) { URL.revokeObjectURL(oldUrl); objectUrls.current.delete(length.photo); }
+          }
+          return { ...length, photo: file, imageUrl: file ? undefined : length.imageUrl };
+        }),
+      } : size),
+    } : sub));
+  };
+
+  const startLengthDrag = (subUid: string, sizeUid: string, lengthUid: string) => {
+    draggedLength.current = { subUid, sizeUid, lengthUid };
+  };
+
+  const endLengthDrag = () => { draggedLength.current = null; };
+
+  const reorderLengthOptions = (subUid: string, sizeUid: string, targetLengthUid: string) => {
+    const dragged = draggedLength.current;
+    if (!dragged || dragged.subUid !== subUid || dragged.sizeUid !== sizeUid || dragged.lengthUid === targetLengthUid) return;
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => {
+        if (size.uid !== sizeUid) return size;
+        const from = size.lengths.findIndex((length) => length.uid === dragged.lengthUid);
+        const to = size.lengths.findIndex((length) => length.uid === targetLengthUid);
+        if (from < 0 || to < 0) return size;
+        const lengths = [...size.lengths];
+        const [moved] = lengths.splice(from, 1);
+        lengths.splice(to, 0, moved);
+        return { ...size, lengths };
+      }),
+    } : sub));
+    endLengthDrag();
+  };
+
+  const revealInvalidSize = (subUid: string, sizeUid?: string) => {
+    if (sizeUid) {
+      setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+        ...sub,
+        selectedSizeId: sizeUid,
+        expandedSizeId: sizeUid,
+        sizes: sub.sizes.map((size) => size.uid === sizeUid ? { ...size, touchedLengths: new Set(size.lengths.map((length) => length.uid)) } : size),
+      } : sub));
+    }
+    requestAnimationFrame(() => {
+      document.getElementById(sizeUid ? `size-panel-${sizeUid}` : `subcategory-${subUid}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  };
+
+  const validateSubcategories = () => {
+    if (filledSubs.length === 0) { setSubInputError("Add at least one subcategory name (min 2 chars)."); return false; }
+    const missingPhoto = filledSubs.find((entry) => entry.photos.length === 0);
+    if (missingPhoto) { setError(`Add at least one photo for "${missingPhoto.name.trim()}".`); revealInvalidSize(missingPhoto.uid); return false; }
+    const missingSizes = filledSubs.find((entry) => entry.sizes.length === 0);
+    if (missingSizes) { setError(`Select at least one available size for "${missingSizes.name.trim()}".`); revealInvalidSize(missingSizes.uid); return false; }
+    const invalidSizeEntry = filledSubs.find((entry) => entry.sizes.some((size) => !size.name.trim()));
+    if (invalidSizeEntry) {
+      const invalidSize = invalidSizeEntry.sizes.find((size) => !size.name.trim());
+      setError(`Enter a name for every size under "${invalidSizeEntry.name.trim()}".`);
+      revealInvalidSize(invalidSizeEntry.uid, invalidSize?.uid);
+      return false;
+    }
+    const duplicateSizeEntry = filledSubs.find((entry) => {
+      const names = entry.sizes.map((size) => size.name.trim().toLowerCase());
+      return new Set(names).size !== names.length;
+    });
+    if (duplicateSizeEntry) {
+      const duplicate = duplicateSizeEntry.sizes.find((size, index, sizes) => sizes.findIndex((candidate) => candidate.name.trim().toLowerCase() === size.name.trim().toLowerCase()) !== index);
+      setError(`Each size under "${duplicateSizeEntry.name.trim()}" must have a unique name.`);
+      revealInvalidSize(duplicateSizeEntry.uid, duplicate?.uid);
+      return false;
+    }
+    const invalidLengthEntry = filledSubs.find((entry) => entry.sizes.some((size) => !isSizeComplete(size)));
+    if (invalidLengthEntry) {
+      const invalidSize = invalidLengthEntry.sizes.find((size) => !isSizeComplete(size));
+      setError(`Complete the missing length and price fields under "${invalidSize?.name || invalidLengthEntry.name.trim()}".`);
+      revealInvalidSize(invalidLengthEntry.uid, invalidSize?.uid);
+      return false;
+    }
+    return true;
+  };
+
+  const handleStep2Next = async () => {
+    if (!validateSubcategories()) return;
+    setSubInputError("");
+    clearError();
+    setBusy(true);
+    setSavePhase("Creating category…");
+    try {
+      let cat = createdCat;
+      if (!cat) {
+        const trimmed = catName.trim();
+        const created = await mutate("POST", "", { name: trimmed, slug: slugify(trimmed), subcategories: [] });
+        if (!created.id) throw new Error("Server did not return a category ID.");
+        cat = { id: created.id, name: trimmed, slug: slugify(trimmed) };
+        setCreatedCat(cat);
+      }
+
+      setSavePhase(`Uploading ${imageFiles.length} category photos…`);
+      const catId = cat.id;
+      const proxyUrls = await Promise.all(imageFiles.map((file) => uploadFile(file, token, { categoryId: catId })));
+      const backendUrls = proxyUrls.map(fromProxyUrl).filter((url): url is string => Boolean(url));
+      await galleryApi.updateCategoryFlippingImages(catId, backendUrls);
+
+      for (const [subIndex, sub] of filledSubs.entries()) {
+        const subName = sub.name.trim();
+        setSavePhase(`Saving subcategory ${subIndex + 1} of ${filledSubs.length}: ${subName}…`);
+        let persisted = persistedSubs.current.get(subName);
+        if (!persisted) {
+          const createdSub = await mutate("POST", `/${cat.slug}/subcategories`, { name: subName, categoryId: catId });
+          if (!createdSub.slug || !createdSub.id) throw new Error(`Server did not return slug/id for "${subName}".`);
+          persisted = { slug: createdSub.slug, id: createdSub.id, itemIds: {} };
+          persistedSubs.current.set(subName, persisted);
+          await Promise.all(sub.photos.map((file) => uploadFile(file, token, { categoryId: catId, subcategoryId: persisted!.id })));
+        }
+
+        for (const [sizeIndex, size] of sub.sizes.entries()) {
+          const sizeLabel = size.name.trim();
+          setSavePhase(`Saving ${subName}: ${sizeLabel} (${sizeIndex + 1} of ${sub.sizes.length})…`);
+          let itemId = persisted.itemIds[size.uid];
+          if (!itemId) {
+            const createdItem = await mutate("POST", `/${cat.slug}/subcategories/${persisted.slug}/items`, { name: sizeLabel, price: "", description: "", subcategoryId: persisted.id });
+            if (!createdItem.id) throw new Error(`Server did not return an item ID for "${sizeLabel}".`);
+            itemId = createdItem.id;
+            persisted.itemIds[size.uid] = itemId;
+            persistedSubs.current.set(subName, { ...persisted, itemIds: { ...persisted.itemIds } });
+          }
+          const lengthOptions = await Promise.all(size.lengths.map(async ({ uid, photo, ...length }) => {
+            let imageUrl = length.imageUrl;
+            if (photo) {
+              const proxyUrl = await uploadFile(photo, token, { categoryId: catId, subcategoryId: persisted!.id, serviceItemId: itemId });
+              imageUrl = fromProxyUrl(proxyUrl) ?? proxyUrl;
+            }
+            return { ...length, imageUrl };
+          }));
+          await mutate("PUT", `/${cat.slug}/subcategories/${persisted.slug}/items`, {
+            itemId,
+            subcategoryId: persisted.id,
+            item: { name: sizeLabel, price: "", description: "", subcategory: { id: persisted.id }, lengthOptions },
+          });
+        }
+      }
+      onDone(cat);
+      setStep(3);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Failed to save. Please try again.");
+    } finally {
+      setBusy(false);
+      setSavePhase(null);
+    }
+  };
+
+  return {
+    step, setStep, error, clearError, busy, savePhase, catName, setCatName, catNameError, setCatNameError,
+    imageFiles, photoOk, getImageObjectUrl, addCategoryPhoto, removeCategoryPhoto, subEntries, subInputError,
+    createdCat, filledSubs, openSizeMenu, setOpenSizeMenu, customSizeSubUid, setCustomSizeSubUid,
+    customSizeName, setCustomSizeName, getObjectUrl, handleStep0Next, handleStep1Next, handleStep2Next,
+    addSubRow, removeSubRow, addPhotosToSub, removePhotoFromSub, updateSubName, commitCustomSize,
+    updateSizeName, selectSize, toggleSize, deleteSize, togglePresetSize, addLengthOption, updateLengthOption,
+    deleteLengthOption, setLengthPhoto, startLengthDrag, endLengthDrag, reorderLengthOptions,
+  };
+}
+
+export type NewCategoryWizardController = ReturnType<typeof useNewCategoryWizard>;
