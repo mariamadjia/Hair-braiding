@@ -47,11 +47,13 @@ export function NewCategoryWizard({ token, headers, mutate, onDone, onCancel, on
     // ── Step 1: Photos ───────────────────────────────────────────────────────
     const [images, setImages] = useState<string[]>([]);
 
-    // ── Step 2: Subcategory ──────────────────────────────────────────────────
-    const [subName, setSubName] = useState("");
-    const [subNameError, setSubNameError] = useState("");
+    // ── Step 2: Subcategories ────────────────────────────────────────────────
+    const [subNames, setSubNames] = useState<string[]>([""]);   // list of names
+    const [subInputError, setSubInputError] = useState("");
+    // first created subcategory is used for Steps 3+4
     const [createdSubSlug, setCreatedSubSlug] = useState("");
     const [createdSubId, setCreatedSubId] = useState<number | undefined>();
+    const [firstSubName, setFirstSubName] = useState("");
 
     // ── Step 3: Size (item name) ─────────────────────────────────────────────
     const [sizeName, setSizeName] = useState("");
@@ -226,53 +228,89 @@ export function NewCategoryWizard({ token, headers, mutate, onDone, onCancel, on
         </div>
     );
 
-    // ─── Step 2: Subcategory ──────────────────────────────────────────────────
+    // ─── Step 2: Subcategories ────────────────────────────────────────────────
+
+    const addSubRow = () => setSubNames(prev => [...prev, ""]);
+    const updateSubRow = (i: number, val: string) => {
+        setSubInputError("");
+        setSubNames(prev => prev.map((n, idx) => idx === i ? val : n));
+    };
+    const removeSubRow = (i: number) => setSubNames(prev => prev.filter((_, idx) => idx !== i));
 
     const handleStep2Next = async () => {
-        const trimmed = subName.trim();
-        if (!trimmed) { setSubNameError("Subcategory name is required."); return; }
-        if (trimmed.length < 2) { setSubNameError("Name must be at least 2 characters."); return; }
-        setSubNameError(""); clearError(); setBusy(true);
+        const filled = subNames.map(n => n.trim()).filter(Boolean);
+        if (filled.length === 0) { setSubInputError("Add at least one subcategory name."); return; }
+        if (filled.some(n => n.length < 2)) { setSubInputError("Each name must be at least 2 characters."); return; }
+        setSubInputError(""); clearError(); setBusy(true);
         try {
-            const created = await mutate("POST", `/${createdCat!.slug}/subcategories`, {
-                name: trimmed,
-                categoryId: createdCat!.id,
-            });
-            if (!created?.slug) throw new Error("Server did not return a subcategory slug.");
-            setCreatedSubSlug(created.slug);
-            setCreatedSubId(created.id);
+            let firstSlug = "";
+            let firstId: number | undefined;
+            let firstName = "";
+            for (const name of filled) {
+                const created = await mutate("POST", `/${createdCat!.slug}/subcategories`, {
+                    name,
+                    categoryId: createdCat!.id,
+                });
+                if (!created?.slug) throw new Error(`Server did not return a slug for "${name}".`);
+                if (!firstSlug) { firstSlug = created.slug; firstId = created.id; firstName = name; }
+            }
+            setCreatedSubSlug(firstSlug);
+            setCreatedSubId(firstId);
+            setFirstSubName(firstName);
             setStep(3);
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to create subcategory. Please try again.");
+            setError(e instanceof Error ? e.message : "Failed to create subcategories. Please try again.");
         } finally { setBusy(false); }
     };
+
+    const canAdvanceStep2 = subNames.some(n => n.trim().length >= 2);
 
     const Step2 = () => (
         <div className="space-y-5">
             <div>
-                <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">Add a subcategory</h2>
+                <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">Add subcategories</h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    Subcategories group the styles within <span className="font-medium text-neutral-700 dark:text-neutral-300">{createdCat?.name}</span>. For example: Knotless, Goddess, Bohemian.
+                    Subcategories group the styles within <span className="font-medium text-neutral-700 dark:text-neutral-300">{createdCat?.name}</span>.
+                    Add as many as you need — e.g. Knotless, Goddess, Bohemian.
                 </p>
             </div>
             <ErrorBanner />
-            <div>
-                <label className={lbl}>Subcategory Name <span className="text-red-500">*</span></label>
-                <input
-                    className={`${inp} ${subNameError ? "border-red-400" : ""}`}
-                    value={subName}
-                    onChange={(e) => { setSubName(e.target.value); setSubNameError(""); }}
-                    onKeyDown={(e) => e.key === "Enter" && handleStep2Next()}
-                    placeholder="e.g. Knotless, Goddess, Bohemian"
-                    autoFocus
-                />
-                {subNameError && (
-                    <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />{subNameError}
+
+            <div className="space-y-2">
+                <label className={lbl}>Subcategory Names <span className="text-red-500">*</span></label>
+                {subNames.map((val, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                        <input
+                            className={`${inp} flex-1 ${subInputError && !val.trim() ? "border-red-400" : ""}`}
+                            value={val}
+                            onChange={(e) => updateSubRow(i, e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSubRow(); } }}
+                            placeholder={i === 0 ? "e.g. Knotless" : "e.g. Goddess"}
+                            autoFocus={i === subNames.length - 1 && i > 0}
+                        />
+                        {subNames.length > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => removeSubRow(i)}
+                                className={btnD}
+                                title="Remove"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                        )}
+                    </div>
+                ))}
+                {subInputError && (
+                    <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />{subInputError}
                     </p>
                 )}
+                <button type="button" onClick={addSubRow} className={`${btnS} flex items-center gap-1.5 text-xs`}>
+                    <Plus className="w-3.5 h-3.5" /> Add another subcategory
+                </button>
             </div>
-            <NavRow onBack={() => setStep(1)} onNext={handleStep2Next} nextDisabled={!subName.trim()} />
+
+            <NavRow onBack={() => setStep(1)} onNext={handleStep2Next} nextDisabled={!canAdvanceStep2} />
         </div>
     );
 
@@ -300,7 +338,7 @@ export function NewCategoryWizard({ token, headers, mutate, onDone, onCancel, on
             <div>
                 <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">Add a size</h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    Sizes represent the braid dimensions offered under <span className="font-medium text-neutral-700 dark:text-neutral-300">{subName}</span>. Common sizes: Small, Medium, Large, Jumbo.
+                    Sizes represent the braid dimensions offered under <span className="font-medium text-neutral-700 dark:text-neutral-300">{firstSubName}</span>. Common sizes: Small, Medium, Large, Jumbo.
                 </p>
             </div>
             <ErrorBanner />
@@ -434,7 +472,8 @@ export function NewCategoryWizard({ token, headers, mutate, onDone, onCancel, on
                 </h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 space-y-0.5">
                     <span className="block">Category created with {images.length} photos.</span>
-                    <span className="block">Subcategory <strong>{subName}</strong> → Size <strong>{sizeName}</strong> → {lengthOptions.length} length option{lengthOptions.length !== 1 ? "s" : ""} saved.</span>
+                    <span className="block">{subNames.filter(n => n.trim()).length} subcategor{subNames.filter(n => n.trim()).length === 1 ? 'y' : 'ies'} created ({subNames.filter(n => n.trim()).join(', ')}).</span>
+                    <span className="block">Size <strong>{sizeName}</strong> → {lengthOptions.length} length option{lengthOptions.length !== 1 ? "s" : ""} added to <strong>{firstSubName}</strong>.</span>
                     <span className="block mt-2">You can add more subcategories, sizes, and lengths from the editor.</span>
                 </p>
             </div>
