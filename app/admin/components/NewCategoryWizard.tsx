@@ -160,6 +160,7 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
     const filledSubs = subEntries.filter(e => e.value.trim().length >= 2);
     const canAdvanceSubs = filledSubs.length > 0;
     const subsValid = filledSubs.length > 0 && filledSubs.every(e =>
+        e.photos.length >= 1 &&
         e.sizeName.trim().length >= 1 &&
         e.lengths.length > 0 &&
         e.lengths.every(l => (l.name ?? "").trim() !== "" && (l.price ?? "").trim() !== "")
@@ -404,7 +405,7 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
 
                                     {/* Photos */}
                                     <div>
-                                        <label className={`${lbl} text-[11px]`}>Photos <span className="text-neutral-400 font-normal">(optional)</span></label>
+                                        <label className={`${lbl} text-[11px]`}>Photos <span className="text-red-500" aria-hidden>*</span></label>
                                         <div className="flex flex-wrap gap-2 mt-1">
                                             {sub.photos.map((file, pi) => (
                                                 <div key={pi} className="relative group shrink-0">
@@ -421,7 +422,7 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                                                     >×</button>
                                                 </div>
                                             ))}
-                                            <label className="cursor-pointer h-16 w-16 flex flex-col items-center justify-center gap-1 border-2 border-dashed border-neutral-300 dark:border-neutral-600 hover:border-neutral-500 rounded bg-neutral-50 dark:bg-neutral-800 transition-colors">
+                                            <label className={`cursor-pointer h-16 w-16 flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded bg-neutral-50 dark:bg-neutral-800 transition-colors ${sub.photos.length === 0 ? "border-red-300 dark:border-red-700 hover:border-red-400" : "border-neutral-300 dark:border-neutral-600 hover:border-neutral-500"}`}>
                                                 <ImageIcon className="w-4 h-4 text-neutral-400" aria-hidden />
                                                 <span className="text-[10px] text-neutral-500">Add</span>
                                                 <input
