@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Check, ChevronRight, AlertCircle, CheckCircle, AlertTriangle, ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronRight, AlertCircle, CheckCircle, AlertTriangle, ArrowLeft, Plus, Trash2, Tag, ImageIcon, Layers, Ruler } from "lucide-react";
 import type { CategorySummary, LengthOption } from "@/lib/booking-types";
 import { slugify, emptyLengthOption } from "../utils";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
@@ -25,7 +25,12 @@ interface Props {
 interface SubEntry { uid: string; value: string; }
 interface LengthEntry extends LengthOption { uid: string; }
 
-const STEPS = ["Name", "Photos", "Subcategories", "Sizes & Lengths"];
+const STEPS = [
+    { label: "Name",            hint: "Category title",          icon: Tag },
+    { label: "Photos",          hint: "Gallery images",           icon: ImageIcon },
+    { label: "Subcategories",   hint: "Style groups",            icon: Layers },
+    { label: "Sizes & Lengths", hint: "Pricing options",         icon: Ruler },
+];
 
 // ─── Shared sub-components (module-level — no remount on parent re-render) ────
 
@@ -49,7 +54,7 @@ function WizardNavRow({ onBack, onCancel, onNext, nextLabel = "Next", nextDisabl
     busy?: boolean;
 }) {
     return (
-        <div className="flex items-center justify-between pt-4 border-t border-neutral-100 dark:border-neutral-700">
+        <div className="flex items-center justify-between pt-5 mt-2 border-t border-neutral-100 dark:border-neutral-800">
             {onBack ? (
                 <button type="button" onClick={onBack} className={`${btnS} flex items-center gap-1.5`}>
                     <ArrowLeft className="w-3.5 h-3.5" aria-hidden /> Back
@@ -62,7 +67,7 @@ function WizardNavRow({ onBack, onCancel, onNext, nextLabel = "Next", nextDisabl
                 onClick={onNext}
                 disabled={nextDisabled || busy}
                 aria-disabled={nextDisabled || busy}
-                className={`${btnP} flex items-center gap-2`}
+                className={`${btnP} flex items-center gap-2 px-5 py-2`}
             >
                 {busy ? "Saving…" : nextLabel}
                 {!busy && <ChevronRight className="w-3.5 h-3.5" aria-hidden />}
@@ -71,42 +76,58 @@ function WizardNavRow({ onBack, onCancel, onNext, nextLabel = "Next", nextDisabl
     );
 }
 
-function WizardProgressBar({ step }: { step: number }) {
+function WizardSidebar({ step }: { step: number }) {
     return (
-        <nav aria-label="Setup progress" className="flex items-center mb-8">
-            {STEPS.map((label, i) => {
-                const done = i < step;
-                const active = i === step;
-                return (
-                    <div key={label} className="flex items-center flex-1 min-w-0">
-                        <div className="flex flex-col items-center gap-1.5 shrink-0">
-                            <div
-                                aria-current={active ? "step" : undefined}
-                                aria-label={`Step ${i + 1}: ${label}${done ? " (completed)" : active ? " (current)" : ""}`}
-                                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
-                                    done
-                                        ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
-                                        : active
-                                        ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 ring-4 ring-neutral-200 dark:ring-neutral-700"
-                                        : "bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500"
-                                }`}
-                            >
-                                {done ? <Check className="w-3.5 h-3.5" aria-hidden /> : i + 1}
-                            </div>
-                            <span className={`text-[10px] font-medium uppercase tracking-widest whitespace-nowrap ${
-                                active ? "text-neutral-900 dark:text-white" : "text-neutral-400 dark:text-neutral-500"
+        <nav aria-label="Setup steps" className="w-44 shrink-0 flex flex-col py-6 px-4 bg-neutral-50 dark:bg-neutral-800/50 border-r border-neutral-200 dark:border-neutral-700 rounded-l-md">
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-5 px-1">New Category</p>
+            <ol className="space-y-1 flex-1">
+                {STEPS.map(({ label, hint, icon: Icon }, i) => {
+                    const done = i < step;
+                    const active = i === step;
+                    return (
+                        <li
+                            key={label}
+                            aria-current={active ? "step" : undefined}
+                            className={`flex items-center gap-3 px-2 py-2.5 rounded-sm transition-all ${
+                                active
+                                    ? "bg-white dark:bg-neutral-700 shadow-sm border border-neutral-200 dark:border-neutral-600"
+                                    : "opacity-60"
+                            }`}
+                        >
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                                done
+                                    ? "bg-neutral-900 dark:bg-white"
+                                    : active
+                                    ? "bg-neutral-900 dark:bg-white"
+                                    : "bg-neutral-200 dark:bg-neutral-600"
                             }`}>
-                                {label}
-                            </span>
-                        </div>
-                        {i < STEPS.length - 1 && (
-                            <div aria-hidden className={`flex-1 h-px mx-2 mb-5 transition-all ${
-                                done ? "bg-neutral-900 dark:bg-white" : "bg-neutral-200 dark:bg-neutral-700"
-                            }`} />
-                        )}
-                    </div>
-                );
-            })}
+                                {done
+                                    ? <Check className="w-3 h-3 text-white dark:text-neutral-900" aria-hidden />
+                                    : <Icon className={`w-3 h-3 ${
+                                        active ? "text-white dark:text-neutral-900" : "text-neutral-400 dark:text-neutral-400"
+                                    }`} aria-hidden />}
+                            </div>
+                            <div className="min-w-0">
+                                <p className={`text-[11px] font-semibold truncate ${
+                                    active ? "text-neutral-900 dark:text-white" : "text-neutral-500 dark:text-neutral-400"
+                                }`}>{label}</p>
+                                <p className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{hint}</p>
+                            </div>
+                        </li>
+                    );
+                })}
+            </ol>
+            {/* Mini progress bar at bottom */}
+            <div className="mt-4 px-1">
+                <div className="h-1 w-full bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                    <div
+                        className="h-full bg-neutral-900 dark:bg-white rounded-full transition-all duration-300"
+                        style={{ width: `${(step / STEPS.length) * 100}%` }}
+                        aria-hidden
+                    />
+                </div>
+                <p className="text-[9px] text-neutral-400 mt-1 text-right">{step} / {STEPS.length}</p>
+            </div>
         </nav>
     );
 }
@@ -261,11 +282,12 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
 
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
-        <div className="border border-neutral-200 dark:border-neutral-700 rounded-sm bg-white dark:bg-neutral-900">
-            <div className="px-5 pt-5">
-                <WizardProgressBar step={step} />
-            </div>
-            <div className="px-5 pb-5">
+        <div className="border border-neutral-200 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-900 flex overflow-hidden min-h-[420px]">
+            {/* Left sidebar */}
+            <WizardSidebar step={step} />
+
+            {/* Right content */}
+            <div className="flex-1 flex flex-col px-8 py-7 min-w-0">
 
                 {/* ── Step 0: Name ── */}
                 {step === 0 && (
@@ -491,3 +513,4 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
         </div>
     );
 }
+
