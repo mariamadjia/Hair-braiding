@@ -29,6 +29,7 @@ export function NewCategoryWizard(props: WizardProps) {
     handleStep1Next,
     createdCat,
     filledSubs,
+    finishWizard,
   } = controller;
 
   return (
@@ -117,7 +118,7 @@ export function NewCategoryWizard(props: WizardProps) {
               </p>
             </div>
             <div className="flex items-center justify-center pt-2 border-t border-neutral-100 dark:border-neutral-700">
-              <button type="button" onClick={props.onCancel} className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">Back to list</button>
+              <button type="button" onClick={finishWizard} className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">Back to list</button>
             </div>
           </div>
         )}

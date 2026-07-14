@@ -369,7 +369,6 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
           });
         }
       }
-      onDone(cat);
       setStep(3);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Failed to save. Please try again.");
@@ -379,6 +378,10 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
     }
   };
 
+  const finishWizard = () => {
+    if (createdCat) onDone(createdCat);
+  };
+
   return {
     step, setStep, error, clearError, busy, savePhase, catName, setCatName, catNameError, setCatNameError,
     imageFiles, photoOk, getImageObjectUrl, addCategoryPhoto, removeCategoryPhoto, subEntries, subInputError,
@@ -386,7 +389,7 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
     customSizeName, setCustomSizeName, getObjectUrl, handleStep0Next, handleStep1Next, handleStep2Next,
     addSubRow, removeSubRow, addPhotosToSub, removePhotoFromSub, updateSubName, commitCustomSize,
     updateSizeName, selectSize, toggleSize, deleteSize, togglePresetSize, addLengthOption, updateLengthOption,
-    deleteLengthOption, setLengthPhoto, startLengthDrag, endLengthDrag, reorderLengthOptions,
+    deleteLengthOption, setLengthPhoto, startLengthDrag, endLengthDrag, reorderLengthOptions, finishWizard,
   };
 }
 

@@ -29,7 +29,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
     const handleWizardDone = (summary: CategorySummary) => {
         onCategoryCreated?.(summary);
         setAdding(false);
-        setSelection({ type: "category", catSlug: summary.slug });
+        setSelection({ type: "root" });
     };
 
     const del = async (slug: string, catName: string) => {
