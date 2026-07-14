@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Check, ChevronRight, AlertCircle, CheckCircle, AlertTriangle, ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronRight, AlertCircle, CheckCircle, AlertTriangle, ArrowLeft, Plus, Trash2, ImageIcon } from "lucide-react";
 import type { CategorySummary, LengthOption } from "@/lib/booking-types";
-import { slugify, emptyLengthOption } from "../utils";
+import { slugify, emptyLengthOption, uploadFile } from "../utils";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
@@ -26,6 +26,7 @@ interface LengthEntry extends LengthOption { uid: string; }
 interface SubEntry {
     uid: string;
     value: string;
+    photos: File[];          // staged locally, uploaded after sub is created
     sizeName: string;
     sizeNameError: string;
     lengths: LengthEntry[];
@@ -36,6 +37,7 @@ function emptySubEntry(): SubEntry {
     return {
         uid: crypto.randomUUID(),
         value: "",
+        photos: [],
         sizeName: "",
         sizeNameError: "",
         lengths: [{ ...emptyLengthOption(), uid: crypto.randomUUID() }],
@@ -197,6 +199,17 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
     // ── Step 2: Subcategories (with inline size + lengths per sub) ────────────
     const addSubRow = () => setSubEntries(prev => [...prev, emptySubEntry()]);
     const removeSubRow = (uid: string) => setSubEntries(prev => prev.filter(e => e.uid !== uid));
+    const addPhotosToSub = (uid: string, files: FileList | null) => {
+        if (!files) return;
+        const incoming = Array.from(files);
+        setSubEntries(prev => prev.map(e => e.uid === uid
+            ? { ...e, photos: [...e.photos, ...incoming] }
+            : e));
+    };
+    const removePhotoFromSub = (uid: string, idx: number) =>
+        setSubEntries(prev => prev.map(e => e.uid === uid
+            ? { ...e, photos: e.photos.filter((_, i) => i !== idx) }
+            : e));
     const updateSubField = <K extends keyof SubEntry>(uid: string, field: K, val: SubEntry[K]) => {
         if (field === "value") setSubInputError("");
         setSubEntries(prev => prev.map(e => e.uid === uid ? { ...e, [field]: val } : e));
@@ -244,6 +257,14 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                     subSlug = createdSub.slug;
                     subId = createdSub.id;
                     persistedSubs.current.set(subName, { slug: subSlug, id: subId });
+
+                    // Upload staged photos now that we have the subcategory ID
+                    for (const file of sub.photos) {
+                        await uploadFile(file, token, {
+                            categoryId: createdCat!.id,
+                            subcategoryId: subId,
+                        });
+                    }
                 }
 
                 if (!firstName) firstName = subName;
@@ -379,6 +400,39 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                                                 <Trash2 className="w-3.5 h-3.5" aria-hidden />
                                             </button>
                                         )}
+                                    </div>
+
+                                    {/* Photos */}
+                                    <div>
+                                        <label className={`${lbl} text-[11px]`}>Photos <span className="text-neutral-400 font-normal">(optional)</span></label>
+                                        <div className="flex flex-wrap gap-2 mt-1">
+                                            {sub.photos.map((file, pi) => (
+                                                <div key={pi} className="relative group shrink-0">
+                                                    <img
+                                                        src={URL.createObjectURL(file)}
+                                                        alt={file.name}
+                                                        className="h-16 w-16 object-cover rounded border border-neutral-200 dark:border-neutral-700"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removePhotoFromSub(sub.uid, pi)}
+                                                        aria-label={`Remove photo ${pi + 1} from subcategory ${si + 1}`}
+                                                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 hover:bg-red-600 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >×</button>
+                                                </div>
+                                            ))}
+                                            <label className="cursor-pointer h-16 w-16 flex flex-col items-center justify-center gap-1 border-2 border-dashed border-neutral-300 dark:border-neutral-600 hover:border-neutral-500 rounded bg-neutral-50 dark:bg-neutral-800 transition-colors">
+                                                <ImageIcon className="w-4 h-4 text-neutral-400" aria-hidden />
+                                                <span className="text-[10px] text-neutral-500">Add</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    multiple
+                                                    className="hidden"
+                                                    onChange={(e) => addPhotosToSub(sub.uid, e.target.files)}
+                                                />
+                                            </label>
+                                        </div>
                                     </div>
 
                                     {/* Size name */}
