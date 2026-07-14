@@ -657,7 +657,7 @@ export default function AdminPage() {
 
                 {currentSection === "categories" && (
                     <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
-                        <div className="max-w-3xl mx-auto px-6 py-6">
+                        <div>
                             <div>
                                 {isLoadingSummaries ? (
                                     <div className="space-y-2">

@@ -92,7 +92,7 @@ export function EditorPanel({
 
     const wrapEditor = (node: React.ReactNode) => (
         <div className="flex-1 overflow-y-auto">
-            <div className="max-w-2xl mx-auto px-6 py-6">{node}</div>
+            <div className="px-8 py-6">{node}</div>
         </div>
     );
 
