@@ -6,8 +6,7 @@ import type { GalleryImage } from "@/lib/types/gallery";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
-import { ChevronRight, FolderTree, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle, Plus } from "lucide-react";
-import { NewServiceItemWizard } from "./NewServiceItemWizard";
+import { ChevronRight, FolderTree, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
@@ -42,7 +41,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [subSummaries, setSubSummaries] = useState<SubcategorySummary[]>([]);
-    const [addingServiceItem, setAddingServiceItem] = useState(false);
 
     useEffect(() => { 
         setName(cat.name); 
@@ -276,31 +274,8 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             <div className="border-t border-neutral-100 dark:border-neutral-700 pt-4 space-y-3">
                 <div className="flex items-center justify-between">
                     <h3 className="text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Subcategories</h3>
-                    <div className="flex items-center gap-2">
-                        {!addingServiceItem && subSummaries.length > 0 && (
-                            <button
-                                type="button"
-                                onClick={() => setAddingServiceItem(true)}
-                                className={`${btnP} flex items-center gap-1.5`}
-                            >
-                                <Plus className="w-3 h-3" /> Add service item
-                            </button>
-                        )}
-                        <button type="button" onClick={() => setAddingSub(true)} className={btnP}>+ Add subcategory</button>
-                    </div>
+                    <button type="button" onClick={() => setAddingSub(true)} className={btnP}>+ Add</button>
                 </div>
-
-                {addingServiceItem && (
-                    <NewServiceItemWizard
-                        token={token}
-                        categoryId={cat.id}
-                        subcategories={subSummaries}
-                        mutate={mutate}
-                        catSlug={cat.slug}
-                        onDone={() => { setAddingServiceItem(false); setSuccessMessage("Service item added!"); setTimeout(() => setSuccessMessage(null), 3000); }}
-                        onCancel={() => setAddingServiceItem(false)}
-                    />
-                )}
 
                 {addingSub && (
                     <div className="border border-neutral-200 dark:border-neutral-700 rounded-sm p-3 space-y-2 bg-neutral-50 dark:bg-neutral-800">
