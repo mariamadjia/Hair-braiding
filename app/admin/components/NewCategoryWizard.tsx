@@ -452,19 +452,6 @@ export function NewCategoryWizard({
       ),
     );
 
-  const getUploadedUrl = (result: unknown): string | undefined => {
-    if (typeof result === "string") return result;
-    if (result && typeof result === "object") {
-      const value = result as {
-        url?: string;
-        imageUrl?: string;
-        fileUrl?: string;
-      };
-      return value.url ?? value.imageUrl ?? value.fileUrl;
-    }
-    return undefined;
-  };
-
   const handleStep2Next = async () => {
     const filled = filledSubs;
     if (filled.length === 0) {
@@ -563,17 +550,12 @@ export function NewCategoryWizard({
           sub.lengths.map(async ({ uid, photo, ...length }) => {
             let imageUrl = length.imageUrl;
             if (photo) {
-              const uploaded = await uploadFile(photo, token, {
+              const proxyUrl = await uploadFile(photo, token, {
                 categoryId: createdCat!.id,
                 subcategoryId: subId,
-                itemId,
+                serviceItemId: itemId,
               });
-              imageUrl = getUploadedUrl(uploaded);
-              if (!imageUrl) {
-                throw new Error(
-                  `The photo for length "${length.name}" uploaded, but no image URL was returned.`,
-                );
-              }
+              imageUrl = fromProxyUrl(proxyUrl) ?? proxyUrl;
             }
             return { ...length, imageUrl };
           }),
@@ -1001,7 +983,9 @@ export function NewCategoryWizard({
                                 </div>
                               ) : (
                                 <label
-                                  className="flex h-12 w-12 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-sm border-2 border-dashed border-neutral-300 bg-neutral-50 transition-colors hover:border-neutral-500 dark:border-neutral-600 dark:bg-neutral-800"
+                                  tabIndex={0}
+                                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
+                                  className="flex h-12 w-12 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-sm border-2 border-dashed border-neutral-300 bg-neutral-50 transition-colors hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:border-neutral-600 dark:bg-neutral-800"
                                   aria-label={`Upload photo for length ${li + 1}`}
                                 >
                                   <ImageIcon
