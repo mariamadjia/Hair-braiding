@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Check, ChevronRight, AlertCircle, CheckCircle, AlertTriangle, ArrowLeft, Plus, Trash2, Tag, ImageIcon, Layers, Ruler } from "lucide-react";
+import { Check, ChevronRight, AlertCircle, CheckCircle, AlertTriangle, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import type { CategorySummary, LengthOption } from "@/lib/booking-types";
 import { slugify, emptyLengthOption } from "../utils";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
@@ -22,15 +22,28 @@ interface Props {
     onCategorySummariesRefresh?: () => Promise<unknown>;
 }
 
-interface SubEntry { uid: string; value: string; }
 interface LengthEntry extends LengthOption { uid: string; }
+interface SubEntry {
+    uid: string;
+    value: string;
+    sizeName: string;
+    sizeNameError: string;
+    lengths: LengthEntry[];
+    touchedLengths: Set<string>;
+}
 
-const STEPS = [
-    { label: "Name",            hint: "Category title",          icon: Tag },
-    { label: "Photos",          hint: "Gallery images",           icon: ImageIcon },
-    { label: "Subcategories",   hint: "Style groups",            icon: Layers },
-    { label: "Sizes & Lengths", hint: "Pricing options",         icon: Ruler },
-];
+function emptySubEntry(): SubEntry {
+    return {
+        uid: crypto.randomUUID(),
+        value: "",
+        sizeName: "",
+        sizeNameError: "",
+        lengths: [{ ...emptyLengthOption(), uid: crypto.randomUUID() }],
+        touchedLengths: new Set(),
+    };
+}
+
+const STEPS = ["Name", "Photos", "Subcategories"];
 
 // ─── Shared sub-components (module-level — no remount on parent re-render) ────
 
@@ -54,7 +67,7 @@ function WizardNavRow({ onBack, onCancel, onNext, nextLabel = "Next", nextDisabl
     busy?: boolean;
 }) {
     return (
-        <div className="flex items-center justify-between pt-5 mt-2 border-t border-neutral-100 dark:border-neutral-800">
+        <div className="flex items-center justify-between pt-4 border-t border-neutral-100 dark:border-neutral-700">
             {onBack ? (
                 <button type="button" onClick={onBack} className={`${btnS} flex items-center gap-1.5`}>
                     <ArrowLeft className="w-3.5 h-3.5" aria-hidden /> Back
@@ -67,7 +80,7 @@ function WizardNavRow({ onBack, onCancel, onNext, nextLabel = "Next", nextDisabl
                 onClick={onNext}
                 disabled={nextDisabled || busy}
                 aria-disabled={nextDisabled || busy}
-                className={`${btnP} flex items-center gap-2 px-5 py-2`}
+                className={`${btnP} flex items-center gap-2`}
             >
                 {busy ? "Saving…" : nextLabel}
                 {!busy && <ChevronRight className="w-3.5 h-3.5" aria-hidden />}
@@ -76,58 +89,42 @@ function WizardNavRow({ onBack, onCancel, onNext, nextLabel = "Next", nextDisabl
     );
 }
 
-function WizardSidebar({ step }: { step: number }) {
+function WizardProgressBar({ step }: { step: number }) {
     return (
-        <nav aria-label="Setup steps" className="w-44 shrink-0 flex flex-col py-6 px-4 bg-neutral-50 dark:bg-neutral-800/50 border-r border-neutral-200 dark:border-neutral-700 rounded-l-md">
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-5 px-1">New Category</p>
-            <ol className="space-y-1 flex-1">
-                {STEPS.map(({ label, hint, icon: Icon }, i) => {
-                    const done = i < step;
-                    const active = i === step;
-                    return (
-                        <li
-                            key={label}
-                            aria-current={active ? "step" : undefined}
-                            className={`flex items-center gap-3 px-2 py-2.5 rounded-sm transition-all ${
-                                active
-                                    ? "bg-white dark:bg-neutral-700 shadow-sm border border-neutral-200 dark:border-neutral-600"
-                                    : "opacity-60"
-                            }`}
-                        >
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                                done
-                                    ? "bg-neutral-900 dark:bg-white"
-                                    : active
-                                    ? "bg-neutral-900 dark:bg-white"
-                                    : "bg-neutral-200 dark:bg-neutral-600"
+        <nav aria-label="Setup progress" className="flex items-center mb-8">
+            {STEPS.map((label, i) => {
+                const done = i < step;
+                const active = i === step;
+                return (
+                    <div key={label} className="flex items-center flex-1 min-w-0">
+                        <div className="flex flex-col items-center gap-1.5 shrink-0">
+                            <div
+                                aria-current={active ? "step" : undefined}
+                                aria-label={`Step ${i + 1}: ${label}${done ? " (completed)" : active ? " (current)" : ""}`}
+                                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
+                                    done
+                                        ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
+                                        : active
+                                        ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 ring-4 ring-neutral-200 dark:ring-neutral-700"
+                                        : "bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500"
+                                }`}
+                            >
+                                {done ? <Check className="w-3.5 h-3.5" aria-hidden /> : i + 1}
+                            </div>
+                            <span className={`text-[10px] font-medium uppercase tracking-widest whitespace-nowrap ${
+                                active ? "text-neutral-900 dark:text-white" : "text-neutral-400 dark:text-neutral-500"
                             }`}>
-                                {done
-                                    ? <Check className="w-3 h-3 text-white dark:text-neutral-900" aria-hidden />
-                                    : <Icon className={`w-3 h-3 ${
-                                        active ? "text-white dark:text-neutral-900" : "text-neutral-400 dark:text-neutral-400"
-                                    }`} aria-hidden />}
-                            </div>
-                            <div className="min-w-0">
-                                <p className={`text-[11px] font-semibold truncate ${
-                                    active ? "text-neutral-900 dark:text-white" : "text-neutral-500 dark:text-neutral-400"
-                                }`}>{label}</p>
-                                <p className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{hint}</p>
-                            </div>
-                        </li>
-                    );
-                })}
-            </ol>
-            {/* Mini progress bar at bottom */}
-            <div className="mt-4 px-1">
-                <div className="h-1 w-full bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-                    <div
-                        className="h-full bg-neutral-900 dark:bg-white rounded-full transition-all duration-300"
-                        style={{ width: `${(step / STEPS.length) * 100}%` }}
-                        aria-hidden
-                    />
-                </div>
-                <p className="text-[9px] text-neutral-400 mt-1 text-right">{step} / {STEPS.length}</p>
-            </div>
+                                {label}
+                            </span>
+                        </div>
+                        {i < STEPS.length - 1 && (
+                            <div aria-hidden className={`flex-1 h-px mx-2 mb-5 transition-all ${
+                                done ? "bg-neutral-900 dark:bg-white" : "bg-neutral-200 dark:bg-neutral-700"
+                            }`} />
+                        )}
+                    </div>
+                );
+            })}
         </nav>
     );
 }
@@ -141,35 +138,29 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
     const [busy, setBusy] = useState(false);
     const clearError = () => setError(null);
 
-    // ── Form data (Fix #2: consolidated) ────────────────────────────────────
+    // ── Form data ────────────────────────────────────────────────────────────
     const [catName, setCatName] = useState("");
     const [catNameError, setCatNameError] = useState("");
     const [images, setImages] = useState<string[]>([]);
-    // Fix #6: stable uid keys instead of array index
-    const [subEntries, setSubEntries] = useState<SubEntry[]>([{ uid: crypto.randomUUID(), value: "" }]);
+    const [subEntries, setSubEntries] = useState<SubEntry[]>([emptySubEntry()]);
     const [subInputError, setSubInputError] = useState("");
-    const [sizeName, setSizeName] = useState("");
-    const [sizeNameError, setSizeNameError] = useState("");
-    // Fix #6 + #7: stable uids + touched tracking for length rows
-    const [lengthEntries, setLengthEntries] = useState<LengthEntry[]>([{ ...emptyLengthOption(), uid: crypto.randomUUID() }]);
-    const [touchedLengths, setTouchedLengths] = useState<Set<string>>(new Set());
 
-    // ── Server IDs (Fix #2: consolidated) ───────────────────────────────────
+    // ── Server IDs ───────────────────────────────────────────────────────────
     const [createdCat, setCreatedCat] = useState<CategorySummary | null>(null);
-    const [createdSubSlug, setCreatedSubSlug] = useState("");
-    const [createdSubId, setCreatedSubId] = useState<number | undefined>();
     const [firstSubName, setFirstSubName] = useState("");
-    const [createdItemId, setCreatedItemId] = useState<number | undefined>();
 
-    // Fix #4: track which sub names are already persisted to prevent duplicates on retry
+    // track persisted sub names to prevent duplicates on retry
     const persistedSubNames = useRef<Set<string>>(new Set());
 
-    // ── Derived values (Fix #9: computed once) ───────────────────────────────
+    // ── Derived values ───────────────────────────────────────────────────────
     const photoOk = images.length >= 3 && images.length <= 5;
-    const filledSubs = subEntries.map(e => e.value.trim()).filter(Boolean);
-    const canAdvanceSubs = filledSubs.some(n => n.length >= 2);
-    const lengthsValid = lengthEntries.length > 0 &&
-        lengthEntries.every(e => (e.name ?? "").trim() !== "" && (e.price ?? "").trim() !== "");
+    const filledSubs = subEntries.filter(e => e.value.trim().length >= 2);
+    const canAdvanceSubs = filledSubs.length > 0;
+    const subsValid = filledSubs.length > 0 && filledSubs.every(e =>
+        e.sizeName.trim().length >= 1 &&
+        e.lengths.length > 0 &&
+        e.lengths.every(l => (l.name ?? "").trim() !== "" && (l.price ?? "").trim() !== "")
+    );
 
     // ── Step 0: Category name ────────────────────────────────────────────────
     const handleStep0Next = async () => {
@@ -202,79 +193,72 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
         } finally { setBusy(false); }
     };
 
-    // ── Step 2: Subcategories ────────────────────────────────────────────────
-    const addSubRow = () => setSubEntries(prev => [...prev, { uid: crypto.randomUUID(), value: "" }]);
-    const updateSubRow = (uid: string, val: string) => {
-        setSubInputError("");
-        setSubEntries(prev => prev.map(e => e.uid === uid ? { ...e, value: val } : e));
-    };
+    // ── Step 2: Subcategories (with inline size + lengths per sub) ────────────
+    const addSubRow = () => setSubEntries(prev => [...prev, emptySubEntry()]);
     const removeSubRow = (uid: string) => setSubEntries(prev => prev.filter(e => e.uid !== uid));
+    const updateSubField = <K extends keyof SubEntry>(uid: string, field: K, val: SubEntry[K]) => {
+        if (field === "value") setSubInputError("");
+        setSubEntries(prev => prev.map(e => e.uid === uid ? { ...e, [field]: val } : e));
+    };
+    const addLengthToSub = (subUid: string) =>
+        setSubEntries(prev => prev.map(e => e.uid === subUid
+            ? { ...e, lengths: [...e.lengths, { ...emptyLengthOption(), uid: crypto.randomUUID() }] }
+            : e));
+    const removeLengthFromSub = (subUid: string, lenUid: string) =>
+        setSubEntries(prev => prev.map(e => e.uid === subUid
+            ? { ...e, lengths: e.lengths.filter(l => l.uid !== lenUid), touchedLengths: (() => { const s = new Set(e.touchedLengths); s.delete(lenUid); return s; })() }
+            : e));
+    const updateLengthInSub = (subUid: string, lenUid: string, field: keyof LengthOption, val: string) =>
+        setSubEntries(prev => prev.map(e => e.uid === subUid ? {
+            ...e,
+            touchedLengths: new Set(e.touchedLengths).add(lenUid),
+            lengths: e.lengths.map(l => l.uid === lenUid ? { ...l, [field]: val } : l),
+        } : e));
 
     const handleStep2Next = async () => {
         const filled = filledSubs;
-        if (filled.length === 0) { setSubInputError("Add at least one subcategory name."); return; }
-        if (filled.some(n => n.length < 2)) { setSubInputError("Each name must be at least 2 characters."); return; }
+        if (filled.length === 0) { setSubInputError("Add at least one subcategory name (min 2 chars)."); return; }
+        const invalidSize = filled.find(e => !e.sizeName.trim());
+        if (invalidSize) { setError(`Enter a size name for "${invalidSize.value.trim()}".`); return; }
+        const invalidLengths = filled.find(e => e.lengths.some(l => !(l.name ?? "").trim() || !(l.price ?? "").trim()));
+        if (invalidLengths) { setError(`Each length under "${invalidLengths.value.trim()}" needs a name and price.`); return; }
         setSubInputError(""); clearError(); setBusy(true);
         try {
-            let firstSlug = createdSubSlug; // preserve if retrying
-            let firstId = createdSubId;
             let firstName = firstSubName;
-            for (const name of filled) {
-                // Fix #4: skip names already successfully created on a previous attempt
-                if (persistedSubNames.current.has(name)) continue;
-                const created = await mutate("POST", `/${createdCat!.slug}/subcategories`, {
-                    name, categoryId: createdCat!.id,
+            for (const sub of filled) {
+                const subName = sub.value.trim();
+                let subSlug = "";
+                let subId: number | undefined;
+                if (persistedSubNames.current.has(subName)) continue;
+                const createdSub = await mutate("POST", `/${createdCat!.slug}/subcategories`, {
+                    name: subName, categoryId: createdCat!.id,
                 });
-                if (!created.slug) throw new Error(`Server did not return a slug for "${name}".`);
-                persistedSubNames.current.add(name);
-                if (!firstSlug) { firstSlug = created.slug; firstId = created.id; firstName = name; }
+                if (!createdSub.slug) throw new Error(`Server did not return a slug for "${subName}".`);
+                persistedSubNames.current.add(subName);
+                subSlug = createdSub.slug;
+                subId = createdSub.id;
+                if (!firstName) firstName = subName;
+                const sizeLabel = sub.sizeName.trim();
+                const createdItem = await mutate(
+                    "POST",
+                    `/${createdCat!.slug}/subcategories/${subSlug}/items`,
+                    { name: sizeLabel, price: "", description: "", subcategoryId: subId }
+                );
+                if (!createdItem.id) throw new Error(`Server did not return an item ID for "${sizeLabel}".`);
+                await mutate(
+                    "PUT",
+                    `/${createdCat!.slug}/subcategories/${subSlug}/items/${createdItem.id}`,
+                    { name: sizeLabel, price: "", description: "", subcategoryId: subId, lengthOptions: sub.lengths }
+                );
             }
-            setCreatedSubSlug(firstSlug);
-            setCreatedSubId(firstId);
             setFirstSubName(firstName);
             setStep(3);
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to create subcategories. Please try again.");
+            setError(e instanceof Error ? e.message : "Failed to save. Please try again.");
         } finally { setBusy(false); }
     };
 
-    // ── Step 3: Sizes & Lengths (combined) ────────────────────────────────────
-    const updateLength = (uid: string, field: keyof LengthOption, val: string) => {
-        setTouchedLengths(prev => new Set(prev).add(uid));
-        setLengthEntries(prev => prev.map(e => e.uid === uid ? { ...e, [field]: val } : e));
-    };
-    const addLength = () => setLengthEntries(prev => [...prev, { ...emptyLengthOption(), uid: crypto.randomUUID() }]);
-    const removeLength = (uid: string) => {
-        setLengthEntries(prev => prev.filter(e => e.uid !== uid));
-        setTouchedLengths(prev => { const s = new Set(prev); s.delete(uid); return s; });
-    };
-
-    const handleStep3Next = async () => {
-        const trimmed = sizeName.trim();
-        if (!trimmed) { setSizeNameError("Size name is required."); return; }
-        if (!lengthsValid) { setError("Each length option needs a name and a price."); return; }
-        setSizeNameError(""); clearError(); setBusy(true);
-        try {
-            // Create the item first, then patch with length options in one request
-            const created = await mutate(
-                "POST",
-                `/${createdCat!.slug}/subcategories/${createdSubSlug}/items`,
-                { name: trimmed, price: "", description: "", subcategoryId: createdSubId }
-            );
-            if (!created.id) throw new Error("Server did not return an item ID.");
-            await mutate(
-                "PUT",
-                `/${createdCat!.slug}/subcategories/${createdSubSlug}/items/${created.id}`,
-                { name: trimmed, price: "", description: "", subcategoryId: createdSubId, lengthOptions: lengthEntries }
-            );
-            setCreatedItemId(created.id);
-            setStep(4);
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to save size and lengths. Please try again.");
-        } finally { setBusy(false); }
-    };
-
-    // ── Step 4: Done ─────────────────────────────────────────────────────────
+    // ── Step 3: Done ─────────────────────────────────────────────────────────
     const handleFinish = () => {
         if (createdCat) onDone(createdCat);
         else onCategorySummariesRefresh?.();
@@ -282,12 +266,11 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
 
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
-        <div className="border border-neutral-200 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-900 flex overflow-hidden min-h-[420px]">
-            {/* Left sidebar */}
-            <WizardSidebar step={step} />
-
-            {/* Right content */}
-            <div className="flex-1 flex flex-col px-8 py-7 min-w-0">
+        <div className="border border-neutral-200 dark:border-neutral-700 rounded-sm bg-white dark:bg-neutral-900">
+            <div className="px-5 pt-5">
+                <WizardProgressBar step={step} />
+            </div>
+            <div className="px-5 pb-5">
 
                 {/* ── Step 0: Name ── */}
                 {step === 0 && (
@@ -350,34 +333,105 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                     </div>
                 )}
 
-                {/* ── Step 2: Subcategories ── */}
+                {/* ── Step 2: Subcategories (with size + lengths inline) ── */}
                 {step === 2 && (
                     <div className="space-y-5">
                         <div>
                             <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">Add subcategories</h2>
                             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                                Subcategories group the styles within <span className="font-medium text-neutral-700 dark:text-neutral-300">{createdCat?.name}</span>.
-                                Add as many as you need — e.g. Knotless, Goddess, Bohemian.
+                                For each subcategory, enter its name, a size (e.g. Small), and the length options with prices.
                             </p>
                         </div>
                         <WizardErrorBanner error={error} onDismiss={clearError} />
-                        <fieldset className="space-y-2 border-0 p-0 m-0">
-                            <legend className={lbl}>Subcategory Names <span className="text-red-500" aria-hidden>*</span></legend>
-                            {subEntries.map((entry, i) => (
-                                <div key={entry.uid} className="flex items-center gap-2">
-                                    <input
-                                        aria-label={`Subcategory ${i + 1}`}
-                                        className={`${inp} flex-1 ${subInputError && !entry.value.trim() ? "border-red-400" : ""}`}
-                                        value={entry.value}
-                                        onChange={(e) => updateSubRow(entry.uid, e.target.value)}
-                                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSubRow(); } }}
-                                        placeholder={i === 0 ? "e.g. Knotless" : "e.g. Goddess"}
-                                    />
-                                    {subEntries.length > 1 && (
-                                        <button type="button" onClick={() => removeSubRow(entry.uid)} className={btnD} aria-label={`Remove subcategory ${i + 1}`}>
-                                            <Trash2 className="w-3.5 h-3.5" aria-hidden />
+
+                        <div className="space-y-4">
+                            {subEntries.map((sub, si) => (
+                                <div key={sub.uid} className="border border-neutral-200 dark:border-neutral-700 rounded-sm p-3 space-y-3">
+
+                                    {/* Subcategory name row */}
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            aria-label={`Subcategory ${si + 1} name`}
+                                            className={`${inp} flex-1 ${subInputError && !sub.value.trim() ? "border-red-400" : ""}`}
+                                            value={sub.value}
+                                            onChange={(e) => updateSubField(sub.uid, "value", e.target.value)}
+                                            placeholder={si === 0 ? "Subcategory name, e.g. Knotless" : "e.g. Goddess"}
+                                        />
+                                        {subEntries.length > 1 && (
+                                            <button type="button" onClick={() => removeSubRow(sub.uid)} className={btnD} aria-label={`Remove subcategory ${si + 1}`}>
+                                                <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Size name */}
+                                    <div>
+                                        <label className={`${lbl} text-[11px]`}>Size <span className="text-red-500" aria-hidden>*</span></label>
+                                        <input
+                                            aria-label={`Subcategory ${si + 1} size name`}
+                                            className={`${inp} ${sub.sizeNameError ? "border-red-400" : ""}`}
+                                            value={sub.sizeName}
+                                            onChange={(e) => updateSubField(sub.uid, "sizeName", e.target.value)}
+                                            placeholder="e.g. Small, Medium, Large"
+                                        />
+                                        {sub.sizeNameError && (
+                                            <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                                                <AlertCircle className="w-3 h-3" aria-hidden />{sub.sizeNameError}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Length options */}
+                                    <div className="space-y-1.5">
+                                        <p className={`${lbl} text-[11px]`}>Lengths <span className="text-red-500" aria-hidden>*</span></p>
+                                        <div className="grid grid-cols-[1fr_1fr_1fr_2rem] gap-2 px-1" aria-hidden>
+                                            <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Length</span>
+                                            <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Price</span>
+                                            <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Notes</span>
+                                            <span />
+                                        </div>
+                                        {sub.lengths.map((len, li) => {
+                                            const touched = sub.touchedLengths.has(len.uid);
+                                            return (
+                                                <div key={len.uid} className="grid grid-cols-[1fr_1fr_1fr_2rem] gap-2 items-center">
+                                                    <input
+                                                        aria-label={`Sub ${si + 1} length ${li + 1} name`}
+                                                        className={`${inp} ${touched && !(len.name ?? "").trim() ? "border-red-300" : ""}`}
+                                                        placeholder='e.g. 16"'
+                                                        value={len.name ?? ""}
+                                                        onChange={(e) => updateLengthInSub(sub.uid, len.uid, "name", e.target.value)}
+                                                    />
+                                                    <input
+                                                        aria-label={`Sub ${si + 1} length ${li + 1} price`}
+                                                        className={`${inp} ${touched && !(len.price ?? "").trim() ? "border-red-300" : ""}`}
+                                                        placeholder="e.g. $180"
+                                                        value={len.price ?? ""}
+                                                        onChange={(e) => updateLengthInSub(sub.uid, len.uid, "price", e.target.value)}
+                                                    />
+                                                    <input
+                                                        aria-label={`Sub ${si + 1} length ${li + 1} notes`}
+                                                        className={inp}
+                                                        placeholder="e.g. $50 deposit"
+                                                        value={len.notes ?? ""}
+                                                        onChange={(e) => updateLengthInSub(sub.uid, len.uid, "notes", e.target.value)}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeLengthFromSub(sub.uid, len.uid)}
+                                                        disabled={sub.lengths.length === 1}
+                                                        aria-label={`Remove length ${li + 1} from subcategory ${si + 1}`}
+                                                        className={`${btnD} disabled:opacity-30`}
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                        <button type="button" onClick={() => addLengthToSub(sub.uid)} className={`${btnS} flex items-center gap-1.5 text-xs`}>
+                                            <Plus className="w-3.5 h-3.5" aria-hidden /> Add length
                                         </button>
-                                    )}
+                                    </div>
+
                                 </div>
                             ))}
                             {subInputError && (
@@ -388,99 +442,14 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                             <button type="button" onClick={addSubRow} className={`${btnS} flex items-center gap-1.5 text-xs`}>
                                 <Plus className="w-3.5 h-3.5" aria-hidden /> Add another subcategory
                             </button>
-                        </fieldset>
-                        <WizardNavRow onBack={() => setStep(1)} onNext={handleStep2Next} nextDisabled={!canAdvanceSubs} busy={busy} />
+                        </div>
+
+                        <WizardNavRow onBack={() => setStep(1)} onNext={handleStep2Next} nextLabel="Save & Finish" nextDisabled={!canAdvanceSubs || !subsValid} busy={busy} />
                     </div>
                 )}
 
-                {/* ── Step 3: Sizes & Lengths ── */}
+                {/* ── Step 3: Done ── */}
                 {step === 3 && (
-                    <div className="space-y-5">
-                        <div>
-                            <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">Add a size &amp; its lengths</h2>
-                            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                                Enter a size name for <span className="font-medium text-neutral-700 dark:text-neutral-300">{firstSubName}</span>, then add the length options and prices offered for that size.
-                            </p>
-                        </div>
-                        <WizardErrorBanner error={error} onDismiss={clearError} />
-
-                        {/* Size name */}
-                        <div>
-                            <label htmlFor="size-name" className={lbl}>Size Name <span className="text-red-500" aria-hidden>*</span></label>
-                            <input
-                                id="size-name"
-                                className={`${inp} ${sizeNameError ? "border-red-400" : ""}`}
-                                value={sizeName}
-                                onChange={(e) => { setSizeName(e.target.value); setSizeNameError(""); }}
-                                placeholder="e.g. Small, Medium, Large, Jumbo"
-                                aria-required
-                                aria-describedby={sizeNameError ? "size-name-error" : undefined}
-                                autoFocus
-                            />
-                            {sizeNameError && (
-                                <p id="size-name-error" role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" aria-hidden />{sizeNameError}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Length options */}
-                        <div className="space-y-2">
-                            <p className={lbl}>Length Options <span className="text-red-500" aria-hidden>*</span></p>
-                            <div className="grid grid-cols-[1fr_1fr_1fr_2rem] gap-2 px-1" aria-hidden>
-                                <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Length</span>
-                                <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Price</span>
-                                <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Notes</span>
-                                <span />
-                            </div>
-                            {lengthEntries.map((entry, i) => {
-                                const touched = touchedLengths.has(entry.uid);
-                                return (
-                                    <div key={entry.uid} className="grid grid-cols-[1fr_1fr_1fr_2rem] gap-2 items-center">
-                                        <input
-                                            aria-label={`Length option ${i + 1} name`}
-                                            className={`${inp} ${touched && !(entry.name ?? "").trim() ? "border-red-300" : ""}`}
-                                            placeholder='e.g. 16"'
-                                            value={entry.name ?? ""}
-                                            onChange={(e) => updateLength(entry.uid, "name", e.target.value)}
-                                        />
-                                        <input
-                                            aria-label={`Length option ${i + 1} price`}
-                                            className={`${inp} ${touched && !(entry.price ?? "").trim() ? "border-red-300" : ""}`}
-                                            placeholder="e.g. $180"
-                                            value={entry.price ?? ""}
-                                            onChange={(e) => updateLength(entry.uid, "price", e.target.value)}
-                                        />
-                                        <input
-                                            aria-label={`Length option ${i + 1} notes`}
-                                            className={inp}
-                                            placeholder="e.g. $50 deposit"
-                                            value={entry.notes ?? ""}
-                                            onChange={(e) => updateLength(entry.uid, "notes", e.target.value)}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => removeLength(entry.uid)}
-                                            disabled={lengthEntries.length === 1}
-                                            aria-label={`Remove length option ${i + 1}`}
-                                            className={`${btnD} disabled:opacity-30`}
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" aria-hidden />
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                            <button type="button" onClick={addLength} className={`${btnS} flex items-center gap-1.5 text-xs`}>
-                                <Plus className="w-3.5 h-3.5" aria-hidden /> Add another length
-                            </button>
-                        </div>
-
-                        <WizardNavRow onBack={() => setStep(2)} onNext={handleStep3Next} nextLabel="Save & Finish" nextDisabled={!sizeName.trim() || !lengthsValid} busy={busy} />
-                    </div>
-                )}
-
-                {/* ── Step 4: Done ── */}
-                {step === 4 && (
                     <div className="space-y-5 text-center py-4">
                         <div className="flex items-center justify-center">
                             <div className="w-14 h-14 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 flex items-center justify-center">
@@ -494,10 +463,10 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                             <p className="text-sm text-neutral-500 dark:text-neutral-400">
                                 <span className="block">Category created with {images.length} photos.</span>
                                 <span className="block">
-                                    {filledSubs.length} subcategor{filledSubs.length === 1 ? "y" : "ies"} created ({filledSubs.join(", ")}).
+                                    {filledSubs.length} subcategor{filledSubs.length === 1 ? "y" : "ies"} created ({filledSubs.map(e => e.value.trim()).join(", ")}).
                                 </span>
                                 <span className="block">
-                                    Size <strong>{sizeName}</strong> with {lengthEntries.length} length option{lengthEntries.length !== 1 ? "s" : ""} added to <strong>{firstSubName}</strong>.
+                                    Each subcategory set up with a size and length options.
                                 </span>
                                 <span className="block mt-2">You can add more subcategories, sizes, and lengths from the editor.</span>
                             </p>
@@ -513,4 +482,3 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
         </div>
     );
 }
-
