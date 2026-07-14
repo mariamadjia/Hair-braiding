@@ -149,8 +149,9 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
     const [createdCat, setCreatedCat] = useState<CategorySummary | null>(null);
     const [firstSubName, setFirstSubName] = useState("");
 
-    // track persisted sub names to prevent duplicates on retry
-    const persistedSubNames = useRef<Set<string>>(new Set());
+    // track already-created subs to prevent duplicate POSTs on retry
+    // maps subName -> { slug, id }
+    const persistedSubs = useRef<Map<string, { slug: string; id: number }>>(new Map());
 
     // ── Derived values ───────────────────────────────────────────────────────
     const photoOk = images.length >= 3 && images.length <= 5;
@@ -227,28 +228,44 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
             let firstName = firstSubName;
             for (const sub of filled) {
                 const subName = sub.value.trim();
-                let subSlug = "";
-                let subId: number | undefined;
-                if (persistedSubNames.current.has(subName)) continue;
-                const createdSub = await mutate("POST", `/${createdCat!.slug}/subcategories`, {
-                    name: subName, categoryId: createdCat!.id,
-                });
-                if (!createdSub.slug) throw new Error(`Server did not return a slug for "${subName}".`);
-                persistedSubNames.current.add(subName);
-                subSlug = createdSub.slug;
-                subId = createdSub.id;
+                let subSlug: string;
+                let subId: number;
+
+                // If already created on a previous attempt, reuse the stored slug/id
+                const already = persistedSubs.current.get(subName);
+                if (already) {
+                    subSlug = already.slug;
+                    subId = already.id;
+                } else {
+                    const createdSub = await mutate("POST", `/${createdCat!.slug}/subcategories`, {
+                        name: subName, categoryId: createdCat!.id,
+                    });
+                    if (!createdSub.slug || !createdSub.id) throw new Error(`Server did not return slug/id for "${subName}".`);
+                    subSlug = createdSub.slug;
+                    subId = createdSub.id;
+                    persistedSubs.current.set(subName, { slug: subSlug, id: subId });
+                }
+
                 if (!firstName) firstName = subName;
+
                 const sizeLabel = sub.sizeName.trim();
+                // POST to create the item
                 const createdItem = await mutate(
                     "POST",
                     `/${createdCat!.slug}/subcategories/${subSlug}/items`,
                     { name: sizeLabel, price: "", description: "", subcategoryId: subId }
                 );
                 if (!createdItem.id) throw new Error(`Server did not return an item ID for "${sizeLabel}".`);
+
+                // PUT on the collection route — itemId goes in the body, not the URL
                 await mutate(
                     "PUT",
-                    `/${createdCat!.slug}/subcategories/${subSlug}/items/${createdItem.id}`,
-                    { name: sizeLabel, price: "", description: "", subcategoryId: subId, lengthOptions: sub.lengths }
+                    `/${createdCat!.slug}/subcategories/${subSlug}/items`,
+                    {
+                        itemId: createdItem.id,
+                        subcategoryId: subId,
+                        item: { name: sizeLabel, price: "", description: "", subcategory: { id: subId }, lengthOptions: sub.lengths },
+                    }
                 );
             }
             setFirstSubName(firstName);
