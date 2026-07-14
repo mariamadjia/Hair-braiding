@@ -12,7 +12,6 @@ import {
   Plus,
   Trash2,
   ImageIcon,
-  ImagePlus,
   Lock,
   GripVertical,
   MoreVertical,
@@ -73,15 +72,38 @@ function emptySizeEntry(name: string): SizeEntry {
   };
 }
 
+const PRESET_SIZES = ["Small", "Medium", "Large"];
+
+function isSizeComplete(size: SizeEntry): boolean {
+  return Boolean(
+    size.name.trim() &&
+    size.lengths.length > 0 &&
+    size.lengths.every(
+      (length) =>
+        (length.name ?? "").trim() &&
+        (length.price ?? "").replace(/^\$/, "").trim(),
+    ),
+  );
+}
+
+function hasSizeData(size: SizeEntry): boolean {
+  return size.lengths.length > 1 || size.lengths.some(
+    (length) =>
+      Boolean((length.name ?? "").trim()) ||
+      Boolean((length.price ?? "").trim()) ||
+      Boolean((length.notes ?? "").trim()) ||
+      Boolean(length.photo),
+  );
+}
+
 function emptySubEntry(): SubEntry {
-  const sizes = ["Small", "Medium", "Large"].map(emptySizeEntry);
   return {
     uid: crypto.randomUUID(),
     name: "",
     photos: [],
-    sizes,
-    selectedSizeId: sizes[0].uid,
-    expandedSizeId: sizes[0].uid,
+    sizes: [],
+    selectedSizeId: "",
+    expandedSizeId: null,
   };
 }
 
@@ -229,6 +251,7 @@ export function NewCategoryWizard({
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [savePhase, setSavePhase] = useState<string | null>(null);
   const clearError = () => setError(null);
 
   // ── Form data ────────────────────────────────────────────────────────────
@@ -265,23 +288,6 @@ export function NewCategoryWizard({
   // ── Derived values ───────────────────────────────────────────────────────
   const photoOk = imageFiles.length >= 3 && imageFiles.length <= 7;
   const filledSubs = subEntries.filter((entry) => entry.name.trim().length >= 2);
-  const subsValid =
-    filledSubs.length > 0 &&
-    filledSubs.every(
-      (entry) =>
-        entry.photos.length >= 1 &&
-        entry.sizes.length > 0 &&
-        entry.sizes.every(
-          (size) =>
-            size.name.trim().length > 0 &&
-            size.lengths.length > 0 &&
-            size.lengths.every(
-              (length) =>
-                (length.name ?? "").trim() !== "" &&
-                (length.price ?? "").replace(/^\$/, "").trim() !== "",
-            ),
-        ),
-    );
 
   // ── Step 0: Category name — client-side only ─────────────────────────────
   const handleStep0Next = () => {
@@ -303,6 +309,8 @@ export function NewCategoryWizard({
 
   // ── Step 2: Subcategory and nested pricing handlers ──────────────────────
   const [openSizeMenu, setOpenSizeMenu] = useState<string | null>(null);
+  const [customSizeSubUid, setCustomSizeSubUid] = useState<string | null>(null);
+  const [customSizeName, setCustomSizeName] = useState("");
   const draggedLength = useRef<{ subUid: string; sizeUid: string; lengthUid: string } | null>(null);
 
   const addSubRow = () => setSubEntries((prev) => [...prev, emptySubEntry()]);
@@ -338,14 +346,28 @@ export function NewCategoryWizard({
     setSubEntries((prev) => prev.map((sub) => sub.uid === uid ? { ...sub, [field]: value } : sub));
   };
 
-  const addSize = (subUid: string) => {
-    const size = emptySizeEntry("New size");
+  const activateSize = (subUid: string, name: string) => {
+    const size = emptySizeEntry(name);
     setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
       ...sub,
       sizes: [...sub.sizes, size],
       selectedSizeId: size.uid,
       expandedSizeId: size.uid,
     } : sub));
+  };
+
+  const commitCustomSize = (subUid: string) => {
+    const name = customSizeName.trim();
+    const sub = subEntries.find((entry) => entry.uid === subUid);
+    if (!name) return;
+    if (sub?.sizes.some((size) => size.name.trim().toLowerCase() === name.toLowerCase())) {
+      setError(`"${name}" is already available.`);
+      return;
+    }
+    activateSize(subUid, name);
+    setCustomSizeName("");
+    setCustomSizeSubUid(null);
+    clearError();
   };
 
   const updateSizeName = (subUid: string, sizeUid: string, name: string) =>
@@ -368,24 +390,51 @@ export function NewCategoryWizard({
       expandedSizeId: sub.expandedSizeId === sizeUid ? null : sizeUid,
     } : sub));
 
-  const deleteSize = (subUid: string, sizeUid: string) =>
-    setSubEntries((prev) => prev.map((sub) => {
-      if (sub.uid !== subUid || sub.sizes.length === 1) return sub;
-      const removed = sub.sizes.find((size) => size.uid === sizeUid);
-      removed?.lengths.forEach((length) => {
-        if (!length.photo) return;
-        const url = objectUrls.current.get(length.photo);
-        if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(length.photo); }
-      });
-      const sizes = sub.sizes.filter((size) => size.uid !== sizeUid);
-      const fallbackId = sizes[0].uid;
+  const deleteSize = (subUid: string, sizeUid: string) => {
+    const sub = subEntries.find((entry) => entry.uid === subUid);
+    const removed = sub?.sizes.find((size) => size.uid === sizeUid);
+    if (!removed) return;
+    if (hasSizeData(removed) && !window.confirm(`Remove ${removed.name} and all of its pricing details?`)) return;
+    removed.lengths.forEach((length) => {
+      if (!length.photo) return;
+      const url = objectUrls.current.get(length.photo);
+      if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(length.photo); }
+    });
+    setSubEntries((prev) => prev.map((entry) => {
+      if (entry.uid !== subUid) return entry;
+      const sizes = entry.sizes.filter((size) => size.uid !== sizeUid);
+      const fallbackId = sizes[0]?.uid ?? "";
       return {
-        ...sub,
+        ...entry,
         sizes,
-        selectedSizeId: sub.selectedSizeId === sizeUid ? fallbackId : sub.selectedSizeId,
-        expandedSizeId: sub.expandedSizeId === sizeUid ? fallbackId : sub.expandedSizeId,
+        selectedSizeId: entry.selectedSizeId === sizeUid ? fallbackId : entry.selectedSizeId,
+        expandedSizeId: entry.expandedSizeId === sizeUid ? (fallbackId || null) : entry.expandedSizeId,
       };
     }));
+  };
+
+  const togglePresetSize = (subUid: string, name: string) => {
+    const active = subEntries.find((sub) => sub.uid === subUid)?.sizes.find((size) => size.name.toLowerCase() === name.toLowerCase());
+    if (active) deleteSize(subUid, active.uid);
+    else activateSize(subUid, name);
+  };
+
+  const revealInvalidSize = (subUid: string, sizeUid?: string) => {
+    if (sizeUid) {
+      setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+        ...sub,
+        selectedSizeId: sizeUid,
+        expandedSizeId: sizeUid,
+        sizes: sub.sizes.map((size) => size.uid === sizeUid ? {
+          ...size,
+          touchedLengths: new Set(size.lengths.map((length) => length.uid)),
+        } : size),
+      } : sub));
+    }
+    requestAnimationFrame(() => {
+      document.getElementById(sizeUid ? `size-panel-${sizeUid}` : `subcategory-${subUid}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  };
 
   const addLengthOption = (subUid: string, sizeUid: string) =>
     setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
@@ -460,28 +509,46 @@ export function NewCategoryWizard({
       setSubInputError("Add at least one subcategory name (min 2 chars).");
       return;
     }
-    const missingPhoto = filled.find((e) => e.photos.length === 0);
+    const missingPhoto = filled.find((entry) => entry.photos.length === 0);
     if (missingPhoto) {
       setError(`Add at least one photo for "${missingPhoto.name.trim()}".`);
+      revealInvalidSize(missingPhoto.uid);
       return;
     }
-    const invalidSize = filled.find((entry) => entry.sizes.some((size) => !size.name.trim()));
-    if (invalidSize) {
-      setError(`Enter a name for every size under "${invalidSize.name.trim()}".`);
+    const missingSizes = filled.find((entry) => entry.sizes.length === 0);
+    if (missingSizes) {
+      setError(`Select at least one available size for "${missingSizes.name.trim()}".`);
+      revealInvalidSize(missingSizes.uid);
       return;
     }
-    const invalidLengths = filled.find((entry) =>
-      entry.sizes.some((size) => size.lengths.some(
-        (length) => !(length.name ?? "").trim() || !(length.price ?? "").replace(/^\$/, "").trim(),
-      )),
-    );
-    if (invalidLengths) {
-      setError(`Each length under "${invalidLengths.name.trim()}" needs a name and price.`);
+    const invalidSizeEntry = filled.find((entry) => entry.sizes.some((size) => !size.name.trim()));
+    if (invalidSizeEntry) {
+      const invalidSize = invalidSizeEntry.sizes.find((size) => !size.name.trim());
+      setError(`Enter a name for every size under "${invalidSizeEntry.name.trim()}".`);
+      revealInvalidSize(invalidSizeEntry.uid, invalidSize?.uid);
+      return;
+    }
+    const duplicateSizeEntry = filled.find((entry) => {
+      const names = entry.sizes.map((size) => size.name.trim().toLowerCase());
+      return new Set(names).size !== names.length;
+    });
+    if (duplicateSizeEntry) {
+      const duplicate = duplicateSizeEntry.sizes.find((size, index, sizes) => sizes.findIndex((candidate) => candidate.name.trim().toLowerCase() === size.name.trim().toLowerCase()) !== index);
+      setError(`Each size under "${duplicateSizeEntry.name.trim()}" must have a unique name.`);
+      revealInvalidSize(duplicateSizeEntry.uid, duplicate?.uid);
+      return;
+    }
+    const invalidLengthEntry = filled.find((entry) => entry.sizes.some((size) => !isSizeComplete(size)));
+    if (invalidLengthEntry) {
+      const invalidSize = invalidLengthEntry.sizes.find((size) => !isSizeComplete(size));
+      setError(`Complete the missing length and price fields under "${invalidSize?.name || invalidLengthEntry.name.trim()}".`);
+      revealInvalidSize(invalidLengthEntry.uid, invalidSize?.uid);
       return;
     }
     setSubInputError("");
     clearError();
     setBusy(true);
+    setSavePhase("Creating category…");
     try {
       // ── 1. Create category ───────────────────────────────────────────────
       let cat = createdCat;
@@ -498,6 +565,7 @@ export function NewCategoryWizard({
       }
 
       // ── 2. Upload & save flipping images ────────────────────────────────
+      setSavePhase(`Uploading ${imageFiles.length} category photos…`);
       const catId = cat!.id as number;
       const proxyUrls = await Promise.all(
         imageFiles.map((file) => uploadFile(file, token, { categoryId: catId }))
@@ -506,8 +574,9 @@ export function NewCategoryWizard({
       await galleryApi.updateCategoryFlippingImages(catId, backendUrls);
 
       // ── 3. Create subcategories ──────────────────────────────────────────
-      for (const sub of filled) {
+      for (const [subIndex, sub] of filled.entries()) {
         const subName = sub.name.trim();
+        setSavePhase(`Saving subcategory ${subIndex + 1} of ${filled.length}: ${subName}…`);
         let subSlug: string;
         let subId: number;
 
@@ -532,8 +601,9 @@ export function NewCategoryWizard({
           );
         }
 
-        for (const size of sub.sizes) {
+        for (const [sizeIndex, size] of sub.sizes.entries()) {
           const sizeLabel = size.name.trim();
+          setSavePhase(`Saving ${subName}: ${sizeLabel} (${sizeIndex + 1} of ${sub.sizes.length})…`);
           let itemId = persisted.itemIds[size.uid];
           if (!itemId) {
             const createdItem = await mutate(
@@ -587,6 +657,7 @@ export function NewCategoryWizard({
       );
     } finally {
       setBusy(false);
+      setSavePhase(null);
     }
   };
 
@@ -761,21 +832,18 @@ export function NewCategoryWizard({
                   sub.name.trim().length >= 2 &&
                   sub.photos.length >= 1 &&
                   sub.sizes.length > 0 &&
-                  sub.sizes.every((size) =>
-                    size.name.trim() && size.lengths.every((length) =>
-                      (length.name ?? "").trim() !== "" && (length.price ?? "").trim() !== "",
-                    ),
-                  );
+                  sub.sizes.every(isSizeComplete);
 
                 return (
                   <div
                     key={sub.uid}
-                    className="border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900"
+                    id={`subcategory-${sub.uid}`}
+                    className="border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 scroll-mt-6"
                   >
                     <div className="p-5 space-y-5">
 
                       {/* ── Name + Photos side by side ── */}
-                      <div className="grid grid-cols-2 gap-6 items-start">
+                      <div className="grid grid-cols-1 gap-6 items-start md:grid-cols-2">
                         {/* Left: name */}
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
@@ -848,31 +916,63 @@ export function NewCategoryWizard({
                       </div>
 
                       <div>
-                        <p className="mb-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200">Available sizes</p>
+                        <div className="mb-2">
+                          <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Available sizes</p>
+                          <p className="mt-0.5 text-xs text-neutral-400">Select every size offered for this service. Click a selected size again to remove it.</p>
+                        </div>
                         <div className="flex flex-wrap gap-2">
-                          {sub.sizes.map((size) => {
-                            const selected = sub.selectedSizeId === size.uid;
+                          {PRESET_SIZES.map((name) => {
+                            const active = sub.sizes.find((size) => size.name.toLowerCase() === name.toLowerCase());
                             return (
                               <button
-                                key={size.uid}
+                                key={name}
                                 type="button"
-                                onClick={() => selectSize(sub.uid, size.uid)}
-                                aria-pressed={selected}
-                                className={`flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 ${selected ? "border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300" : "border-neutral-200 bg-white text-neutral-600 hover:border-violet-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"}`}
+                                onClick={() => togglePresetSize(sub.uid, name)}
+                                aria-pressed={Boolean(active)}
+                                className={`flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 ${active ? "border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300" : "border-neutral-200 bg-white text-neutral-600 hover:border-violet-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"}`}
                               >
-                                {size.name || "Untitled"}
-                                {selected && <Check className="h-4 w-4" aria-hidden />}
+                                {name}
+                                {active && <Check className="h-4 w-4" aria-hidden />}
                               </button>
                             );
                           })}
-                          <button
-                            type="button"
-                            onClick={() => addSize(sub.uid)}
-                            className="flex h-10 items-center gap-1.5 rounded-lg border border-dashed border-violet-300 px-4 text-sm font-medium text-violet-600 hover:border-violet-500 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30"
-                          >
-                            <Plus className="h-4 w-4" aria-hidden /> Add size
-                          </button>
+                          {sub.sizes.filter((size) => !PRESET_SIZES.some((name) => name.toLowerCase() === size.name.toLowerCase())).map((size) => (
+                            <button
+                              key={size.uid}
+                              type="button"
+                              onClick={() => deleteSize(sub.uid, size.uid)}
+                              aria-pressed="true"
+                              className="flex h-10 items-center gap-2 rounded-lg border border-violet-500 bg-violet-50 px-4 text-sm font-medium text-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:bg-violet-950/40 dark:text-violet-300"
+                            >
+                              {size.name}
+                              <Check className="h-4 w-4" aria-hidden />
+                            </button>
+                          ))}
+                          {customSizeSubUid === sub.uid ? (
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                autoFocus
+                                value={customSizeName}
+                                onChange={(e) => setCustomSizeName(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitCustomSize(sub.uid); } if (e.key === "Escape") { setCustomSizeSubUid(null); setCustomSizeName(""); } }}
+                                aria-label="Custom size name"
+                                placeholder="Custom size"
+                                className="h-10 w-36 rounded-lg border border-violet-300 px-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200 dark:border-violet-700 dark:bg-neutral-800"
+                              />
+                              <button type="button" onClick={() => commitCustomSize(sub.uid)} disabled={!customSizeName.trim()} aria-label="Add custom size" className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-violet-400"><Check className="h-4 w-4" /></button>
+                              <button type="button" onClick={() => { setCustomSizeSubUid(null); setCustomSizeName(""); }} aria-label="Cancel custom size" className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-neutral-700 dark:hover:bg-neutral-800"><X className="h-4 w-4" /></button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => { setCustomSizeSubUid(sub.uid); setCustomSizeName(""); }}
+                              className="flex h-10 items-center gap-1.5 rounded-lg border border-dashed border-violet-300 px-4 text-sm font-medium text-violet-600 hover:border-violet-500 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30"
+                            >
+                              <Plus className="h-4 w-4" aria-hidden /> Add custom size
+                            </button>
+                          )}
                         </div>
+                        {sub.sizes.length === 0 && <p className="mt-2 text-xs font-medium text-amber-600">Select at least one size to add pricing.</p>}
                       </div>
 
                       <div className="overflow-visible rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
@@ -880,12 +980,17 @@ export function NewCategoryWizard({
                           Size-based pricing
                         </div>
                         <div className="space-y-2 p-3">
+                          {sub.sizes.length === 0 && (
+                            <div className="rounded-lg border border-dashed border-neutral-200 px-4 py-6 text-center text-sm text-neutral-400 dark:border-neutral-700">Select a size above to create its pricing panel.</div>
+                          )}
                           {sub.sizes.map((size) => {
                             const expanded = sub.expandedSizeId === size.uid;
+                            const complete = isSizeComplete(size);
+                            const missingFields = Number(!size.name.trim()) + size.lengths.reduce((count, length) => count + Number(!(length.name ?? "").trim()) + Number(!(length.price ?? "").replace(/^\$/, "").trim()), 0);
                             const summary = size.lengths.filter((length) => (length.name ?? "").trim() || (length.price ?? "").trim());
-                            const firstEmptyPhoto = size.lengths.find((length) => !length.photo);
+                            const nextIncomplete = sub.sizes.find((candidate) => candidate.uid !== size.uid && !isSizeComplete(candidate));
                             return (
-                              <div key={size.uid} className={`relative rounded-xl border transition-colors ${expanded ? "border-violet-200 shadow-sm dark:border-violet-800" : "border-neutral-200 dark:border-neutral-700"}`}>
+                              <div id={`size-panel-${size.uid}`} key={size.uid} className={`relative scroll-mt-6 rounded-xl border transition-colors ${expanded ? "border-violet-200 shadow-sm dark:border-violet-800" : "border-neutral-200 dark:border-neutral-700"}`}>
                                 <div className="flex min-h-14 items-center gap-3 px-3 py-2">
                                   <button
                                     type="button"
@@ -900,6 +1005,10 @@ export function NewCategoryWizard({
                                     <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{size.name || "Untitled size"}</span>
                                   </button>
                                   <span className="shrink-0 text-xs text-neutral-400">{size.lengths.length} {size.lengths.length === 1 ? "length" : "lengths"}</span>
+                                  <span className={`hidden shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium sm:flex ${complete ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300" : "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"}`}>
+                                    {complete ? <Check className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                                    {complete ? "Complete" : `${missingFields} ${missingFields === 1 ? "field" : "fields"} missing`}
+                                  </span>
                                   {!expanded && (
                                     <div className="hidden min-w-0 flex-1 items-center gap-3 overflow-hidden lg:flex">
                                       {summary.slice(0, 2).map((length, index) => (
@@ -909,18 +1018,13 @@ export function NewCategoryWizard({
                                           <span className="font-medium text-neutral-800 dark:text-neutral-100">${(length.price || "0.00").replace(/^\$/, "")}</span>
                                         </div>
                                       ))}
+                                      {summary.length > 2 && <span className="shrink-0 text-xs font-medium text-violet-600">+{summary.length - 2} more</span>}
                                     </div>
                                   )}
                                   <div className="ml-auto flex shrink-0 items-center gap-1.5">
                                     {size.lengths.filter((length) => length.photo).slice(0, 2).map((length) => (
                                       <img key={length.uid} src={getObjectUrl(length.photo!)} alt="" className="h-8 w-8 rounded-md border border-neutral-200 object-cover dark:border-neutral-700" />
                                     ))}
-                                    {firstEmptyPhoto && (
-                                      <label tabIndex={0} aria-label={`Add a photo to ${size.name}`} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-dashed border-violet-300 text-violet-500 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30">
-                                        <ImagePlus className="h-4 w-4" aria-hidden />
-                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { setLengthPhoto(sub.uid, size.uid, firstEmptyPhoto.uid, e.target.files?.[0]); e.currentTarget.value = ""; }} />
-                                      </label>
-                                    )}
                                     <button type="button" onClick={() => setOpenSizeMenu(openSizeMenu === size.uid ? null : size.uid)} aria-label={`Actions for ${size.name}`} className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:hover:bg-neutral-800">
                                       <MoreVertical className="h-4 w-4" aria-hidden />
                                     </button>
@@ -934,7 +1038,7 @@ export function NewCategoryWizard({
                                       <button type="button" onClick={() => setOpenSizeMenu(null)} aria-label="Close size menu" className="rounded p-0.5 text-neutral-400 hover:text-neutral-700"><X className="h-4 w-4" /></button>
                                     </div>
                                     <input value={size.name} onChange={(e) => updateSizeName(sub.uid, size.uid, e.target.value)} aria-label={`Rename ${size.name}`} className="h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200 dark:border-neutral-600 dark:bg-neutral-800" />
-                                    <button type="button" disabled={sub.sizes.length === 1} onClick={() => { deleteSize(sub.uid, size.uid); setOpenSizeMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-red-950/30">
+                                    <button type="button" onClick={() => { deleteSize(sub.uid, size.uid); setOpenSizeMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
                                       <Trash2 className="h-4 w-4" /> Delete size
                                     </button>
                                   </div>
@@ -985,9 +1089,16 @@ export function NewCategoryWizard({
                                         );
                                       })}
                                     </div>
-                                    <button type="button" onClick={() => addLengthOption(sub.uid, size.uid)} className="mt-3 flex h-9 items-center gap-1.5 rounded-lg border border-violet-300 px-3 text-sm font-medium text-violet-600 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30">
-                                      <Plus className="h-4 w-4" /> Add length option
-                                    </button>
+                                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                                      <button type="button" onClick={() => addLengthOption(sub.uid, size.uid)} className="flex h-9 items-center gap-1.5 rounded-lg border border-violet-300 px-3 text-sm font-medium text-violet-600 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30">
+                                        <Plus className="h-4 w-4" /> Add length option
+                                      </button>
+                                      {complete && nextIncomplete && (
+                                        <button type="button" onClick={() => selectSize(sub.uid, nextIncomplete.uid)} className="flex h-9 items-center gap-1.5 rounded-lg bg-violet-600 px-3 text-sm font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-400">
+                                          Continue to {nextIncomplete.name} <ChevronRight className="h-4 w-4" />
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -1017,11 +1128,16 @@ export function NewCategoryWizard({
               </button>
             </div>
 
+            {savePhase && (
+              <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-medium text-violet-700 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-300">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-300 border-t-violet-600" aria-hidden />
+                {savePhase}
+              </div>
+            )}
             <WizardNavRow
               onBack={() => setStep(1)}
               onNext={handleStep2Next}
               nextLabel="Save & Finish"
-              nextDisabled={!subsValid}
               busy={busy}
             />
           </div>
@@ -1047,7 +1163,7 @@ export function NewCategoryWizard({
                 <span className="block">
                   {filledSubs.length} subcategor{filledSubs.length === 1 ? "y" : "ies"} created ({filledSubs.map((e) => e.name.trim()).join(", ")}).
                 </span>
-                <span className="block">Each subcategory set up with photos, a size, and length options.</span>
+                <span className="block">Each subcategory is set up with photos, selected sizes, and independent length pricing.</span>
                 <span className="block mt-2">You can add more subcategories, sizes, and lengths from the editor.</span>
               </p>
             </div>
