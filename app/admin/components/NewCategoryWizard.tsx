@@ -682,17 +682,26 @@ export function NewCategoryWizard({
                     </button>
                   </div>
                 ))}
-                <label className="cursor-pointer h-24 w-24 flex items-center justify-center text-center border-2 border-dashed border-neutral-300 dark:border-neutral-600 hover:border-violet-500 rounded-lg bg-neutral-50 dark:bg-neutral-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all group">
-                  <span className="text-xs text-neutral-500 group-hover:text-violet-600 font-medium">+ Add Photo</span>
-                  <input
-                    type="file" accept="image/*" multiple className="hidden"
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files ?? []);
-                      setImageFiles((prev) => [...prev, ...files]);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
+                {Array.from({ length: imageFiles.length >= 7 ? 0 : Math.max(1, 3 - imageFiles.length) }, (_, slot) => slot).map((slot) => (
+                  <label
+                    key={slot}
+                    tabIndex={0}
+                    aria-label={`Add category photo ${slot + 1}`}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
+                    className="cursor-pointer h-24 w-24 flex flex-col items-center justify-center gap-1 text-center border-2 border-dashed border-neutral-300 dark:border-neutral-600 hover:border-violet-500 rounded-lg bg-neutral-50 dark:bg-neutral-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all group focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  >
+                    <Plus className="w-5 h-5 text-neutral-400 group-hover:text-violet-500" aria-hidden />
+                    <span className="text-xs text-neutral-500 group-hover:text-violet-600 font-medium">Add Photo</span>
+                    <input
+                      type="file" accept="image/*" className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setImageFiles((prev) => [...prev, file]);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                ))}
               </div>
             </div>
             {imageFiles.length > 0 && (
