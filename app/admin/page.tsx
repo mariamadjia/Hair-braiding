@@ -656,56 +656,54 @@ export default function AdminPage() {
                 )}
 
                 {currentSection === "categories" && (
-                    <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
-                        <div>
-                            <div>
-                                {isLoadingSummaries ? (
-                                    <div className="space-y-2">
-                                        {[1,2,3,4].map(i => (
-                                            <div key={i} className="h-12 bg-neutral-200 dark:bg-neutral-700 rounded-sm animate-pulse" />
-                                        ))}
-                                    </div>
-                                ) : categorySummaries.length === 0 ? (
-                                    <div className="bg-white border border-neutral-200 rounded-lg p-8 text-center">
-                                        <p className="text-neutral-500 mb-4">No services found</p>
-                                        {error && (
-                                            <p className="text-sm text-red-600 mb-4">{error}</p>
-                                        )}
-                                        <button
-                                            type="button"
-                                            onClick={() => loadCategorySummaries(token)}
-                                            className="px-4 py-2 text-sm font-medium bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 transition-colors"
-                                        >
-                                            Retry
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <EditorPanel
-                                        data={data ?? { defaultBookingUrl: "", categories: [] }}
-                                        selection={selection}
-                                        setSelection={handleSelectionChange}
-                                        token={token}
-                                        onUpdate={handleUpdate}
-                                        categorySummaries={categorySummaries}
-                                        subcategoryDetailsCache={subcategoryDetailsCache}
-                                        onLoadSubcategorySummaries={loadSubcategorySummaries}
-                                        onLoadSubcategoryDetail={loadSubcategoryDetail}
-                                        isLoadingSubcategorySummaries={isLoadingSubcategorySummaries}
-                                        isLoadingSubcategoryDetail={isLoadingSubcategoryDetail}
-                                        loadingSubcategorySlug={loadingSubcategorySlug}
-                                        onCategoryCreated={upsertCategorySummary}
-                                        onCategoryDeleted={removeCategorySummary}
-                                        onCategoryUpdated={upsertCategorySummary}
-                                        onCategorySummariesRefresh={refreshCategorySummaries}
-                                        onSubcategoryCreated={upsertSubcategorySummary}
-                                        onSubcategoryDeleted={removeSubcategorySummary}
-                                        onSubcategoryUpdated={upsertSubcategorySummary}
-                                        onSubcategorySummariesRefresh={refreshSubcategorySummaries}
-                                        onSubcategoryUpdate={refreshSubcategoryDetail}
-                                    />
-                                )}
+                    <div className="flex-1 flex overflow-hidden bg-neutral-50 dark:bg-neutral-900">
+                        {isLoadingSummaries ? (
+                            <div className="flex-1 px-8 py-6 space-y-2">
+                                {[1,2,3,4].map(i => (
+                                    <div key={i} className="h-12 bg-neutral-200 dark:bg-neutral-700 rounded-sm animate-pulse" />
+                                ))}
                             </div>
-                        </div>
+                        ) : categorySummaries.length === 0 ? (
+                            <div className="flex-1 flex items-center justify-center">
+                                <div className="bg-white border border-neutral-200 rounded-lg p-8 text-center">
+                                    <p className="text-neutral-500 mb-4">No services found</p>
+                                    {error && (
+                                        <p className="text-sm text-red-600 mb-4">{error}</p>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => loadCategorySummaries(token)}
+                                        className="px-4 py-2 text-sm font-medium bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 transition-colors"
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <EditorPanel
+                                data={data ?? { defaultBookingUrl: "", categories: [] }}
+                                selection={selection}
+                                setSelection={handleSelectionChange}
+                                token={token}
+                                onUpdate={handleUpdate}
+                                categorySummaries={categorySummaries}
+                                subcategoryDetailsCache={subcategoryDetailsCache}
+                                onLoadSubcategorySummaries={loadSubcategorySummaries}
+                                onLoadSubcategoryDetail={loadSubcategoryDetail}
+                                isLoadingSubcategorySummaries={isLoadingSubcategorySummaries}
+                                isLoadingSubcategoryDetail={isLoadingSubcategoryDetail}
+                                loadingSubcategorySlug={loadingSubcategorySlug}
+                                onCategoryCreated={upsertCategorySummary}
+                                onCategoryDeleted={removeCategorySummary}
+                                onCategoryUpdated={upsertCategorySummary}
+                                onCategorySummariesRefresh={refreshCategorySummaries}
+                                onSubcategoryCreated={upsertSubcategorySummary}
+                                onSubcategoryDeleted={removeSubcategorySummary}
+                                onSubcategoryUpdated={upsertSubcategorySummary}
+                                onSubcategorySummariesRefresh={refreshSubcategorySummaries}
+                                onSubcategoryUpdate={refreshSubcategoryDetail}
+                            />
+                        )}
                     </div>
                 )}
 
