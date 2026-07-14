@@ -809,7 +809,7 @@ export function NewCategoryWizard({
                                 </button>
                               </div>
                             ))}
-                            {[0, 1, 2].map((slot) => (
+                            {Array.from({ length: Math.max(1, 3 - sub.photos.length) }, (_, slot) => slot).map((slot) => (
                               <label
                                 key={slot}
                                 tabIndex={0}
