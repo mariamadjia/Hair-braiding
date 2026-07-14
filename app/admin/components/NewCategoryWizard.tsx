@@ -739,8 +739,7 @@ export function NewCategoryWizard({
                 Add subcategories
               </h2>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                For each subcategory, enter its name, photos, a size (e.g.
-                Small), and length options with prices.
+                For each subcategory, enter its name, photos, a size (e.g. Small), and length options with prices.
               </p>
             </div>
             <WizardErrorBanner error={error} onDismiss={clearError} />
@@ -752,53 +751,66 @@ export function NewCategoryWizard({
                   sub.photos.length >= 1 &&
                   sub.sizeName.trim().length >= 1 &&
                   sub.lengths.every(
-                    (l) =>
-                      (l.name ?? "").trim() !== "" &&
-                      (l.price ?? "").trim() !== "",
+                    (l) => (l.name ?? "").trim() !== "" && (l.price ?? "").trim() !== "",
                   );
 
                 return (
                   <div
                     key={sub.uid}
-                    className="border border-neutral-200 dark:border-neutral-700 rounded-xl p-4 space-y-4 bg-white dark:bg-neutral-900"
+                    className="border border-neutral-200 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-900 overflow-hidden shadow-sm"
                   >
-                    {/* ── Subcategory name ── */}
-                    <div className="flex items-center gap-3">
-                      <Lock className="w-4 h-4 text-violet-500 shrink-0" aria-hidden />
-                      <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 w-32 shrink-0">Subcategory name</span>
-                      <input
-                        aria-label={`Subcategory ${si + 1} name`}
-                        className={`flex-1 border rounded-lg px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 dark:text-white ${
-                          subInputError && !sub.name.trim()
-                            ? "border-red-400"
-                            : "border-neutral-300 dark:border-neutral-600"
-                        }`}
-                        value={sub.name}
-                        onChange={(e) =>
-                          updateSubField(sub.uid, "name", e.target.value)
-                        }
-                        placeholder="e.g. Knotless"
-                      />
+                    {/* ── Card header ── */}
+                    <div className="flex items-center justify-between px-5 py-3.5 bg-neutral-50 dark:bg-neutral-800/60 border-b border-neutral-100 dark:border-neutral-800">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">{si + 1}</span>
+                        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                          {sub.name.trim() || `Subcategory ${si + 1}`}
+                        </span>
+                        {cardComplete && (
+                          <span className="flex items-center gap-1 text-[10px] font-semibold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded-full">
+                            <CheckCircle className="w-3 h-3" aria-hidden /> Ready
+                          </span>
+                        )}
+                      </div>
                       {subEntries.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removeSubRow(sub.uid)}
                           aria-label={`Remove subcategory ${si + 1}`}
-                          className="ml-1 text-neutral-400 hover:text-red-500 transition-colors"
+                          className="flex items-center gap-1 text-xs text-neutral-400 hover:text-red-500 transition-colors px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
                         >
-                          <Trash2 className="w-4 h-4" aria-hidden />
+                          <Trash2 className="w-3.5 h-3.5" aria-hidden /> Remove
                         </button>
-                      )}
-                      {cardComplete && (
-                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" aria-label="Complete" />
                       )}
                     </div>
 
-                    {/* ── Photos ── */}
-                    <div className="flex items-start gap-3">
-                      <ImageIcon className="w-4 h-4 text-violet-500 shrink-0 mt-2" aria-hidden />
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2">Photos</p>
+                    <div className="p-5 space-y-5">
+                      {/* ── Name ── */}
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                          <Lock className="w-3 h-3 text-violet-400" aria-hidden /> Name
+                        </label>
+                        <input
+                          aria-label={`Subcategory ${si + 1} name`}
+                          className={`w-full border rounded-xl px-4 py-2.5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 bg-white dark:bg-neutral-800 transition-all ${
+                            subInputError && !sub.name.trim()
+                              ? "border-red-400"
+                              : "border-neutral-200 dark:border-neutral-700"
+                          }`}
+                          value={sub.name}
+                          onChange={(e) => updateSubField(sub.uid, "name", e.target.value)}
+                          placeholder="e.g. Knotless, Feed-In, Goddess…"
+                        />
+                      </div>
+
+                      {/* ── Photos ── */}
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                          <ImageIcon className="w-3 h-3 text-violet-400" aria-hidden /> Photos
+                          {sub.photos.length > 0 && (
+                            <span className="ml-1 text-violet-600 dark:text-violet-400 font-bold normal-case">{sub.photos.length}</span>
+                          )}
+                        </label>
                         <div
                           className="flex flex-wrap gap-2"
                           role="list"
@@ -809,19 +821,21 @@ export function NewCategoryWizard({
                               <img
                                 src={getObjectUrl(file)}
                                 alt={file.name}
-                                className="h-20 w-20 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700"
+                                className="h-20 w-20 object-cover rounded-xl border-2 border-neutral-200 dark:border-neutral-700 shadow-sm"
                               />
+                              {pi === 0 && (
+                                <span className="absolute bottom-1 left-1 text-[8px] font-bold bg-violet-600 text-white px-1.5 py-0.5 rounded-sm uppercase leading-none">Cover</span>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => removePhotoFromSub(sub.uid, pi)}
                                 aria-label={`Remove photo ${pi + 1} from subcategory ${si + 1}`}
-                                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-neutral-600 hover:bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-neutral-600 hover:bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shadow"
                               >
                                 ×
                               </button>
                             </div>
                           ))}
-                          {/* Add photo tile */}
                           <label
                             tabIndex={0}
                             onKeyDown={(e) => {
@@ -830,10 +844,10 @@ export function NewCategoryWizard({
                                 e.currentTarget.querySelector("input")?.click();
                               }
                             }}
-                            className="cursor-pointer h-20 w-20 flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-lg bg-neutral-50 dark:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 border-neutral-300 dark:border-neutral-600 hover:border-violet-400"
+                            className="cursor-pointer h-20 w-20 flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-xl bg-neutral-50 dark:bg-neutral-800 transition-all focus:outline-none focus:ring-2 focus:ring-violet-400 border-violet-200 dark:border-violet-800 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20"
                           >
-                            <Plus className="w-5 h-5 text-neutral-400" aria-hidden />
-                            <span className="text-[10px] text-neutral-500">Add</span>
+                            <Plus className="w-5 h-5 text-violet-400" aria-hidden />
+                            <span className="text-[10px] text-violet-500 font-medium">Add</span>
                             <input
                               type="file"
                               accept="image/*"
@@ -844,173 +858,154 @@ export function NewCategoryWizard({
                           </label>
                         </div>
                       </div>
-                    </div>
 
-                    {/* ── Size ── */}
-                    <div className="flex items-center gap-3">
-                      <User className="w-4 h-4 text-violet-500 shrink-0" aria-hidden />
-                      <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 w-32 shrink-0">Size</span>
-                      <div className="relative flex-1">
-                        <select
-                          aria-label={`Subcategory ${si + 1} size name`}
-                          className={`w-full appearance-none border rounded-lg px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 dark:text-white pr-8 ${
-                            sub.touchedSize && !sub.sizeName.trim()
-                              ? "border-red-400"
-                              : "border-neutral-300 dark:border-neutral-600"
-                          }`}
-                          value={sub.sizeName}
-                          onChange={(e) =>
-                            updateSubField(sub.uid, "sizeName", e.target.value)
-                          }
-                          onBlur={() => updateSubField(sub.uid, "touchedSize", true)}
-                        >
-                          <option value="">Select a size…</option>
-                          <option value="XS">XS</option>
-                          <option value="Small">Small</option>
-                          <option value="Medium">Medium</option>
-                          <option value="Large">Large</option>
-                          <option value="XL">XL</option>
-                          <option value="XXL">XXL</option>
-                        </select>
-                        <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" aria-hidden />
-                      </div>
-                    </div>
-                    {sub.touchedSize && !sub.sizeName.trim() && (
-                      <p role="alert" className="ml-7 text-xs text-red-600 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" aria-hidden /> Size is required.
-                      </p>
-                    )}
-
-                    {/* ── Lengths & Prices ── */}
-                    <div className="flex items-start gap-3">
-                      <SlidersHorizontal className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" aria-hidden />
-                      <div className="flex-1 space-y-2">
-                        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">Lengths &amp; Prices</p>
-
-                        {/* Table header */}
-                        <div className="hidden md:grid grid-cols-[1.5rem_1fr_1fr_1fr_5rem_2.5rem] gap-2 px-1">
-                          <span />
-                          <span className="text-xs font-medium text-neutral-400">Length</span>
-                          <span className="text-xs font-medium text-neutral-400">Price</span>
-                          <span className="text-xs font-medium text-neutral-400">Notes</span>
-                          <span className="text-xs font-medium text-neutral-400">Photo</span>
-                          <span className="text-xs font-medium text-neutral-400">Delete</span>
-                        </div>
-
-                        {sub.lengths.map((len, li) => {
-                          const touched = sub.touchedLengths.has(len.uid);
-                          return (
-                            <div
-                              key={len.uid}
-                              className="rounded-lg border border-neutral-100 dark:border-neutral-800 p-2 md:border-0 md:rounded-none md:p-0 grid grid-cols-1 md:grid-cols-[1.5rem_1fr_1fr_1fr_5rem_2.5rem] gap-2 items-center"
+                      {/* ── Size ── */}
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                          <User className="w-3 h-3 text-violet-400" aria-hidden /> Size
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {["XS", "Small", "Medium", "Large", "XL", "XXL"].map((sz) => (
+                            <button
+                              key={sz}
+                              type="button"
+                              onClick={() => { updateSubField(sub.uid, "sizeName", sz); updateSubField(sub.uid, "touchedSize", true); }}
+                              className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+                                sub.sizeName === sz
+                                  ? "bg-violet-600 text-white border-violet-600 shadow-sm"
+                                  : "bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700 hover:border-violet-300 hover:text-violet-600"
+                              }`}
                             >
-                              {/* drag handle */}
-                              <GripVertical className="hidden md:block w-4 h-4 text-neutral-300 cursor-grab" aria-hidden />
+                              {sz}
+                            </button>
+                          ))}
+                        </div>
+                        {sub.touchedSize && !sub.sizeName.trim() && (
+                          <p role="alert" className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" aria-hidden /> Size is required.
+                          </p>
+                        )}
+                      </div>
 
-                              {/* Length name */}
-                              <input
-                                aria-label={`Sub ${si + 1} length ${li + 1} name`}
-                                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 dark:text-white ${
-                                  touched && !(len.name ?? "").trim()
-                                    ? "border-red-300"
-                                    : "border-neutral-300 dark:border-neutral-600"
-                                }`}
-                                placeholder='16"'
-                                value={len.name ?? ""}
-                                onChange={(e) =>
-                                  updateLengthInSub(sub.uid, len.uid, "name", e.target.value)
-                                }
-                              />
+                      {/* ── Lengths & Prices ── */}
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-3">
+                          <SlidersHorizontal className="w-3 h-3 text-violet-400" aria-hidden /> Lengths &amp; Prices
+                        </label>
 
-                              {/* Price with $ prefix */}
-                              <div className={`flex items-center border rounded-lg overflow-hidden ${
-                                touched && !(len.price ?? "").trim()
-                                  ? "border-red-300"
-                                  : "border-neutral-300 dark:border-neutral-600"
-                              }`}>
-                                <span className="px-2 text-sm text-neutral-500 bg-neutral-50 dark:bg-neutral-700 border-r border-neutral-300 dark:border-neutral-600 select-none">$</span>
-                                <input
-                                  aria-label={`Sub ${si + 1} length ${li + 1} price`}
-                                  className="flex-1 px-2 py-2 text-sm focus:outline-none bg-white dark:bg-neutral-800 dark:text-white"
-                                  placeholder="120.00"
-                                  value={(len.price ?? "").replace(/^\$/, "")}
-                                  onChange={(e) =>
-                                    updateLengthInSub(sub.uid, len.uid, "price", e.target.value)
-                                  }
-                                />
-                              </div>
-
-                              {/* Notes */}
-                              <input
-                                aria-label={`Sub ${si + 1} length ${li + 1} notes`}
-                                className="w-full border border-neutral-300 dark:border-neutral-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 dark:text-white"
-                                placeholder="Deposit required"
-                                value={len.notes ?? ""}
-                                onChange={(e) =>
-                                  updateLengthInSub(sub.uid, len.uid, "notes", e.target.value)
-                                }
-                              />
-
-                              {/* Length photo */}
-                              <div className="flex items-center gap-2 md:justify-center">
-                                {len.photo ? (
-                                  <div className="relative group h-14 w-14 shrink-0">
-                                    <img
-                                      src={getObjectUrl(len.photo)}
-                                      alt={`Preview for ${len.name || `length ${li + 1}`}`}
-                                      className="h-14 w-14 rounded-lg border border-neutral-200 dark:border-neutral-700 object-cover"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => setLengthPhoto(sub.uid, len.uid, undefined)}
-                                      aria-label={`Remove photo for length ${li + 1}`}
-                                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-600 text-xs text-white opacity-0 transition-opacity hover:bg-red-500 group-hover:opacity-100 focus:opacity-100"
-                                    >
-                                      ×
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <label
-                                    tabIndex={0}
-                                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
-                                    className="flex h-14 w-14 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50 transition-colors hover:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-neutral-600 dark:bg-neutral-800"
-                                    aria-label={`Upload photo for length ${li + 1}`}
+                        <div className="space-y-2">
+                          {sub.lengths.map((len, li) => {
+                            const touched = sub.touchedLengths.has(len.uid);
+                            return (
+                              <div
+                                key={len.uid}
+                                className="rounded-xl border border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/40 p-3"
+                              >
+                                <div className="flex items-center gap-2 mb-2.5">
+                                  <GripVertical className="w-4 h-4 text-neutral-300 cursor-grab flex-shrink-0" aria-hidden />
+                                  <span className="text-xs font-semibold text-neutral-500">Length {li + 1}</span>
+                                  <div className="flex-1" />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeLengthFromSub(sub.uid, len.uid)}
+                                    disabled={sub.lengths.length === 1}
+                                    aria-label={`Remove length ${li + 1}`}
+                                    className="w-6 h-6 flex items-center justify-center rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-30 transition-colors"
                                   >
-                                    <Plus className="h-4 w-4 text-neutral-400" aria-hidden />
-                                    <span className="text-[9px] text-neutral-500 leading-tight text-center">Add photo</span>
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      onChange={(e) => {
-                                        setLengthPhoto(sub.uid, len.uid, e.target.files?.[0]);
-                                        e.currentTarget.value = "";
-                                      }}
-                                    />
-                                  </label>
-                                )}
-                              </div>
+                                    <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                                  </button>
+                                </div>
 
-                              {/* Delete row */}
-                              <div className="flex justify-center">
-                                <button
-                                  type="button"
-                                  onClick={() => removeLengthFromSub(sub.uid, len.uid)}
-                                  disabled={sub.lengths.length === 1}
-                                  aria-label={`Remove length ${li + 1} from subcategory ${si + 1}`}
-                                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 text-red-400 hover:border-red-400 hover:text-red-600 disabled:opacity-30 transition-colors"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" aria-hidden />
-                                </button>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {/* Length name */}
+                                  <div>
+                                    <p className="text-[10px] font-medium text-neutral-400 mb-1">Length</p>
+                                    <input
+                                      aria-label={`Sub ${si + 1} length ${li + 1} name`}
+                                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 bg-white dark:bg-neutral-800 dark:text-white transition-all ${
+                                        touched && !(len.name ?? "").trim() ? "border-red-300" : "border-neutral-200 dark:border-neutral-700"
+                                      }`}
+                                      placeholder='e.g. 16"'
+                                      value={len.name ?? ""}
+                                      onChange={(e) => updateLengthInSub(sub.uid, len.uid, "name", e.target.value)}
+                                    />
+                                  </div>
+
+                                  {/* Price */}
+                                  <div>
+                                    <p className="text-[10px] font-medium text-neutral-400 mb-1">Price</p>
+                                    <div className={`flex items-center border rounded-lg overflow-hidden ${
+                                      touched && !(len.price ?? "").trim() ? "border-red-300" : "border-neutral-200 dark:border-neutral-700"
+                                    }`}>
+                                      <span className="px-2.5 py-2 text-sm text-neutral-500 bg-neutral-100 dark:bg-neutral-700 border-r border-neutral-200 dark:border-neutral-600 select-none font-medium">$</span>
+                                      <input
+                                        aria-label={`Sub ${si + 1} length ${li + 1} price`}
+                                        className="flex-1 px-2.5 py-2 text-sm focus:outline-none bg-white dark:bg-neutral-800 dark:text-white"
+                                        placeholder="120.00"
+                                        value={(len.price ?? "").replace(/^\$/, "")}
+                                        onChange={(e) => updateLengthInSub(sub.uid, len.uid, "price", e.target.value)}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Notes */}
+                                  <div>
+                                    <p className="text-[10px] font-medium text-neutral-400 mb-1">Notes <span className="normal-case font-normal">(optional)</span></p>
+                                    <input
+                                      aria-label={`Sub ${si + 1} length ${li + 1} notes`}
+                                      className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 bg-white dark:bg-neutral-800 dark:text-white transition-all"
+                                      placeholder="e.g. $50 deposit required"
+                                      value={len.notes ?? ""}
+                                      onChange={(e) => updateLengthInSub(sub.uid, len.uid, "notes", e.target.value)}
+                                    />
+                                  </div>
+
+                                  {/* Photo */}
+                                  <div>
+                                    <p className="text-[10px] font-medium text-neutral-400 mb-1">Photo <span className="normal-case font-normal">(optional)</span></p>
+                                    {len.photo ? (
+                                      <div className="relative group h-10 w-10">
+                                        <img
+                                          src={getObjectUrl(len.photo)}
+                                          alt={`Preview for ${len.name || `length ${li + 1}`}`}
+                                          className="h-10 w-10 rounded-lg border border-neutral-200 dark:border-neutral-700 object-cover"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => setLengthPhoto(sub.uid, len.uid, undefined)}
+                                          aria-label={`Remove photo for length ${li + 1}`}
+                                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-600 text-xs text-white opacity-0 transition-opacity hover:bg-red-500 group-hover:opacity-100 focus:opacity-100"
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <label
+                                        tabIndex={0}
+                                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
+                                        className="flex h-10 w-10 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-violet-200 dark:border-violet-800 bg-white dark:bg-neutral-800 transition-colors hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                                        aria-label={`Upload photo for length ${li + 1}`}
+                                      >
+                                        <Plus className="h-4 w-4 text-violet-400" aria-hidden />
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => { setLengthPhoto(sub.uid, len.uid, e.target.files?.[0]); e.currentTarget.value = ""; }}
+                                        />
+                                      </label>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
 
                         <button
                           type="button"
                           onClick={() => addLengthToSub(sub.uid)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-violet-600 border border-violet-200 rounded-lg hover:border-violet-400 hover:bg-violet-50 transition-colors"
+                          className="mt-2 flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-violet-600 border border-violet-200 dark:border-violet-800 rounded-xl hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
                         >
                           <Plus className="w-3.5 h-3.5" aria-hidden /> Add length
                         </button>
@@ -1030,7 +1025,7 @@ export function NewCategoryWizard({
               <button
                 type="button"
                 onClick={addSubRow}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-violet-600 border border-violet-200 rounded-lg hover:border-violet-400 hover:bg-violet-50 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-violet-600 border-2 border-dashed border-violet-200 dark:border-violet-800 rounded-2xl hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all"
               >
                 <Plus className="w-4 h-4" aria-hidden /> Add another subcategory
               </button>
