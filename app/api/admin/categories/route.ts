@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { isAuthorized, revalidatePublicServices } from "@/lib/utils/admin-route";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend-hairbraiding.onrender.com";
 
@@ -8,18 +8,6 @@ export const revalidate = 0;
 
 function getAuthHeader(req: NextRequest) {
   return req.headers.get("authorization") || "";
-}
-
-function isAuthorized(req: NextRequest) {
-  const authHeader = getAuthHeader(req);
-  return authHeader.startsWith("Bearer ");
-}
-
-function revalidatePublicServices() {
-  revalidatePath("/services");
-  revalidatePath("/booking");
-  revalidatePath("/booking/[slug]", "page");
-  revalidatePath("/booking/[slug]/[subSlug]", "page");
 }
 
 export async function GET(req: NextRequest) {

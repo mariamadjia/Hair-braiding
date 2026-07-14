@@ -1,39 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { isAuthorized, revalidatePublicServices } from "@/lib/utils/admin-route";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-function isAuthorized(req: NextRequest) {
-    // Check for x-admin-token (legacy)
-    const adminToken = req.headers.get("x-admin-token");
-    if (adminToken === process.env.ADMIN_SECRET) {
-        return true;
-    }
-    
-    // Check for Bearer token (JWT)
-    const authHeader = req.headers.get("authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-        return true;
-    }
-    
-    return false;
-}
-
-
-function revalidatePublicServices(slug: string, subSlug?: string) {
-    revalidatePath("/services");
-    revalidatePath("/booking");
-    revalidatePath("/booking/[slug]", "page");
-    revalidatePath("/booking/[slug]/[subSlug]", "page");
-    revalidatePath(`/booking/${slug}`);
-    if (subSlug) {
-        revalidatePath(`/booking/${slug}/${subSlug}`);
-    }
-}
 
 
 // GET: Fetch subcategory summaries for a category

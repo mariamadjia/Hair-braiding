@@ -1,35 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { isAuthorized, revalidatePublicServices } from "@/lib/utils/admin-route";
 
 export const runtime = "nodejs";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-function revalidatePublicServices(slug?: string) {
-    revalidatePath("/services");
-    revalidatePath("/booking");
-    revalidatePath("/booking/[slug]", "page");
-    revalidatePath("/booking/[slug]/[subSlug]", "page");
-    if (slug) {
-        revalidatePath(`/booking/${slug}`);
-    }
-}
-
-function isAuthorized(req: NextRequest) {
-    // Check for x-admin-token (legacy)
-    const adminToken = req.headers.get("x-admin-token");
-    if (adminToken === process.env.ADMIN_SECRET) {
-        return true;
-    }
-    
-    // Check for Bearer token (JWT)
-    const authHeader = req.headers.get("authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-        return true;
-    }
-    
-    return false;
-}
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
     if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
