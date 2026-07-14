@@ -21,8 +21,7 @@ export const API_ENDPOINTS = {
   SERVICES: '/api/services',
   
   // Gallery
-  GALLERY_IMAGES: '/api/gallery-images',
-  GALLERY_COLLECTIONS: '/api/gallery-collections',
+  GALLERY: '/api/gallery',
   
   // Hero
   HERO_IMAGES: '/api/hero-images',

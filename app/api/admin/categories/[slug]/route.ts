@@ -40,22 +40,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
     
     const { slug } = await params;
     const updates = await req.json();
-    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    const authHeader = req.headers.get("authorization");
     
     try {
-        // First get the category by slug to find its ID
-        const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`);
-        if (!categoryResponse.ok) {
-            return NextResponse.json({ error: "Category not found" }, { status: 404 });
-        }
-        const category = await categoryResponse.json();
-        
-        // Update the category
-        const updateResponse = await fetch(`${API_URL}/api/categories/${category.id}`, {
+        const updateResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                ...(authHeader ? { 'Authorization': authHeader } : {})
             },
             body: JSON.stringify(updates)
         });
@@ -77,21 +69,13 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
     if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     
     const { slug } = await params;
-    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    const authHeader = req.headers.get("authorization");
     
     try {
-        // First get the category by slug to find its ID
-        const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`);
-        if (!categoryResponse.ok) {
-            return NextResponse.json({ error: "Category not found" }, { status: 404 });
-        }
-        const category = await categoryResponse.json();
-        
-        // Delete the category
-        const deleteResponse = await fetch(`${API_URL}/api/categories/${category.id}`, {
+        const deleteResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${token}`
+                ...(authHeader ? { 'Authorization': authHeader } : {})
             }
         });
         
