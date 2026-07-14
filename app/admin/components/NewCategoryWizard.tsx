@@ -610,7 +610,7 @@ export function NewCategoryWizard({
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="border border-neutral-200 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-900 shadow-md max-w-3xl w-full mx-auto">
+    <div className="border border-neutral-200 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-900 shadow-md max-w-4xl w-full mx-auto">
       <div className="px-8 pt-8">
         <WizardProgressBar step={step} />
       </div>
@@ -853,13 +853,13 @@ export function NewCategoryWizard({
                           <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Lengths &amp; Prices</p>
 
                           {/* Table header */}
-                          <div className="grid grid-cols-[1.5rem_1fr_1fr_1fr_5.5rem_2.5rem] gap-2 px-1 pb-1 border-b border-neutral-100 dark:border-neutral-800">
+                          <div className="grid grid-cols-[1.5rem_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.4fr)_4rem_2.5rem] gap-x-3 px-1 pb-1.5 border-b border-neutral-100 dark:border-neutral-800">
                             <span />
-                            <span className="text-xs font-medium text-neutral-400">Length</span>
-                            <span className="text-xs font-medium text-neutral-400">Price</span>
-                            <span className="text-xs font-medium text-neutral-400">Notes</span>
-                            <span className="text-xs font-medium text-neutral-400">Photo</span>
-                            <span className="text-xs font-medium text-neutral-400">Delete</span>
+                            <span className="text-xs font-semibold text-neutral-400 tracking-wide">Length</span>
+                            <span className="text-xs font-semibold text-neutral-400 tracking-wide">Price</span>
+                            <span className="text-xs font-semibold text-neutral-400 tracking-wide">Notes</span>
+                            <span className="text-xs font-semibold text-neutral-400 tracking-wide text-center">Photo</span>
+                            <span className="text-xs font-semibold text-neutral-400 tracking-wide text-center">Delete</span>
                           </div>
 
                           {sub.lengths.map((len, li) => {
@@ -867,7 +867,7 @@ export function NewCategoryWizard({
                             return (
                               <div
                                 key={len.uid}
-                                className="grid grid-cols-[1.5rem_1fr_1fr_1fr_5.5rem_2.5rem] gap-2 items-center"
+                                className="grid grid-cols-[1.5rem_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.4fr)_4rem_2.5rem] gap-x-3 gap-y-0 items-center py-1"
                               >
                                 <GripVertical className="w-4 h-4 text-neutral-300 cursor-grab" aria-hidden />
 
@@ -902,7 +902,7 @@ export function NewCategoryWizard({
                                   onChange={(e) => updateLengthInSub(sub.uid, len.uid, "notes", e.target.value)}
                                 />
 
-                                <div className="flex justify-center">
+                                <div className="flex items-center justify-center">
                                   {len.photo ? (
                                     <div className="relative group h-14 w-14 shrink-0">
                                       <img
