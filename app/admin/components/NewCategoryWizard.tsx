@@ -224,11 +224,19 @@ export function NewCategoryWizard({
   // ── Form data ────────────────────────────────────────────────────────────
   const [catName, setCatName] = useState("");
   const [catNameError, setCatNameError] = useState("");
-  const [images, setImages] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const imageObjectUrls = useRef<Map<File, string>>(new Map());
+  const getImageObjectUrl = useCallback((file: File) => {
+    if (!imageObjectUrls.current.has(file)) {
+      imageObjectUrls.current.set(file, URL.createObjectURL(file));
+    }
+    return imageObjectUrls.current.get(file)!;
+  }, []);
   const [subEntries, setSubEntries] = useState<SubEntry[]>([emptySubEntry()]);
   const [subInputError, setSubInputError] = useState("");
 
   // ── Server IDs ───────────────────────────────────────────────────────────
+  // Only set after final save — kept for retry dedup on subcategories
   const [createdCat, setCreatedCat] = useState<CategorySummary | null>(null);
 
   // #3: maps subName -> { slug, id, itemId? } — prevents duplicates on retry
@@ -246,7 +254,7 @@ export function NewCategoryWizard({
   }, []);
 
   // ── Derived values ───────────────────────────────────────────────────────
-  const photoOk = images.length >= 3 && images.length <= 5;
+  const photoOk = imageFiles.length >= 3 && imageFiles.length <= 5;
   // #10: filter on .name (renamed from .value)
   const filledSubs = subEntries.filter((e) => e.name.trim().length >= 2);
   // #5: canAdvanceSubs removed — subsValid subsumes it
@@ -264,71 +272,22 @@ export function NewCategoryWizard({
         ),
     );
 
-  // ── Step 0: Category name ────────────────────────────────────────────────
-  const handleStep0Next = async () => {
+  // ── Step 0: Category name — client-side only ─────────────────────────────
+  const handleStep0Next = () => {
     const trimmed = catName.trim();
-    if (!trimmed) {
-      setCatNameError("Category name is required.");
-      return;
-    }
-    if (trimmed.length < 2) {
-      setCatNameError("Name must be at least 2 characters.");
-      return;
-    }
+    if (!trimmed) { setCatNameError("Category name is required."); return; }
+    if (trimmed.length < 2) { setCatNameError("Name must be at least 2 characters."); return; }
     setCatNameError("");
     clearError();
-    setBusy(true);
-    try {
-      const created = await mutate("POST", "", {
-        name: trimmed,
-        slug: slugify(trimmed),
-        subcategories: [],
-      });
-      if (!created.id) throw new Error("Server did not return a category ID.");
-      setCreatedCat({ id: created.id, name: trimmed, slug: slugify(trimmed) });
-      setStep(1);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to create category. Please try again.",
-      );
-    } finally {
-      setBusy(false);
-    }
+    setStep(1);
   };
 
-  // ── Step 1: Photos ───────────────────────────────────────────────────────
-  const handleStep1Next = async () => {
-    if (!createdCat?.id) {
-      setError("Category ID missing.");
-      return;
-    }
-    if (images.length < 3) {
-      setError("Upload at least 3 photos to continue.");
-      return;
-    }
-    if (images.length > 5) {
-      setError("Maximum 5 photos allowed.");
-      return;
-    }
+  // ── Step 1: Photos — client-side only ───────────────────────────────────
+  const handleStep1Next = () => {
+    if (imageFiles.length < 3) { setError("Add at least 3 photos to continue."); return; }
+    if (imageFiles.length > 5) { setError("Maximum 5 photos allowed."); return; }
     clearError();
-    setBusy(true);
-    try {
-      const backendUrls = images
-        .map(fromProxyUrl)
-        .filter((u): u is string => Boolean(u));
-      await galleryApi.updateCategoryFlippingImages(createdCat.id, backendUrls);
-      setStep(2);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to save photos. Please try again.",
-      );
-    } finally {
-      setBusy(false);
-    }
+    setStep(2);
   };
 
   // ── Step 2: Subcategory field handlers ───────────────────────────────────
@@ -477,7 +436,6 @@ export function NewCategoryWizard({
       setSubInputError("Add at least one subcategory name (min 2 chars).");
       return;
     }
-    // #4: handler independently validates photos
     const missingPhoto = filled.find((e) => e.photos.length === 0);
     if (missingPhoto) {
       setError(`Add at least one photo for "${missingPhoto.name.trim()}".`);
@@ -494,15 +452,36 @@ export function NewCategoryWizard({
       ),
     );
     if (invalidLengths) {
-      setError(
-        `Each length under "${invalidLengths.name.trim()}" needs a name and price.`,
-      );
+      setError(`Each length under "${invalidLengths.name.trim()}" needs a name and price.`);
       return;
     }
     setSubInputError("");
     clearError();
     setBusy(true);
     try {
+      // ── 1. Create category ───────────────────────────────────────────────
+      let cat = createdCat;
+      if (!cat) {
+        const trimmed = catName.trim();
+        const created = await mutate("POST", "", {
+          name: trimmed,
+          slug: slugify(trimmed),
+          subcategories: [],
+        });
+        if (!created.id) throw new Error("Server did not return a category ID.");
+        cat = { id: created.id, name: trimmed, slug: slugify(trimmed) };
+        setCreatedCat(cat);
+      }
+
+      // ── 2. Upload & save flipping images ────────────────────────────────
+      const catId = cat!.id as number;
+      const proxyUrls = await Promise.all(
+        imageFiles.map((file) => uploadFile(file, token, { categoryId: catId }))
+      );
+      const backendUrls = proxyUrls.map(fromProxyUrl).filter((u): u is string => Boolean(u));
+      await galleryApi.updateCategoryFlippingImages(catId, backendUrls);
+
+      // ── 3. Create subcategories ──────────────────────────────────────────
       for (const sub of filled) {
         const subName = sub.name.trim();
         let subSlug: string;
@@ -515,10 +494,10 @@ export function NewCategoryWizard({
         } else {
           const createdSub = await mutate(
             "POST",
-            `/${createdCat!.slug}/subcategories`,
+            `/${cat!.slug}/subcategories`,
             {
               name: subName,
-              categoryId: createdCat!.id,
+              categoryId: cat!.id,
             },
           );
           if (!createdSub.slug || !createdSub.id)
@@ -527,11 +506,10 @@ export function NewCategoryWizard({
           subId = createdSub.id;
           persistedSubs.current.set(subName, { slug: subSlug, id: subId });
 
-          // #2: upload all photos in parallel now that we have the subcategory ID
           await Promise.all(
             sub.photos.map((file) =>
               uploadFile(file, token, {
-                categoryId: createdCat!.id,
+                categoryId: cat!.id,
                 subcategoryId: subId,
               }),
             ),
@@ -540,12 +518,11 @@ export function NewCategoryWizard({
 
         const sizeLabel = sub.sizeName.trim();
 
-        // #3: skip item POST if already created on a previous attempt
         let itemId = already?.itemId;
         if (!itemId) {
           const createdItem = await mutate(
             "POST",
-            `/${createdCat!.slug}/subcategories/${subSlug}/items`,
+            `/${cat!.slug}/subcategories/${subSlug}/items`,
             {
               name: sizeLabel,
               price: "",
@@ -558,21 +535,15 @@ export function NewCategoryWizard({
               `Server did not return an item ID for "${sizeLabel}".`,
             );
           itemId = createdItem.id;
-          persistedSubs.current.set(subName, {
-            slug: subSlug,
-            id: subId,
-            itemId,
-          });
+          persistedSubs.current.set(subName, { slug: subSlug, id: subId, itemId });
         }
 
-        // Upload each optional length photo, then store its URL on that length option.
-        // The backend LengthOption DTO/entity must include an `imageUrl` field for this to persist.
         const lengthOptions = await Promise.all(
           sub.lengths.map(async ({ uid, photo, ...length }) => {
             let imageUrl = length.imageUrl;
             if (photo) {
               const proxyUrl = await uploadFile(photo, token, {
-                categoryId: createdCat!.id,
+                categoryId: cat!.id,
                 subcategoryId: subId,
                 serviceItemId: itemId,
               });
@@ -584,7 +555,7 @@ export function NewCategoryWizard({
 
         await mutate(
           "PUT",
-          `/${createdCat!.slug}/subcategories/${subSlug}/items`,
+          `/${cat!.slug}/subcategories/${subSlug}/items`,
           {
             itemId,
             subcategoryId: subId,
@@ -598,6 +569,7 @@ export function NewCategoryWizard({
           },
         );
       }
+      onDone({ id: cat!.id, name: cat!.name, slug: cat!.slug });
       setStep(3);
     } catch (e) {
       setError(
@@ -684,47 +656,67 @@ export function NewCategoryWizard({
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 Upload <strong>3 to 5</strong> photos for{" "}
                 <span className="font-medium text-neutral-700 dark:text-neutral-300">
-                  {createdCat?.name}
+                  {catName.trim()}
                 </span>
                 . These appear in the public gallery.
               </p>
             </div>
             <WizardErrorBanner error={error} onDismiss={clearError} />
-            <MultiImageUploader
-              images={images}
-              token={token}
-              categoryId={createdCat?.id}
-              onChange={setImages}
-            />
-            {images.length > 0 && (
+            {/* Local file picker — no upload until Save & Finish */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-3">
+                {imageFiles.map((file, i) => (
+                  <div key={i} className="relative shrink-0 group">
+                    <img src={getImageObjectUrl(file)} alt={`photo ${i + 1}`} className="h-24 w-24 object-cover border-2 border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm" />
+                    <button
+                      type="button"
+                      onClick={() => setImageFiles((prev) => {
+                        const f = prev[i];
+                        const url = imageObjectUrls.current.get(f);
+                        if (url) { URL.revokeObjectURL(url); imageObjectUrls.current.delete(f); }
+                        return prev.filter((_, idx) => idx !== i);
+                      })}
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <label className="cursor-pointer h-24 w-24 flex items-center justify-center text-center border-2 border-dashed border-neutral-300 dark:border-neutral-600 hover:border-violet-500 rounded-lg bg-neutral-50 dark:bg-neutral-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all group">
+                  <span className="text-xs text-neutral-500 group-hover:text-violet-600 font-medium">+ Add Photo</span>
+                  <input
+                    type="file" accept="image/*" multiple className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      setImageFiles((prev) => [...prev, ...files]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+            {imageFiles.length > 0 && (
               <div
                 role="status"
                 className={`flex items-center gap-2 text-sm ${photoOk ? "text-green-700 dark:text-green-300" : "text-amber-700 dark:text-amber-400"}`}
               >
                 {photoOk ? (
-                  <CheckCircle
-                    className="w-4 h-4 text-green-600 dark:text-green-400"
-                    aria-hidden
-                  />
+                  <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" aria-hidden />
                 ) : (
-                  <AlertTriangle
-                    className="w-4 h-4 text-amber-500"
-                    aria-hidden
-                  />
+                  <AlertTriangle className="w-4 h-4 text-amber-500" aria-hidden />
                 )}
-                {images.length < 3
-                  ? `${images.length} uploaded — add ${3 - images.length} more`
-                  : images.length > 5
-                    ? `${images.length} uploaded — remove ${images.length - 5} (max 5)`
-                    : `${images.length} photos ready`}
+                {imageFiles.length < 3
+                  ? `${imageFiles.length} selected — add ${3 - imageFiles.length} more`
+                  : imageFiles.length > 5
+                    ? `${imageFiles.length} selected — remove ${imageFiles.length - 5} (max 5)`
+                    : `${imageFiles.length} photos ready`}
               </div>
             )}
-            {/* #7: back disabled once category is created — prevents re-POST on the same name */}
             <WizardNavRow
-              onBack={createdCat ? undefined : () => setStep(0)}
-              onCancel={createdCat ? undefined : onCancel}
+              onBack={() => setStep(0)}
+              onCancel={onCancel}
               onNext={handleStep1Next}
-              nextLabel="Save & Continue"
+              nextLabel="Next"
               nextDisabled={!photoOk}
               busy={busy}
             />
@@ -1010,7 +1002,7 @@ export function NewCategoryWizard({
                 "{createdCat?.name}" is ready
               </h2>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                <span className="block">Category created with {images.length} photos.</span>
+                <span className="block">Category created with {imageFiles.length} photos.</span>
                 <span className="block">
                   {filledSubs.length} subcategor{filledSubs.length === 1 ? "y" : "ies"} created ({filledSubs.map((e) => e.name.trim()).join(", ")}).
                 </span>
