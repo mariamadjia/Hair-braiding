@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Plus, Minus, ChevronLeft, ChevronRight, X, Pencil } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -76,7 +76,7 @@ export default function GalleryPage({
   ];
 
   // Transform backend data into gallery format
-  const galleryCategories = categories.map((cat) => {
+  const galleryCategories = useMemo(() => categories.map((cat) => {
     const subcategoryData = (cat.subcategories || []).map((sub) => {
       const rawImages =
         Array.isArray(sub.images) && sub.images.length > 0
@@ -112,13 +112,13 @@ export default function GalleryPage({
       image: rawCardImages[0] ? toProxyUrl(rawCardImages[0]) : "",
       images: rawCardImages.map(toProxyUrl),
       link: `/${cat.slug}`,
-      tags: [cat.name, "Protective Styles"],
+      tags: [cat.name],
       subcategoryData,
     };
-  });
+  }), [categories]);
 
 
-  const getDisplayItems = () => {
+  const displayItems = useMemo(() => {
     // If subcategories are selected via checkboxes, show only those
     if (selectedSubcategories.length > 0) {
       return selectedSubcategories.map((subcategoryId) => {
@@ -199,9 +199,7 @@ export default function GalleryPage({
     });
 
     return items;
-  };
-
-  const displayItems = getDisplayItems();
+  }, [galleryCategories, selectedSubcategories, selectedFilter, searchQuery]);
 
   // Auto-rotate images for main category cards only
   useEffect(() => {
@@ -403,6 +401,7 @@ export default function GalleryPage({
               {/* Gallery Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {displayItems.map((item, index) => {
+                  const itemKey = item.id ? `${item.type}-${item.id}` : item.link || `item-${index}`;
                   const isSubcategory = selectedSubcategories.length > 0 || item.type === 'subcategory';
                   
                   // For subcategories, always show the main image (first image)
@@ -417,7 +416,7 @@ export default function GalleryPage({
                   
                   return (
                     <div
-                      key={index}
+                      key={itemKey}
                       className="group cursor-pointer relative"
                       onClick={() => {
                         if (editMode) {
@@ -663,7 +662,7 @@ export default function GalleryPage({
               {/* Book Now Button */}
               <div className="flex justify-center">
                 <button
-                  onClick={() => router.push(selectedCategory.bookingLink)}
+                  onClick={() => router.push(selectedCategory.bookingLink ?? selectedCategory.link)}
                   className="bg-white text-black px-8 py-2.5 text-xs uppercase tracking-wider font-medium hover:bg-gray-100 transition-colors"
                 >
                   Book Now

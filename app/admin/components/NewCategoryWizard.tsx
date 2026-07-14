@@ -18,18 +18,12 @@ import {
 } from "lucide-react";
 import type { CategorySummary, LengthOption } from "@/lib/booking-types";
 import { slugify, emptyLengthOption, uploadFile } from "../utils";
-import { inp, lbl, btnP, btnS, btnD } from "../constants";
+import { inp, lbl } from "../constants";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl } from "@/lib/utils/image";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface MutateResult {
-  id?: number;
-  slug?: string;
-  name?: string;
-}
 
 interface Props {
   token: string;
@@ -264,7 +258,9 @@ export function NewCategoryWizard({
         e.sizeName.trim().length >= 1 &&
         e.lengths.length > 0 &&
         e.lengths.every(
-          (l) => (l.name ?? "").trim() !== "" && (l.price ?? "").trim() !== "",
+          (l) =>
+            (l.name ?? "").trim() !== "" &&
+            (l.price ?? "").replace(/^\$/, "").trim() !== "",
         ),
     );
 
@@ -338,7 +334,22 @@ export function NewCategoryWizard({
   // ── Step 2: Subcategory field handlers ───────────────────────────────────
   const addSubRow = () => setSubEntries((prev) => [...prev, emptySubEntry()]);
   const removeSubRow = (uid: string) =>
-    setSubEntries((prev) => prev.filter((e) => e.uid !== uid));
+    setSubEntries((prev) => {
+      const entry = prev.find((e) => e.uid === uid);
+      if (entry) {
+        for (const file of entry.photos) {
+          const url = objectUrls.current.get(file);
+          if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(file); }
+        }
+        for (const len of entry.lengths) {
+          if (len.photo) {
+            const url = objectUrls.current.get(len.photo);
+            if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(len.photo); }
+          }
+        }
+      }
+      return prev.filter((e) => e.uid !== uid);
+    });
 
   // #1: revoke blob URL on photo remove
   const addPhotosToSub = (uid: string, files: FileList | null) => {
@@ -478,7 +489,9 @@ export function NewCategoryWizard({
       return;
     }
     const invalidLengths = filled.find((e) =>
-      e.lengths.some((l) => !(l.name ?? "").trim() || !(l.price ?? "").trim()),
+      e.lengths.some(
+        (l) => !(l.name ?? "").trim() || !(l.price ?? "").replace(/^\$/, "").trim(),
+      ),
     );
     if (invalidLengths) {
       setError(
