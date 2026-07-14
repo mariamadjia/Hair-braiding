@@ -18,6 +18,7 @@ export type LengthOption = {
     price?: string;
     duration?: string;
     notes?: string;
+    imageUrl?: string;
 };
 
 export type BookingItem = {
