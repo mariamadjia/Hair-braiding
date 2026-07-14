@@ -829,26 +829,16 @@ export function NewCategoryWizard({
                       <div className="flex items-center gap-3">
                         <User className="w-4 h-4 text-violet-500 shrink-0" aria-hidden />
                         <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 w-36 shrink-0">Size</span>
-                        <div className="relative flex-1">
-                          <select
-                            aria-label={`Subcategory ${si + 1} size`}
-                            className={`w-full appearance-none border rounded-lg px-3 py-2.5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 pr-8 ${
-                              sub.touchedSize && !sub.sizeName.trim() ? "border-red-400" : "border-neutral-300 dark:border-neutral-600"
-                            }`}
-                            value={sub.sizeName}
-                            onChange={(e) => updateSubField(sub.uid, "sizeName", e.target.value)}
-                            onBlur={() => updateSubField(sub.uid, "touchedSize", true)}
-                          >
-                            <option value="">Select a size…</option>
-                            <option value="XS">XS</option>
-                            <option value="Small">Small</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Large">Large</option>
-                            <option value="XL">XL</option>
-                            <option value="XXL">XXL</option>
-                          </select>
-                          <ChevronRight className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" aria-hidden />
-                        </div>
+                        <input
+                          aria-label={`Subcategory ${si + 1} size`}
+                          className={`flex-1 border rounded-lg px-3 py-2.5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 ${
+                            sub.touchedSize && !sub.sizeName.trim() ? "border-red-400" : "border-neutral-300 dark:border-neutral-600"
+                          }`}
+                          value={sub.sizeName}
+                          onChange={(e) => updateSubField(sub.uid, "sizeName", e.target.value)}
+                          onBlur={() => updateSubField(sub.uid, "touchedSize", true)}
+                          placeholder="e.g. Small, Medium, Large…"
+                        />
                       </div>
                       {sub.touchedSize && !sub.sizeName.trim() && (
                         <p role="alert" className="ml-7 text-xs text-red-600 flex items-center gap-1">
