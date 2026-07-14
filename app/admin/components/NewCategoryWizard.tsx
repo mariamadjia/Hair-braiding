@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Check, ChevronRight, AlertCircle, CheckCircle, AlertTriangle, ArrowLeft, Plus, Trash2, ImageIcon } from "lucide-react";
 import type { CategorySummary, LengthOption } from "@/lib/booking-types";
 import { slugify, emptyLengthOption, uploadFile } from "../utils";
@@ -25,27 +25,35 @@ interface Props {
 interface LengthEntry extends LengthOption { uid: string; }
 interface SubEntry {
     uid: string;
-    value: string;
+    name: string;            // #10: renamed from value → name
     photos: File[];          // staged locally, uploaded after sub is created
-    sizeName: string;
-    sizeNameError: string;
+    sizeName: string;        // #11: sizeNameError removed — derived per-card in JSX
     lengths: LengthEntry[];
     touchedLengths: Set<string>;
+    touchedSize: boolean;    // #11: track whether size field was touched
+}
+
+// #12: helper replaces inline IIFE for Set-minus-one
+function setWithout<T>(s: Set<T>, item: T): Set<T> {
+    const next = new Set(s);
+    next.delete(item);
+    return next;
 }
 
 function emptySubEntry(): SubEntry {
     return {
         uid: crypto.randomUUID(),
-        value: "",
+        name: "",
         photos: [],
         sizeName: "",
-        sizeNameError: "",
         lengths: [{ ...emptyLengthOption(), uid: crypto.randomUUID() }],
         touchedLengths: new Set(),
+        touchedSize: false,
     };
 }
 
-const STEPS = ["Name", "Photos", "Subcategories"];
+// #9: Done added so progress bar reflects all 4 states
+const STEPS = ["Name", "Photos", "Subcategories", "Done"];
 
 // ─── Shared sub-components (module-level — no remount on parent re-render) ────
 
@@ -74,9 +82,9 @@ function WizardNavRow({ onBack, onCancel, onNext, nextLabel = "Next", nextDisabl
                 <button type="button" onClick={onBack} className={`${btnS} flex items-center gap-1.5`}>
                     <ArrowLeft className="w-3.5 h-3.5" aria-hidden /> Back
                 </button>
-            ) : (
+            ) : onCancel ? (
                 <button type="button" onClick={onCancel} className={btnS}>Cancel</button>
-            )}
+            ) : <span />}
             <button
                 type="button"
                 onClick={onNext}
@@ -149,16 +157,24 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
 
     // ── Server IDs ───────────────────────────────────────────────────────────
     const [createdCat, setCreatedCat] = useState<CategorySummary | null>(null);
-    const [firstSubName, setFirstSubName] = useState("");
 
-    // track already-created subs to prevent duplicate POSTs on retry
-    // maps subName -> { slug, id }
-    const persistedSubs = useRef<Map<string, { slug: string; id: number }>>(new Map());
+    // #3: maps subName -> { slug, id, itemId? } — prevents duplicates on retry
+    const persistedSubs = useRef<Map<string, { slug: string; id: number; itemId?: number }>>(new Map());
+
+    // #1: object URL cache — one URL per File instance, revoked on remove
+    const objectUrls = useRef<Map<File, string>>(new Map());
+    const getObjectUrl = useCallback((file: File) => {
+        if (!objectUrls.current.has(file)) {
+            objectUrls.current.set(file, URL.createObjectURL(file));
+        }
+        return objectUrls.current.get(file)!;
+    }, []);
 
     // ── Derived values ───────────────────────────────────────────────────────
     const photoOk = images.length >= 3 && images.length <= 5;
-    const filledSubs = subEntries.filter(e => e.value.trim().length >= 2);
-    const canAdvanceSubs = filledSubs.length > 0;
+    // #10: filter on .name (renamed from .value)
+    const filledSubs = subEntries.filter(e => e.name.trim().length >= 2);
+    // #5: canAdvanceSubs removed — subsValid subsumes it
     const subsValid = filledSubs.length > 0 && filledSubs.every(e =>
         e.photos.length >= 1 &&
         e.sizeName.trim().length >= 1 &&
@@ -197,9 +213,11 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
         } finally { setBusy(false); }
     };
 
-    // ── Step 2: Subcategories (with inline size + lengths per sub) ────────────
+    // ── Step 2: Subcategory field handlers ───────────────────────────────────
     const addSubRow = () => setSubEntries(prev => [...prev, emptySubEntry()]);
     const removeSubRow = (uid: string) => setSubEntries(prev => prev.filter(e => e.uid !== uid));
+
+    // #1: revoke blob URL on photo remove
     const addPhotosToSub = (uid: string, files: FileList | null) => {
         if (!files) return;
         const incoming = Array.from(files);
@@ -208,21 +226,31 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
             : e));
     };
     const removePhotoFromSub = (uid: string, idx: number) =>
-        setSubEntries(prev => prev.map(e => e.uid === uid
-            ? { ...e, photos: e.photos.filter((_, i) => i !== idx) }
-            : e));
+        setSubEntries(prev => prev.map(e => {
+            if (e.uid !== uid) return e;
+            const file = e.photos[idx];
+            const url = objectUrls.current.get(file);
+            if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(file); }
+            return { ...e, photos: e.photos.filter((_, i) => i !== idx) };
+        }));
+
+    // #10: field is now "name" not "value"
     const updateSubField = <K extends keyof SubEntry>(uid: string, field: K, val: SubEntry[K]) => {
-        if (field === "value") setSubInputError("");
+        if (field === "name") setSubInputError("");
         setSubEntries(prev => prev.map(e => e.uid === uid ? { ...e, [field]: val } : e));
     };
+
     const addLengthToSub = (subUid: string) =>
         setSubEntries(prev => prev.map(e => e.uid === subUid
             ? { ...e, lengths: [...e.lengths, { ...emptyLengthOption(), uid: crypto.randomUUID() }] }
             : e));
+
+    // #12: use setWithout helper instead of IIFE
     const removeLengthFromSub = (subUid: string, lenUid: string) =>
         setSubEntries(prev => prev.map(e => e.uid === subUid
-            ? { ...e, lengths: e.lengths.filter(l => l.uid !== lenUid), touchedLengths: (() => { const s = new Set(e.touchedLengths); s.delete(lenUid); return s; })() }
+            ? { ...e, lengths: e.lengths.filter(l => l.uid !== lenUid), touchedLengths: setWithout(e.touchedLengths, lenUid) }
             : e));
+
     const updateLengthInSub = (subUid: string, lenUid: string, field: keyof LengthOption, val: string) =>
         setSubEntries(prev => prev.map(e => e.uid === subUid ? {
             ...e,
@@ -233,19 +261,20 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
     const handleStep2Next = async () => {
         const filled = filledSubs;
         if (filled.length === 0) { setSubInputError("Add at least one subcategory name (min 2 chars)."); return; }
+        // #4: handler independently validates photos
+        const missingPhoto = filled.find(e => e.photos.length === 0);
+        if (missingPhoto) { setError(`Add at least one photo for "${missingPhoto.name.trim()}".`); return; }
         const invalidSize = filled.find(e => !e.sizeName.trim());
-        if (invalidSize) { setError(`Enter a size name for "${invalidSize.value.trim()}".`); return; }
+        if (invalidSize) { setError(`Enter a size name for "${invalidSize.name.trim()}".`); return; }
         const invalidLengths = filled.find(e => e.lengths.some(l => !(l.name ?? "").trim() || !(l.price ?? "").trim()));
-        if (invalidLengths) { setError(`Each length under "${invalidLengths.value.trim()}" needs a name and price.`); return; }
+        if (invalidLengths) { setError(`Each length under "${invalidLengths.name.trim()}" needs a name and price.`); return; }
         setSubInputError(""); clearError(); setBusy(true);
         try {
-            let firstName = firstSubName;
             for (const sub of filled) {
-                const subName = sub.value.trim();
+                const subName = sub.name.trim();
                 let subSlug: string;
                 let subId: number;
 
-                // If already created on a previous attempt, reuse the stored slug/id
                 const already = persistedSubs.current.get(subName);
                 if (already) {
                     subSlug = already.slug;
@@ -259,38 +288,37 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                     subId = createdSub.id;
                     persistedSubs.current.set(subName, { slug: subSlug, id: subId });
 
-                    // Upload staged photos now that we have the subcategory ID
-                    for (const file of sub.photos) {
-                        await uploadFile(file, token, {
-                            categoryId: createdCat!.id,
-                            subcategoryId: subId,
-                        });
-                    }
+                    // #2: upload all photos in parallel now that we have the subcategory ID
+                    await Promise.all(sub.photos.map(file =>
+                        uploadFile(file, token, { categoryId: createdCat!.id, subcategoryId: subId })
+                    ));
                 }
 
-                if (!firstName) firstName = subName;
-
                 const sizeLabel = sub.sizeName.trim();
-                // POST to create the item
-                const createdItem = await mutate(
-                    "POST",
-                    `/${createdCat!.slug}/subcategories/${subSlug}/items`,
-                    { name: sizeLabel, price: "", description: "", subcategoryId: subId }
-                );
-                if (!createdItem.id) throw new Error(`Server did not return an item ID for "${sizeLabel}".`);
 
-                // PUT on the collection route — itemId goes in the body, not the URL
+                // #3: skip item POST if already created on a previous attempt
+                let itemId = already?.itemId;
+                if (!itemId) {
+                    const createdItem = await mutate(
+                        "POST",
+                        `/${createdCat!.slug}/subcategories/${subSlug}/items`,
+                        { name: sizeLabel, price: "", description: "", subcategoryId: subId }
+                    );
+                    if (!createdItem.id) throw new Error(`Server did not return an item ID for "${sizeLabel}".`);
+                    itemId = createdItem.id;
+                    persistedSubs.current.set(subName, { slug: subSlug, id: subId, itemId });
+                }
+
                 await mutate(
                     "PUT",
                     `/${createdCat!.slug}/subcategories/${subSlug}/items`,
                     {
-                        itemId: createdItem.id,
+                        itemId,
                         subcategoryId: subId,
                         item: { name: sizeLabel, price: "", description: "", subcategory: { id: subId }, lengthOptions: sub.lengths },
                     }
                 );
             }
-            setFirstSubName(firstName);
             setStep(3);
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to save. Please try again.");
@@ -368,7 +396,8 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                                     : `${images.length} photos ready`}
                             </div>
                         )}
-                        <WizardNavRow onBack={() => setStep(0)} onNext={handleStep1Next} nextLabel="Save & Continue" nextDisabled={!photoOk} busy={busy} />
+                        {/* #7: back disabled once category is created — prevents re-POST on the same name */}
+                        <WizardNavRow onBack={createdCat ? undefined : () => setStep(0)} onCancel={createdCat ? undefined : onCancel} onNext={handleStep1Next} nextLabel="Save & Continue" nextDisabled={!photoOk} busy={busy} />
                     </div>
                 )}
 
@@ -378,22 +407,33 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                         <div>
                             <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">Add subcategories</h2>
                             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                                For each subcategory, enter its name, a size (e.g. Small), and the length options with prices.
+                                For each subcategory, enter its name, photos, a size (e.g. Small), and length options with prices.
                             </p>
                         </div>
                         <WizardErrorBanner error={error} onDismiss={clearError} />
 
                         <div className="space-y-4">
-                            {subEntries.map((sub, si) => (
+                            {subEntries.map((sub, si) => {
+                                // #6: per-card completion indicator
+                                const cardComplete =
+                                    sub.name.trim().length >= 2 &&
+                                    sub.photos.length >= 1 &&
+                                    sub.sizeName.trim().length >= 1 &&
+                                    sub.lengths.every(l => (l.name ?? "").trim() !== "" && (l.price ?? "").trim() !== "");
+
+                                return (
                                 <div key={sub.uid} className="border border-neutral-200 dark:border-neutral-700 rounded-sm p-3 space-y-3">
 
-                                    {/* Subcategory name row */}
+                                    {/* Subcategory name row + completion indicator (#6) */}
                                     <div className="flex items-center gap-2">
+                                        {cardComplete
+                                            ? <CheckCircle className="w-4 h-4 text-green-500 shrink-0" aria-label="Complete" />
+                                            : <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" aria-label="Incomplete" />}
                                         <input
                                             aria-label={`Subcategory ${si + 1} name`}
-                                            className={`${inp} flex-1 ${subInputError && !sub.value.trim() ? "border-red-400" : ""}`}
-                                            value={sub.value}
-                                            onChange={(e) => updateSubField(sub.uid, "value", e.target.value)}
+                                            className={`${inp} flex-1 ${subInputError && !sub.name.trim() ? "border-red-400" : ""}`}
+                                            value={sub.name}
+                                            onChange={(e) => updateSubField(sub.uid, "name", e.target.value)}
                                             placeholder={si === 0 ? "Subcategory name, e.g. Knotless" : "e.g. Goddess"}
                                         />
                                         {subEntries.length > 1 && (
@@ -405,12 +445,12 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
 
                                     {/* Photos */}
                                     <div>
-                                        <label className={`${lbl} text-[11px]`}>Photos <span className="text-red-500" aria-hidden>*</span></label>
-                                        <div className="flex flex-wrap gap-2 mt-1">
+                                        <p className={`${lbl} text-[11px]`}>Photos <span className="text-red-500" aria-hidden>*</span></p>
+                                        <div className="flex flex-wrap gap-2 mt-1" role="list" aria-label={`Photos for subcategory ${si + 1}`}>
                                             {sub.photos.map((file, pi) => (
-                                                <div key={pi} className="relative group shrink-0">
+                                                <div key={pi} role="listitem" className="relative group shrink-0">
                                                     <img
-                                                        src={URL.createObjectURL(file)}
+                                                        src={getObjectUrl(file)}
                                                         alt={file.name}
                                                         className="h-16 w-16 object-cover rounded border border-neutral-200 dark:border-neutral-700"
                                                     />
@@ -422,7 +462,12 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                                                     >×</button>
                                                 </div>
                                             ))}
-                                            <label className={`cursor-pointer h-16 w-16 flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded bg-neutral-50 dark:bg-neutral-800 transition-colors ${sub.photos.length === 0 ? "border-red-300 dark:border-red-700 hover:border-red-400" : "border-neutral-300 dark:border-neutral-600 hover:border-neutral-500"}`}>
+                                            {/* #8: keyboard-accessible photo tile */}
+                                            <label
+                                                tabIndex={0}
+                                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
+                                                className={`cursor-pointer h-16 w-16 flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded bg-neutral-50 dark:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-400 ${sub.photos.length === 0 ? "border-red-300 dark:border-red-700 hover:border-red-400" : "border-neutral-300 dark:border-neutral-600 hover:border-neutral-500"}`}
+                                            >
                                                 <ImageIcon className="w-4 h-4 text-neutral-400" aria-hidden />
                                                 <span className="text-[10px] text-neutral-500">Add</span>
                                                 <input
@@ -436,19 +481,20 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                                         </div>
                                     </div>
 
-                                    {/* Size name */}
+                                    {/* Size name — #11: inline error from touchedSize */}
                                     <div>
                                         <label className={`${lbl} text-[11px]`}>Size <span className="text-red-500" aria-hidden>*</span></label>
                                         <input
                                             aria-label={`Subcategory ${si + 1} size name`}
-                                            className={`${inp} ${sub.sizeNameError ? "border-red-400" : ""}`}
+                                            className={`${inp} ${sub.touchedSize && !sub.sizeName.trim() ? "border-red-400" : ""}`}
                                             value={sub.sizeName}
                                             onChange={(e) => updateSubField(sub.uid, "sizeName", e.target.value)}
+                                            onBlur={() => updateSubField(sub.uid, "touchedSize", true)}
                                             placeholder="e.g. Small, Medium, Large"
                                         />
-                                        {sub.sizeNameError && (
+                                        {sub.touchedSize && !sub.sizeName.trim() && (
                                             <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                                                <AlertCircle className="w-3 h-3" aria-hidden />{sub.sizeNameError}
+                                                <AlertCircle className="w-3 h-3" aria-hidden />Size name is required.
                                             </p>
                                         )}
                                     </div>
@@ -505,7 +551,8 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                                     </div>
 
                                 </div>
-                            ))}
+                                );
+                            })}
                             {subInputError && (
                                 <p role="alert" className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
                                     <AlertCircle className="w-3 h-3" aria-hidden />{subInputError}
@@ -516,11 +563,12 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                             </button>
                         </div>
 
-                        <WizardNavRow onBack={() => setStep(1)} onNext={handleStep2Next} nextLabel="Save & Finish" nextDisabled={!canAdvanceSubs || !subsValid} busy={busy} />
+                        {/* #5: only subsValid needed — canAdvanceSubs was redundant */}
+                        <WizardNavRow onBack={() => setStep(1)} onNext={handleStep2Next} nextLabel="Save & Finish" nextDisabled={!subsValid} busy={busy} />
                     </div>
                 )}
 
-                {/* ── Step 3: Done ── */}
+                {/* ── Step 3: Done (#9: progress bar now shows this as 4th step) ── */}
                 {step === 3 && (
                     <div className="space-y-5 text-center py-4">
                         <div className="flex items-center justify-center">
@@ -535,11 +583,9 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                             <p className="text-sm text-neutral-500 dark:text-neutral-400">
                                 <span className="block">Category created with {images.length} photos.</span>
                                 <span className="block">
-                                    {filledSubs.length} subcategor{filledSubs.length === 1 ? "y" : "ies"} created ({filledSubs.map(e => e.value.trim()).join(", ")}).
+                                    {filledSubs.length} subcategor{filledSubs.length === 1 ? "y" : "ies"} created ({filledSubs.map(e => e.name.trim()).join(", ")}).
                                 </span>
-                                <span className="block">
-                                    Each subcategory set up with a size and length options.
-                                </span>
+                                <span className="block">Each subcategory set up with photos, a size, and length options.</span>
                                 <span className="block mt-2">You can add more subcategories, sizes, and lengths from the editor.</span>
                             </p>
                         </div>
