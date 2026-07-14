@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import {
   Check,
   ChevronRight,
+  ChevronUp,
   AlertCircle,
   CheckCircle,
   AlertTriangle,
@@ -11,15 +12,15 @@ import {
   Plus,
   Trash2,
   ImageIcon,
+  ImagePlus,
   Lock,
-  User,
-  SlidersHorizontal,
   GripVertical,
+  MoreVertical,
+  X,
 } from "lucide-react";
 import type { CategorySummary, LengthOption } from "@/lib/booking-types";
 import { slugify, emptyLengthOption, uploadFile } from "../utils";
 import { inp, lbl } from "../constants";
-import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl } from "@/lib/utils/image";
 
@@ -39,39 +40,48 @@ interface LengthEntry extends LengthOption {
   photo?: File;
   imageUrl?: string;
 }
-interface SubEntry {
+interface SizeEntry {
   uid: string;
-  name: string; // #10: renamed from value → name
-  photos: File[]; // staged locally, uploaded after sub is created
-  sizeName: string; // #11: sizeNameError removed — derived per-card in JSX
+  name: string;
   lengths: LengthEntry[];
   touchedLengths: Set<string>;
-  touchedSize: boolean; // #11: track whether size field was touched
+}
+interface SubEntry {
+  uid: string;
+  name: string;
+  photos: File[];
+  sizes: SizeEntry[];
+  selectedSizeId: string;
+  expandedSizeId: string | null;
 }
 
-// #12: helper replaces inline IIFE for Set-minus-one
-function setWithout<T>(s: Set<T>, item: T): Set<T> {
-  const next = new Set(s);
-  next.delete(item);
-  return next;
+function emptyLengthEntry(): LengthEntry {
+  return {
+    ...emptyLengthOption(),
+    uid: crypto.randomUUID(),
+    photo: undefined,
+    imageUrl: undefined,
+  };
+}
+
+function emptySizeEntry(name: string): SizeEntry {
+  return {
+    uid: crypto.randomUUID(),
+    name,
+    lengths: [emptyLengthEntry()],
+    touchedLengths: new Set(),
+  };
 }
 
 function emptySubEntry(): SubEntry {
+  const sizes = ["Small", "Medium", "Large"].map(emptySizeEntry);
   return {
     uid: crypto.randomUUID(),
     name: "",
     photos: [],
-    sizeName: "",
-    lengths: [
-      {
-        ...emptyLengthOption(),
-        uid: crypto.randomUUID(),
-        photo: undefined,
-        imageUrl: undefined,
-      },
-    ],
-    touchedLengths: new Set(),
-    touchedSize: false,
+    sizes,
+    selectedSizeId: sizes[0].uid,
+    expandedSizeId: sizes[0].uid,
   };
 }
 
@@ -239,9 +249,8 @@ export function NewCategoryWizard({
   // Only set after final save — kept for retry dedup on subcategories
   const [createdCat, setCreatedCat] = useState<CategorySummary | null>(null);
 
-  // #3: maps subName -> { slug, id, itemId? } — prevents duplicates on retry
   const persistedSubs = useRef<
-    Map<string, { slug: string; id: number; itemId?: number }>
+    Map<string, { slug: string; id: number; itemIds: Record<string, number> }>
   >(new Map());
 
   // #1: object URL cache — one URL per File instance, revoked on remove
@@ -255,20 +264,22 @@ export function NewCategoryWizard({
 
   // ── Derived values ───────────────────────────────────────────────────────
   const photoOk = imageFiles.length >= 3 && imageFiles.length <= 7;
-  // #10: filter on .name (renamed from .value)
-  const filledSubs = subEntries.filter((e) => e.name.trim().length >= 2);
-  // #5: canAdvanceSubs removed — subsValid subsumes it
+  const filledSubs = subEntries.filter((entry) => entry.name.trim().length >= 2);
   const subsValid =
     filledSubs.length > 0 &&
     filledSubs.every(
-      (e) =>
-        e.photos.length >= 1 &&
-        e.sizeName.trim().length >= 1 &&
-        e.lengths.length > 0 &&
-        e.lengths.every(
-          (l) =>
-            (l.name ?? "").trim() !== "" &&
-            (l.price ?? "").replace(/^\$/, "").trim() !== "",
+      (entry) =>
+        entry.photos.length >= 1 &&
+        entry.sizes.length > 0 &&
+        entry.sizes.every(
+          (size) =>
+            size.name.trim().length > 0 &&
+            size.lengths.length > 0 &&
+            size.lengths.every(
+              (length) =>
+                (length.name ?? "").trim() !== "" &&
+                (length.price ?? "").replace(/^\$/, "").trim() !== "",
+            ),
         ),
     );
 
@@ -290,145 +301,158 @@ export function NewCategoryWizard({
     setStep(2);
   };
 
-  // ── Step 2: Subcategory field handlers ───────────────────────────────────
+  // ── Step 2: Subcategory and nested pricing handlers ──────────────────────
+  const [openSizeMenu, setOpenSizeMenu] = useState<string | null>(null);
+  const draggedLength = useRef<{ subUid: string; sizeUid: string; lengthUid: string } | null>(null);
+
   const addSubRow = () => setSubEntries((prev) => [...prev, emptySubEntry()]);
   const removeSubRow = (uid: string) =>
     setSubEntries((prev) => {
-      const entry = prev.find((e) => e.uid === uid);
+      const entry = prev.find((sub) => sub.uid === uid);
       if (entry) {
-        for (const file of entry.photos) {
+        [...entry.photos, ...entry.sizes.flatMap((size) => size.lengths.map((length) => length.photo).filter((file): file is File => Boolean(file)))].forEach((file) => {
           const url = objectUrls.current.get(file);
           if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(file); }
-        }
-        for (const len of entry.lengths) {
-          if (len.photo) {
-            const url = objectUrls.current.get(len.photo);
-            if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(len.photo); }
-          }
-        }
+        });
       }
-      return prev.filter((e) => e.uid !== uid);
+      return prev.filter((sub) => sub.uid !== uid);
     });
 
-  // #1: revoke blob URL on photo remove
   const addPhotosToSub = (uid: string, files: FileList | null) => {
     if (!files) return;
     const incoming = Array.from(files);
-    setSubEntries((prev) =>
-      prev.map((e) =>
-        e.uid === uid ? { ...e, photos: [...e.photos, ...incoming] } : e,
-      ),
-    );
+    setSubEntries((prev) => prev.map((sub) => sub.uid === uid ? { ...sub, photos: [...sub.photos, ...incoming] } : sub));
   };
+
   const removePhotoFromSub = (uid: string, idx: number) =>
-    setSubEntries((prev) =>
-      prev.map((e) => {
-        if (e.uid !== uid) return e;
-        const file = e.photos[idx];
-        const url = objectUrls.current.get(file);
-        if (url) {
-          URL.revokeObjectURL(url);
-          objectUrls.current.delete(file);
-        }
-        return { ...e, photos: e.photos.filter((_, i) => i !== idx) };
-      }),
-    );
+    setSubEntries((prev) => prev.map((sub) => {
+      if (sub.uid !== uid) return sub;
+      const file = sub.photos[idx];
+      const url = objectUrls.current.get(file);
+      if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(file); }
+      return { ...sub, photos: sub.photos.filter((_, index) => index !== idx) };
+    }));
 
-  // #10: field is now "name" not "value"
-  const updateSubField = <K extends keyof SubEntry>(
-    uid: string,
-    field: K,
-    val: SubEntry[K],
-  ) => {
+  const updateSubField = <K extends keyof SubEntry>(uid: string, field: K, value: SubEntry[K]) => {
     if (field === "name") setSubInputError("");
-    setSubEntries((prev) =>
-      prev.map((e) => (e.uid === uid ? { ...e, [field]: val } : e)),
-    );
+    setSubEntries((prev) => prev.map((sub) => sub.uid === uid ? { ...sub, [field]: value } : sub));
   };
 
-  const addLengthToSub = (subUid: string) =>
-    setSubEntries((prev) =>
-      prev.map((e) =>
-        e.uid === subUid
-          ? {
-              ...e,
-              lengths: [
-                ...e.lengths,
-                {
-                  ...emptyLengthOption(),
-                  uid: crypto.randomUUID(),
-                  photo: undefined,
-                  imageUrl: undefined,
-                },
-              ],
-            }
-          : e,
-      ),
-    );
+  const addSize = (subUid: string) => {
+    const size = emptySizeEntry("New size");
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: [...sub.sizes, size],
+      selectedSizeId: size.uid,
+      expandedSizeId: size.uid,
+    } : sub));
+  };
 
-  // #12: use setWithout helper instead of IIFE
-  const removeLengthFromSub = (subUid: string, lenUid: string) =>
-    setSubEntries((prev) =>
-      prev.map((e) =>
-        e.uid === subUid
-          ? {
-              ...e,
-              lengths: e.lengths.filter((l) => l.uid !== lenUid),
-              touchedLengths: setWithout(e.touchedLengths, lenUid),
-            }
-          : e,
-      ),
-    );
+  const updateSizeName = (subUid: string, sizeUid: string, name: string) =>
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => size.uid === sizeUid ? { ...size, name } : size),
+    } : sub));
 
-  const updateLengthInSub = (
-    subUid: string,
-    lenUid: string,
-    field: keyof LengthOption,
-    val: string,
-  ) =>
-    setSubEntries((prev) =>
-      prev.map((e) =>
-        e.uid === subUid
-          ? {
-              ...e,
-              touchedLengths: new Set(e.touchedLengths).add(lenUid),
-              lengths: e.lengths.map((l) =>
-                l.uid === lenUid ? { ...l, [field]: val } : l,
-              ),
-            }
-          : e,
-      ),
-    );
+  const selectSize = (subUid: string, sizeUid: string) =>
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      selectedSizeId: sizeUid,
+      expandedSizeId: sizeUid,
+    } : sub));
 
-  const setLengthPhoto = (
-    subUid: string,
-    lenUid: string,
-    file: File | undefined,
-  ) =>
-    setSubEntries((prev) =>
-      prev.map((sub) =>
-        sub.uid === subUid
-          ? {
-              ...sub,
-              lengths: sub.lengths.map((length) => {
-                if (length.uid !== lenUid) return length;
-                if (length.photo) {
-                  const oldUrl = objectUrls.current.get(length.photo);
-                  if (oldUrl) {
-                    URL.revokeObjectURL(oldUrl);
-                    objectUrls.current.delete(length.photo);
-                  }
-                }
-                return {
-                  ...length,
-                  photo: file,
-                  imageUrl: file ? undefined : length.imageUrl,
-                };
-              }),
-            }
-          : sub,
-      ),
-    );
+  const toggleSize = (subUid: string, sizeUid: string) =>
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      selectedSizeId: sizeUid,
+      expandedSizeId: sub.expandedSizeId === sizeUid ? null : sizeUid,
+    } : sub));
+
+  const deleteSize = (subUid: string, sizeUid: string) =>
+    setSubEntries((prev) => prev.map((sub) => {
+      if (sub.uid !== subUid || sub.sizes.length === 1) return sub;
+      const removed = sub.sizes.find((size) => size.uid === sizeUid);
+      removed?.lengths.forEach((length) => {
+        if (!length.photo) return;
+        const url = objectUrls.current.get(length.photo);
+        if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(length.photo); }
+      });
+      const sizes = sub.sizes.filter((size) => size.uid !== sizeUid);
+      const fallbackId = sizes[0].uid;
+      return {
+        ...sub,
+        sizes,
+        selectedSizeId: sub.selectedSizeId === sizeUid ? fallbackId : sub.selectedSizeId,
+        expandedSizeId: sub.expandedSizeId === sizeUid ? fallbackId : sub.expandedSizeId,
+      };
+    }));
+
+  const addLengthOption = (subUid: string, sizeUid: string) =>
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => size.uid === sizeUid ? { ...size, lengths: [...size.lengths, emptyLengthEntry()] } : size),
+    } : sub));
+
+  const updateLengthOption = (subUid: string, sizeUid: string, lengthUid: string, field: keyof LengthOption, value: string) =>
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => size.uid === sizeUid ? {
+        ...size,
+        touchedLengths: new Set(size.touchedLengths).add(lengthUid),
+        lengths: size.lengths.map((length) => length.uid === lengthUid ? { ...length, [field]: value } : length),
+      } : size),
+    } : sub));
+
+  const deleteLengthOption = (subUid: string, sizeUid: string, lengthUid: string) =>
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => {
+        if (size.uid !== sizeUid || size.lengths.length === 1) return size;
+        const removed = size.lengths.find((length) => length.uid === lengthUid);
+        if (removed?.photo) {
+          const url = objectUrls.current.get(removed.photo);
+          if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(removed.photo); }
+        }
+        const touchedLengths = new Set(size.touchedLengths);
+        touchedLengths.delete(lengthUid);
+        return { ...size, lengths: size.lengths.filter((length) => length.uid !== lengthUid), touchedLengths };
+      }),
+    } : sub));
+
+  const setLengthPhoto = (subUid: string, sizeUid: string, lengthUid: string, file: File | undefined) =>
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => size.uid === sizeUid ? {
+        ...size,
+        lengths: size.lengths.map((length) => {
+          if (length.uid !== lengthUid) return length;
+          if (length.photo) {
+            const oldUrl = objectUrls.current.get(length.photo);
+            if (oldUrl) { URL.revokeObjectURL(oldUrl); objectUrls.current.delete(length.photo); }
+          }
+          return { ...length, photo: file, imageUrl: file ? undefined : length.imageUrl };
+        }),
+      } : size),
+    } : sub));
+
+  const reorderLengthOptions = (subUid: string, sizeUid: string, targetLengthUid: string) => {
+    const dragged = draggedLength.current;
+    if (!dragged || dragged.subUid !== subUid || dragged.sizeUid !== sizeUid || dragged.lengthUid === targetLengthUid) return;
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => {
+        if (size.uid !== sizeUid) return size;
+        const from = size.lengths.findIndex((length) => length.uid === dragged.lengthUid);
+        const to = size.lengths.findIndex((length) => length.uid === targetLengthUid);
+        if (from < 0 || to < 0) return size;
+        const lengths = [...size.lengths];
+        const [moved] = lengths.splice(from, 1);
+        lengths.splice(to, 0, moved);
+        return { ...size, lengths };
+      }),
+    } : sub));
+    draggedLength.current = null;
+  };
 
   const handleStep2Next = async () => {
     const filled = filledSubs;
@@ -441,15 +465,15 @@ export function NewCategoryWizard({
       setError(`Add at least one photo for "${missingPhoto.name.trim()}".`);
       return;
     }
-    const invalidSize = filled.find((e) => !e.sizeName.trim());
+    const invalidSize = filled.find((entry) => entry.sizes.some((size) => !size.name.trim()));
     if (invalidSize) {
-      setError(`Enter a size name for "${invalidSize.name.trim()}".`);
+      setError(`Enter a name for every size under "${invalidSize.name.trim()}".`);
       return;
     }
-    const invalidLengths = filled.find((e) =>
-      e.lengths.some(
-        (l) => !(l.name ?? "").trim() || !(l.price ?? "").replace(/^\$/, "").trim(),
-      ),
+    const invalidLengths = filled.find((entry) =>
+      entry.sizes.some((size) => size.lengths.some(
+        (length) => !(length.name ?? "").trim() || !(length.price ?? "").replace(/^\$/, "").trim(),
+      )),
     );
     if (invalidLengths) {
       setError(`Each length under "${invalidLengths.name.trim()}" needs a name and price.`);
@@ -487,87 +511,73 @@ export function NewCategoryWizard({
         let subSlug: string;
         let subId: number;
 
-        const already = persistedSubs.current.get(subName);
-        if (already) {
-          subSlug = already.slug;
-          subId = already.id;
+        let persisted = persistedSubs.current.get(subName);
+        if (persisted) {
+          subSlug = persisted.slug;
+          subId = persisted.id;
         } else {
           const createdSub = await mutate(
             "POST",
             `/${cat!.slug}/subcategories`,
-            {
-              name: subName,
-              categoryId: cat!.id,
-            },
+            { name: subName, categoryId: catId },
           );
-          if (!createdSub.slug || !createdSub.id)
-            throw new Error(`Server did not return slug/id for "${subName}".`);
+          if (!createdSub.slug || !createdSub.id) throw new Error(`Server did not return slug/id for "${subName}".`);
           subSlug = createdSub.slug;
           subId = createdSub.id;
-          persistedSubs.current.set(subName, { slug: subSlug, id: subId });
+          persisted = { slug: subSlug, id: subId, itemIds: {} };
+          persistedSubs.current.set(subName, persisted);
 
           await Promise.all(
-            sub.photos.map((file) =>
-              uploadFile(file, token, {
-                categoryId: cat!.id,
-                subcategoryId: subId,
-              }),
-            ),
+            sub.photos.map((file) => uploadFile(file, token, { categoryId: catId, subcategoryId: subId })),
           );
         }
 
-        const sizeLabel = sub.sizeName.trim();
+        for (const size of sub.sizes) {
+          const sizeLabel = size.name.trim();
+          let itemId = persisted.itemIds[size.uid];
+          if (!itemId) {
+            const createdItem = await mutate(
+              "POST",
+              `/${cat!.slug}/subcategories/${subSlug}/items`,
+              { name: sizeLabel, price: "", description: "", subcategoryId: subId },
+            );
+            if (!createdItem.id) throw new Error(`Server did not return an item ID for "${sizeLabel}".`);
+            itemId = createdItem.id;
+            persisted.itemIds[size.uid] = itemId;
+            persistedSubs.current.set(subName, { ...persisted, itemIds: { ...persisted.itemIds } });
+          }
 
-        let itemId = already?.itemId;
-        if (!itemId) {
-          const createdItem = await mutate(
-            "POST",
+          const lengthOptions = await Promise.all(
+            size.lengths.map(async ({ uid, photo, ...length }) => {
+              let imageUrl = length.imageUrl;
+              if (photo) {
+                const proxyUrl = await uploadFile(photo, token, {
+                  categoryId: catId,
+                  subcategoryId: subId,
+                  serviceItemId: itemId,
+                });
+                imageUrl = fromProxyUrl(proxyUrl) ?? proxyUrl;
+              }
+              return { ...length, imageUrl };
+            }),
+          );
+
+          await mutate(
+            "PUT",
             `/${cat!.slug}/subcategories/${subSlug}/items`,
             {
-              name: sizeLabel,
-              price: "",
-              description: "",
+              itemId,
               subcategoryId: subId,
+              item: {
+                name: sizeLabel,
+                price: "",
+                description: "",
+                subcategory: { id: subId },
+                lengthOptions,
+              },
             },
           );
-          if (!createdItem.id)
-            throw new Error(
-              `Server did not return an item ID for "${sizeLabel}".`,
-            );
-          itemId = createdItem.id;
-          persistedSubs.current.set(subName, { slug: subSlug, id: subId, itemId });
         }
-
-        const lengthOptions = await Promise.all(
-          sub.lengths.map(async ({ uid, photo, ...length }) => {
-            let imageUrl = length.imageUrl;
-            if (photo) {
-              const proxyUrl = await uploadFile(photo, token, {
-                categoryId: cat!.id,
-                subcategoryId: subId,
-                serviceItemId: itemId,
-              });
-              imageUrl = fromProxyUrl(proxyUrl) ?? proxyUrl;
-            }
-            return { ...length, imageUrl };
-          }),
-        );
-
-        await mutate(
-          "PUT",
-          `/${cat!.slug}/subcategories/${subSlug}/items`,
-          {
-            itemId,
-            subcategoryId: subId,
-            item: {
-              name: sizeLabel,
-              price: "",
-              description: "",
-              subcategory: { id: subId },
-              lengthOptions,
-            },
-          },
-        );
       }
       onDone({ id: cat!.id, name: cat!.name, slug: cat!.slug });
       setStep(3);
@@ -740,7 +750,7 @@ export function NewCategoryWizard({
                 Add subcategories
               </h2>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                For each subcategory, enter its name, photos, a size (e.g. Small), and length options with prices.
+                For each subcategory, add photos, available sizes, and independent length-based pricing.
               </p>
             </div>
             <WizardErrorBanner error={error} onDismiss={clearError} />
@@ -750,9 +760,11 @@ export function NewCategoryWizard({
                 const cardComplete =
                   sub.name.trim().length >= 2 &&
                   sub.photos.length >= 1 &&
-                  sub.sizeName.trim().length >= 1 &&
-                  sub.lengths.every(
-                    (l) => (l.name ?? "").trim() !== "" && (l.price ?? "").trim() !== "",
+                  sub.sizes.length > 0 &&
+                  sub.sizes.every((size) =>
+                    size.name.trim() && size.lengths.every((length) =>
+                      (length.name ?? "").trim() !== "" && (length.price ?? "").trim() !== "",
+                    ),
                   );
 
                 return (
@@ -835,136 +847,152 @@ export function NewCategoryWizard({
                         </div>
                       </div>
 
-                      {/* ── Size ── */}
-                      <div className="flex items-center gap-3">
-                        <User className="w-4 h-4 text-violet-500 shrink-0" aria-hidden />
-                        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 w-36 shrink-0">Size</span>
-                        <input
-                          aria-label={`Subcategory ${si + 1} size`}
-                          className={`flex-1 border rounded-lg px-3 py-2.5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 ${
-                            sub.touchedSize && !sub.sizeName.trim() ? "border-red-400" : "border-neutral-300 dark:border-neutral-600"
-                          }`}
-                          value={sub.sizeName}
-                          onChange={(e) => updateSubField(sub.uid, "sizeName", e.target.value)}
-                          onBlur={() => updateSubField(sub.uid, "touchedSize", true)}
-                          placeholder="e.g. Small, Medium, Large…"
-                        />
-                      </div>
-                      {sub.touchedSize && !sub.sizeName.trim() && (
-                        <p role="alert" className="ml-7 text-xs text-red-600 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" aria-hidden /> Size is required.
-                        </p>
-                      )}
-
-                      {/* ── Lengths & Prices ── */}
-                      <div className="flex items-start gap-3">
-                        <SlidersHorizontal className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" aria-hidden />
-                        <div className="flex-1 space-y-2">
-                          <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Lengths &amp; Prices</p>
-
-                          {/* Table header */}
-                          <div className="grid grid-cols-[1.5rem_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.4fr)_4rem_2.5rem] gap-x-3 px-1 pb-1.5 border-b border-neutral-100 dark:border-neutral-800">
-                            <span />
-                            <span className="text-xs font-semibold text-neutral-400 tracking-wide">Length</span>
-                            <span className="text-xs font-semibold text-neutral-400 tracking-wide">Price</span>
-                            <span className="text-xs font-semibold text-neutral-400 tracking-wide">Notes</span>
-                            <span className="text-xs font-semibold text-neutral-400 tracking-wide text-center">Photo</span>
-                            <span className="text-xs font-semibold text-neutral-400 tracking-wide text-center">Delete</span>
-                          </div>
-
-                          {sub.lengths.map((len, li) => {
-                            const touched = sub.touchedLengths.has(len.uid);
+                      <div>
+                        <p className="mb-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200">Available sizes</p>
+                        <div className="flex flex-wrap gap-2">
+                          {sub.sizes.map((size) => {
+                            const selected = sub.selectedSizeId === size.uid;
                             return (
-                              <div
-                                key={len.uid}
-                                className="grid grid-cols-[1.5rem_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.4fr)_4rem_2.5rem] gap-x-3 gap-y-0 items-center py-1"
+                              <button
+                                key={size.uid}
+                                type="button"
+                                onClick={() => selectSize(sub.uid, size.uid)}
+                                aria-pressed={selected}
+                                className={`flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 ${selected ? "border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300" : "border-neutral-200 bg-white text-neutral-600 hover:border-violet-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"}`}
                               >
-                                <GripVertical className="w-4 h-4 text-neutral-300 cursor-grab" aria-hidden />
+                                {size.name || "Untitled"}
+                                {selected && <Check className="h-4 w-4" aria-hidden />}
+                              </button>
+                            );
+                          })}
+                          <button
+                            type="button"
+                            onClick={() => addSize(sub.uid)}
+                            className="flex h-10 items-center gap-1.5 rounded-lg border border-dashed border-violet-300 px-4 text-sm font-medium text-violet-600 hover:border-violet-500 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30"
+                          >
+                            <Plus className="h-4 w-4" aria-hidden /> Add size
+                          </button>
+                        </div>
+                      </div>
 
-                                <input
-                                  aria-label={`Sub ${si + 1} length ${li + 1} name`}
-                                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 dark:text-white ${
-                                    touched && !(len.name ?? "").trim() ? "border-red-300" : "border-neutral-300 dark:border-neutral-600"
-                                  }`}
-                                  placeholder='16"'
-                                  value={len.name ?? ""}
-                                  onChange={(e) => updateLengthInSub(sub.uid, len.uid, "name", e.target.value)}
-                                />
-
-                                <div className={`flex items-center border rounded-lg overflow-hidden ${
-                                  touched && !(len.price ?? "").trim() ? "border-red-300" : "border-neutral-300 dark:border-neutral-600"
-                                }`}>
-                                  <span className="px-2 py-2 text-sm text-neutral-500 bg-neutral-50 dark:bg-neutral-700 border-r border-neutral-200 dark:border-neutral-600 select-none">$</span>
-                                  <input
-                                    aria-label={`Sub ${si + 1} length ${li + 1} price`}
-                                    className="flex-1 px-2 py-2 text-sm focus:outline-none bg-white dark:bg-neutral-800 dark:text-white"
-                                    placeholder="120.00"
-                                    value={(len.price ?? "").replace(/^\$/, "")}
-                                    onChange={(e) => updateLengthInSub(sub.uid, len.uid, "price", e.target.value)}
-                                  />
-                                </div>
-
-                                <input
-                                  aria-label={`Sub ${si + 1} length ${li + 1} notes`}
-                                  className="w-full border border-neutral-300 dark:border-neutral-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 dark:text-white"
-                                  placeholder="Deposit required"
-                                  value={len.notes ?? ""}
-                                  onChange={(e) => updateLengthInSub(sub.uid, len.uid, "notes", e.target.value)}
-                                />
-
-                                <div className="flex items-center justify-center">
-                                  {len.photo ? (
-                                    <div className="relative group h-14 w-14 shrink-0">
-                                      <img
-                                        src={getObjectUrl(len.photo)}
-                                        alt={`Preview ${li + 1}`}
-                                        className="h-14 w-14 rounded-lg border border-neutral-200 dark:border-neutral-700 object-cover"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => setLengthPhoto(sub.uid, len.uid, undefined)}
-                                        aria-label={`Remove photo for length ${li + 1}`}
-                                        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-600 text-xs text-white opacity-0 transition-opacity hover:bg-red-500 group-hover:opacity-100"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <label
-                                      tabIndex={0}
-                                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
-                                      className="flex h-14 w-14 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400"
-                                      aria-label={`Upload photo for length ${li + 1}`}
-                                    >
-                                      <Plus className="h-4 w-4 text-neutral-400" aria-hidden />
-                                      <span className="text-[9px] text-neutral-500 leading-tight text-center">Add photo</span>
-                                      <input type="file" accept="image/*" className="hidden" onChange={(e) => { setLengthPhoto(sub.uid, len.uid, e.target.files?.[0]); e.currentTarget.value = ""; }} />
-                                    </label>
-                                  )}
-                                </div>
-
-                                <div className="flex justify-center">
+                      <div className="overflow-visible rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                        <div className="rounded-t-xl border-b border-violet-100 bg-violet-50/70 px-4 py-2.5 text-sm font-semibold text-neutral-800 dark:border-violet-900 dark:bg-violet-950/30 dark:text-neutral-100">
+                          Size-based pricing
+                        </div>
+                        <div className="space-y-2 p-3">
+                          {sub.sizes.map((size) => {
+                            const expanded = sub.expandedSizeId === size.uid;
+                            const summary = size.lengths.filter((length) => (length.name ?? "").trim() || (length.price ?? "").trim());
+                            const firstEmptyPhoto = size.lengths.find((length) => !length.photo);
+                            return (
+                              <div key={size.uid} className={`relative rounded-xl border transition-colors ${expanded ? "border-violet-200 shadow-sm dark:border-violet-800" : "border-neutral-200 dark:border-neutral-700"}`}>
+                                <div className="flex min-h-14 items-center gap-3 px-3 py-2">
                                   <button
                                     type="button"
-                                    onClick={() => removeLengthFromSub(sub.uid, len.uid)}
-                                    disabled={sub.lengths.length === 1}
-                                    aria-label={`Remove length ${li + 1}`}
-                                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 text-red-400 hover:border-red-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 transition-colors"
+                                    onClick={() => toggleSize(sub.uid, size.uid)}
+                                    aria-expanded={expanded}
+                                    aria-label={`${expanded ? "Collapse" : "Expand"} ${size.name}`}
+                                    className="rounded-md p-1 text-violet-600 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:hover:bg-violet-950/30"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                                    {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                   </button>
+                                  <button type="button" onClick={() => selectSize(sub.uid, size.uid)} className="min-w-0 text-left focus:outline-none focus:ring-2 focus:ring-violet-400 rounded">
+                                    <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{size.name || "Untitled size"}</span>
+                                  </button>
+                                  <span className="shrink-0 text-xs text-neutral-400">{size.lengths.length} {size.lengths.length === 1 ? "length" : "lengths"}</span>
+                                  {!expanded && (
+                                    <div className="hidden min-w-0 flex-1 items-center gap-3 overflow-hidden lg:flex">
+                                      {summary.slice(0, 2).map((length, index) => (
+                                        <div key={length.uid} className="flex min-w-0 items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300">
+                                          {index > 0 && <span className="text-neutral-300">•</span>}
+                                          <span className="truncate">{length.name || "Length"}</span>
+                                          <span className="font-medium text-neutral-800 dark:text-neutral-100">${(length.price || "0.00").replace(/^\$/, "")}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                                    {size.lengths.filter((length) => length.photo).slice(0, 2).map((length) => (
+                                      <img key={length.uid} src={getObjectUrl(length.photo!)} alt="" className="h-8 w-8 rounded-md border border-neutral-200 object-cover dark:border-neutral-700" />
+                                    ))}
+                                    {firstEmptyPhoto && (
+                                      <label tabIndex={0} aria-label={`Add a photo to ${size.name}`} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-dashed border-violet-300 text-violet-500 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30">
+                                        <ImagePlus className="h-4 w-4" aria-hidden />
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { setLengthPhoto(sub.uid, size.uid, firstEmptyPhoto.uid, e.target.files?.[0]); e.currentTarget.value = ""; }} />
+                                      </label>
+                                    )}
+                                    <button type="button" onClick={() => setOpenSizeMenu(openSizeMenu === size.uid ? null : size.uid)} aria-label={`Actions for ${size.name}`} className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:hover:bg-neutral-800">
+                                      <MoreVertical className="h-4 w-4" aria-hidden />
+                                    </button>
+                                  </div>
                                 </div>
+
+                                {openSizeMenu === size.uid && (
+                                  <div className="absolute right-3 top-12 z-20 w-56 space-y-2 rounded-xl border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-semibold text-neutral-500">Size name</span>
+                                      <button type="button" onClick={() => setOpenSizeMenu(null)} aria-label="Close size menu" className="rounded p-0.5 text-neutral-400 hover:text-neutral-700"><X className="h-4 w-4" /></button>
+                                    </div>
+                                    <input value={size.name} onChange={(e) => updateSizeName(sub.uid, size.uid, e.target.value)} aria-label={`Rename ${size.name}`} className="h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200 dark:border-neutral-600 dark:bg-neutral-800" />
+                                    <button type="button" disabled={sub.sizes.length === 1} onClick={() => { deleteSize(sub.uid, size.uid); setOpenSizeMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-red-950/30">
+                                      <Trash2 className="h-4 w-4" /> Delete size
+                                    </button>
+                                  </div>
+                                )}
+
+                                {expanded && (
+                                  <div className="border-t border-neutral-100 px-3 pb-3 pt-2 dark:border-neutral-800">
+                                    <div className="hidden grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,.8fr)_minmax(0,1.5fr)_4.5rem_2.5rem] gap-3 px-1 pb-1.5 text-xs font-medium text-neutral-400 md:grid">
+                                      <span /><span>Length</span><span>Price</span><span>Deposit / Notes</span><span className="text-center">Photo</span><span className="text-center">Delete</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {size.lengths.map((length, li) => {
+                                        const touched = size.touchedLengths.has(length.uid);
+                                        return (
+                                          <div
+                                            key={length.uid}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDrop={() => reorderLengthOptions(sub.uid, size.uid, length.uid)}
+                                            className="grid grid-cols-1 gap-2 rounded-lg border border-neutral-200 bg-neutral-50/60 p-3 md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,.8fr)_minmax(0,1.5fr)_4.5rem_2.5rem] md:items-center md:border-0 md:bg-transparent md:p-0 dark:border-neutral-700 dark:bg-neutral-800/40 md:dark:bg-transparent"
+                                          >
+                                            <div className="flex items-center justify-between md:block">
+                                              <span className="text-xs font-semibold text-neutral-500 md:hidden">Length option {li + 1}</span>
+                                              <span
+                                                draggable
+                                                onDragStart={() => { draggedLength.current = { subUid: sub.uid, sizeUid: size.uid, lengthUid: length.uid }; }}
+                                                onDragEnd={() => { draggedLength.current = null; }}
+                                                role="button"
+                                                tabIndex={0}
+                                                aria-label={`Drag ${size.name} length ${li + 1} to reorder`}
+                                                className="inline-flex cursor-grab rounded p-1 text-neutral-300 focus:outline-none focus:ring-2 focus:ring-violet-400 active:cursor-grabbing"
+                                              >
+                                                <GripVertical className="h-4 w-4" aria-hidden />
+                                              </span>
+                                            </div>
+                                            <label className="space-y-1"><span className="text-xs text-neutral-500 md:hidden">Length</span><input value={length.name ?? ""} onChange={(e) => updateLengthOption(sub.uid, size.uid, length.uid, "name", e.target.value)} aria-label={`${size.name} length ${li + 1}`} placeholder="16 inches" className={`h-11 w-full rounded-lg border bg-white px-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200 dark:bg-neutral-900 ${touched && !(length.name ?? "").trim() ? "border-red-300" : "border-neutral-300 dark:border-neutral-600"}`} /></label>
+                                            <label className="space-y-1"><span className="text-xs text-neutral-500 md:hidden">Price</span><div className={`flex h-11 overflow-hidden rounded-lg border bg-white dark:bg-neutral-900 ${touched && !(length.price ?? "").trim() ? "border-red-300" : "border-neutral-300 dark:border-neutral-600"}`}><span className="flex items-center border-r border-neutral-200 bg-neutral-50 px-2 text-sm text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800">$</span><input value={(length.price ?? "").replace(/^\$/, "")} onChange={(e) => updateLengthOption(sub.uid, size.uid, length.uid, "price", e.target.value)} aria-label={`${size.name} price ${li + 1}`} placeholder="120.00" inputMode="decimal" className="min-w-0 flex-1 px-2 text-sm focus:outline-none" /></div></label>
+                                            <label className="space-y-1"><span className="text-xs text-neutral-500 md:hidden">Deposit / Notes</span><input value={length.notes ?? ""} onChange={(e) => updateLengthOption(sub.uid, size.uid, length.uid, "notes", e.target.value)} aria-label={`${size.name} notes ${li + 1}`} placeholder="$50.00 deposit required" className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200 dark:border-neutral-600 dark:bg-neutral-900" /></label>
+                                            <div className="flex items-center gap-2 md:justify-center">
+                                              <span className="text-xs text-neutral-500 md:hidden">Photo</span>
+                                              {length.photo ? (
+                                                <div className="relative group"><img src={getObjectUrl(length.photo)} alt={`${size.name} ${length.name} preview`} className="h-11 w-11 rounded-lg border border-neutral-200 object-cover dark:border-neutral-700" /><button type="button" onClick={() => setLengthPhoto(sub.uid, size.uid, length.uid, undefined)} aria-label="Remove photo" className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-700 text-white opacity-0 group-hover:opacity-100"><X className="h-3 w-3" /></button></div>
+                                              ) : (
+                                                <label tabIndex={0} aria-label={`Upload photo for ${size.name} ${length.name || li + 1}`} className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border border-dashed border-violet-300 text-violet-500 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30"><Plus className="h-4 w-4" /><input type="file" accept="image/*" className="hidden" onChange={(e) => { setLengthPhoto(sub.uid, size.uid, length.uid, e.target.files?.[0]); e.currentTarget.value = ""; }} /></label>
+                                              )}
+                                            </div>
+                                            <button type="button" onClick={() => deleteLengthOption(sub.uid, size.uid, length.uid)} disabled={size.lengths.length === 1} aria-label={`Delete ${size.name} length ${li + 1}`} className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-500 hover:border-red-400 hover:bg-red-50 disabled:opacity-30 md:mx-auto dark:hover:bg-red-950/30"><Trash2 className="h-4 w-4" /></button>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    <button type="button" onClick={() => addLengthOption(sub.uid, size.uid)} className="mt-3 flex h-9 items-center gap-1.5 rounded-lg border border-violet-300 px-3 text-sm font-medium text-violet-600 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30">
+                                      <Plus className="h-4 w-4" /> Add length option
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
-
-                          <button
-                            type="button"
-                            onClick={() => addLengthToSub(sub.uid)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-violet-600 border border-violet-200 rounded-lg hover:border-violet-400 hover:bg-violet-50 transition-colors"
-                          >
-                            <Plus className="w-3.5 h-3.5" aria-hidden /> Add length
-                          </button>
                         </div>
                       </div>
 
