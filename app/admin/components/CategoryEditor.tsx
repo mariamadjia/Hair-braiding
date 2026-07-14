@@ -93,7 +93,9 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     }, [cat.slug, token, onLoadSubcategorySummaries]);
 
     const guardedSetSelection = (next: Selection) => {
-        if (dirty && !confirm('You have unsaved changes. Leave without saving?')) return;
+        if (dirty && (name !== cat.name || images.length !== (cat.flippingImages ?? []).length)) {
+            if (!confirm('You have unsaved changes. Leave without saving?')) return;
+        }
         setSelection(next);
     };
 
@@ -265,7 +267,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     type="button"
                     onClick={save}
                     className={btnP}
-                    disabled={!dirty || images.length < 3 || images.length > 5 || saving}
+                    disabled={images.length < 3 || images.length > 5 || saving}
                 >
                     {saving ? 'Saving...' : 'Save changes'}
                 </button>
