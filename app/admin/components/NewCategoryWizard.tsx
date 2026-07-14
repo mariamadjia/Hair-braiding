@@ -25,7 +25,7 @@ interface Props {
 interface SubEntry { uid: string; value: string; }
 interface LengthEntry extends LengthOption { uid: string; }
 
-const STEPS = ["Name", "Photos", "Subcategory", "Size", "Lengths"];
+const STEPS = ["Name", "Photos", "Subcategories", "Sizes & Lengths"];
 
 // ─── Shared sub-components (module-level — no remount on parent re-render) ────
 
@@ -217,26 +217,7 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
         } finally { setBusy(false); }
     };
 
-    // ── Step 3: Size ─────────────────────────────────────────────────────────
-    const handleStep3Next = async () => {
-        const trimmed = sizeName.trim();
-        if (!trimmed) { setSizeNameError("Size name is required."); return; }
-        setSizeNameError(""); clearError(); setBusy(true);
-        try {
-            const created = await mutate(
-                "POST",
-                `/${createdCat!.slug}/subcategories/${createdSubSlug}/items`,
-                { name: trimmed, price: "", description: "", subcategoryId: createdSubId }
-            );
-            if (!created.id) throw new Error("Server did not return an item ID.");
-            setCreatedItemId(created.id);
-            setStep(4);
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to create size. Please try again.");
-        } finally { setBusy(false); }
-    };
-
-    // ── Step 4: Length options ───────────────────────────────────────────────
+    // ── Step 3: Sizes & Lengths (combined) ────────────────────────────────────
     const updateLength = (uid: string, field: keyof LengthOption, val: string) => {
         setTouchedLengths(prev => new Set(prev).add(uid));
         setLengthEntries(prev => prev.map(e => e.uid === uid ? { ...e, [field]: val } : e));
@@ -247,24 +228,32 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
         setTouchedLengths(prev => { const s = new Set(prev); s.delete(uid); return s; });
     };
 
-    const handleStep4Next = async () => {
-        // Fix #5: throw if item ID is missing — never silently skip
-        if (!createdItemId) { setError("Item ID missing — cannot save lengths. Please go back and try again."); return; }
+    const handleStep3Next = async () => {
+        const trimmed = sizeName.trim();
+        if (!trimmed) { setSizeNameError("Size name is required."); return; }
         if (!lengthsValid) { setError("Each length option needs a name and a price."); return; }
-        clearError(); setBusy(true);
+        setSizeNameError(""); clearError(); setBusy(true);
         try {
+            // Create the item first, then patch with length options in one request
+            const created = await mutate(
+                "POST",
+                `/${createdCat!.slug}/subcategories/${createdSubSlug}/items`,
+                { name: trimmed, price: "", description: "", subcategoryId: createdSubId }
+            );
+            if (!created.id) throw new Error("Server did not return an item ID.");
             await mutate(
                 "PUT",
-                `/${createdCat!.slug}/subcategories/${createdSubSlug}/items/${createdItemId}`,
-                { name: sizeName, price: "", description: "", subcategoryId: createdSubId, lengthOptions: lengthEntries }
+                `/${createdCat!.slug}/subcategories/${createdSubSlug}/items/${created.id}`,
+                { name: trimmed, price: "", description: "", subcategoryId: createdSubId, lengthOptions: lengthEntries }
             );
-            setStep(5);
+            setCreatedItemId(created.id);
+            setStep(4);
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to save length options. Please try again.");
+            setError(e instanceof Error ? e.message : "Failed to save size and lengths. Please try again.");
         } finally { setBusy(false); }
     };
 
-    // ── Step 5: Done ─────────────────────────────────────────────────────────
+    // ── Step 4: Done ─────────────────────────────────────────────────────────
     const handleFinish = () => {
         if (createdCat) onDone(createdCat);
         else onCategorySummariesRefresh?.();
@@ -382,16 +371,18 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                     </div>
                 )}
 
-                {/* ── Step 3: Size ── */}
+                {/* ── Step 3: Sizes & Lengths ── */}
                 {step === 3 && (
                     <div className="space-y-5">
                         <div>
-                            <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">Add a size</h2>
+                            <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">Add a size &amp; its lengths</h2>
                             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                                Sizes represent the braid dimensions offered under <span className="font-medium text-neutral-700 dark:text-neutral-300">{firstSubName}</span>. Common sizes: Small, Medium, Large, Jumbo.
+                                Enter a size name for <span className="font-medium text-neutral-700 dark:text-neutral-300">{firstSubName}</span>, then add the length options and prices offered for that size.
                             </p>
                         </div>
                         <WizardErrorBanner error={error} onDismiss={clearError} />
+
+                        {/* Size name */}
                         <div>
                             <label htmlFor="size-name" className={lbl}>Size Name <span className="text-red-500" aria-hidden>*</span></label>
                             <input
@@ -399,7 +390,6 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                                 className={`${inp} ${sizeNameError ? "border-red-400" : ""}`}
                                 value={sizeName}
                                 onChange={(e) => { setSizeName(e.target.value); setSizeNameError(""); }}
-                                onKeyDown={(e) => e.key === "Enter" && handleStep3Next()}
                                 placeholder="e.g. Small, Medium, Large, Jumbo"
                                 aria-required
                                 aria-describedby={sizeNameError ? "size-name-error" : undefined}
@@ -411,21 +401,10 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                                 </p>
                             )}
                         </div>
-                        <WizardNavRow onBack={() => setStep(2)} onNext={handleStep3Next} nextDisabled={!sizeName.trim()} busy={busy} />
-                    </div>
-                )}
 
-                {/* ── Step 4: Length options ── */}
-                {step === 4 && (
-                    <div className="space-y-5">
-                        <div>
-                            <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">Add length options</h2>
-                            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                                Each length option has a name (e.g. 16") and a price. Add as many as you offer for <span className="font-medium text-neutral-700 dark:text-neutral-300">{sizeName}</span>.
-                            </p>
-                        </div>
-                        <WizardErrorBanner error={error} onDismiss={clearError} />
+                        {/* Length options */}
                         <div className="space-y-2">
+                            <p className={lbl}>Length Options <span className="text-red-500" aria-hidden>*</span></p>
                             <div className="grid grid-cols-[1fr_1fr_1fr_2rem] gap-2 px-1" aria-hidden>
                                 <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Length</span>
                                 <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Price</span>
@@ -473,12 +452,13 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                                 <Plus className="w-3.5 h-3.5" aria-hidden /> Add another length
                             </button>
                         </div>
-                        <WizardNavRow onBack={() => setStep(3)} onNext={handleStep4Next} nextLabel="Save & Finish" nextDisabled={!lengthsValid} busy={busy} />
+
+                        <WizardNavRow onBack={() => setStep(2)} onNext={handleStep3Next} nextLabel="Save & Finish" nextDisabled={!sizeName.trim() || !lengthsValid} busy={busy} />
                     </div>
                 )}
 
-                {/* ── Step 5: Done ── */}
-                {step === 5 && (
+                {/* ── Step 4: Done ── */}
+                {step === 4 && (
                     <div className="space-y-5 text-center py-4">
                         <div className="flex items-center justify-center">
                             <div className="w-14 h-14 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 flex items-center justify-center">
@@ -495,7 +475,7 @@ export function NewCategoryWizard({ token, mutate, onDone, onCancel, onCategoryS
                                     {filledSubs.length} subcategor{filledSubs.length === 1 ? "y" : "ies"} created ({filledSubs.join(", ")}).
                                 </span>
                                 <span className="block">
-                                    Size <strong>{sizeName}</strong> → {lengthEntries.length} length option{lengthEntries.length !== 1 ? "s" : ""} added to <strong>{firstSubName}</strong>.
+                                    Size <strong>{sizeName}</strong> with {lengthEntries.length} length option{lengthEntries.length !== 1 ? "s" : ""} added to <strong>{firstSubName}</strong>.
                                 </span>
                                 <span className="block mt-2">You can add more subcategories, sizes, and lengths from the editor.</span>
                             </p>
