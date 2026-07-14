@@ -34,6 +34,7 @@ interface MenuItem {
     label: string;
     icon: React.ComponentType<{ className?: string }>;
     subItems?: { id: string; label: string }[];
+    comingSoon?: boolean;
 }
 
 export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminName = "Admin" }: SidebarProps) {
@@ -52,7 +53,7 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
         { id: "bookings", label: "Bookings", icon: Calendar },
         { id: "availability", label: "Availability", icon: Clock },
         { id: "customers", label: "Customers", icon: Users },
-        { id: "pricing", label: "Pricing", icon: DollarSign },
+        { id: "pricing", label: "Pricing", icon: DollarSign, comingSoon: true },
         { id: "gallery", label: "Gallery", icon: ImageIcon },
         { 
             id: "settings", 
@@ -75,7 +76,8 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
         );
     };
 
-    const handleItemClick = (itemId: string, hasSubItems: boolean) => {
+    const handleItemClick = (itemId: string, hasSubItems: boolean, comingSoon?: boolean) => {
+        if (comingSoon) return;
         if (hasSubItems) {
             toggleExpanded(itemId);
         } else {
@@ -125,19 +127,25 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
                         return (
                             <li key={item.id}>
                                 <button
-                                    onClick={() => handleItemClick(item.id, !!hasSubItems)}
+                                    onClick={() => handleItemClick(item.id, !!hasSubItems, item.comingSoon)}
                                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm transition-colors ${
-                                        isActive 
+                                        item.comingSoon
+                                            ? "text-neutral-400 dark:text-neutral-600 cursor-default"
+                                            : isActive 
                                             ? "bg-neutral-900 dark:bg-neutral-700 text-white" 
                                             : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                                     }`}
-                                    title={isCollapsed ? item.label : undefined}
+                                    title={isCollapsed ? item.label : item.comingSoon ? `${item.label} — coming soon` : undefined}
+                                    aria-disabled={item.comingSoon}
                                 >
                                     <Icon className="h-4 w-4 shrink-0" />
                                     {!isCollapsed && (
                                         <>
                                             <span className="text-sm flex-1 text-left">{item.label}</span>
-                                            {hasSubItems && (
+                                            {item.comingSoon && (
+                                                <span className="text-[9px] font-medium uppercase tracking-widest bg-neutral-100 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 px-1.5 py-0.5 rounded-sm">Soon</span>
+                                            )}
+                                            {hasSubItems && !item.comingSoon && (
                                                 isExpanded ? (
                                                     <ChevronUp className="h-3 w-3" />
                                                 ) : (

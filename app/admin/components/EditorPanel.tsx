@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import type { CategoriesData, CategorySummary, SubcategorySummary } from "@/lib/booking-types";
 import { RootEditor } from "./RootEditor";
 import { CategoryEditor } from "./CategoryEditor";
@@ -89,8 +90,14 @@ export function EditorPanel({
         return result;
     };
 
+    const wrapEditor = (node: React.ReactNode) => (
+        <div className="flex-1 overflow-y-auto">
+            <div className="max-w-2xl mx-auto px-6 py-6">{node}</div>
+        </div>
+    );
+
     if (selection.type === "root") {
-        return <RootEditor 
+        return wrapEditor(<RootEditor 
             categorySummaries={categorySummaries} 
             headers={headers} 
             mutate={mutate} 
@@ -98,7 +105,7 @@ export function EditorPanel({
             onCategoryCreated={onCategoryCreated}
             onCategoryDeleted={onCategoryDeleted}
             onCategorySummariesRefresh={onCategorySummariesRefresh}
-        />;
+        />);
     }
 
     // Prefer full category data (includes flippingImages) over the lightweight summary.
@@ -111,11 +118,11 @@ export function EditorPanel({
             : null;
 
     if (!cat) {
-        return <div className="p-4 text-red-600">Category not found. Please go back and try again.</div>;
+        return wrapEditor(<div className="p-4 text-red-600">Category not found. Please go back and try again.</div>);
     }
 
     if (selection.type === "category") {
-        return <CategoryEditor 
+        return wrapEditor(<CategoryEditor 
             cat={cat} 
             token={token} 
             headers={headers} 
@@ -127,17 +134,21 @@ export function EditorPanel({
             onSubcategoryCreated={onSubcategoryCreated}
             onSubcategoryDeleted={onSubcategoryDeleted}
             onSubcategorySummariesRefresh={onSubcategorySummariesRefresh}
-        />;
+        />);
     }
 
     const sub = subcategoryDetailsCache.get(selection.subSlug);
 
     if (!sub) {
         if (isLoadingSubcategoryDetail && loadingSubcategorySlug === selection.subSlug) {
-            return <div className="p-4 text-neutral-500">Loading subcategory details...</div>;
+            return wrapEditor(
+                <div className="space-y-2">
+                    {[1,2,3].map(i => <div key={i} className="h-12 bg-neutral-200 dark:bg-neutral-700 rounded-sm animate-pulse" />)}
+                </div>
+            );
         }
-        return <div className="p-4 text-red-600">Subcategory not found. Please go back and try again.</div>;
+        return wrapEditor(<div className="p-4 text-red-600">Subcategory not found. Please go back and try again.</div>);
     }
 
-    return <SubcategoryEditor cat={cat} sub={sub} token={token} headers={headers} mutate={mutate} setSelection={setSelection} onUpdate={onUpdate} data={data} onSubcategoryUpdate={onSubcategoryUpdate} />;
+    return wrapEditor(<SubcategoryEditor cat={cat} sub={sub} token={token} headers={headers} mutate={mutate} setSelection={setSelection} onUpdate={onUpdate} data={data} onSubcategoryUpdate={onSubcategoryUpdate} />);
 }

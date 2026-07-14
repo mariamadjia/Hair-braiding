@@ -10,7 +10,7 @@ import type { GalleryImage } from "@/lib/types/gallery";
 import type { GalleryImageItem } from "@/lib/booking-types";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ItemForm } from "./ItemForm";
-import { ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle } from "lucide-react";
 
 const SIZE_ORDER = ['XSmall', 'Small', 'Medium', 'Smedium', 'Large', 'Jumbo'];
 
@@ -62,6 +62,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [loadingGallery, setLoadingGallery] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
 
@@ -180,8 +181,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             }
         } catch (error) {
             console.error('Failed to delete image:', error);
-            alert('Failed to delete image. Please try again.');
+            setSaveError('Failed to delete image. Please try again.');
         }
+    };
+
+    const guardedSetSelection = (next: Selection) => {
+        if (dirty && !confirm('You have unsaved changes. Leave without saving?')) return;
+        setSelection(next);
     };
 
     const save = async () => {
@@ -191,10 +197,11 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             await onSubcategoryUpdate?.(sub.slug);
             setDirty(false);
             setSaveSuccess("Subcategory saved successfully!");
+            setSaveError(null);
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
             console.error("Failed to save subcategory:", error);
-            alert("Failed to save subcategory. Please try again.");
+            setSaveError("Failed to save subcategory. Please try again.");
         } finally {
             setSaving(false);
         }
@@ -251,7 +258,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             void onSubcategoryUpdate?.(sub.slug);
         } catch (error) {
             console.error("Failed to delete item:", error);
-            alert("Delete failed. Please refresh the page.");
+            setSaveError("Delete failed. Please refresh the page.");
         }
     };
 
@@ -268,64 +275,64 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     };
 
     return (
-        <div className="space-y-6">
-            {/* Success Message Banner */}
+        <div className="space-y-5">
+            {/* Success Banner */}
             {saveSuccess && (
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-sm flex items-center gap-2">
-                    <span className="text-green-600 dark:text-green-400">✓</span>
-                    <span className="text-sm font-medium">{saveSuccess}</span>
+                <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-sm text-green-800 dark:text-green-200 text-sm">
+                    <CheckCircle className="w-4 h-4 flex-shrink-0 text-green-600 dark:text-green-400" />
+                    <span className="flex-1 font-medium">{saveSuccess}</span>
+                </div>
+            )}
+            {/* Error Banner */}
+            {saveError && (
+                <div className="flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-sm text-red-700 dark:text-red-300 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span className="flex-1">{saveError}</span>
+                    <button type="button" onClick={() => setSaveError(null)} className="text-red-400 hover:text-red-600">×</button>
                 </div>
             )}
 
-            {/* Header */}
-            <div>
-                <h2 className="text-lg font-bold text-neutral-900 dark:text-white uppercase tracking-wide mb-2">Subcategory Editor</h2>
-                <nav className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
-                    <button 
-                        type="button" 
-                        onClick={() => setSelection({ type: "root" })} 
-                        className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
-                    >
-                        All Categories
-                    </button>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                    <button 
-                        type="button" 
-                        onClick={() => setSelection({ type: "category", catSlug: cat.slug })} 
-                        className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
-                    >
-                        {cat.name}
-                    </button>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                    <span className="text-neutral-900 dark:text-white font-semibold">{sub.name}</span>
-                </nav>
-                <div className="h-px bg-gradient-to-r from-neutral-200 via-neutral-300 to-neutral-200 dark:from-neutral-700 dark:via-neutral-600 dark:to-neutral-700 mt-4"></div>
-            </div>
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+                <button 
+                    type="button" 
+                    onClick={() => guardedSetSelection({ type: "root" })} 
+                    className="hover:text-neutral-900 dark:hover:text-white transition-colors"
+                >
+                    All Categories
+                </button>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <button 
+                    type="button" 
+                    onClick={() => guardedSetSelection({ type: "category", catSlug: cat.slug })} 
+                    className="hover:text-neutral-900 dark:hover:text-white transition-colors"
+                >
+                    {cat.name}
+                </button>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="text-neutral-900 dark:text-white font-medium">{sub.name}</span>
+            </nav>
 
             {/* Stats Bar */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+            <div className="bg-neutral-50 dark:bg-neutral-800 rounded-sm p-3 border border-neutral-200 dark:border-neutral-700">
                 <div className="flex items-center gap-3 text-sm">
-                    <div className="flex items-center gap-2">
-                        <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        <span className="font-semibold text-neutral-700 dark:text-neutral-300">Subcategory</span>
-                    </div>
-                    <span className="text-neutral-400 dark:text-neutral-500">•</span>
-                    <span className="font-medium text-neutral-700 dark:text-neutral-300">
+                    <Package className="w-4 h-4 text-neutral-500" />
+                    <span className="text-neutral-600 dark:text-neutral-400">
                         {items.length} {items.length === 1 ? 'size' : 'sizes'}
                     </span>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-neutral-900 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-lg">
-                <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900 px-6 py-4 border-b-2 border-neutral-200 dark:border-neutral-700">
-                    <h3 className="text-xs font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest">Details</h3>
+            <div className="bg-white dark:bg-neutral-900 rounded-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
+                    <h3 className="text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Details</h3>
                 </div>
-                <div className="p-6">
+                <div className="p-5">
                     <div className="space-y-5">
                         <div>
-                            <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-2">Name</label>
+                            <label className="block text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mb-1">Name</label>
                             <input 
-                                className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" 
+                                className="w-full border border-neutral-300 dark:border-neutral-600 rounded-sm px-3 py-2 text-sm text-neutral-900 dark:text-white bg-white dark:bg-neutral-800 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-400" 
                                 value={name} 
                                 onChange={(e) => { setName(e.target.value); setDirty(true); }}
                                 placeholder="e.g., Knotless, Goddess Braids"
@@ -376,42 +383,33 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                 </div>
                             )}
                         </div>
-                        {dirty && (
-                            <button 
-                                type="button" 
-                                onClick={save} 
-                                disabled={saving}
-                                className="w-full px-6 py-3.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {saving ? 'Saving...' : '✓ Save Changes'}
-                            </button>
-                        )}
+                        <button 
+                            type="button" 
+                            onClick={save} 
+                            disabled={!dirty || saving}
+                            className="px-3 py-1.5 text-[10px] font-medium uppercase tracking-widest bg-neutral-900 text-white rounded-sm hover:bg-neutral-700 disabled:opacity-40 whitespace-nowrap"
+                        >
+                            {saving ? 'Saving...' : 'Save changes'}
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-neutral-900 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-lg">
-                <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900 px-6 py-4 border-b-2 border-neutral-200 dark:border-neutral-700">
+            <div className="bg-white dark:bg-neutral-900 rounded-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest">Sizes</h3>
+                        <h3 className="text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Sizes</h3>
                         <button 
                             type="button" 
                             onClick={() => { setAddingItem(true); setEditingIdx(null); }} 
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-md hover:shadow-lg uppercase tracking-wide"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium uppercase tracking-widest bg-neutral-900 text-white rounded-sm hover:bg-neutral-700 transition-colors"
                         >
-                            <Plus className="w-4 h-4" />
-                            Add New Size
+                            <Plus className="w-3 h-3" />
+                            Add Size
                         </button>
                     </div>
                 </div>
-                <div className="p-6">
-
-                    {saveSuccess && (
-                        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm font-medium">
-                            <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                            {saveSuccess}
-                        </div>
-                    )}
+                <div className="p-5">
 
                     {addingItem && (
                         <div className="mb-4">
@@ -426,7 +424,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                         </div>
                     )}
 
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                     {sortItemsBySize(items).map(({ item, originalIdx }) => (
                         <div key={originalIdx}>
                             {editingIdx === originalIdx ? (
@@ -439,8 +437,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                     onCancel={() => setEditingIdx(null)}
                                 />
                             ) : (
-                                <div className="rounded-xl border-2 border-neutral-200 dark:border-neutral-700 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-900 dark:to-neutral-800 overflow-hidden shadow-md hover:shadow-xl transition-all">
-                                    <div className="group flex items-center gap-4 p-5 hover:bg-white dark:hover:bg-neutral-900 transition-colors">
+                                <div className="rounded-sm border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden hover:border-neutral-300 dark:hover:border-neutral-600 transition-colors">
+                                    <div className="group flex items-center gap-3 p-4">
                                         {item.image && (
                                             <div className="flex-shrink-0">
                                                 <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg border-2 border-neutral-200 dark:border-neutral-600 shadow-sm" />
@@ -451,7 +449,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                             onClick={() => toggleExpand(originalIdx)}
                                             className="flex-1 min-w-0 text-left"
                                         >
-                                            <div className="text-base font-bold text-neutral-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                            <div className="text-sm font-medium text-neutral-900 dark:text-white">
                                                 {item.name}
                                             </div>
                                             <div className="text-sm text-neutral-600 dark:text-neutral-400 mt-1.5">
@@ -470,48 +468,46 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                 )}
                                             </div>
                                         </button>
-                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                        <div className="flex items-center gap-1 flex-shrink-0">
                                             <button
                                                 type="button"
                                                 onClick={() => toggleExpand(originalIdx)}
-                                                className="p-2.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-all"
+                                                className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-sm transition-colors"
                                                 title={expandedItems.has(originalIdx) ? "Collapse" : "Expand"}
                                             >
                                                 {expandedItems.has(originalIdx) ? (
-                                                    <ChevronUp className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+                                                    <ChevronUp className="w-4 h-4 text-neutral-500" />
                                                 ) : (
-                                                    <ChevronDown className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+                                                    <ChevronDown className="w-4 h-4 text-neutral-500" />
                                                 )}
                                             </button>
                                             <button 
                                                 type="button" 
                                                 onClick={() => { setEditingIdx(originalIdx); setAddingItem(false); }} 
-                                                className="p-2.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                                className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-sm transition-colors opacity-0 group-hover:opacity-100"
                                                 title="Edit"
                                             >
-                                                <Edit3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                                <Edit3 className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
                                             </button>
                                             <button 
                                                 type="button" 
                                                 onClick={() => deleteItem(originalIdx, item.id)} 
-                                                className="p-2.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-sm transition-colors opacity-0 group-hover:opacity-100"
                                                 title="Delete"
                                             >
-                                                <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                                <Trash2 className="w-4 h-4 text-red-500" />
                                             </button>
                                         </div>
                                     </div>
                                     
                                     {expandedItems.has(originalIdx) && item.lengthOptions && item.lengthOptions.length > 0 && (
-                                        <div className="border-t-2 border-neutral-200 dark:border-neutral-700 bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900 px-6 py-4">
-                                            <div className="mb-2">
-                                                <h4 className="text-xs font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest">Length Options</h4>
-                                            </div>
-                                            <div className="space-y-2">
+                                        <div className="border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 px-4 py-3">
+                                            <h4 className="text-[10px] font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mb-2">Length Options</h4>
+                                            <div className="space-y-1">
                                                 {item.lengthOptions.map((option, optIdx) => (
-                                                    <div key={optIdx} className="flex items-center justify-between text-sm py-3 px-4 rounded-lg bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-700 shadow-sm hover:shadow-md transition-shadow">
-                                                        <span className="font-medium text-neutral-700 dark:text-neutral-300">{option.name}</span>
-                                                        <span className="font-bold text-lg text-neutral-900 dark:text-white">{formatPrice(option.price)}</span>
+                                                    <div key={optIdx} className="flex items-center justify-between text-sm py-2 px-3 rounded-sm bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+                                                        <span className="text-neutral-700 dark:text-neutral-300">{option.name}</span>
+                                                        <span className="font-medium text-neutral-900 dark:text-white">{formatPrice(option.price)}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -522,10 +518,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                         </div>
                     ))}
                         {items.length === 0 && !addingItem && (
-                            <div className="text-center py-16 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-xl bg-neutral-50 dark:bg-neutral-800/50">
-                                <Package className="w-16 h-16 text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
-                                <p className="text-base font-semibold text-neutral-600 dark:text-neutral-400 mb-2">No sizes yet</p>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-500">Click "Add New Size" to create one</p>
+                            <div className="text-center py-10 border border-dashed border-neutral-300 dark:border-neutral-600 rounded-sm">
+                                <Package className="w-10 h-10 text-neutral-300 dark:text-neutral-600 mx-auto mb-3" />
+                                <p className="text-sm text-neutral-500 dark:text-neutral-400">No sizes yet — click Add Size to create one</p>
                             </div>
                         )}
                     </div>

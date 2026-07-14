@@ -6,7 +6,7 @@ import type { GalleryImage } from "@/lib/types/gallery";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
-import { ChevronRight, FolderTree, FileText } from "lucide-react";
+import { ChevronRight, FolderTree, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
@@ -39,6 +39,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     const [newSubName, setNewSubName] = useState("");
     const [saving, setSaving] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [subSummaries, setSubSummaries] = useState<SubcategorySummary[]>([]);
 
     useEffect(() => { 
@@ -91,17 +92,22 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         loadSubs();
     }, [cat.slug, token, onLoadSubcategorySummaries]);
 
+    const guardedSetSelection = (next: Selection) => {
+        if (dirty && !confirm('You have unsaved changes. Leave without saving?')) return;
+        setSelection(next);
+    };
+
     const save = async () => {
         if (images.length < 3) {
-            alert("Please upload at least 3 photos for the gallery.");
+            setErrorMessage("Please upload at least 3 photos for the gallery.");
             return;
         }
         if (images.length > 5) {
-            alert("Maximum 5 photos allowed.");
+            setErrorMessage("Maximum 5 photos allowed.");
             return;
         }
         if (!cat.id) {
-            alert("Category ID is missing. Cannot save flipping images.");
+            setErrorMessage("Category ID is missing. Cannot save flipping images.");
             return;
         }
 
@@ -125,7 +131,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
             console.error("Failed to save category:", error);
-            alert("Failed to save category. Please try again.");
+            setErrorMessage("Failed to save category. Please try again.");
         } finally {
             setSaving(false);
         }
@@ -156,7 +162,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
             console.error("Failed to delete subcategory:", error);
-            alert("Failed to delete subcategory. Please try again.");
+            setErrorMessage("Failed to delete subcategory. Please try again.");
         } finally {
             setSaving(false);
         }
@@ -167,11 +173,19 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
 
     return (
         <div className="space-y-5">
-            {/* Success Message Banner */}
+            {/* Success Banner */}
             {successMessage && (
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-sm flex items-center gap-2">
-                    <span className="text-green-600 dark:text-green-400">✓</span>
-                    <span className="text-sm font-medium">{successMessage}</span>
+                <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-sm text-green-800 dark:text-green-200 text-sm">
+                    <CheckCircle className="w-4 h-4 flex-shrink-0 text-green-600 dark:text-green-400" />
+                    <span className="flex-1 font-medium">{successMessage}</span>
+                </div>
+            )}
+            {/* Error Banner */}
+            {errorMessage && (
+                <div className="flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-sm text-red-700 dark:text-red-300 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span className="flex-1">{errorMessage}</span>
+                    <button type="button" onClick={() => setErrorMessage(null)} className="text-red-400 hover:text-red-600">×</button>
                 </div>
             )}
 
@@ -179,7 +193,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             <nav className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
                 <button 
                     type="button" 
-                    onClick={() => setSelection({ type: "root" })} 
+                    onClick={() => guardedSetSelection({ type: "root" })} 
                     className="hover:text-neutral-900 dark:hover:text-white transition-colors"
                 >
                     All Categories
@@ -212,19 +226,10 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 <div><label className={lbl}>Category Name</label><input className={inp} value={name} onChange={(e) => { setName(e.target.value); setDirty(true); }} /></div>
                 
                 {/* Gallery Photos Section */}
-                <div className="border border-neutral-300 dark:border-neutral-600 rounded-lg p-5 bg-neutral-50 dark:bg-neutral-800">
+                <div className="border border-neutral-200 dark:border-neutral-700 rounded-sm p-4 bg-neutral-50 dark:bg-neutral-800">
                     <div className="flex items-center gap-2 mb-3">
-                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white uppercase tracking-wide">Gallery Photos</h3>
-                        <span className="text-xs bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-2 py-0.5 rounded font-medium">⭐ REQUIRED</span>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md p-3 mb-4">
-                        <p className="text-sm text-neutral-900 dark:text-neutral-100 font-medium">
-                            📸 Upload 3-5 high-quality photos
-                        </p>
-                        <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
-                            These will be showcased in your website's gallery section
-                        </p>
+                        <h3 className="text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Gallery Photos</h3>
+                        <span className="text-[10px] font-medium uppercase tracking-widest bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-sm">Required 3–5</span>
                     </div>
                     
                     <MultiImageUploader
@@ -235,30 +240,35 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     />
                     
                     {/* Status Indicator */}
-                    <div className="mt-3">
+                    <div className="mt-3 flex items-center gap-2 text-sm">
                         {images.length >= 3 && images.length <= 5 ? (
-                            <p className="text-sm text-neutral-900 dark:text-neutral-100 font-medium">
-                                ✅ {images.length} photo{images.length > 1 ? 's' : ''} uploaded (3-5 required)
-                            </p>
-                        ) : images.length === 0 ? (
-                            <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
-                                ⚠️ No photos uploaded yet (3-5 required)
-                            </p>
-                        ) : images.length < 3 ? (
-                            <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
-                                ⚠️ {images.length} photo{images.length > 1 ? 's' : ''} uploaded - add {3 - images.length} more (3-5 required)
-                            </p>
+                            <>
+                                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" aria-hidden />
+                                <span className="text-green-700 dark:text-green-300">{images.length} photo{images.length > 1 ? 's' : ''} uploaded</span>
+                            </>
                         ) : (
-                            <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
-                                ⚠️ {images.length} photos uploaded - remove {images.length - 5} (maximum 5 allowed)
-                            </p>
+                            <>
+                                <AlertTriangle className="w-4 h-4 text-amber-500" aria-hidden />
+                                <span className="text-amber-700 dark:text-amber-400">
+                                    {images.length === 0
+                                        ? 'No photos yet — upload 3 to 5'
+                                        : images.length < 3
+                                        ? `${images.length} uploaded — add ${3 - images.length} more`
+                                        : `${images.length} uploaded — remove ${images.length - 5} (max 5)`}
+                                </span>
+                            </>
                         )}
                     </div>
                 </div>
-                
-                {dirty && <button type="button" onClick={save} className={btnP} disabled={images.length < 3 || images.length > 5 || saving}>
+
+                <button
+                    type="button"
+                    onClick={save}
+                    className={btnP}
+                    disabled={!dirty || images.length < 3 || images.length > 5 || saving}
+                >
                     {saving ? 'Saving...' : 'Save changes'}
-                </button>}
+                </button>
             </div>
 
             <div className="border-t border-neutral-100 dark:border-neutral-700 pt-4 space-y-3">
@@ -279,7 +289,11 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
 
                 <div className="space-y-2">
                     {isLoadingSubcategorySummaries ? (
-                        <div className="p-3 text-sm text-neutral-500">Loading subcategories...</div>
+                        <div className="space-y-2">
+                            {[1,2,3].map(i => (
+                                <div key={i} className="h-11 bg-neutral-100 dark:bg-neutral-800 rounded-sm animate-pulse" />
+                            ))}
+                        </div>
                     ) : subSummaries.length === 0 ? (
                         <div className="p-3 text-sm text-neutral-500">No subcategories yet</div>
                     ) : (
@@ -317,7 +331,14 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                     >
                                         Edit
                                     </button>
-                                    <button type="button" onClick={() => delSub(sub.slug, sub.name, sub.id)} className={btnD}>×</button>
+                                    <button
+                                        type="button"
+                                        onClick={() => delSub(sub.slug, sub.name, sub.id)}
+                                        className={btnD}
+                                        title={`Delete ${sub.name}`}
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
                                 </div>
                             </div>
                         ))

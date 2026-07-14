@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { CategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
-import { GripVertical, FolderTree, FileText, Image as ImageIcon } from "lucide-react";
+import { GripVertical, FolderTree, Trash2, AlertCircle } from "lucide-react";
 
 type Selection =
     | { type: "root" }
@@ -24,6 +24,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
     const [name, setName] = useState("");
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const add = async () => {
         if (!name.trim()) return;
@@ -37,9 +38,13 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
     };
 
     const del = async (slug: string, catName: string) => {
-        if (!confirm(`Delete "${catName}" and all its content?`)) return;
-        await mutate("DELETE", `/${slug}`);
-        onCategoryDeleted?.(slug);
+        if (!confirm(`Delete "${catName}" and all its content? This cannot be undone.`)) return;
+        try {
+            await mutate("DELETE", `/${slug}`);
+            onCategoryDeleted?.(slug);
+        } catch {
+            setErrorMsg(`Failed to delete "${catName}". Please try again.`);
+        }
     };
 
     const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -72,46 +77,31 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
 
         // Update display order for each category
         try {
-            // Get category IDs in the new order
             const categoryIds = reorderedSummaries
                 .map(cat => cat.id)
                 .filter((id): id is number => id !== undefined);
             
             if (categoryIds.length === 0) {
-                // Fallback: update each category individually by slug
                 for (let i = 0; i < reorderedSummaries.length; i++) {
                     const cat = reorderedSummaries[i];
-                    const response = await fetch(`/api/admin/categories/${cat.slug}`, {
+                    await fetch(`/api/admin/categories/${cat.slug}`, {
                         method: 'PUT',
                         headers,
                         body: JSON.stringify({ displayOrder: i })
                     });
-                    
-                    if (!response.ok) {
-                        console.error(`Failed to update ${cat.name}:`, await response.text());
-                    }
                 }
             } else {
-                // Use the reorder endpoint via proxy
                 const response = await fetch(`/api/admin/categories/reorder`, {
                     method: 'POST',
-                    headers: {
-                        ...headers,
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { ...headers, 'Content-Type': 'application/json' },
                     body: JSON.stringify(categoryIds)
                 });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to reorder categories');
-                }
+                if (!response.ok) throw new Error('Failed to reorder categories');
             }
-            
-            // Refresh the data
             await mutate("GET", "");
         } catch (error) {
             console.error('Failed to reorder categories:', error);
-            alert('Failed to reorder categories. Please try again.');
+            setErrorMsg('Failed to reorder categories. Please try again.');
         }
 
         setDraggedIndex(null);
@@ -125,6 +115,13 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
 
     return (
         <div className="space-y-4">
+            {errorMsg && (
+                <div className="flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-sm text-red-700 dark:text-red-300 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span className="flex-1">{errorMsg}</span>
+                    <button type="button" onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-600">×</button>
+                </div>
+            )}
             <div className="flex items-center justify-between">
                 <h2 className="text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Categories</h2>
                 <button type="button" onClick={() => setAdding(true)} className={btnP}>+ Add</button>
@@ -185,16 +182,19 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 <button 
                                     type="button" 
-                                    onClick={() => {
-                                        // Do not load the full category tree here. CategoryEditor will
-                                        // load only lightweight subcategory summaries.
-                                        setSelection({ type: "category", catSlug: cat.slug });
-                                    }} 
+                                    onClick={() => setSelection({ type: "category", catSlug: cat.slug })} 
                                     className={btnS}
                                 >
                                     Edit
                                 </button>
-                                <button type="button" onClick={() => del(cat.slug, cat.name)} className={btnD}>×</button>
+                                <button
+                                    type="button"
+                                    onClick={() => del(cat.slug, cat.name)}
+                                    className={btnD}
+                                    title={`Delete ${cat.name}`}
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
                             </div>
                         </div>
                     );

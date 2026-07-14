@@ -624,21 +624,21 @@ export default function AdminPage() {
                 <div className="h-16 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shrink-0 flex items-center justify-between px-6">
                     <div className="flex items-center gap-3">
                         <h1 className="text-lg font-medium text-neutral-900 dark:text-white">
-                            {currentSection === "categories" && "Categories"}
-                            {currentSection === "subcategories" && "Subcategories"}
-                            {currentSection === "items" && "Items"}
-                            {currentSection === "dashboard" && "Dashboard"}
-                            {currentSection === "homepage" && "Homepage"}
-                            {currentSection === "bookings" && "Appointments"}
-                            {currentSection === "availability" && "Availability Settings"}
-                            {currentSection === "customers" && "Customers"}
-                            {currentSection === "pricing" && "Pricing"}
-                            {currentSection === "gallery" && "Gallery"}
-                            {currentSection === "settings" && "Settings"}
-                            {currentSection === "general" && "General Settings"}
-                            {currentSection === "booking-config" && "Booking Configuration"}
-                            {currentSection === "integrations" && "Integrations"}
-                            {currentSection === "profile" && "Profile"}
+                            {({
+                                dashboard: "Dashboard",
+                                categories: "Services",
+                                homepage: "Homepage",
+                                bookings: "Appointments",
+                                availability: "Availability Settings",
+                                customers: "Customers",
+                                pricing: "Pricing",
+                                gallery: "Gallery",
+                                settings: "Settings",
+                                general: "General Settings",
+                                "booking-config": "Booking Configuration",
+                                integrations: "Integrations",
+                                profile: "Profile",
+                            } as Record<string, string>)[currentSection] ?? currentSection}
                         </h1>
                         {currentSection === "categories" && (
                             <span className="text-sm text-neutral-400">{categories.length} categories</span>
@@ -656,25 +656,14 @@ export default function AdminPage() {
                 )}
 
                 {currentSection === "categories" && (
-                    <div className="flex-1 overflow-y-auto bg-[#FFF5EE] dark:bg-neutral-900">
-                        {/* Header Section - Matches Public Site */}
-                        <section className="relative overflow-hidden bg-[#FFF5EE] dark:bg-neutral-900 pt-24 md:pt-32 pb-12 md:pb-16 text-neutral-900 dark:text-white">
-                            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                                <div className="text-center mb-10 md:mb-14">
-                                    <p className="text-xs uppercase tracking-[0.4em] text-neutral-500 dark:text-neutral-400 mb-4">Our Expertise</p>
-                                    <h2 className="text-4xl md:text-6xl font-light tracking-tight text-neutral-900 dark:text-white">
-                                        Signature <span className="font-serif italic">Services</span>
-                                    </h2>
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Services List - Matches Public Site */}
-                        <section className="bg-[#FFF5EE] dark:bg-neutral-900 pb-24 md:pb-32">
-                            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+                    <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
+                        <div className="max-w-3xl mx-auto px-6 py-6">
+                            <div>
                                 {isLoadingSummaries ? (
-                                    <div className="bg-white border border-neutral-200 rounded-lg p-8 text-center">
-                                        <p className="text-neutral-500 mb-4">Loading services...</p>
+                                    <div className="space-y-2">
+                                        {[1,2,3,4].map(i => (
+                                            <div key={i} className="h-12 bg-neutral-200 dark:bg-neutral-700 rounded-sm animate-pulse" />
+                                        ))}
                                     </div>
                                 ) : categorySummaries.length === 0 ? (
                                     <div className="bg-white border border-neutral-200 rounded-lg p-8 text-center">
@@ -716,7 +705,7 @@ export default function AdminPage() {
                                     />
                                 )}
                             </div>
-                        </section>
+                        </div>
                     </div>
                 )}
 
