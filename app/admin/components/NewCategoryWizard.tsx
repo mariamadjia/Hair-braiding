@@ -608,12 +608,6 @@ export function NewCategoryWizard({
     }
   };
 
-  // ── Step 3: Done ─────────────────────────────────────────────────────────
-  const handleFinish = () => {
-    if (createdCat) onDone(createdCat);
-    else onCategorySummariesRefresh?.();
-  };
-
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-sm">
@@ -1076,20 +1070,13 @@ export function NewCategoryWizard({
                 <span className="block mt-2">You can add more subcategories, sizes, and lengths from the editor.</span>
               </p>
             </div>
-            <div className="flex items-center justify-center gap-3 pt-2 border-t border-neutral-100 dark:border-neutral-700">
+            <div className="flex items-center justify-center pt-2 border-t border-neutral-100 dark:border-neutral-700">
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-4 py-2 text-sm font-medium text-neutral-700 border border-neutral-300 rounded-lg hover:border-neutral-500 transition-colors"
-              >
-                Back to list
-              </button>
-              <button
-                type="button"
-                onClick={handleFinish}
                 className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
               >
-                Open editor <ChevronRight className="w-4 h-4" aria-hidden />
+                Back to list
               </button>
             </div>
           </div>
