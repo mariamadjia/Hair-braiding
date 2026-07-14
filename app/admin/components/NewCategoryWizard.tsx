@@ -809,15 +809,19 @@ export function NewCategoryWizard({
                                 </button>
                               </div>
                             ))}
-                            <label
-                              tabIndex={0}
-                              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
-                              className="cursor-pointer h-16 w-16 flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-lg bg-neutral-50 dark:bg-neutral-800 border-violet-300 dark:border-violet-700 hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400"
-                            >
-                              <Plus className="w-4 h-4 text-violet-500" aria-hidden />
-                              <span className="text-[9px] text-violet-500 font-medium">Add</span>
-                              <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => addPhotosToSub(sub.uid, e.target.files)} />
-                            </label>
+                            {[0, 1, 2].map((slot) => (
+                              <label
+                                key={slot}
+                                tabIndex={0}
+                                aria-label={`Add photo ${slot + 1} for subcategory ${si + 1}`}
+                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
+                                className="cursor-pointer h-16 w-16 flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-lg bg-neutral-50 dark:bg-neutral-800 border-violet-300 dark:border-violet-700 hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400"
+                              >
+                                <Plus className="w-4 h-4 text-violet-500" aria-hidden />
+                                <span className="text-[9px] text-violet-500 font-medium">Add photo</span>
+                                <input type="file" accept="image/*" className="hidden" onChange={(e) => { addPhotosToSub(sub.uid, e.target.files); e.currentTarget.value = ""; }} />
+                              </label>
+                            ))}
                           </div>
                         </div>
                       </div>
