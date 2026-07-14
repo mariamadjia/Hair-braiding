@@ -11,6 +11,10 @@ import {
   Plus,
   Trash2,
   ImageIcon,
+  Lock,
+  User,
+  SlidersHorizontal,
+  GripVertical,
 } from "lucide-react";
 import type { CategorySummary, LengthOption } from "@/lib/booking-types";
 import { slugify, emptyLengthOption, uploadFile } from "../utils";
@@ -78,7 +82,12 @@ function emptySubEntry(): SubEntry {
 }
 
 // #9: Done added so progress bar reflects all 4 states
-const STEPS = ["Name", "Photos", "Subcategories", "Done"];
+const STEPS = [
+  { label: "NAME", sub: "Category name" },
+  { label: "PHOTOS", sub: "Add images" },
+  { label: "SUBCATEGORIES", sub: "Add details" },
+  { label: "DONE", sub: "Review & save" },
+];
 
 // ─── Shared sub-components (module-level — no remount on parent re-render) ────
 
@@ -130,12 +139,16 @@ function WizardNavRow({
         <button
           type="button"
           onClick={onBack}
-          className={`${btnS} flex items-center gap-1.5`}
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-neutral-700 border border-neutral-300 rounded-lg hover:border-neutral-500 transition-colors"
         >
-          <ArrowLeft className="w-3.5 h-3.5" aria-hidden /> Back
+          <ArrowLeft className="w-4 h-4" aria-hidden /> Back
         </button>
       ) : onCancel ? (
-        <button type="button" onClick={onCancel} className={btnS}>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-neutral-700 border border-neutral-300 rounded-lg hover:border-neutral-500 transition-colors"
+        >
           Cancel
         </button>
       ) : (
@@ -146,10 +159,10 @@ function WizardNavRow({
         onClick={onNext}
         disabled={nextDisabled || busy}
         aria-disabled={nextDisabled || busy}
-        className={`${btnP} flex items-center gap-2`}
+        className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         {busy ? "Saving…" : nextLabel}
-        {!busy && <ChevronRight className="w-3.5 h-3.5" aria-hidden />}
+        {!busy && <ChevronRight className="w-4 h-4" aria-hidden />}
       </button>
     </div>
   );
@@ -157,43 +170,38 @@ function WizardNavRow({
 
 function WizardProgressBar({ step }: { step: number }) {
   return (
-    <nav aria-label="Setup progress" className="flex items-center mb-8">
-      {STEPS.map((label, i) => {
+    <nav aria-label="Setup progress" className="flex items-start mb-8">
+      {STEPS.map((s, i) => {
         const done = i < step;
         const active = i === step;
         return (
-          <div key={label} className="flex items-center flex-1 min-w-0">
-            <div className="flex flex-col items-center gap-1.5 shrink-0">
+          <div key={s.label} className="flex items-start flex-1 min-w-0">
+            <div className="flex flex-col items-center gap-1 shrink-0">
               <div
                 aria-current={active ? "step" : undefined}
-                aria-label={`Step ${i + 1}: ${label}${done ? " (completed)" : active ? " (current)" : ""}`}
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
+                aria-label={`Step ${i + 1}: ${s.label}${done ? " (completed)" : active ? " (current)" : ""}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all border-2 ${
                   done
-                    ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
+                    ? "bg-violet-600 border-violet-600 text-white"
                     : active
-                      ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 ring-4 ring-neutral-200 dark:ring-neutral-700"
-                      : "bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500"
+                      ? "bg-violet-600 border-violet-600 text-white"
+                      : "bg-white border-neutral-300 text-neutral-400 dark:bg-neutral-800 dark:border-neutral-600"
                 }`}
               >
                 {done ? <Check className="w-3.5 h-3.5" aria-hidden /> : i + 1}
               </div>
-              <span
-                className={`text-[10px] font-medium uppercase tracking-widest whitespace-nowrap ${
-                  active
-                    ? "text-neutral-900 dark:text-white"
-                    : "text-neutral-400 dark:text-neutral-500"
-                }`}
-              >
-                {label}
+              <span className={`text-[10px] font-bold uppercase tracking-widest whitespace-nowrap mt-0.5 ${
+                active ? "text-neutral-900 dark:text-white" : "text-neutral-400"
+              }`}>
+                {s.label}
               </span>
+              <span className="text-[10px] text-neutral-400 whitespace-nowrap">{s.sub}</span>
             </div>
             {i < STEPS.length - 1 && (
               <div
                 aria-hidden
-                className={`flex-1 h-px mx-2 mb-5 transition-all ${
-                  done
-                    ? "bg-neutral-900 dark:bg-white"
-                    : "bg-neutral-200 dark:bg-neutral-700"
+                className={`flex-1 h-0.5 mt-4 mx-2 transition-all ${
+                  done ? "bg-violet-600" : "bg-neutral-200 dark:bg-neutral-700"
                 }`}
               />
             )}
@@ -595,16 +603,16 @@ export function NewCategoryWizard({
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="border border-neutral-200 dark:border-neutral-700 rounded-sm bg-white dark:bg-neutral-900">
-      <div className="px-5 pt-5">
+    <div className="border border-neutral-200 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-sm">
+      <div className="px-6 pt-6">
         <WizardProgressBar step={step} />
       </div>
-      <div className="px-5 pb-5">
+      <div className="px-6 pb-6">
         {/* ── Step 0: Name ── */}
         {step === 0 && (
           <div className="space-y-5">
             <div>
-              <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">
                 What is this category called?
               </h2>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
@@ -621,7 +629,7 @@ export function NewCategoryWizard({
               </label>
               <input
                 id="cat-name"
-                className={`${inp} ${catNameError ? "border-red-400" : ""}`}
+                className={`${inp} ${catNameError ? "border-red-400" : "focus:border-violet-500"}`}
                 value={catName}
                 onChange={(e) => {
                   setCatName(e.target.value);
@@ -720,7 +728,7 @@ export function NewCategoryWizard({
         {step === 2 && (
           <div className="space-y-5">
             <div>
-              <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">
                 Add subcategories
               </h2>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
@@ -732,7 +740,6 @@ export function NewCategoryWizard({
 
             <div className="space-y-4">
               {subEntries.map((sub, si) => {
-                // #6: per-card completion indicator
                 const cardComplete =
                   sub.name.trim().length >= 2 &&
                   sub.photos.length >= 1 &&
@@ -746,320 +753,282 @@ export function NewCategoryWizard({
                 return (
                   <div
                     key={sub.uid}
-                    className="border border-neutral-200 dark:border-neutral-700 rounded-sm p-3 space-y-3"
+                    className="border border-neutral-200 dark:border-neutral-700 rounded-xl p-4 space-y-4 bg-white dark:bg-neutral-900"
                   >
-                    {/* Subcategory name row + completion indicator (#6) */}
-                    <div className="flex items-center gap-2">
-                      {cardComplete ? (
-                        <CheckCircle
-                          className="w-4 h-4 text-green-500 shrink-0"
-                          aria-label="Complete"
-                        />
-                      ) : (
-                        <AlertCircle
-                          className="w-4 h-4 text-amber-400 shrink-0"
-                          aria-label="Incomplete"
-                        />
-                      )}
+                    {/* ── Subcategory name ── */}
+                    <div className="flex items-center gap-3">
+                      <Lock className="w-4 h-4 text-violet-500 shrink-0" aria-hidden />
+                      <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 w-32 shrink-0">Subcategory name</span>
                       <input
                         aria-label={`Subcategory ${si + 1} name`}
-                        className={`${inp} flex-1 ${subInputError && !sub.name.trim() ? "border-red-400" : ""}`}
+                        className={`flex-1 border rounded-lg px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 dark:text-white ${
+                          subInputError && !sub.name.trim()
+                            ? "border-red-400"
+                            : "border-neutral-300 dark:border-neutral-600"
+                        }`}
                         value={sub.name}
                         onChange={(e) =>
                           updateSubField(sub.uid, "name", e.target.value)
                         }
-                        placeholder={
-                          si === 0
-                            ? "Subcategory name, e.g. Knotless"
-                            : "e.g. Goddess"
-                        }
+                        placeholder="e.g. Knotless"
                       />
                       {subEntries.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removeSubRow(sub.uid)}
-                          className={btnD}
                           aria-label={`Remove subcategory ${si + 1}`}
+                          className="ml-1 text-neutral-400 hover:text-red-500 transition-colors"
                         >
-                          <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                          <Trash2 className="w-4 h-4" aria-hidden />
                         </button>
                       )}
-                    </div>
-
-                    {/* Photos */}
-                    <div>
-                      <p className={`${lbl} text-[11px]`}>
-                        Photos{" "}
-                        <span className="text-red-500" aria-hidden>
-                          *
-                        </span>
-                      </p>
-                      <div
-                        className="flex flex-wrap gap-2 mt-1"
-                        role="list"
-                        aria-label={`Photos for subcategory ${si + 1}`}
-                      >
-                        {sub.photos.map((file, pi) => (
-                          <div
-                            key={pi}
-                            role="listitem"
-                            className="relative group shrink-0"
-                          >
-                            <img
-                              src={getObjectUrl(file)}
-                              alt={file.name}
-                              className="h-16 w-16 object-cover rounded border border-neutral-200 dark:border-neutral-700"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removePhotoFromSub(sub.uid, pi)}
-                              aria-label={`Remove photo ${pi + 1} from subcategory ${si + 1}`}
-                              className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 hover:bg-red-600 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                        {/* #8: keyboard-accessible photo tile */}
-                        <label
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              e.currentTarget.querySelector("input")?.click();
-                            }
-                          }}
-                          className={`cursor-pointer h-16 w-16 flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded bg-neutral-50 dark:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-400 ${sub.photos.length === 0 ? "border-red-300 dark:border-red-700 hover:border-red-400" : "border-neutral-300 dark:border-neutral-600 hover:border-neutral-500"}`}
-                        >
-                          <ImageIcon
-                            className="w-4 h-4 text-neutral-400"
-                            aria-hidden
-                          />
-                          <span className="text-[10px] text-neutral-500">
-                            Add
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="hidden"
-                            onChange={(e) =>
-                              addPhotosToSub(sub.uid, e.target.files)
-                            }
-                          />
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Size name — #11: inline error from touchedSize */}
-                    <div>
-                      <label className={`${lbl} text-[11px]`}>
-                        Size{" "}
-                        <span className="text-red-500" aria-hidden>
-                          *
-                        </span>
-                      </label>
-                      <input
-                        aria-label={`Subcategory ${si + 1} size name`}
-                        className={`${inp} ${sub.touchedSize && !sub.sizeName.trim() ? "border-red-400" : ""}`}
-                        value={sub.sizeName}
-                        onChange={(e) =>
-                          updateSubField(sub.uid, "sizeName", e.target.value)
-                        }
-                        onBlur={() =>
-                          updateSubField(sub.uid, "touchedSize", true)
-                        }
-                        placeholder="e.g. Small, Medium, Large"
-                      />
-                      {sub.touchedSize && !sub.sizeName.trim() && (
-                        <p
-                          role="alert"
-                          className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1"
-                        >
-                          <AlertCircle className="w-3 h-3" aria-hidden />
-                          Size name is required.
-                        </p>
+                      {cardComplete && (
+                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" aria-label="Complete" />
                       )}
                     </div>
 
-                    {/* Length options */}
-                    <div className="space-y-1.5">
-                      <p className={`${lbl} text-[11px]`}>
-                        Lengths{" "}
-                        <span className="text-red-500" aria-hidden>
-                          *
-                        </span>
-                      </p>
-                      <div
-                        className="hidden md:grid grid-cols-[1fr_1fr_1.35fr_5rem_2rem] gap-2 px-1"
-                        aria-hidden
-                      >
-                        <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">
-                          Length
-                        </span>
-                        <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">
-                          Price
-                        </span>
-                        <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">
-                          Notes
-                        </span>
-                        <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">
-                          Photo
-                        </span>
-                        <span />
-                      </div>
-                      {sub.lengths.map((len, li) => {
-                        const touched = sub.touchedLengths.has(len.uid);
-                        return (
-                          <div
-                            key={len.uid}
-                            className="rounded-sm border border-neutral-100 dark:border-neutral-800 p-2 md:border-0 md:p-0 grid grid-cols-1 md:grid-cols-[1fr_1fr_1.35fr_5rem_2rem] gap-2 items-center"
-                          >
-                            <input
-                              aria-label={`Sub ${si + 1} length ${li + 1} name`}
-                              className={`${inp} ${touched && !(len.name ?? "").trim() ? "border-red-300" : ""}`}
-                              placeholder='e.g. 16"'
-                              value={len.name ?? ""}
-                              onChange={(e) =>
-                                updateLengthInSub(
-                                  sub.uid,
-                                  len.uid,
-                                  "name",
-                                  e.target.value,
-                                )
-                              }
-                            />
-                            <input
-                              aria-label={`Sub ${si + 1} length ${li + 1} price`}
-                              className={`${inp} ${touched && !(len.price ?? "").trim() ? "border-red-300" : ""}`}
-                              placeholder="e.g. $180"
-                              value={len.price ?? ""}
-                              onChange={(e) =>
-                                updateLengthInSub(
-                                  sub.uid,
-                                  len.uid,
-                                  "price",
-                                  e.target.value,
-                                )
-                              }
-                            />
-                            <input
-                              aria-label={`Sub ${si + 1} length ${li + 1} notes`}
-                              className={inp}
-                              placeholder="e.g. $50 deposit"
-                              value={len.notes ?? ""}
-                              onChange={(e) =>
-                                updateLengthInSub(
-                                  sub.uid,
-                                  len.uid,
-                                  "notes",
-                                  e.target.value,
-                                )
-                              }
-                            />
-
-                            <div className="flex items-center gap-2 md:justify-center">
-                              {len.photo ? (
-                                <div className="relative group h-12 w-12 shrink-0">
-                                  <img
-                                    src={getObjectUrl(len.photo)}
-                                    alt={`Preview for ${len.name || `length ${li + 1}`}`}
-                                    className="h-12 w-12 rounded-sm border border-neutral-200 dark:border-neutral-700 object-cover"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setLengthPhoto(
-                                        sub.uid,
-                                        len.uid,
-                                        undefined,
-                                      )
-                                    }
-                                    aria-label={`Remove photo for length ${li + 1}`}
-                                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100 focus:opacity-100"
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                              ) : (
-                                <label
-                                  tabIndex={0}
-                                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
-                                  className="flex h-12 w-12 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-sm border-2 border-dashed border-neutral-300 bg-neutral-50 transition-colors hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:border-neutral-600 dark:bg-neutral-800"
-                                  aria-label={`Upload photo for length ${li + 1}`}
-                                >
-                                  <ImageIcon
-                                    className="h-4 w-4 text-neutral-400"
-                                    aria-hidden
-                                  />
-                                  <span className="text-[9px] text-neutral-500">
-                                    Add
-                                  </span>
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      setLengthPhoto(
-                                        sub.uid,
-                                        len.uid,
-                                        e.target.files?.[0],
-                                      );
-                                      e.currentTarget.value = "";
-                                    }}
-                                  />
-                                </label>
-                              )}
-                              <span className="text-xs text-neutral-400 md:hidden">
-                                Length photo (optional)
-                              </span>
+                    {/* ── Photos ── */}
+                    <div className="flex items-start gap-3">
+                      <ImageIcon className="w-4 h-4 text-violet-500 shrink-0 mt-2" aria-hidden />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2">Photos</p>
+                        <div
+                          className="flex flex-wrap gap-2"
+                          role="list"
+                          aria-label={`Photos for subcategory ${si + 1}`}
+                        >
+                          {sub.photos.map((file, pi) => (
+                            <div key={pi} role="listitem" className="relative group shrink-0">
+                              <img
+                                src={getObjectUrl(file)}
+                                alt={file.name}
+                                className="h-20 w-20 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removePhotoFromSub(sub.uid, pi)}
+                                aria-label={`Remove photo ${pi + 1} from subcategory ${si + 1}`}
+                                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-neutral-600 hover:bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                              >
+                                ×
+                              </button>
                             </div>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                removeLengthFromSub(sub.uid, len.uid)
+                          ))}
+                          {/* Add photo tile */}
+                          <label
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                e.currentTarget.querySelector("input")?.click();
                               }
-                              disabled={sub.lengths.length === 1}
-                              aria-label={`Remove length ${li + 1} from subcategory ${si + 1}`}
-                              className={`${btnD} disabled:opacity-30`}
+                            }}
+                            className="cursor-pointer h-20 w-20 flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-lg bg-neutral-50 dark:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400 border-neutral-300 dark:border-neutral-600 hover:border-violet-400"
+                          >
+                            <Plus className="w-5 h-5 text-neutral-400" aria-hidden />
+                            <span className="text-[10px] text-neutral-500">Add</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => addPhotosToSub(sub.uid, e.target.files)}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── Size ── */}
+                    <div className="flex items-center gap-3">
+                      <User className="w-4 h-4 text-violet-500 shrink-0" aria-hidden />
+                      <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 w-32 shrink-0">Size</span>
+                      <div className="relative flex-1">
+                        <select
+                          aria-label={`Subcategory ${si + 1} size name`}
+                          className={`w-full appearance-none border rounded-lg px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 dark:text-white pr-8 ${
+                            sub.touchedSize && !sub.sizeName.trim()
+                              ? "border-red-400"
+                              : "border-neutral-300 dark:border-neutral-600"
+                          }`}
+                          value={sub.sizeName}
+                          onChange={(e) =>
+                            updateSubField(sub.uid, "sizeName", e.target.value)
+                          }
+                          onBlur={() => updateSubField(sub.uid, "touchedSize", true)}
+                        >
+                          <option value="">Select a size…</option>
+                          <option value="XS">XS</option>
+                          <option value="Small">Small</option>
+                          <option value="Medium">Medium</option>
+                          <option value="Large">Large</option>
+                          <option value="XL">XL</option>
+                          <option value="XXL">XXL</option>
+                        </select>
+                        <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" aria-hidden />
+                      </div>
+                    </div>
+                    {sub.touchedSize && !sub.sizeName.trim() && (
+                      <p role="alert" className="ml-7 text-xs text-red-600 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" aria-hidden /> Size is required.
+                      </p>
+                    )}
+
+                    {/* ── Lengths & Prices ── */}
+                    <div className="flex items-start gap-3">
+                      <SlidersHorizontal className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" aria-hidden />
+                      <div className="flex-1 space-y-2">
+                        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">Lengths &amp; Prices</p>
+
+                        {/* Table header */}
+                        <div className="hidden md:grid grid-cols-[1.5rem_1fr_1fr_1fr_5rem_2.5rem] gap-2 px-1">
+                          <span />
+                          <span className="text-xs font-medium text-neutral-400">Length</span>
+                          <span className="text-xs font-medium text-neutral-400">Price</span>
+                          <span className="text-xs font-medium text-neutral-400">Notes</span>
+                          <span className="text-xs font-medium text-neutral-400">Photo</span>
+                          <span className="text-xs font-medium text-neutral-400">Delete</span>
+                        </div>
+
+                        {sub.lengths.map((len, li) => {
+                          const touched = sub.touchedLengths.has(len.uid);
+                          return (
+                            <div
+                              key={len.uid}
+                              className="rounded-lg border border-neutral-100 dark:border-neutral-800 p-2 md:border-0 md:rounded-none md:p-0 grid grid-cols-1 md:grid-cols-[1.5rem_1fr_1fr_1fr_5rem_2.5rem] gap-2 items-center"
                             >
-                              <Trash2 className="w-3.5 h-3.5" aria-hidden />
-                            </button>
-                          </div>
-                        );
-                      })}
-                      <button
-                        type="button"
-                        onClick={() => addLengthToSub(sub.uid)}
-                        className={`${btnS} flex items-center gap-1.5 text-xs`}
-                      >
-                        <Plus className="w-3.5 h-3.5" aria-hidden /> Add length
-                      </button>
+                              {/* drag handle */}
+                              <GripVertical className="hidden md:block w-4 h-4 text-neutral-300 cursor-grab" aria-hidden />
+
+                              {/* Length name */}
+                              <input
+                                aria-label={`Sub ${si + 1} length ${li + 1} name`}
+                                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 dark:text-white ${
+                                  touched && !(len.name ?? "").trim()
+                                    ? "border-red-300"
+                                    : "border-neutral-300 dark:border-neutral-600"
+                                }`}
+                                placeholder='16"'
+                                value={len.name ?? ""}
+                                onChange={(e) =>
+                                  updateLengthInSub(sub.uid, len.uid, "name", e.target.value)
+                                }
+                              />
+
+                              {/* Price with $ prefix */}
+                              <div className={`flex items-center border rounded-lg overflow-hidden ${
+                                touched && !(len.price ?? "").trim()
+                                  ? "border-red-300"
+                                  : "border-neutral-300 dark:border-neutral-600"
+                              }`}>
+                                <span className="px-2 text-sm text-neutral-500 bg-neutral-50 dark:bg-neutral-700 border-r border-neutral-300 dark:border-neutral-600 select-none">$</span>
+                                <input
+                                  aria-label={`Sub ${si + 1} length ${li + 1} price`}
+                                  className="flex-1 px-2 py-2 text-sm focus:outline-none bg-white dark:bg-neutral-800 dark:text-white"
+                                  placeholder="120.00"
+                                  value={(len.price ?? "").replace(/^\$/, "")}
+                                  onChange={(e) =>
+                                    updateLengthInSub(sub.uid, len.uid, "price", e.target.value)
+                                  }
+                                />
+                              </div>
+
+                              {/* Notes */}
+                              <input
+                                aria-label={`Sub ${si + 1} length ${li + 1} notes`}
+                                className="w-full border border-neutral-300 dark:border-neutral-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 dark:text-white"
+                                placeholder="Deposit required"
+                                value={len.notes ?? ""}
+                                onChange={(e) =>
+                                  updateLengthInSub(sub.uid, len.uid, "notes", e.target.value)
+                                }
+                              />
+
+                              {/* Length photo */}
+                              <div className="flex items-center gap-2 md:justify-center">
+                                {len.photo ? (
+                                  <div className="relative group h-14 w-14 shrink-0">
+                                    <img
+                                      src={getObjectUrl(len.photo)}
+                                      alt={`Preview for ${len.name || `length ${li + 1}`}`}
+                                      className="h-14 w-14 rounded-lg border border-neutral-200 dark:border-neutral-700 object-cover"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => setLengthPhoto(sub.uid, len.uid, undefined)}
+                                      aria-label={`Remove photo for length ${li + 1}`}
+                                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-600 text-xs text-white opacity-0 transition-opacity hover:bg-red-500 group-hover:opacity-100 focus:opacity-100"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <label
+                                    tabIndex={0}
+                                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
+                                    className="flex h-14 w-14 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50 transition-colors hover:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-neutral-600 dark:bg-neutral-800"
+                                    aria-label={`Upload photo for length ${li + 1}`}
+                                  >
+                                    <Plus className="h-4 w-4 text-neutral-400" aria-hidden />
+                                    <span className="text-[9px] text-neutral-500 leading-tight text-center">Add photo</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        setLengthPhoto(sub.uid, len.uid, e.target.files?.[0]);
+                                        e.currentTarget.value = "";
+                                      }}
+                                    />
+                                  </label>
+                                )}
+                              </div>
+
+                              {/* Delete row */}
+                              <div className="flex justify-center">
+                                <button
+                                  type="button"
+                                  onClick={() => removeLengthFromSub(sub.uid, len.uid)}
+                                  disabled={sub.lengths.length === 1}
+                                  aria-label={`Remove length ${li + 1} from subcategory ${si + 1}`}
+                                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-red-200 text-red-400 hover:border-red-400 hover:text-red-600 disabled:opacity-30 transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        <button
+                          type="button"
+                          onClick={() => addLengthToSub(sub.uid)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-violet-600 border border-violet-200 rounded-lg hover:border-violet-400 hover:bg-violet-50 transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" aria-hidden /> Add length
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
               })}
+
               {subInputError && (
-                <p
-                  role="alert"
-                  className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1"
-                >
+                <p role="alert" className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" aria-hidden />
                   {subInputError}
                 </p>
               )}
+
               <button
                 type="button"
                 onClick={addSubRow}
-                className={`${btnS} flex items-center gap-1.5 text-xs`}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-violet-600 border border-violet-200 rounded-lg hover:border-violet-400 hover:bg-violet-50 transition-colors"
               >
-                <Plus className="w-3.5 h-3.5" aria-hidden /> Add another
-                subcategory
+                <Plus className="w-4 h-4" aria-hidden /> Add another subcategory
               </button>
             </div>
 
-            {/* #5: only subsValid needed — canAdvanceSubs was redundant */}
             <WizardNavRow
               onBack={() => setStep(1)}
               onNext={handleStep2Next}
@@ -1070,46 +1039,44 @@ export function NewCategoryWizard({
           </div>
         )}
 
-        {/* ── Step 3: Done (#9: progress bar now shows this as 4th step) ── */}
+        {/* ── Step 3: Done ── */}
         {step === 3 && (
           <div className="space-y-5 text-center py-4">
             <div className="flex items-center justify-center">
-              <div className="w-14 h-14 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-violet-50 dark:bg-violet-900/20 border-2 border-violet-200 dark:border-violet-800 flex items-center justify-center">
                 <CheckCircle
-                  className="w-7 h-7 text-green-600 dark:text-green-400"
+                  className="w-8 h-8 text-violet-600 dark:text-violet-400"
                   aria-hidden
                 />
               </div>
             </div>
             <div>
-              <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">
                 "{createdCat?.name}" is ready
               </h2>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                <span className="block">Category created with {images.length} photos.</span>
                 <span className="block">
-                  Category created with {images.length} photos.
+                  {filledSubs.length} subcategor{filledSubs.length === 1 ? "y" : "ies"} created ({filledSubs.map((e) => e.name.trim()).join(", ")}).
                 </span>
-                <span className="block">
-                  {filledSubs.length} subcategor
-                  {filledSubs.length === 1 ? "y" : "ies"} created (
-                  {filledSubs.map((e) => e.name.trim()).join(", ")}).
-                </span>
-                <span className="block">
-                  Each subcategory set up with photos, a size, and length
-                  options.
-                </span>
-                <span className="block mt-2">
-                  You can add more subcategories, sizes, and lengths from the
-                  editor.
-                </span>
+                <span className="block">Each subcategory set up with photos, a size, and length options.</span>
+                <span className="block mt-2">You can add more subcategories, sizes, and lengths from the editor.</span>
               </p>
             </div>
             <div className="flex items-center justify-center gap-3 pt-2 border-t border-neutral-100 dark:border-neutral-700">
-              <button type="button" onClick={onCancel} className={btnS}>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-4 py-2 text-sm font-medium text-neutral-700 border border-neutral-300 rounded-lg hover:border-neutral-500 transition-colors"
+              >
                 Back to list
               </button>
-              <button type="button" onClick={handleFinish} className={btnP}>
-                Open editor →
+              <button
+                type="button"
+                onClick={handleFinish}
+                className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+              >
+                Open editor <ChevronRight className="w-4 h-4" aria-hidden />
               </button>
             </div>
           </div>
