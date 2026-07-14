@@ -254,7 +254,7 @@ export function NewCategoryWizard({
   }, []);
 
   // ── Derived values ───────────────────────────────────────────────────────
-  const photoOk = imageFiles.length >= 3 && imageFiles.length <= 5;
+  const photoOk = imageFiles.length >= 3 && imageFiles.length <= 7;
   // #10: filter on .name (renamed from .value)
   const filledSubs = subEntries.filter((e) => e.name.trim().length >= 2);
   // #5: canAdvanceSubs removed — subsValid subsumes it
@@ -285,7 +285,7 @@ export function NewCategoryWizard({
   // ── Step 1: Photos — client-side only ───────────────────────────────────
   const handleStep1Next = () => {
     if (imageFiles.length < 3) { setError("Add at least 3 photos to continue."); return; }
-    if (imageFiles.length > 5) { setError("Maximum 5 photos allowed."); return; }
+    if (imageFiles.length > 7) { setError("Maximum 7 photos allowed."); return; }
     clearError();
     setStep(2);
   };
@@ -654,7 +654,7 @@ export function NewCategoryWizard({
                 Add gallery photos
               </h2>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                Upload <strong>3 to 5</strong> photos for{" "}
+                Upload <strong>3 to 7</strong> photos for{" "}
                 <span className="font-medium text-neutral-700 dark:text-neutral-300">
                   {catName.trim()}
                 </span>
@@ -707,8 +707,8 @@ export function NewCategoryWizard({
                 )}
                 {imageFiles.length < 3
                   ? `${imageFiles.length} selected — add ${3 - imageFiles.length} more`
-                  : imageFiles.length > 5
-                    ? `${imageFiles.length} selected — remove ${imageFiles.length - 5} (max 5)`
+                  : imageFiles.length > 7
+                    ? `${imageFiles.length} selected — remove ${imageFiles.length - 7} (max 7)`
                     : `${imageFiles.length} photos ready`}
               </div>
             )}
