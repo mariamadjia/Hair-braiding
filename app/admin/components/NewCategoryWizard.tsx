@@ -682,19 +682,17 @@ export function NewCategoryWizard({
                     </button>
                   </div>
                 ))}
-                {[0, 1, 2].map((tile) => (
-                  <label key={tile} className="cursor-pointer h-24 w-24 flex items-center justify-center text-center border-2 border-dashed border-neutral-300 dark:border-neutral-600 hover:border-violet-500 rounded-lg bg-neutral-50 dark:bg-neutral-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all group">
-                    <span className="text-xs text-neutral-500 group-hover:text-violet-600 font-medium">+ Add Photo</span>
-                    <input
-                      type="file" accept="image/*" multiple className="hidden"
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files ?? []);
-                        setImageFiles((prev) => [...prev, ...files]);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                ))}
+                <label className="cursor-pointer h-24 w-24 flex items-center justify-center text-center border-2 border-dashed border-neutral-300 dark:border-neutral-600 hover:border-violet-500 rounded-lg bg-neutral-50 dark:bg-neutral-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all group">
+                  <span className="text-xs text-neutral-500 group-hover:text-violet-600 font-medium">+ Add Photo</span>
+                  <input
+                    type="file" accept="image/*" multiple className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      setImageFiles((prev) => [...prev, ...files]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
               </div>
             </div>
             {imageFiles.length > 0 && (
