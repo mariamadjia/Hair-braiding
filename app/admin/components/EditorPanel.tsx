@@ -98,7 +98,8 @@ export function EditorPanel({
 
     if (selection.type === "root") {
         return wrapEditor(<RootEditor 
-            categorySummaries={categorySummaries} 
+            categorySummaries={categorySummaries}
+            token={token}
             headers={headers} 
             mutate={mutate} 
             setSelection={setSelection}

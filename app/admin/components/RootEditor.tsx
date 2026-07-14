@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import type { CategorySummary } from "@/lib/booking-types";
-import { inp, lbl, btnP, btnS, btnD } from "../constants";
-import { slugify } from "../utils";
+import { btnP, btnS, btnD } from "../constants";
 import { GripVertical, FolderTree, Trash2, AlertCircle } from "lucide-react";
+import { NewCategoryWizard } from "./NewCategoryWizard";
 
 type Selection =
     | { type: "root" }
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
 
-export function RootEditor({ categorySummaries, headers, mutate, setSelection, onCategoryCreated, onCategoryDeleted, onCategorySummariesRefresh }: {
+export function RootEditor({ categorySummaries, headers, mutate, setSelection, onCategoryCreated, onCategoryDeleted, onCategorySummariesRefresh, token }: {
     categorySummaries: CategorySummary[];
     headers: Record<string, string>;
     mutate: (method: string, path: string, body?: object) => Promise<any>;
@@ -19,22 +19,17 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
     onCategoryCreated?: (summary: CategorySummary) => void;
     onCategoryDeleted?: (slug: string) => void;
     onCategorySummariesRefresh?: () => Promise<any>;
+    token: string;
 }) {
     const [adding, setAdding] = useState(false);
-    const [name, setName] = useState("");
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-    const add = async () => {
-        if (!name.trim()) return;
-        const created = await mutate("POST", "", { name: name.trim(), slug: slugify(name), subcategories: [] });
-        setName(""); setAdding(false);
-        if (created && (created.slug || created.name)) {
-            onCategoryCreated?.(created as CategorySummary);
-        } else {
-            await onCategorySummariesRefresh?.();
-        }
+    const handleWizardDone = (summary: CategorySummary) => {
+        onCategoryCreated?.(summary);
+        setAdding(false);
+        setSelection({ type: "category", catSlug: summary.slug });
     };
 
     const del = async (slug: string, catName: string) => {
@@ -124,17 +119,20 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
             )}
             <div className="flex items-center justify-between">
                 <h2 className="text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Categories</h2>
-                <button type="button" onClick={() => setAdding(true)} className={btnP}>+ Add</button>
+                {!adding && (
+                    <button type="button" onClick={() => setAdding(true)} className={btnP}>+ Add</button>
+                )}
             </div>
 
             {adding && (
-                <div className="border border-neutral-200 dark:border-neutral-700 rounded-sm p-3 space-y-2 bg-neutral-50 dark:bg-neutral-800">
-                    <div><label className={lbl}>Name *</label><input className={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Box Braids" /></div>
-                    <div className="flex gap-2">
-                        <button type="button" onClick={add} className={btnP} disabled={!name.trim()}>Add</button>
-                        <button type="button" onClick={() => setAdding(false)} className={btnS}>Cancel</button>
-                    </div>
-                </div>
+                <NewCategoryWizard
+                    token={token}
+                    headers={headers}
+                    mutate={mutate}
+                    onDone={handleWizardDone}
+                    onCancel={() => setAdding(false)}
+                    onCategorySummariesRefresh={onCategorySummariesRefresh}
+                />
             )}
 
             <div className="space-y-2">
