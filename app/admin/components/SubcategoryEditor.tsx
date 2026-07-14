@@ -102,6 +102,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     };
 
     const uploadGalleryImage = async (file: File) => {
+        if (saving) {
+            setSaveError("Please wait for the current operation to complete.");
+            return;
+        }
+        setSaving(true);
+        setSaveError(null);
         try {
             if (!cat.id || !sub.id) {
                 throw new Error('Category or subcategory ID is missing');
@@ -139,9 +145,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             if (freshSub?.image) {
                 setImage(freshSub.image);
             }
+            setSaveSuccess("Image uploaded successfully!");
+            setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
             console.error('Failed to upload image:', error);
-            alert('Failed to upload image. Please try again.');
+            setSaveError('Failed to upload image. Please try again.');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -149,7 +159,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         if (!confirm('Delete this image? It will be removed from the gallery and all pages.')) {
             return;
         }
-        
+        if (saving) {
+            setSaveError("Please wait for the current operation to complete.");
+            return;
+        }
+        setSaving(true);
+        setSaveError(null);
         try {
             const response = await fetch(`${API_BASE_URL}/api/gallery/${imageId}`, {
                 method: 'DELETE',
@@ -162,9 +177,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 throw new Error('Failed to delete image');
             }
             
-            // Remove from local state immediately
-            setGalleryImages(prev => prev.filter(img => img.id !== imageId));
-
             // Re-fetch gallery images for this subcategory only
             const galleryResponse = await fetch(`${API_BASE_URL}/api/gallery/subcategory/${sub.id}`);
             if (galleryResponse.ok) {
@@ -179,45 +191,82 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             if (freshSub?.image !== undefined) {
                 setImage(freshSub.image ?? "");
             }
+            setSaveSuccess("Image deleted successfully!");
+            setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
             console.error('Failed to delete image:', error);
             setSaveError('Failed to delete image. Please try again.');
+            // Re-fetch to ensure state is consistent
+            const galleryResponse = await fetch(`${API_BASE_URL}/api/gallery/subcategory/${sub.id}`);
+            if (galleryResponse.ok) {
+                const freshGallery = await galleryResponse.json();
+                setGalleryImages(freshGallery);
+                const galleryUrls = freshGallery.map((img: GalleryImage) => img.imageUrl);
+                setImages(galleryUrls);
+            }
+        } finally {
+            setSaving(false);
         }
     };
 
     const guardedSetSelection = (next: Selection) => {
+        if (saving) {
+            setSaveError("Please wait for the current operation to complete.");
+            return;
+        }
         if (dirty && !confirm('You have unsaved changes. Leave without saving?')) return;
         setSelection(next);
     };
 
     const save = async () => {
+        if (saving) return; // Prevent concurrent mutations
+        if (!name.trim()) {
+            setSaveError("Subcategory name is required.");
+            return;
+        }
         setSaving(true);
+        setSaveError(null);
         try {
             await mutate("PUT", base, { name, image, displayOrder: sub.displayOrder?.toString(), subcategoryId: sub.id });
             await onSubcategoryUpdate?.(sub.slug);
+            // Only update local state after server confirms
             setDirty(false);
             setSaveSuccess("Subcategory saved successfully!");
-            setSaveError(null);
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
             console.error("Failed to save subcategory:", error);
             setSaveError("Failed to save subcategory. Please try again.");
+            // Re-fetch to ensure state is consistent
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub) {
+                setName(freshSub.name);
+                setImage(freshSub.image ?? "");
+            }
         } finally {
             setSaving(false);
         }
     };
 
     const saveItem = async (item: BookingItem, idx: number | null) => {
+        if (saving) return; // Prevent concurrent mutations
+        if (!item.name?.trim()) {
+            setSaveError("Size name is required.");
+            return;
+        }
+        setSaving(true);
+        setSaveError(null);
         try {
             if (idx !== null) {
+                await mutate("PUT", `${base}/items`, { itemIndex: idx, item, itemId: items[idx]?.id, subcategoryId: sub.id });
+                // Only update local state after server confirms
                 setItems(prev => prev.map((existing, i) => i === idx ? item : existing));
                 setEditingIdx(null);
                 setSaveSuccess("Size saved successfully!");
                 setTimeout(() => setSaveSuccess(null), 3000);
-                await mutate("PUT", `${base}/items`, { itemIndex: idx, item, itemId: items[idx]?.id, subcategoryId: sub.id });
-                void onSubcategoryUpdate?.(sub.slug);
+                await onSubcategoryUpdate?.(sub.slug);
             } else {
                 const createdItem = await mutate("POST", `${base}/items`, { ...item, subcategoryId: sub.id });
+                // Only update local state after server confirms
                 setItems(prev => [...prev, createdItem ?? item]);
                 setAddingItem(false);
                 setSaveSuccess("Size added successfully!");
@@ -226,7 +275,14 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             }
         } catch (error) {
             console.error("Failed to save item:", error);
-            alert("Failed to save size. Please check the console for details.");
+            setSaveError("Failed to save size. Please try again.");
+            // Re-fetch to ensure state is consistent
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.items) {
+                setItems(freshSub.items);
+            }
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -236,29 +292,40 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         // Always use itemId if available, never rely on array index
         if (!itemId) {
             console.error('[SubcategoryEditor] No itemId provided, cannot delete safely');
-            alert("Cannot delete: item ID is missing. Please refresh and try again.");
+            setSaveError("Cannot delete: item ID is missing. Please refresh and try again.");
             return;
         }
+        
+        if (saving) return; // Prevent concurrent mutations
         
         const itemName = items?.[idx]?.name ?? "this size";
         if (!confirm(`Delete "${itemName}"?`)) return;
         
-        setItems(prev => prev.filter((_, i) => i !== idx));
-        setEditingIdx(null);
-        setExpandedItems((prev) => {
-            const next = new Set(prev);
-            next.delete(idx);
-            return next;
-        });
-        setSaveSuccess("Size deleted successfully!");
-        setTimeout(() => setSaveSuccess(null), 3000);
-
+        setSaving(true);
+        setSaveError(null);
         try {
             await mutate("DELETE", `${base}/items/${itemId}`, undefined);
-            void onSubcategoryUpdate?.(sub.slug);
+            // Only update local state after server confirms deletion
+            setItems(prev => prev.filter((_, i) => i !== idx));
+            setEditingIdx(null);
+            setExpandedItems((prev) => {
+                const next = new Set(prev);
+                next.delete(idx);
+                return next;
+            });
+            setSaveSuccess("Size deleted successfully!");
+            setTimeout(() => setSaveSuccess(null), 3000);
+            await onSubcategoryUpdate?.(sub.slug);
         } catch (error) {
             console.error("Failed to delete item:", error);
             setSaveError("Delete failed. Please refresh the page.");
+            // Re-fetch to ensure state is consistent
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.items) {
+                setItems(freshSub.items);
+            }
+        } finally {
+            setSaving(false);
         }
     };
 

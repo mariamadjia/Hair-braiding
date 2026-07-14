@@ -33,26 +33,55 @@ type GalleryImageRelationship = {
   serviceItemId?: number;
 };
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+
 export async function uploadFile(
   file: File,
   token: string,
   relationship: GalleryImageRelationship = {}
 ): Promise<string> {
+  // Validate file size
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`File size exceeds 10MB limit. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`);
+  }
+
+  // Validate file type
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new Error(`Invalid file type: ${file.type}. Allowed types: JPEG, PNG, WebP, GIF.`);
+  }
+
+  // Validate token
+  if (!token) {
+    throw new Error('Authentication required. Please log in and try again.');
+  }
+
   try {
+    // Stage upload without entity associations first (safer for retry)
     const result = await galleryApi.uploadImage({
       file,
       title: file.name,
-      categoryId: relationship.categoryId,
-      subcategoryId: relationship.subcategoryId,
-      serviceItemId: relationship.serviceItemId,
+      // Don't associate with entities yet - done in bulk operation
     });
 
     return toProxyUrl(result.imageUrl);
   } catch (error) {
     console.error("Upload failed:", error);
 
-    throw new Error(
-      error instanceof Error ? error.message : "Upload failed"
-    );
+    if (error instanceof Error) {
+      // Provide more specific error messages
+      if (error.message.includes('401') || error.message.includes('403')) {
+        throw new Error('Authentication failed. Please log in again.');
+      }
+      if (error.message.includes('413')) {
+        throw new Error('File too large. Please upload a smaller file (max 10MB).');
+      }
+      if (error.message.includes('415')) {
+        throw new Error('Unsupported file type. Please use JPEG, PNG, WebP, or GIF.');
+      }
+      throw error;
+    }
+
+    throw new Error('Upload failed. Please check your connection and try again.');
   }
 }

@@ -314,64 +314,97 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
     setSubInputError("");
     clearError();
     setBusy(true);
-    setSavePhase("Creating category…");
+    setSavePhase("Uploading images…");
     try {
-      let cat = createdCat;
-      if (!cat) {
-        const trimmed = catName.trim();
-        const created = await mutate("POST", "", { name: trimmed, slug: slugify(trimmed), subcategories: [] });
-        if (!created.id) throw new Error("Server did not return a category ID.");
-        cat = { id: created.id, name: trimmed, slug: slugify(trimmed) };
-        setCreatedCat(cat);
-      }
+      const trimmed = catName.trim();
+      const catSlug = slugify(trimmed);
 
-      setSavePhase(`Uploading ${imageFiles.length} category photos…`);
-      const catId = cat.id;
-      const proxyUrls = await Promise.all(imageFiles.map((file) => uploadFile(file, token, { categoryId: catId })));
-      const backendUrls = proxyUrls.map(fromProxyUrl).filter((url): url is string => Boolean(url));
-      await galleryApi.updateCategoryFlippingImages(catId, backendUrls);
-
-      for (const [subIndex, sub] of filledSubs.entries()) {
-        const subName = sub.name.trim();
-        setSavePhase(`Saving subcategory ${subIndex + 1} of ${filledSubs.length}: ${subName}…`);
-        let persisted = persistedSubs.current.get(subName);
-        if (!persisted) {
-          const createdSub = await mutate("POST", `/${cat.slug}/subcategories`, { name: subName, categoryId: catId });
-          if (!createdSub.slug || !createdSub.id) throw new Error(`Server did not return slug/id for "${subName}".`);
-          persisted = { slug: createdSub.slug, id: createdSub.id, itemIds: {} };
-          persistedSubs.current.set(subName, persisted);
-          await Promise.all(sub.photos.map((file) => uploadFile(file, token, { categoryId: catId, subcategoryId: persisted!.id })));
-        }
-
-        for (const [sizeIndex, size] of sub.sizes.entries()) {
-          const sizeLabel = size.name.trim();
-          setSavePhase(`Saving ${subName}: ${sizeLabel} (${sizeIndex + 1} of ${sub.sizes.length})…`);
-          let itemId = persisted.itemIds[size.uid];
-          if (!itemId) {
-            const createdItem = await mutate("POST", `/${cat.slug}/subcategories/${persisted.slug}/items`, { name: sizeLabel, price: "", description: "", subcategoryId: persisted.id });
-            if (!createdItem.id) throw new Error(`Server did not return an item ID for "${sizeLabel}".`);
-            itemId = createdItem.id;
-            persisted.itemIds[size.uid] = itemId;
-            persistedSubs.current.set(subName, { ...persisted, itemIds: { ...persisted.itemIds } });
-          }
-          const lengthOptions = await Promise.all(size.lengths.map(async ({ uid, photo, ...length }) => {
-            let imageUrl = length.imageUrl;
-            if (photo) {
-              const proxyUrl = await uploadFile(photo, token, { categoryId: catId, subcategoryId: persisted!.id, serviceItemId: itemId });
-              imageUrl = fromProxyUrl(proxyUrl) ?? proxyUrl;
-            }
-            return { ...length, imageUrl };
-          }));
-          await mutate("PUT", `/${cat.slug}/subcategories/${persisted.slug}/items`, {
-            itemId,
-            subcategoryId: persisted.id,
-            item: { name: sizeLabel, price: "", description: "", subcategory: { id: persisted.id }, lengthOptions },
+      // Upload all images first (staged, no category association yet)
+      const allUploads: { file: File; type: 'category' | 'subcategory' | 'length'; subIndex?: number; sizeIndex?: number; lengthIndex?: number }[] = [];
+      
+      imageFiles.forEach((file) => allUploads.push({ file, type: 'category' }));
+      
+      filledSubs.forEach((sub, subIndex) => {
+        sub.photos.forEach((file) => allUploads.push({ file, type: 'subcategory', subIndex }));
+        sub.sizes.forEach((size, sizeIndex) => {
+          size.lengths.forEach((length, lengthIndex) => {
+            if (length.photo) allUploads.push({ file: length.photo, type: 'length', subIndex, sizeIndex, lengthIndex });
           });
-        }
+        });
+      });
+
+      const uploadedImages = await Promise.all(allUploads.map(async (upload) => {
+        const image = await galleryApi.uploadImage({ file: upload.file });
+        return { ...upload, imageId: image.id };
+      }));
+
+      setSavePhase("Creating category structure…");
+
+      // Build the complete category request
+      const categoryImageIds = uploadedImages
+        .filter((u) => u.type === 'category')
+        .map((u) => u.imageId);
+
+      const subcategories = filledSubs.map((sub, subIndex) => {
+        const subImageIds = uploadedImages
+          .filter((u) => u.type === 'subcategory' && u.subIndex === subIndex)
+          .map((u) => u.imageId);
+
+        const sizes = sub.sizes.map((size, sizeIndex) => {
+          const lengths = size.lengths.map((length, lengthIndex) => {
+            const uploaded = uploadedImages.find(
+              (u) => u.type === 'length' && u.subIndex === subIndex && u.sizeIndex === sizeIndex && u.lengthIndex === lengthIndex
+            );
+            return {
+              name: (length.name || '').trim(),
+              price: (length.price || '').trim(),
+              notes: length.notes || undefined,
+              duration: length.duration || undefined,
+              imageId: uploaded?.imageId || null,
+            };
+          });
+          return {
+            name: size.name.trim(),
+            lengths,
+          };
+        });
+
+        return {
+          name: sub.name.trim(),
+          imageIds: subImageIds,
+          sizes,
+        };
+      });
+
+      const completeRequest = {
+        name: trimmed,
+        slug: catSlug,
+        categoryImageIds,
+        subcategories,
+      };
+
+      // Single transactional call
+      const created = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://backend-hairbraiding.onrender.com'}/api/categories/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(completeRequest),
+      });
+
+      if (!created.ok) {
+        const errorText = await created.text();
+        throw new Error(errorText || 'Failed to create category');
       }
+
+      const result = await created.json();
+      if (!result.id) throw new Error('Server did not return a category ID.');
+
+      setCreatedCat({ id: result.id, name: result.name, slug: result.slug });
       setStep(3);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Failed to save. Please try again.");
+      setError(caught instanceof Error ? caught.message : 'Failed to save. Please try again.');
     } finally {
       setBusy(false);
       setSavePhase(null);

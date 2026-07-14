@@ -93,6 +93,10 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     }, [cat.slug, token, onLoadSubcategorySummaries]);
 
     const guardedSetSelection = (next: Selection) => {
+        if (saving) {
+            setErrorMessage("Please wait for the current operation to complete.");
+            return;
+        }
         if (dirty && (name !== cat.name || images.length !== (cat.flippingImages ?? []).length)) {
             if (!confirm('You have unsaved changes. Leave without saving?')) return;
         }
@@ -100,6 +104,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     };
 
     const save = async () => {
+        if (saving) return; // Prevent concurrent mutations
         if (images.length < 3) {
             setErrorMessage("Please upload at least 3 photos for the gallery.");
             return;
@@ -112,8 +117,13 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             setErrorMessage("Category ID is missing. Cannot save flipping images.");
             return;
         }
+        if (!name.trim()) {
+            setErrorMessage("Category name is required.");
+            return;
+        }
 
         setSaving(true);
+        setErrorMessage(null);
         try {
             // Save category name separately
             await mutate("PUT", `/${cat.slug}`, { name });
@@ -127,6 +137,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             await galleryApi.updateCategoryFlippingImages(cat.id, backendUrls);
             console.log('[CategoryEditor] Flipping images saved successfully');
 
+            // Only update local state after server confirms
             setImages(backendUrls.map(toProxyUrl));
             setDirty(false);
             setSuccessMessage("Category saved successfully!");
@@ -134,6 +145,20 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         } catch (error) {
             console.error("Failed to save category:", error);
             setErrorMessage("Failed to save category. Please try again.");
+            // Re-fetch to ensure state is consistent
+            const response = await fetch(`/api/admin/categories/${cat.slug}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                cache: "no-store",
+            });
+            if (response.ok) {
+                const detail = await response.json();
+                setName(detail.name);
+                setImages((detail.flippingImages ?? []).map(toProxyUrl));
+            }
         } finally {
             setSaving(false);
         }
@@ -141,23 +166,39 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
 
     const addSub = async () => {
         if (!newSubName.trim()) return;
-        const created = await mutate("POST", `/${cat.slug}/subcategories`, { name: newSubName.trim(), categoryId: cat.id });
-        setNewSubName(""); setAddingSub(false);
-        if (created && (created.slug || created.name)) {
-            const summary: SubcategorySummary = { id: created.id, name: created.name, slug: created.slug ?? slugify(newSubName), displayOrder: created.displayOrder };
-            onSubcategoryCreated?.(cat.slug, summary);
-            setSubSummaries(prev => [...prev, summary]);
-        } else {
-            const fresh = await onSubcategorySummariesRefresh?.(cat.slug);
-            if (fresh) setSubSummaries(fresh);
+        if (saving) return; // Prevent concurrent mutations
+        setSaving(true);
+        setErrorMessage(null);
+        try {
+            const created = await mutate("POST", `/${cat.slug}/subcategories`, { name: newSubName.trim(), categoryId: cat.id });
+            setNewSubName("");
+            setAddingSub(false);
+            if (created && (created.slug || created.name)) {
+                const summary: SubcategorySummary = { id: created.id, name: created.name, slug: created.slug ?? slugify(newSubName), displayOrder: created.displayOrder };
+                onSubcategoryCreated?.(cat.slug, summary);
+                setSubSummaries(prev => [...prev, summary]);
+                setSuccessMessage(`Subcategory "${created.name}" added successfully!`);
+                setTimeout(() => setSuccessMessage(null), 3000);
+            } else {
+                const fresh = await onSubcategorySummariesRefresh?.(cat.slug);
+                if (fresh) setSubSummaries(fresh);
+            }
+        } catch (error) {
+            console.error("Failed to add subcategory:", error);
+            setErrorMessage("Failed to add subcategory. Please try again.");
+        } finally {
+            setSaving(false);
         }
     };
 
     const delSub = async (subSlug: string, subName: string, subId?: number) => {
         if (!confirm(`Delete subcategory "${subName}"?`)) return;
+        if (saving) return; // Prevent concurrent mutations
         setSaving(true);
+        setErrorMessage(null);
         try {
             await mutate("DELETE", `/${cat.slug}/subcategories/${subSlug}`, subId ? { subcategoryId: subId } : undefined);
+            // Only update local state after server confirms deletion
             onSubcategoryDeleted?.(cat.slug, subSlug);
             setSubSummaries(prev => prev.filter(s => s.slug !== subSlug));
             setSuccessMessage(`Subcategory "${subName}" deleted successfully!`);
@@ -165,6 +206,9 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         } catch (error) {
             console.error("Failed to delete subcategory:", error);
             setErrorMessage("Failed to delete subcategory. Please try again.");
+            // Refresh to ensure state is consistent
+            const fresh = await onSubcategorySummariesRefresh?.(cat.slug);
+            if (fresh) setSubSummaries(fresh);
         } finally {
             setSaving(false);
         }

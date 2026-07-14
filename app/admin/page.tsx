@@ -47,6 +47,7 @@ export default function AdminPage() {
     const [isLoadingSubcategorySummaries, setIsLoadingSubcategorySummaries] = useState(false);
     const [isLoadingSubcategoryDetail, setIsLoadingSubcategoryDetail] = useState(false);
     const [loadingSubcategorySlug, setLoadingSubcategorySlug] = useState<string | null>(null);
+    const [cacheVersion, setCacheVersion] = useState(0); // For cache invalidation
 
     const loadCategories = async (jwtToken: string) => {
         try {
@@ -85,6 +86,37 @@ export default function AdminPage() {
                 console.error("Failed to load categories:", err);
                 setError("Failed to load categories from backend. Please try again.");
             }
+        }
+    };
+
+    // Consolidated cache invalidation
+    const invalidateCaches = (scope?: 'all' | 'category' | 'subcategory', slug?: string) => {
+        if (scope === 'all' || !scope) {
+            setCategorySummaries([]);
+            setSubcategorySummariesCache(new Map());
+            setSubcategoryDetailsCache(new Map());
+            setCategoryDetailsCache(new Map());
+            setCacheVersion(prev => prev + 1);
+        } else if (scope === 'category' && slug) {
+            setCategorySummaries(prev => prev.filter(cat => cat.slug !== slug));
+            setCategoryDetailsCache(prev => {
+                const next = new Map(prev);
+                next.delete(slug);
+                return next;
+            });
+            setSubcategorySummariesCache(prev => {
+                const next = new Map(prev);
+                next.delete(slug);
+                return next;
+            });
+            setCacheVersion(prev => prev + 1);
+        } else if (scope === 'subcategory' && slug) {
+            setSubcategoryDetailsCache(prev => {
+                const next = new Map(prev);
+                next.delete(slug);
+                return next;
+            });
+            setCacheVersion(prev => prev + 1);
         }
     };
 
@@ -288,9 +320,8 @@ export default function AdminPage() {
                 sessionStorage.setItem("admin_user", JSON.stringify(response.admin));
             }
             
-            // Load category summaries and full category data in background, do not block login
+            // Only load category summaries initially, full data loaded on-demand
             void loadCategorySummaries(response.token);
-            void loadCategories(response.token);
         } catch (err: any) {
             setError(err.message || "Invalid email or password.");
         } finally {
@@ -308,11 +339,10 @@ export default function AdminPage() {
                 setIsAuthChecking(true);
                 setToken(savedToken);
                 try {
-                    // Run warm-up ping and summaries + full categories fetch in parallel
+                    // Run warm-up ping and summaries fetch in parallel (full data loaded on-demand)
                     await Promise.all([
                         pingBackend(),
-                        loadCategorySummaries(savedToken),
-                        loadCategories(savedToken)
+                        loadCategorySummaries(savedToken)
                     ]);
                 } catch (err) {
                     console.error("Auth check failed:", err);
@@ -446,19 +476,17 @@ export default function AdminPage() {
     };
 
     const refreshSubcategorySummaries = async (categorySlug: string) => {
-        setSubcategorySummariesCache((prev) => {
-            const next = new Map(prev);
-            next.delete(categorySlug);
-            return next;
-        });
+        invalidateCaches('category', categorySlug);
         return loadSubcategorySummaries(categorySlug, token);
     };
 
     const refreshCategorySummaries = async () => {
+        invalidateCaches('all');
         return loadCategorySummaries(token);
     };
 
     const refreshSubcategoryDetail = async (slug: string) => {
+        invalidateCaches('subcategory', slug);
         try {
             const res = await fetch(`/api/admin/subcategories/${slug}`, {
                 method: "GET",
