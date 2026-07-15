@@ -70,8 +70,11 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
 
                 const detail = await response.json();
                 console.log('[CategoryEditor] Fetched category detail flippingImages:', detail.flippingImages);
+                console.log('[CategoryEditor] Fetched category detail galleryImages:', detail.galleryImages);
 
-                setImages((detail.flippingImages ?? []).map(toProxyUrl));
+                const proxiedImages = (detail.flippingImages ?? []).map(toProxyUrl);
+                console.log('[CategoryEditor] Proxied images:', proxiedImages);
+                setImages(proxiedImages);
                 setGalleryImages((detail.galleryImages ?? []) as GalleryImage[]);
             } catch (error) {
                 console.error('[CategoryEditor] Failed to fetch category detail:', error);
