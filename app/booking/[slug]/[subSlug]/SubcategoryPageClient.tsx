@@ -60,6 +60,10 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
         .filter(Boolean)
         .map(toProxyUrl);
     const hasMultiplePhotos = photoGallery.length > 1;
+    const sizePhotoGallery = (selectedItem?.sizePhotos?.length ? selectedItem.sizePhotos : [])
+        .filter(Boolean)
+        .map(toProxyUrl);
+    const hasMultipleSizePhotos = sizePhotoGallery.length > 1;
 
     const openModalForItem = (index: number) => {
         const item = items[index];
@@ -351,6 +355,22 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 </p>
                             )}
                         </div>
+
+                        {sizePhotoGallery.length > 0 && (
+                            <div className="mb-4">
+                                <p className="text-xs font-medium uppercase tracking-widest text-neutral-500 mb-2">Photos for this size</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {sizePhotoGallery.slice(0, 3).map((photo, idx) => (
+                                        <img key={idx} src={photo} alt="" className="h-16 w-16 rounded-md border border-neutral-200 object-cover" />
+                                    ))}
+                                    {sizePhotoGallery.length > 3 && (
+                                        <span className="flex h-16 w-16 items-center justify-center rounded-md border border-neutral-200 bg-neutral-50 text-xs font-medium text-neutral-600">
+                                            +{sizePhotoGallery.length - 3}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="mt-5 space-y-3">
                             {lengthOptions.map((option, idx) => {

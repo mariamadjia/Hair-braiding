@@ -583,14 +583,31 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                 </div>
                                             </div>
 
-                                            {expandedItems.has(originalIdx) && item.lengthOptions && item.lengthOptions.length > 0 && (
+                                            {expandedItems.has(originalIdx) && (
                                                 <div className="border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 px-4 py-3">
-                                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-2">Length Options</p>
-                                                    <div className="grid grid-cols-1 gap-1.5">
-                                                        {item.lengthOptions.map((option, optIdx) => (
-                                                            <div key={optIdx} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
-                                                                <div className="flex items-center gap-2 min-w-0">
-                                                                    {option.imageUrl && (
+                                                    {item.sizePhotos && item.sizePhotos.length > 0 && (
+                                                        <div className="mb-3">
+                                                            <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-2">Photos for this size</p>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {item.sizePhotos.slice(0, 3).map((photo, idx) => (
+                                                                    <img key={idx} src={toProxyUrl(photo)} alt="" className="h-10 w-10 rounded-md border border-neutral-200 object-cover dark:border-neutral-700" />
+                                                                ))}
+                                                                {item.sizePhotos.length > 3 && (
+                                                                    <span className="flex h-10 w-10 items-center justify-center rounded-md border border-neutral-200 bg-neutral-50 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                                                                        +{item.sizePhotos.length - 3}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {item.lengthOptions && item.lengthOptions.length > 0 && (
+                                                        <>
+                                                            <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-2">Length Options</p>
+                                                            <div className="grid grid-cols-1 gap-1.5">
+                                                                {item.lengthOptions.map((option, optIdx) => (
+                                                                    <div key={optIdx} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+                                                                        <div className="flex items-center gap-2 min-w-0">
+                                                                            {option.imageUrl && (
                                                                         <img src={toProxyUrl(option.imageUrl)} alt={option.name} className="w-8 h-8 rounded object-cover flex-shrink-0 border border-neutral-200" />
                                                                     )}
                                                                     <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate">{option.name}</span>
@@ -602,6 +619,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                             </div>
                                                         ))}
                                                     </div>
+                                                </>
+                                            )}
                                                 </div>
                                             )}
                                         </div>

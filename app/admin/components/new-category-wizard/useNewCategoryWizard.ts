@@ -347,13 +347,14 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
       const catSlug = slugify(trimmed);
 
       // Upload all images first (staged, no category association yet)
-      const allUploads: { file: File; type: 'category' | 'subcategory' | 'length'; subIndex?: number; sizeIndex?: number; lengthIndex?: number }[] = [];
-      
+      const allUploads: { file: File; type: 'category' | 'subcategory' | 'length' | 'size'; subIndex?: number; sizeIndex?: number; lengthIndex?: number }[] = [];
+
       imageFiles.forEach((file) => allUploads.push({ file, type: 'category' }));
-      
+
       filledSubs.forEach((sub, subIndex) => {
         sub.photos.forEach((file) => allUploads.push({ file, type: 'subcategory', subIndex }));
         sub.sizes.forEach((size, sizeIndex) => {
+          size.photos.forEach((file) => allUploads.push({ file, type: 'size', subIndex, sizeIndex }));
           size.lengths.forEach((length, lengthIndex) => {
             if (length.photo) allUploads.push({ file: length.photo, type: 'length', subIndex, sizeIndex, lengthIndex });
           });
@@ -390,6 +391,10 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
           .map((u) => u.imageId);
 
         const sizes = sub.sizes.map((size, sizeIndex) => {
+          const sizePhotoIds = uploadedImages
+            .filter((u) => u.type === 'size' && u.subIndex === subIndex && u.sizeIndex === sizeIndex)
+            .map((u) => u.imageId);
+
           const lengths = size.lengths.map((length, lengthIndex) => {
             const uploaded = uploadedImages.find(
               (u) => u.type === 'length' && u.subIndex === subIndex && u.sizeIndex === sizeIndex && u.lengthIndex === lengthIndex
@@ -404,6 +409,7 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
           });
           return {
             name: size.name.trim(),
+            sizePhotoIds,
             lengths,
           };
         });

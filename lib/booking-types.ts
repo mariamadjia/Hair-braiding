@@ -29,6 +29,7 @@ export type BookingItem = {
     notes?: string;
     image?: string;
     images?: string[];
+    sizePhotos?: string[];
     link?: string;
     objectPosition?: string;
     availableSizes?: string[];
