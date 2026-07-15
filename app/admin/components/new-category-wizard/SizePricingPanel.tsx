@@ -59,8 +59,9 @@ export function SizePricingPanel({ sub, size, controller }: Props) {
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {expanded ? (
             <>
-              <label className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-dashed border-violet-300 text-violet-500 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30">
-                <Plus className="h-4 w-4" />
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">photo for this size</span>
+              <label className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-dashed border-violet-300 text-violet-500 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30">
+                <Plus className="h-5 w-5" />
                 <input
                   ref={sizePhotoInputRef}
                   type="file"
@@ -75,18 +76,18 @@ export function SizePricingPanel({ sub, size, controller }: Props) {
               </label>
               {size.photos.slice(0, 3).map((photo, index) => (
                 <div key={index} className="relative group">
-                  <img src={getObjectUrl(photo)} alt="" className="h-8 w-8 rounded-md border border-neutral-200 object-cover dark:border-neutral-700" />
+                  <img src={getObjectUrl(photo)} alt="" className="h-10 w-10 rounded-md border border-neutral-200 object-cover dark:border-neutral-700" />
                   <button
                     type="button"
                     onClick={() => removePhotoFromSize(sub.uid, size.uid, index)}
-                    className="absolute -right-1 -top-1 flex h-3 w-3 items-center justify-center rounded-full bg-neutral-700 text-white opacity-0 group-hover:opacity-100"
+                    className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-700 text-white opacity-0 group-hover:opacity-100"
                   >
-                    <X className="h-2 w-2" />
+                    <X className="h-3 w-3" />
                   </button>
                 </div>
               ))}
               {size.photos.length > 3 && (
-                <span className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 bg-neutral-50 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                <span className="flex h-10 w-10 items-center justify-center rounded-md border border-neutral-200 bg-neutral-50 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                   +{size.photos.length - 3}
                 </span>
               )}
