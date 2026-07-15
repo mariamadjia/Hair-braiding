@@ -107,19 +107,35 @@ export const galleryApi = {
 
         const token = getAuthToken();
         
-        const response = await fetch(`${API_BASE_URL}/api/gallery/upload`, {
-            method: 'POST',
-            headers: {
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: formData,
-        });
+        // Use AbortSignal.timeout for upload timeout (2 minutes)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/gallery/upload`, {
+                method: 'POST',
+                headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: formData,
+                signal: controller.signal,
+            });
 
-        if (!response.ok) {
-            throw new Error(`Upload failed: ${response.statusText}`);
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Upload failed: ${response.status} - ${errorText || response.statusText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error instanceof Error && error.name === 'AbortError') {
+                throw new Error('Upload timed out. Please try again with a smaller file or check your connection.');
+            }
+            throw error;
         }
-
-        return await response.json();
     },
 
     // Update image

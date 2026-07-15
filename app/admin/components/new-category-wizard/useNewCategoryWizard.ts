@@ -333,10 +333,22 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
         });
       });
 
-      const uploadedImages = await Promise.all(allUploads.map(async (upload) => {
+      const totalImages = allUploads.length;
+      let uploadedCount = 0;
+
+      type UploadWithId = typeof allUploads[0] & { imageId: number };
+
+      // Upload images with progress feedback
+      const uploadWithProgress = async (upload: typeof allUploads[0]): Promise<UploadWithId> => {
         const image = await galleryApi.uploadImage({ file: upload.file });
+        uploadedCount++;
+        setSavePhase(`Uploading images… (${uploadedCount}/${totalImages})`);
         return { ...upload, imageId: image.id };
-      }));
+      };
+
+      const uploadedImages = await Promise.all(
+        allUploads.map((upload) => uploadWithProgress(upload))
+      );
 
       setSavePhase("Creating category structure…");
 
@@ -383,26 +395,40 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
         subcategories,
       };
 
-      // Single transactional call
-      const created = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://backend-hairbraiding.onrender.com'}/api/categories/complete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(completeRequest),
-      });
+      // Single transactional call with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      try {
+        const created = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://backend-hairbraiding.onrender.com'}/api/categories/complete`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(completeRequest),
+          signal: controller.signal,
+        });
 
-      if (!created.ok) {
-        const errorText = await created.text();
-        throw new Error(errorText || 'Failed to create category');
+        clearTimeout(timeoutId);
+
+        if (!created.ok) {
+          const errorText = await created.text();
+          throw new Error(errorText || 'Failed to create category');
+        }
+
+        const result = await created.json();
+        if (!result.id) throw new Error('Server did not return a category ID.');
+
+        setCreatedCat({ id: result.id, name: result.name, slug: result.slug });
+        setStep(3);
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error('Save timed out. Please try again with fewer images or check your connection.');
+        }
+        throw error;
       }
-
-      const result = await created.json();
-      if (!result.id) throw new Error('Server did not return a category ID.');
-
-      setCreatedCat({ id: result.id, name: result.name, slug: result.slug });
-      setStep(3);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Failed to save. Please try again.');
     } finally {

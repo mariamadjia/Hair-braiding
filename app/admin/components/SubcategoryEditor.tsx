@@ -79,7 +79,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         } else {
             setImages(sub.images ?? []);
         }
-    }, [sub.slug]);
+    }, [sub.slug, sub.galleryImages, sub.items]);
 
     // When cache refreshes after a POST, sync real backend IDs into local items state
     useEffect(() => {
