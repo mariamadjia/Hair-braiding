@@ -199,26 +199,6 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                 <div className="pointer-events-none absolute -top-20 right-10 h-56 w-56 rounded-full bg-amber-100/30 blur-3xl" aria-hidden="true" />
             </section>
 
-            {subcategoryImages.length > 1 && (
-                <section className="bg-[#FFF5EE] py-8 md:py-12">
-                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {subcategoryImages.map((image, index) => (
-                                <div
-                                    key={`${image}-${index}`}
-                                    className="relative aspect-[4/5] overflow-hidden rounded-sm"
-                                >
-                                    <img
-                                        src={image}
-                                        alt={`${subcategory.name} ${index + 1}`}
-                                        className="object-cover w-full h-full"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-            )}
 
             <section className="bg-[#FFF5EE] pb-24 md:pb-32">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl space-y-6">
