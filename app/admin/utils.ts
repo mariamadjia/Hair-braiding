@@ -2,7 +2,6 @@ import type { BookingItem, LengthOption } from "@/lib/booking-types";
 import { galleryApi } from "@/lib/api/gallery";
 import { getAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
-import { toProxyUrl } from "@/lib/utils/image";
 
 export function slugify(s: string) {
     return s.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -57,14 +56,13 @@ export async function uploadFile(
   }
 
   try {
-    // Stage upload without entity associations first (safer for retry)
     const result = await galleryApi.uploadImage({
       file,
       title: file.name,
-      // Don't associate with entities yet - done in bulk operation
+      ...relationship,
     });
 
-    return toProxyUrl(result.imageUrl);
+    return result.imageUrl;
   } catch (error) {
     console.error("Upload failed:", error);
 

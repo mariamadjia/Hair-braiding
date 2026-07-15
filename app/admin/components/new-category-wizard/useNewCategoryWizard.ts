@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { LengthOption } from "@/lib/booking-types";
 import { galleryApi } from "@/lib/api/gallery";
+import { API_BASE_URL } from "@/lib/config/api";
 import { fromProxyUrl } from "@/lib/utils/image";
 import { slugify, uploadFile } from "../../utils";
 import {
@@ -400,7 +401,7 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
       try {
-        const created = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://backend-hairbraiding.onrender.com'}/api/categories/complete`, {
+        const created = await fetch(`${API_BASE_URL}/api/categories/complete`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

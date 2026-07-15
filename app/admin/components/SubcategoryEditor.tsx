@@ -142,8 +142,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
             // Refresh parent subcategory detail so image/subcategory state stays in sync
             const freshSub = await onSubcategoryUpdate?.(sub.slug);
-            if (freshSub?.image) {
-                setImage(freshSub.image);
+            if (freshSub) {
+                setImage(freshSub.image ?? "");
+                setItems(Array.isArray(freshSub.items) ? freshSub.items : []);
+                const freshGalleryImages = (freshSub.galleryImages ?? []) as GalleryImage[];
+                setGalleryImages(freshGalleryImages);
+                setImages(freshGalleryImages.length > 0 ? freshGalleryImages.map((img) => img.imageUrl) : (freshSub.images ?? []));
             }
             setSaveSuccess("Image uploaded successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
@@ -188,8 +192,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
             // Refresh parent subcategory detail so image/subcategory state stays in sync
             const freshSub = await onSubcategoryUpdate?.(sub.slug);
-            if (freshSub?.image !== undefined) {
+            if (freshSub) {
                 setImage(freshSub.image ?? "");
+                setItems(Array.isArray(freshSub.items) ? freshSub.items : []);
+                const freshGalleryImages = (freshSub.galleryImages ?? []) as GalleryImage[];
+                setGalleryImages(freshGalleryImages);
+                setImages(freshGalleryImages.length > 0 ? freshGalleryImages.map((img) => img.imageUrl) : (freshSub.images ?? []));
             }
             setSaveSuccess("Image deleted successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
@@ -228,7 +236,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         setSaveError(null);
         try {
             await mutate("PUT", base, { name, image, displayOrder: sub.displayOrder?.toString(), subcategoryId: sub.id });
-            await onSubcategoryUpdate?.(sub.slug);
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.items) setItems(freshSub.items);
             // Only update local state after server confirms
             setDirty(false);
             setSaveSuccess("Subcategory saved successfully!");
@@ -263,7 +272,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 setEditingIdx(null);
                 setSaveSuccess("Size saved successfully!");
                 setTimeout(() => setSaveSuccess(null), 3000);
-                await onSubcategoryUpdate?.(sub.slug);
+                const freshSub = await onSubcategoryUpdate?.(sub.slug);
+                if (freshSub?.items) setItems(freshSub.items);
             } else {
                 const createdItem = await mutate("POST", `${base}/items`, { ...item, subcategoryId: sub.id });
                 // Only update local state after server confirms
@@ -271,7 +281,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 setAddingItem(false);
                 setSaveSuccess("Size added successfully!");
                 setTimeout(() => setSaveSuccess(null), 3000);
-                await onSubcategoryUpdate?.(sub.slug);
+                const freshSub = await onSubcategoryUpdate?.(sub.slug);
+                if (freshSub?.items) setItems(freshSub.items);
             }
         } catch (error) {
             console.error("Failed to save item:", error);
@@ -315,7 +326,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             });
             setSaveSuccess("Size deleted successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
-            await onSubcategoryUpdate?.(sub.slug);
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.items) setItems(freshSub.items);
         } catch (error) {
             console.error("Failed to delete item:", error);
             setSaveError("Delete failed. Please refresh the page.");
