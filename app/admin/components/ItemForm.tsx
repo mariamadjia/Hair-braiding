@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import type { BookingItem } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS } from "../constants";
 import { MultiImageUploader } from "./MultiImageUploader";
-import { LengthOptionsEditor } from "./LengthOptionsEditor";
 import { toProxyUrl } from "@/lib/utils/image";
 
 export function ItemForm({
@@ -44,10 +43,6 @@ export function ItemForm({
                 subcategoryId={subcategoryId}
                 serviceItemId={item.id}
                 onChange={setImages}
-            />
-            <LengthOptionsEditor
-                options={item.lengthOptions ?? []}
-                onChange={(opts) => set("lengthOptions", opts)}
             />
             <div className="flex gap-2 pt-1">
                 <button type="button" onClick={() => {
