@@ -1,4 +1,4 @@
-import { GripVertical, Plus, Trash2, X } from "lucide-react";
+import { GripVertical, Trash2 } from "lucide-react";
 import type { LengthEntry, SizeEntry } from "./model";
 import type { NewCategoryWizardController } from "./useNewCategoryWizard";
 
@@ -15,8 +15,6 @@ export function LengthOptionRow({ subUid, size, length, index, controller }: Pro
   const {
     updateLengthOption,
     deleteLengthOption,
-    setLengthPhoto,
-    getObjectUrl,
     startLengthDrag,
     endLengthDrag,
     reorderLengthOptions,
@@ -26,7 +24,7 @@ export function LengthOptionRow({ subUid, size, length, index, controller }: Pro
     <div
       onDragOver={(event) => event.preventDefault()}
       onDrop={() => reorderLengthOptions(subUid, size.uid, length.uid)}
-      className="grid grid-cols-1 gap-2 rounded-lg border border-neutral-200 bg-neutral-50/60 p-3 md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,.8fr)_minmax(0,1.5fr)_4.5rem_2.5rem] md:items-center md:border-0 md:bg-transparent md:p-0 dark:border-neutral-700 dark:bg-neutral-800/40 md:dark:bg-transparent"
+      className="grid grid-cols-1 gap-2 rounded-lg border border-neutral-200 bg-neutral-50/60 p-3 md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,.8fr)_minmax(0,1.5fr)_2.5rem] md:items-center md:border-0 md:bg-transparent md:p-0 dark:border-neutral-700 dark:bg-neutral-800/40 md:dark:bg-transparent"
     >
       <div className="flex items-center justify-between md:block">
         <span className="text-xs font-semibold text-neutral-500 md:hidden">Length option {index + 1}</span>
@@ -57,20 +55,6 @@ export function LengthOptionRow({ subUid, size, length, index, controller }: Pro
         <span className="text-xs text-neutral-500 md:hidden">Deposit / Notes</span>
         <input value={length.notes ?? ""} onChange={(event) => updateLengthOption(subUid, size.uid, length.uid, "notes", event.target.value)} aria-label={`${size.name} notes ${index + 1}`} placeholder="$50.00 deposit required" className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200 dark:border-neutral-600 dark:bg-neutral-900" />
       </label>
-      <div className="flex items-center gap-2 md:justify-center">
-        <span className="text-xs text-neutral-500 md:hidden">Photo</span>
-        {length.photo ? (
-          <div className="relative group">
-            <img src={getObjectUrl(length.photo)} alt={`${size.name} ${length.name} preview`} className="h-11 w-11 rounded-lg border border-neutral-200 object-cover dark:border-neutral-700" />
-            <button type="button" onClick={() => setLengthPhoto(subUid, size.uid, length.uid)} aria-label="Remove photo" className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-700 text-white opacity-0 group-hover:opacity-100"><X className="h-3 w-3" /></button>
-          </div>
-        ) : (
-          <label tabIndex={0} aria-label={`Upload photo for ${size.name} ${length.name || index + 1}`} className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border border-dashed border-violet-300 text-violet-500 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30">
-            <Plus className="h-4 w-4" />
-            <input type="file" accept="image/*" className="hidden" onChange={(event) => { setLengthPhoto(subUid, size.uid, length.uid, event.target.files?.[0]); event.currentTarget.value = ""; }} />
-          </label>
-        )}
-      </div>
       <button type="button" onClick={() => deleteLengthOption(subUid, size.uid, length.uid)} disabled={size.lengths.length === 1} aria-label={`Delete ${size.name} length ${index + 1}`} className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-500 hover:border-red-400 hover:bg-red-50 disabled:opacity-30 md:mx-auto dark:hover:bg-red-950/30"><Trash2 className="h-4 w-4" /></button>
     </div>
   );
