@@ -85,7 +85,7 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
     setSubEntries((prev) => {
       const entry = prev.find((sub) => sub.uid === uid);
       if (entry) {
-        [...entry.photos, ...entry.sizes.flatMap((size) => size.lengths.map((length) => length.photo).filter((file): file is File => Boolean(file)))].forEach((file) => {
+        [...entry.photos, ...entry.sizes.flatMap((size) => [...size.photos, ...size.lengths.map((length) => length.photo).filter((file): file is File => Boolean(file))])].forEach((file) => {
           const url = objectUrls.current.get(file);
           if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(file); }
         });
@@ -167,6 +167,10 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
       const url = objectUrls.current.get(length.photo);
       if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(length.photo); }
     });
+    removed.photos.forEach((file) => {
+      const url = objectUrls.current.get(file);
+      if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(file); }
+    });
     setSubEntries((prev) => prev.map((entry) => {
       if (entry.uid !== subUid) return entry;
       const sizes = entry.sizes.filter((size) => size.uid !== sizeUid);
@@ -235,6 +239,28 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
           return { ...length, photo: file, imageUrl: file ? undefined : length.imageUrl };
         }),
       } : size),
+    } : sub));
+  };
+
+  const addPhotosToSize = (subUid: string, sizeUid: string, files: FileList | null) => {
+    if (!files) return;
+    const incoming = Array.from(files);
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => size.uid === sizeUid ? { ...size, photos: [...size.photos, ...incoming] } : size),
+    } : sub));
+  };
+
+  const removePhotoFromSize = (subUid: string, sizeUid: string, index: number) => {
+    setSubEntries((prev) => prev.map((sub) => sub.uid === subUid ? {
+      ...sub,
+      sizes: sub.sizes.map((size) => {
+        if (size.uid !== sizeUid) return size;
+        const file = size.photos[index];
+        const url = objectUrls.current.get(file);
+        if (url) { URL.revokeObjectURL(url); objectUrls.current.delete(file); }
+        return { ...size, photos: size.photos.filter((_, currentIndex) => currentIndex !== index) };
+      }),
     } : sub));
   };
 
@@ -449,7 +475,8 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
     customSizeName, setCustomSizeName, getObjectUrl, handleStep0Next, handleStep1Next, handleStep2Next,
     addSubRow, removeSubRow, addPhotosToSub, removePhotoFromSub, updateSubName, commitCustomSize,
     updateSizeName, selectSize, toggleSize, deleteSize, togglePresetSize, addLengthOption, updateLengthOption,
-    deleteLengthOption, setLengthPhoto, startLengthDrag, endLengthDrag, reorderLengthOptions, finishWizard,
+    deleteLengthOption, setLengthPhoto, addPhotosToSize, removePhotoFromSize, startLengthDrag, endLengthDrag,
+    reorderLengthOptions, finishWizard,
   };
 }
 

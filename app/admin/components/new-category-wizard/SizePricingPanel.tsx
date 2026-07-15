@@ -2,6 +2,7 @@ import { AlertCircle, Check, ChevronRight, ChevronUp, MoreVertical, Plus, Trash2
 import { isSizeComplete, type SizeEntry, type SubEntry } from "./model";
 import type { NewCategoryWizardController } from "./useNewCategoryWizard";
 import { LengthOptionRow } from "./LengthOptionRow";
+import { useRef } from "react";
 
 interface Props {
   sub: SubEntry;
@@ -18,12 +19,16 @@ export function SizePricingPanel({ sub, size, controller }: Props) {
     updateSizeName,
     deleteSize,
     addLengthOption,
+    addPhotosToSize,
+    removePhotoFromSize,
+    getObjectUrl,
   } = controller;
   const expanded = sub.expandedSizeId === size.uid;
   const complete = isSizeComplete(size);
   const missingFields = Number(!size.name.trim()) + size.lengths.reduce((count, length) => count + Number(!(length.name ?? "").trim()) + Number(!(length.price ?? "").replace(/^\$/, "").trim()), 0);
   const summary = size.lengths.filter((length) => (length.name ?? "").trim() || (length.price ?? "").trim());
   const nextIncomplete = sub.sizes.find((candidate) => candidate.uid !== size.uid && !isSizeComplete(candidate));
+  const sizePhotoInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div id={`size-panel-${size.uid}`} className={`relative scroll-mt-6 rounded-xl border transition-colors ${expanded ? "border-violet-200 shadow-sm dark:border-violet-800" : "border-neutral-200 dark:border-neutral-700"}`}>
@@ -52,6 +57,14 @@ export function SizePricingPanel({ sub, size, controller }: Props) {
           </div>
         )}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {size.photos.slice(0, 2).map((photo, index) => (
+            <img key={index} src={getObjectUrl(photo)} alt="" className="h-8 w-8 rounded-md border border-neutral-200 object-cover dark:border-neutral-700" />
+          ))}
+          {size.photos.length > 2 && (
+            <span className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 bg-neutral-50 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+              +{size.photos.length - 2}
+            </span>
+          )}
           <button type="button" onClick={() => setOpenSizeMenu(openSizeMenu === size.uid ? null : size.uid)} aria-label={`Actions for ${size.name}`} className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:hover:bg-neutral-800"><MoreVertical className="h-4 w-4" aria-hidden /></button>
         </div>
       </div>
@@ -69,6 +82,43 @@ export function SizePricingPanel({ sub, size, controller }: Props) {
 
       {expanded && (
         <div className="border-t border-neutral-100 px-3 pb-3 pt-2 dark:border-neutral-800">
+          <div className="mb-3">
+            <p className="text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mb-2">Photos for this size</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border border-dashed border-violet-300 text-violet-500 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30">
+                <Plus className="h-4 w-4" />
+                <input
+                  ref={sizePhotoInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(event) => {
+                    addPhotosToSize(sub.uid, size.uid, event.target.files);
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </label>
+              <span className="text-xs text-violet-600 dark:text-violet-400 font-medium">Upload photos</span>
+              {size.photos.slice(0, 3).map((photo, index) => (
+                <div key={index} className="relative group">
+                  <img src={getObjectUrl(photo)} alt="" className="h-11 w-11 rounded-lg border border-neutral-200 object-cover dark:border-neutral-700" />
+                  <button
+                    type="button"
+                    onClick={() => removePhotoFromSize(sub.uid, size.uid, index)}
+                    className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-700 text-white opacity-0 group-hover:opacity-100"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {size.photos.length > 3 && (
+                <span className="flex h-11 w-11 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                  +{size.photos.length - 3}
+                </span>
+              )}
+            </div>
+          </div>
           <div className="hidden grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,.8fr)_minmax(0,1.5fr)_2.5rem] gap-3 px-1 pb-1.5 text-xs font-medium text-neutral-400 md:grid">
             <span /><span>Length</span><span>Price</span><span>Deposit / Notes</span><span className="text-center">Delete</span>
           </div>

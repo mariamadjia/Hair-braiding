@@ -18,6 +18,7 @@ export interface LengthEntry extends LengthOption {
 export interface SizeEntry {
   uid: string;
   name: string;
+  photos: File[];
   lengths: LengthEntry[];
   touchedLengths: Set<string>;
 }
@@ -46,6 +47,7 @@ export function emptySizeEntry(name: string): SizeEntry {
   return {
     uid: crypto.randomUUID(),
     name,
+    photos: [],
     lengths: [emptyLengthEntry()],
     touchedLengths: new Set(),
   };
@@ -75,7 +77,7 @@ export function isSizeComplete(size: SizeEntry): boolean {
 }
 
 export function hasSizeData(size: SizeEntry): boolean {
-  return size.lengths.length > 1 || size.lengths.some(
+  return size.photos.length > 0 || size.lengths.length > 1 || size.lengths.some(
     (length) =>
       Boolean((length.name ?? "").trim()) ||
       Boolean((length.price ?? "").trim()) ||
