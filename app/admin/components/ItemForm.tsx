@@ -48,6 +48,10 @@ export function ItemForm({
             <LengthOptionsEditor
                 options={item.lengthOptions ?? []}
                 onChange={(opts) => set("lengthOptions", opts)}
+                token={token}
+                categoryId={categoryId}
+                subcategoryId={subcategoryId}
+                serviceItemId={item.id}
             />
             <div className="flex gap-2 pt-1">
                 <button type="button" onClick={() => {
