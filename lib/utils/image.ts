@@ -10,6 +10,10 @@ export const toProxyUrl = (imageUrl: string | null | undefined): string => {
     const filename = imageUrl.split('/').pop();
     return `/api/proxy-image?url=${encodeURIComponent(`${API_BASE_URL}/api/gallery/image/${filename}`)}`;
   }
+  // If it's a backend gallery image endpoint, convert to proxy
+  if (imageUrl.startsWith('/api/gallery/image/')) {
+    return `/api/proxy-image?url=${encodeURIComponent(`${API_BASE_URL}${imageUrl}`)}`;
+  }
   // If it's already a full URL with the backend, convert to proxy
   if (imageUrl.startsWith(API_BASE_URL)) {
     return `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
