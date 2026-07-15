@@ -72,8 +72,13 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 console.log('[CategoryEditor] Fetched category detail flippingImages:', detail.flippingImages);
                 console.log('[CategoryEditor] Fetched category detail galleryImages:', detail.galleryImages);
 
-                const proxiedImages = (detail.flippingImages ?? []).map(toProxyUrl);
-                console.log('[CategoryEditor] Proxied images:', proxiedImages);
+                const proxiedImages = (detail.flippingImages ?? []).map((url: string) => {
+                    console.log('[CategoryEditor] Processing image URL:', url);
+                    const proxied = toProxyUrl(url);
+                    console.log('[CategoryEditor] Proxied URL:', proxied);
+                    return proxied;
+                });
+                console.log('[CategoryEditor] Final proxied images:', proxiedImages);
                 setImages(proxiedImages);
                 setGalleryImages((detail.galleryImages ?? []) as GalleryImage[]);
             } catch (error) {
