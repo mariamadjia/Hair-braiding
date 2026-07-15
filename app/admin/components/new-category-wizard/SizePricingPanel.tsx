@@ -13,7 +13,6 @@ export function SizePricingPanel({ sub, size, controller }: Props) {
   const {
     openSizeMenu,
     setOpenSizeMenu,
-    getObjectUrl,
     toggleSize,
     selectSize,
     updateSizeName,
@@ -53,9 +52,6 @@ export function SizePricingPanel({ sub, size, controller }: Props) {
           </div>
         )}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          {size.lengths.filter((length) => length.photo).slice(0, 2).map((length) => (
-            <img key={length.uid} src={getObjectUrl(length.photo!)} alt="" className="h-8 w-8 rounded-md border border-neutral-200 object-cover dark:border-neutral-700" />
-          ))}
           <button type="button" onClick={() => setOpenSizeMenu(openSizeMenu === size.uid ? null : size.uid)} aria-label={`Actions for ${size.name}`} className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:hover:bg-neutral-800"><MoreVertical className="h-4 w-4" aria-hidden /></button>
         </div>
       </div>
@@ -73,8 +69,8 @@ export function SizePricingPanel({ sub, size, controller }: Props) {
 
       {expanded && (
         <div className="border-t border-neutral-100 px-3 pb-3 pt-2 dark:border-neutral-800">
-          <div className="hidden grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,.8fr)_minmax(0,1.5fr)_4.5rem_2.5rem] gap-3 px-1 pb-1.5 text-xs font-medium text-neutral-400 md:grid">
-            <span /><span>Length</span><span>Price</span><span>Deposit / Notes</span><span className="text-center">Photo</span><span className="text-center">Delete</span>
+          <div className="hidden grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,.8fr)_minmax(0,1.5fr)_2.5rem] gap-3 px-1 pb-1.5 text-xs font-medium text-neutral-400 md:grid">
+            <span /><span>Length</span><span>Price</span><span>Deposit / Notes</span><span className="text-center">Delete</span>
           </div>
           <div className="space-y-2">
             {size.lengths.map((length, index) => <LengthOptionRow key={length.uid} subUid={sub.uid} size={size} length={length} index={index} controller={controller} />)}
