@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -171,13 +170,10 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
                     {heroImage && (
                         <div className="relative h-64 w-full max-w-xl mx-auto mb-6 rounded-sm overflow-hidden">
-                            <Image
+                            <img
                                 src={heroImage}
                                 alt={subcategory.name}
-                                fill
-                                className="object-contain"
-                                sizes="(max-width: 768px) 100vw, 672px"
-                                priority
+                                className="object-contain w-full h-full"
                             />
                         </div>
                     )}
@@ -212,12 +208,10 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                     key={`${image}-${index}`}
                                     className="relative aspect-[4/5] overflow-hidden rounded-sm"
                                 >
-                                    <Image
+                                    <img
                                         src={image}
                                         alt={`${subcategory.name} ${index + 1}`}
-                                        fill
-                                        className="object-cover"
-                                        sizes="(max-width: 768px) 50vw, 25vw"
+                                        className="object-cover w-full h-full"
                                     />
                                 </div>
                             ))}
@@ -294,12 +288,10 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                             ×
                         </button>
                         <div className="relative aspect-[3/4] w-full overflow-hidden">
-                            <Image
+                            <img
                                 src={photoGallery[photoImageIndex]}
                                 alt={`${photoItem.name} photo ${photoImageIndex + 1}`}
-                                fill
-                                className="object-cover"
-                                sizes="(max-width: 768px) 100vw, 512px"
+                                className="object-cover w-full h-full"
                             />
                             {hasMultiplePhotos && (
                                 <>

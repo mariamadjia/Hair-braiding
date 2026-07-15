@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { lbl, btnS } from "../constants";
 import { uploadFile } from "../utils";
-import { toProxyUrl } from "@/lib/utils/image";
 
 export function MultiImageUploader({
   images,
@@ -53,7 +52,7 @@ export function MultiImageUploader({
             <div className="flex flex-wrap gap-3">
                 {images.map((url, i) => (
                     <div key={i} className="relative shrink-0 group">
-                        <img src={toProxyUrl(url)} alt={`photo ${i + 1}`} className="h-24 w-24 object-cover border-2 border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm hover:shadow-md transition-shadow" />
+                        <img src={url} alt={`photo ${i + 1}`} className="h-24 w-24 object-cover border-2 border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm hover:shadow-md transition-shadow" />
                         <button 
                             type="button" 
                             onClick={() => remove(i)} 
