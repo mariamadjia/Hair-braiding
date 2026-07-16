@@ -25,7 +25,8 @@ export async function GET(request: NextRequest) {
 
     // Validate that the target URL is from the allowed backend
     if (!targetUrl.startsWith(`${allowedBase}/api/gallery/image/`) && 
-        !targetUrl.startsWith(`${allowedBase}/api/`)) {
+        !targetUrl.startsWith(`${allowedBase}/api/`) &&
+        !targetUrl.startsWith(`${allowedBase}/uploads/`)) {
       console.error('Invalid image URL:', targetUrl);
       return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 });
     }
