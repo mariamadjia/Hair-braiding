@@ -56,7 +56,9 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
     const lengthOptions = selectedItem?.lengthOptions ?? [];
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
-    const photoGallery = (photoItem?.images?.length ? photoItem.images : photoItem?.image ? [photoItem.image] : [])
+    const photoGallery = (photoItem?.sizePhotos?.length ? photoItem.sizePhotos : 
+        photoItem?.images?.length ? photoItem.images : 
+        photoItem?.image ? [photoItem.image] : [])
         .filter(Boolean)
         .map(toProxyUrl);
     const hasMultiplePhotos = photoGallery.length > 1;
@@ -96,7 +98,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     };
 
     const openPhotoModal = (index: number) => {
-        if (items[index]?.image || items[index]?.images?.length) {
+        if (items[index]?.image || items[index]?.images?.length || items[index]?.sizePhotos?.length) {
             setPhotoItemIndex(index);
             setPhotoImageIndex(0);
         }
@@ -230,7 +232,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                                {item.image && (
+                                {(item.image || item.images?.length || item.sizePhotos?.length) && (
                                     <button
                                         type="button"
                                         onClick={() => openPhotoModal(index)}

@@ -53,7 +53,7 @@ export function ItemForm({
                         categoryId,
                         subcategoryId,
                         serviceItemId: item.id,
-                    })
+                    }, true) // Use simple upload for size photos (not gallery)
                 )
             );
             setSizePhotos([...rawSizePhotos, ...uploadedUrls]);

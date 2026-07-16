@@ -38,7 +38,8 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'im
 export async function uploadFile(
   file: File,
   token: string,
-  relationship: GalleryImageRelationship = {}
+  relationship: GalleryImageRelationship = {},
+  useSimpleUpload: boolean = false
 ): Promise<string> {
   // Validate file size
   if (file.size > MAX_FILE_SIZE) {
@@ -56,13 +57,36 @@ export async function uploadFile(
   }
 
   try {
-    const result = await galleryApi.uploadImage({
-      file,
-      title: file.name,
-      ...relationship,
-    });
+    if (useSimpleUpload) {
+      // Use simple upload endpoint for size photos (doesn't go to gallery)
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch(`${API_BASE_URL}/api/admin/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Upload failed');
+      }
+      
+      const result = await response.json();
+      return result.url;
+    } else {
+      // Use gallery API for gallery images
+      const result = await galleryApi.uploadImage({
+        file,
+        title: file.name,
+        ...relationship,
+      });
 
-    return result.imageUrl;
+      return result.imageUrl;
+    }
   } catch (error) {
     console.error("Upload failed:", error);
 
