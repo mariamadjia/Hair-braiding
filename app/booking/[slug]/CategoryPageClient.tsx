@@ -143,7 +143,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                         </Button>
                     </div>
                 </div>
-                <div className="pointer-events-none absolute -top-20 left-10 h-56 w-56 rounded-full bg-amber-100/30 blur-3xl" aria-hidden="true" />
+                <div className="pointer-events-none absolute -top-20 right-10 h-56 w-56 rounded-full bg-amber-100/30 blur-3xl" aria-hidden="true" />
             </section>
 
             <section className="bg-[#FFF5EE] pb-24 md:pb-32 min-h-[70vh]">
@@ -153,9 +153,18 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                             {subcategories.map((subcategory) => (
                                 <div
                                     key={subcategory.slug}
-                                    className="group flex items-center justify-between gap-8 py-8 md:py-10 transition-all duration-300 hover:bg-neutral-50/50"
+                                    className="group flex items-center justify-between gap-4 py-8 md:py-10 transition-all duration-300 hover:bg-white/50"
                                 >
-                                    <div className="flex-1">
+                                    <div className="flex items-center gap-4">
+                                        {subcategory.image && (
+                                            <img
+                                                src={subcategory.image}
+                                                alt={subcategory.name}
+                                                loading="lazy"
+                                                decoding="async"
+                                                className="h-14 w-14 shrink-0 rounded-sm object-cover"
+                                            />
+                                        )}
                                         <span className="text-lg md:text-xl font-light tracking-wide text-neutral-900 transition-colors group-hover:text-neutral-700">
                                             {subcategory.name}
                                         </span>
