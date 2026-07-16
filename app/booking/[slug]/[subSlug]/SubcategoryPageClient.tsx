@@ -221,7 +221,13 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
 
             <section className="bg-[#FFF5EE] pb-24 md:pb-32">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl space-y-6">
-                    {items.map((item, index) => (
+                    {items.map((item, index) => {
+                        console.log(`[Item ${index}] Name:`, item.name);
+                        console.log(`[Item ${index}] sizePhotos:`, item.sizePhotos);
+                        console.log(`[Item ${index}] images:`, item.images);
+                        console.log(`[Item ${index}] image:`, item.image);
+                        
+                        return (
                         <div
                             key={`${item.name}-${index}`}
                             className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-sm border border-neutral-200/60 bg-[#FFF5EE] py-6 px-6 md:px-8 transition-all duration-300 hover:bg-white/50"
@@ -262,7 +268,8 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 </Button>
                             </div>
                         </div>
-                    ))}
+                    );
+                    })}
                 </div>
             </section>
 
