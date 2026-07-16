@@ -75,6 +75,9 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
       const response = await fetch(`${API_BASE_URL}/api/categories/exists/${catSlug}`, {
         method: "GET",
         cache: "no-store",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
 
       if (response.ok) {
