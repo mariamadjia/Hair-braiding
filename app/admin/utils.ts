@@ -35,6 +35,36 @@ type GalleryImageRelationship = {
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 
+function normalizeUploadedUrl(rawUrl: string): string {
+  if (!rawUrl) return "";
+
+  const backendUrl = API_BASE_URL.replace(/\/$/, "");
+
+  try {
+    const parsed = new URL(rawUrl);
+
+    if (parsed.pathname.startsWith("/uploads/")) {
+      return `${backendUrl}${parsed.pathname}`;
+    }
+
+    if (parsed.pathname.startsWith("/api/gallery/image/")) {
+      return `${backendUrl}${parsed.pathname}`;
+    }
+
+    return rawUrl;
+  } catch {
+    if (rawUrl.startsWith("/uploads/")) {
+      return `${backendUrl}${rawUrl}`;
+    }
+
+    if (rawUrl.startsWith("/api/gallery/image/")) {
+      return `${backendUrl}${rawUrl}`;
+    }
+
+    return rawUrl;
+  }
+}
+
 export async function uploadFile(
   file: File,
   token: string,
@@ -76,7 +106,7 @@ export async function uploadFile(
       }
       
       const result = await response.json();
-      return result.url;
+      return normalizeUploadedUrl(result.url || result.imageUrl || result.path);
     } else {
       // Use gallery API for gallery images
       const result = await galleryApi.uploadImage({

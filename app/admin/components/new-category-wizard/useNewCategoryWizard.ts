@@ -416,18 +416,19 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
 
       // Build the complete category request
       const categoryImageIds = uploadedImages
-        .filter((u) => u.type === 'category')
-        .map((u) => u.imageId);
+        .filter((u) => u.type === "category" && typeof u.imageId === "number")
+        .map((u) => u.imageId as number);
 
       const subcategories = filledSubs.map((sub, subIndex) => {
         const subImageIds = uploadedImages
-          .filter((u) => u.type === 'subcategory' && u.subIndex === subIndex)
-          .map((u) => u.imageId);
+          .filter((u) => u.type === "subcategory" && u.subIndex === subIndex && typeof u.imageId === "number")
+          .map((u) => u.imageId as number);
 
         const sizes = sub.sizes.map((size, sizeIndex) => {
         const sizePhotos = uploadedImages
-          .filter((u) => u.type === 'size' && u.subIndex === subIndex && u.sizeIndex === sizeIndex)
-          .map((u) => u.imageUrl);
+          .filter((u) => u.type === "size" && u.subIndex === subIndex && u.sizeIndex === sizeIndex)
+          .map((u) => u.imageUrl)
+          .filter((url): url is string => Boolean(url));
 
         const lengths = size.lengths.map((length, lengthIndex) => {
           const uploaded = uploadedImages.find(
