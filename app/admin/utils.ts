@@ -39,28 +39,41 @@ function normalizeUploadedUrl(rawUrl: string): string {
   if (!rawUrl) return "";
 
   const backendUrl = API_BASE_URL.replace(/\/$/, "");
+  
+  console.log("[normalizeUploadedUrl] Input URL:", rawUrl);
+  console.log("[normalizeUploadedUrl] Backend URL:", backendUrl);
 
   try {
     const parsed = new URL(rawUrl);
 
     if (parsed.pathname.startsWith("/uploads/")) {
-      return `${backendUrl}${parsed.pathname}`;
+      const normalized = `${backendUrl}${parsed.pathname}`;
+      console.log("[normalizeUploadedUrl] Normalized (uploads):", normalized);
+      return normalized;
     }
 
     if (parsed.pathname.startsWith("/api/gallery/image/")) {
-      return `${backendUrl}${parsed.pathname}`;
+      const normalized = `${backendUrl}${parsed.pathname}`;
+      console.log("[normalizeUploadedUrl] Normalized (gallery):", normalized);
+      return normalized;
     }
 
+    console.log("[normalizeUploadedUrl] Returning original URL (parsed):", rawUrl);
     return rawUrl;
   } catch {
     if (rawUrl.startsWith("/uploads/")) {
-      return `${backendUrl}${rawUrl}`;
+      const normalized = `${backendUrl}${rawUrl}`;
+      console.log("[normalizeUploadedUrl] Normalized (uploads, catch):", normalized);
+      return normalized;
     }
 
     if (rawUrl.startsWith("/api/gallery/image/")) {
-      return `${backendUrl}${rawUrl}`;
+      const normalized = `${backendUrl}${rawUrl}`;
+      console.log("[normalizeUploadedUrl] Normalized (gallery, catch):", normalized);
+      return normalized;
     }
 
+    console.log("[normalizeUploadedUrl] Returning original URL (catch):", rawUrl);
     return rawUrl;
   }
 }
@@ -106,7 +119,10 @@ export async function uploadFile(
       }
       
       const result = await response.json();
-      return normalizeUploadedUrl(result.url || result.imageUrl || result.path);
+      console.log("[uploadFile] Backend response:", result);
+      const normalizedUrl = normalizeUploadedUrl(result.url || result.imageUrl || result.path);
+      console.log("[uploadFile] Final URL to return:", normalizedUrl);
+      return normalizedUrl;
     } else {
       // Use gallery API for gallery images
       const result = await galleryApi.uploadImage({
