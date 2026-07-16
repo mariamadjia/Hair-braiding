@@ -81,9 +81,8 @@ export function ItemForm({
             const uploadedUrls = await Promise.all(
                 Array.from(files).map((file) =>
                     uploadFile(file, token, {
-                        categoryId,
-                        subcategoryId,
-                        serviceItemId: item.id,
+                        // Don't pass any relationship parameters to prevent gallery association
+                        // No categoryId, subcategoryId, or serviceItemId
                     }, true) // Use simple upload for size photos (not gallery)
                 )
             );
