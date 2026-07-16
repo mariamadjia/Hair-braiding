@@ -56,11 +56,18 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
     const lengthOptions = selectedItem?.lengthOptions ?? [];
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
+    console.log("[photoGallery] photoItem:", photoItem?.name);
+    console.log("[photoGallery] photoItem.sizePhotos:", photoItem?.sizePhotos);
+    console.log("[photoGallery] photoItem.images:", photoItem?.images);
+    console.log("[photoGallery] photoItem.image:", photoItem?.image);
+    
     const photoGallery = (photoItem?.sizePhotos?.length ? photoItem.sizePhotos : 
         photoItem?.images?.length ? photoItem.images : 
         photoItem?.image ? [photoItem.image] : [])
         .filter(Boolean)
         .map(toProxyUrl);
+    
+    console.log("[photoGallery] Final photoGallery:", photoGallery);
     const hasMultiplePhotos = photoGallery.length > 1;
     const sizePhotoGallery = (selectedItem?.sizePhotos?.length ? selectedItem.sizePhotos : [])
         .filter(Boolean)
@@ -98,7 +105,13 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     };
 
     const openPhotoModal = (index: number) => {
-        if (items[index]?.image || items[index]?.images?.length || items[index]?.sizePhotos?.length) {
+        const item = items[index];
+        console.log("[openPhotoModal] Item:", item?.name);
+        console.log("[openPhotoModal] sizePhotos:", item?.sizePhotos);
+        console.log("[openPhotoModal] images:", item?.images);
+        console.log("[openPhotoModal] image:", item?.image);
+        
+        if (item?.image || item?.images?.length || item?.sizePhotos?.length) {
             setPhotoItemIndex(index);
             setPhotoImageIndex(0);
         }
