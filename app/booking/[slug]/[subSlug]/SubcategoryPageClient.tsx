@@ -232,7 +232,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                                {(item.image || item.images?.length || item.sizePhotos?.length) && (
+                                {item.sizePhotos && item.sizePhotos.length > 0 && (
                                     <button
                                         type="button"
                                         onClick={() => openPhotoModal(index)}
