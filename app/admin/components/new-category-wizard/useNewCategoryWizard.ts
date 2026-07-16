@@ -4,6 +4,7 @@ import { galleryApi } from "@/lib/api/gallery";
 import { API_BASE_URL } from "@/lib/config/api";
 import { fromProxyUrl } from "@/lib/utils/image";
 import { slugify, uploadFile } from "../../utils";
+import { validateFile } from "../../utils/fileValidation";
 import {
   emptyLengthEntry,
   emptySizeEntry,
@@ -35,7 +36,7 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
 
   const clearError = () => setError(null);
   const filledSubs = subEntries.filter((entry) => entry.name.trim().length >= 2);
-  const photoOk = imageFiles.length >= 3 && imageFiles.length <= 7;
+  const photoOk = imageFiles.length >= 3 && imageFiles.length <= 5;
 
   const getImageObjectUrl = useCallback((file: File) => {
     if (!imageObjectUrls.current.has(file)) imageObjectUrls.current.set(file, URL.createObjectURL(file));
@@ -48,7 +49,23 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
   }, []);
 
   const addCategoryPhoto = (file?: File) => {
-    if (file) setImageFiles((prev) => [...prev, file]);
+    if (!file) return;
+    
+    // Validate file before adding
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setError(validation.error);
+      return;
+    }
+    
+    // Check if we've reached the maximum
+    if (imageFiles.length >= 5) {
+      setError("Maximum 5 photos allowed. Remove some photos first.");
+      return;
+    }
+    
+    setImageFiles((prev) => [...prev, file]);
+    setError(null);
   };
 
   const removeCategoryPhoto = (index: number) => {

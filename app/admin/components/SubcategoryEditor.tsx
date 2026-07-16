@@ -11,6 +11,8 @@ import type { GalleryImageItem } from "@/lib/booking-types";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ItemForm } from "./ItemForm";
 import { ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle } from "lucide-react";
+import { validateFile } from "../utils/fileValidation";
+import { compressImage } from "../utils/imageCompression";
 
 const SIZE_ORDER = ['XSmall', 'Small', 'Medium', 'Smedium', 'Large', 'Jumbo'];
 
@@ -106,6 +108,14 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             setSaveError("Please wait for the current operation to complete.");
             return;
         }
+        
+        // Validate file before uploading
+        const validation = validateFile(file);
+        if (!validation.valid) {
+            setSaveError(validation.error);
+            return;
+        }
+        
         setSaving(true);
         setSaveError(null);
         try {
@@ -113,11 +123,19 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 throw new Error('Category or subcategory ID is missing');
             }
             
+            // Compress image before uploading
+            const compressedFile = await compressImage(file, {
+                maxWidth: 1920,
+                maxHeight: 1920,
+                quality: 0.85,
+                format: 'image/webp'
+            });
+            
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', compressedFile);
             formData.append('categoryId', cat.id.toString());
             formData.append('subcategoryId', sub.id.toString());
-            formData.append('title', `${sub.name} - ${file.name}`);
+            formData.append('title', `${sub.name} - ${compressedFile.name}`);
             
             const response = await fetch(`${API_BASE_URL}/api/gallery/upload`, {
                 method: 'POST',
@@ -153,7 +171,21 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
             console.error('Failed to upload image:', error);
-            setSaveError('Failed to upload image. Please try again.');
+            let errorMessage = 'Failed to upload image. Please try again.';
+            
+            if (error instanceof Error) {
+                if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                } else if (error.message.includes('401') || error.message.includes('403')) {
+                    errorMessage = 'Authentication error. Please log in again.';
+                } else if (error.message.includes('413')) {
+                    errorMessage = 'File is too large. Please use a smaller image (max 5MB).';
+                } else if (error.message.includes('415')) {
+                    errorMessage = 'Invalid file type. Please use JPG, PNG, or WebP.';
+                }
+            }
+            
+            setSaveError(errorMessage);
         } finally {
             setSaving(false);
         }
@@ -203,7 +235,19 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
             console.error('Failed to delete image:', error);
-            setSaveError('Failed to delete image. Please try again.');
+            let errorMessage = 'Failed to delete image. Please try again.';
+            
+            if (error instanceof Error) {
+                if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                } else if (error.message.includes('401') || error.message.includes('403')) {
+                    errorMessage = 'Authentication error. Please log in again.';
+                } else if (error.message.includes('404')) {
+                    errorMessage = 'Image not found. It may have been already deleted.';
+                }
+            }
+            
+            setSaveError(errorMessage);
             // Re-fetch to ensure state is consistent
             const galleryResponse = await fetch(`${API_BASE_URL}/api/gallery/subcategory/${sub.id}`);
             if (galleryResponse.ok) {
@@ -244,7 +288,21 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
             console.error("Failed to save subcategory:", error);
-            setSaveError("Failed to save subcategory. Please try again.");
+            let errorMessage = "Failed to save subcategory. Please try again.";
+            
+            if (error instanceof Error) {
+                if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = "Network error. Please check your connection and try again.";
+                } else if (error.message.includes('401') || error.message.includes('403')) {
+                    errorMessage = "Authentication error. Please log in again.";
+                } else if (error.message.includes('404')) {
+                    errorMessage = "Subcategory not found. It may have been deleted.";
+                } else if (error.message.includes('409')) {
+                    errorMessage = "A subcategory with this name already exists.";
+                }
+            }
+            
+            setSaveError(errorMessage);
             // Re-fetch to ensure state is consistent
             const freshSub = await onSubcategoryUpdate?.(sub.slug);
             if (freshSub) {
@@ -286,7 +344,21 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             }
         } catch (error) {
             console.error("Failed to save item:", error);
-            setSaveError("Failed to save size. Please try again.");
+            let errorMessage = "Failed to save size. Please try again.";
+            
+            if (error instanceof Error) {
+                if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = "Network error. Please check your connection and try again.";
+                } else if (error.message.includes('401') || error.message.includes('403')) {
+                    errorMessage = "Authentication error. Please log in again.";
+                } else if (error.message.includes('404')) {
+                    errorMessage = "Subcategory not found. It may have been deleted.";
+                } else if (error.message.includes('409')) {
+                    errorMessage = "A size with this name already exists.";
+                }
+            }
+            
+            setSaveError(errorMessage);
             // Re-fetch to ensure state is consistent
             const freshSub = await onSubcategoryUpdate?.(sub.slug);
             if (freshSub?.items) {
@@ -327,7 +399,21 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             if (freshSub?.items) setItems(freshSub.items);
         } catch (error) {
             console.error("Failed to delete item:", error);
-            setSaveError("Delete failed. Please refresh the page.");
+            let errorMessage = "Delete failed. Please refresh the page.";
+            
+            if (error instanceof Error) {
+                if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = "Network error. Please check your connection and try again.";
+                } else if (error.message.includes('401') || error.message.includes('403')) {
+                    errorMessage = "Authentication error. Please log in again.";
+                } else if (error.message.includes('404')) {
+                    errorMessage = "Size not found. It may have been already deleted.";
+                } else if (error.message.includes('conflict') || error.message.includes('409')) {
+                    errorMessage = "Cannot delete: size is in use by existing bookings.";
+                }
+            }
+            
+            setSaveError(errorMessage);
             // Re-fetch to ensure state is consistent
             const freshSub = await onSubcategoryUpdate?.(sub.slug);
             if (freshSub?.items) {

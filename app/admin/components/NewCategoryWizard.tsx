@@ -71,7 +71,7 @@ export function NewCategoryWizard(props: WizardProps) {
           <div className="space-y-5">
             <div>
               <h2 className="text-base font-medium text-neutral-900 dark:text-white mb-1">Add gallery photos</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">Upload <strong>3 to 7</strong> photos for <span className="font-medium text-neutral-700 dark:text-neutral-300">{catName.trim()}</span>. These appear in the public gallery.</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">Upload <strong>3 to 5</strong> photos for <span className="font-medium text-neutral-700 dark:text-neutral-300">{catName.trim()}</span>. These appear in the public gallery.</p>
             </div>
             <WizardErrorBanner error={error} onDismiss={clearError} />
             <div className="space-y-3">
@@ -82,7 +82,7 @@ export function NewCategoryWizard(props: WizardProps) {
                     <button type="button" onClick={() => removeCategoryPhoto(index)} className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all">×</button>
                   </div>
                 ))}
-                {Array.from({ length: imageFiles.length >= 7 ? 0 : Math.max(1, 3 - imageFiles.length) }, (_, slot) => (
+                {Array.from({ length: imageFiles.length >= 5 ? 0 : Math.max(1, 3 - imageFiles.length) }, (_, slot) => (
                   <label key={slot} tabIndex={0} aria-label={`Add category photo ${slot + 1}`} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.currentTarget.querySelector("input")?.click(); } }} className="cursor-pointer h-24 w-24 flex flex-col items-center justify-center gap-1 text-center border-2 border-dashed border-neutral-300 dark:border-neutral-600 hover:border-violet-500 rounded-lg bg-neutral-50 dark:bg-neutral-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all group focus:outline-none focus:ring-2 focus:ring-violet-400">
                     <Plus className="w-5 h-5 text-neutral-400 group-hover:text-violet-500" aria-hidden />
                     <span className="text-xs text-neutral-500 group-hover:text-violet-600 font-medium">Add Photo</span>
@@ -94,7 +94,7 @@ export function NewCategoryWizard(props: WizardProps) {
             {imageFiles.length > 0 && (
               <div role="status" className={`flex items-center gap-2 text-sm ${photoOk ? "text-green-700 dark:text-green-300" : "text-amber-700 dark:text-amber-400"}`}>
                 {photoOk ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" aria-hidden /> : <AlertTriangle className="w-4 h-4 text-amber-500" aria-hidden />}
-                {imageFiles.length < 3 ? `${imageFiles.length} selected — add ${3 - imageFiles.length} more` : imageFiles.length > 7 ? `${imageFiles.length} selected — remove ${imageFiles.length - 7} (max 7)` : `${imageFiles.length} photos ready`}
+                {imageFiles.length < 3 ? `${imageFiles.length} selected — add ${3 - imageFiles.length} more` : imageFiles.length > 5 ? `${imageFiles.length} selected — remove ${imageFiles.length - 5} (max 5)` : `${imageFiles.length} photos ready`}
               </div>
             )}
             <WizardNavRow onBack={() => setStep(0)} onCancel={props.onCancel} onNext={handleStep1Next} nextLabel="Next" nextDisabled={!photoOk} busy={busy} />

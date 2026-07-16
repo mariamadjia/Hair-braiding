@@ -193,7 +193,23 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
             console.error("Failed to save category:", error);
-            setErrorMessage("Failed to save category. Please try again.");
+            let errorMessage = "Failed to save category. Please try again.";
+            
+            if (error instanceof Error) {
+                if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = "Network error. Please check your connection and try again.";
+                } else if (error.message.includes('401') || error.message.includes('403')) {
+                    errorMessage = "Authentication error. Please log in again.";
+                } else if (error.message.includes('404')) {
+                    errorMessage = "Category not found. It may have been deleted.";
+                } else if (error.message.includes('409')) {
+                    errorMessage = "A category with this name already exists.";
+                } else if (error.message.includes('413')) {
+                    errorMessage = "Files are too large. Please use smaller images.";
+                }
+            }
+            
+            setErrorMessage(errorMessage);
             // Re-fetch to ensure state is consistent
             const response = await fetch(`/api/admin/categories/${cat.slug}`, {
                 method: "GET",
@@ -234,7 +250,19 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             }
         } catch (error) {
             console.error("Failed to add subcategory:", error);
-            setErrorMessage("Failed to add subcategory. Please try again.");
+            let errorMessage = "Failed to add subcategory. Please try again.";
+            
+            if (error instanceof Error) {
+                if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = "Network error. Please check your connection and try again.";
+                } else if (error.message.includes('401') || error.message.includes('403')) {
+                    errorMessage = "Authentication error. Please log in again.";
+                } else if (error.message.includes('409')) {
+                    errorMessage = "A subcategory with this name already exists.";
+                }
+            }
+            
+            setErrorMessage(errorMessage);
         } finally {
             setSaving(false);
         }
@@ -254,7 +282,21 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
             console.error("Failed to delete subcategory:", error);
-            setErrorMessage("Failed to delete subcategory. Please try again.");
+            let errorMessage = "Failed to delete subcategory. Please try again.";
+            
+            if (error instanceof Error) {
+                if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = "Network error. Please check your connection and try again.";
+                } else if (error.message.includes('401') || error.message.includes('403')) {
+                    errorMessage = "Authentication error. Please log in again.";
+                } else if (error.message.includes('404')) {
+                    errorMessage = "Subcategory not found. It may have been already deleted.";
+                } else if (error.message.includes('conflict') || error.message.includes('409')) {
+                    errorMessage = "Cannot delete: subcategory is in use by existing bookings.";
+                }
+            }
+            
+            setErrorMessage(errorMessage);
             // Refresh to ensure state is consistent
             const fresh = await onSubcategorySummariesRefresh?.(cat.slug);
             if (fresh) setSubSummaries(fresh);

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { X, GripVertical, Trash2, Plus, Upload, AlertCircle, CheckCircle } from "lucide-react";
 import { API_BASE_URL } from '@/lib/config/api';
 import { GalleryImage } from "@/lib/api/gallery";
+import { validateFile, formatFileSize } from "../utils/fileValidation";
+import { compressImages } from "../utils/imageCompression";
 
 interface EditSubcategoryModalProps {
     subcategory: {
@@ -29,6 +31,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
     const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const [saving, setSaving] = useState(false);
     const [loadingImages, setLoadingImages] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -180,16 +183,47 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
+        // Validate all files before uploading
+        const validationErrors: string[] = [];
+        const validFiles: File[] = [];
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const result = validateFile(file);
+            if (!result.valid) {
+                validationErrors.push(`${file.name}: ${result.error}`);
+            } else {
+                validFiles.push(file);
+            }
+        }
+
+        if (validationErrors.length > 0) {
+            setError(validationErrors.join('; '));
+            return;
+        }
+
         setUploading(true);
+        setUploadProgress(0);
         try {
             const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
             
-            for (let i = 0; i < files.length; i++) {
+            // Compress images before uploading
+            setUploadProgress(20);
+            const compressedFiles = await compressImages(validFiles, {
+                maxWidth: 1920,
+                maxHeight: 1920,
+                quality: 0.85,
+                format: 'image/webp'
+            });
+            
+            setUploadProgress(50);
+            
+            for (let i = 0; i < compressedFiles.length; i++) {
                 const formData = new FormData();
-                formData.append('file', files[i]);
+                formData.append('file', compressedFiles[i]);
                 formData.append('categoryId', categoryId.toString());
                 formData.append('subcategoryId', subcategory.id.toString());
-                formData.append('title', files[i].name);
+                formData.append('title', compressedFiles[i].name);
 
                 const response = await fetch(`${API_BASE_URL}/api/gallery/upload`, {
                     method: 'POST',
@@ -200,17 +234,21 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                 });
 
                 if (!response.ok) {
-                    throw new Error('Upload failed');
+                    throw new Error(`Failed to upload ${compressedFiles[i].name}`);
                 }
 
                 const uploadedImage = await response.json();
                 setImages(prev => [...prev, uploadedImage]);
+                setUploadProgress(50 + ((i + 1) / compressedFiles.length) * 50);
             }
+            setSuccess(`${compressedFiles.length} image${compressedFiles.length > 1 ? 's' : ''} uploaded successfully`);
+            setTimeout(() => setSuccess(null), 3000);
         } catch (error) {
             console.error('Upload failed:', error);
-            setError("Failed to upload images. Please try again.");
+            setError(error instanceof Error ? error.message : "Failed to upload images. Please try again.");
         } finally {
             setUploading(false);
+            setUploadProgress(0);
         }
     };
 
@@ -256,14 +294,14 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-lg max-w-4xl w-full my-8 flex flex-col max-h-[90vh]">
+            <div className="bg-white dark:bg-neutral-900 rounded-lg max-w-4xl w-full my-8 flex flex-col max-h-[90vh]">
                 {/* Header */}
-                <div className="p-6 border-b border-neutral-200 flex items-center justify-between shrink-0 bg-white">
+                <div className="p-6 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between shrink-0 bg-white dark:bg-neutral-900">
                     <div>
-                        <h3 className="text-lg font-semibold text-neutral-900">
+                        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
                             Edit Subcategory - {subcategory.name}
                         </h3>
-                        <p className="text-sm text-neutral-500 mt-1">
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
                             Update subcategory name and manage images
                         </p>
                     </div>
@@ -271,9 +309,9 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                         type="button"
                         onClick={handleClose}
                         disabled={saving}
-                        className="p-2 hover:bg-neutral-100 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        <X className="h-5 w-5 text-neutral-600" />
+                        <X className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
                     </button>
                 </div>
 
@@ -299,14 +337,14 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                 <div className="p-6 overflow-y-auto flex-1">
                     {/* Subcategory Name */}
                     <div className="mb-8">
-                        <h4 className="text-sm font-medium text-neutral-700 mb-2">
+                        <h4 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                             Subcategory Name *
                         </h4>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => { setName(e.target.value); setDirty(true); setError(null); }}
-                            className="w-full px-4 py-2 border border-neutral-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                            className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-700 rounded-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:bg-neutral-800 dark:text-white"
                             placeholder="Enter subcategory name"
                         />
                         <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
@@ -315,18 +353,18 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                     </div>
 
                     {/* Divider */}
-                    <div className="border-t border-neutral-200 mb-6"></div>
+                    <div className="border-t border-neutral-200 dark:border-neutral-700 mb-6"></div>
 
                     {/* Images Section */}
                     <div>
-                        <h4 className="text-sm font-medium text-neutral-700 mb-4">
+                        <h4 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-4">
                             Images ({loadingImages ? "..." : images.length})
                         </h4>
 
                         {/* Images Grid */}
                         {loadingImages ? (
-                            <div className="mb-6 flex min-h-48 items-center justify-center border-2 border-dashed border-neutral-300 rounded-lg">
-                                <p className="text-neutral-500">Loading images...</p>
+                            <div className="mb-6 flex min-h-48 items-center justify-center border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg">
+                                <p className="text-neutral-500 dark:text-neutral-400">Loading images...</p>
                             </div>
                         ) : images.length > 0 ? (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
@@ -338,16 +376,16 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                                         onDragOver={(e) => handleDragOver(e, index)}
                                         onDragEnd={handleDragEnd}
                                         className={`relative group cursor-move border-2 rounded-sm overflow-hidden ${
-                                            draggedIndex === index ? 'border-neutral-900 opacity-50' : 'border-neutral-200'
+                                            draggedIndex === index ? 'border-neutral-900 dark:border-neutral-400 opacity-50' : 'border-neutral-200 dark:border-neutral-700'
                                         }`}
                                     >
                                         {/* Drag Handle */}
-                                        <div className="absolute top-2 left-2 bg-white/90 rounded p-1 shadow-sm">
-                                            <GripVertical className="h-4 w-4 text-neutral-600" />
+                                        <div className="absolute top-2 left-2 bg-white/90 dark:bg-neutral-800/90 rounded p-1 shadow-sm">
+                                            <GripVertical className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
                                         </div>
 
                                         {/* Image */}
-                                        <div className="aspect-square bg-neutral-100">
+                                        <div className="aspect-square bg-neutral-100 dark:bg-neutral-800">
                                             <img
                                                 src={image.imageUrl}
                                                 alt={image.title}
@@ -368,54 +406,66 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-12 border-2 border-dashed border-neutral-300 rounded-lg mb-6">
-                                <p className="text-neutral-500">No images yet</p>
+                            <div className="text-center py-12 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg mb-6">
+                                <p className="text-neutral-500 dark:text-neutral-400">No images yet</p>
                             </div>
                         )}
 
                         {/* Upload Section */}
-                        <div className="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center hover:border-neutral-400 transition-colors">
+                        <div className="border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg p-6 text-center hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors relative">
+                            {uploading && (
+                                <div className="absolute inset-0 bg-white/90 dark:bg-neutral-900/90 flex flex-col items-center justify-center rounded-lg z-10">
+                                    <div className="w-12 h-12 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                        {uploadProgress < 50 ? 'Compressing...' : 'Uploading...'}
+                                    </p>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{uploadProgress}%</p>
+                                </div>
+                            )}
                             <input
                                 type="file"
                                 id="image-upload"
                                 multiple
-                                accept="image/*"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
                                 onChange={handleFileUpload}
                                 className="hidden"
                                 disabled={uploading || saving}
                             />
                             <label
                                 htmlFor="image-upload"
-                                className="cursor-pointer flex flex-col items-center"
+                                className={`cursor-pointer flex flex-col items-center ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
                             >
-                                <Upload className="h-8 w-8 text-neutral-400 mb-2" />
-                                <p className="text-sm font-medium text-neutral-700 mb-1">
-                                    {uploading ? 'Uploading...' : '+ Upload New Images'}
+                                <Upload className="h-8 w-8 text-neutral-400 dark:text-neutral-500 mb-2" />
+                                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                    {uploading ? 'Processing...' : '+ Upload New Images'}
                                 </p>
-                                <p className="text-xs text-neutral-500">
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400">
                                     Drag & drop or click to browse
+                                </p>
+                                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                                    Max 5MB per file • JPG, PNG, WebP
                                 </p>
                             </label>
                         </div>
 
                         {/* Info */}
-                        <p className="text-xs text-neutral-500 mt-4 flex items-center gap-2">
-                            <span className="inline-block w-4 h-4 rounded-full bg-neutral-200 text-center text-[10px] leading-4">ⓘ</span>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 flex items-center gap-2">
+                            <span className="inline-block w-4 h-4 rounded-full bg-neutral-200 dark:bg-neutral-700 text-center text-[10px] leading-4">ⓘ</span>
                             Drag images to reorder • Click trash to delete
                         </p>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-neutral-200 flex items-center justify-between bg-neutral-50 shrink-0">
-                    <div className="text-sm text-neutral-600">
+                <div className="p-6 border-t border-neutral-200 dark:border-neutral-700 flex items-center justify-between bg-neutral-50 dark:bg-neutral-800/50 shrink-0">
+                    <div className="text-sm text-neutral-600 dark:text-neutral-400">
                         {!name.trim() && (
-                            <span className="text-red-600 font-medium">
+                            <span className="text-red-600 dark:text-red-400 font-medium">
                                 ⚠️ Subcategory name is required
                             </span>
                         )}
                         {images.length < 1 && (
-                            <span className="text-red-600 font-medium">
+                            <span className="text-red-600 dark:text-red-400 font-medium">
                                 ⚠️ At least 1 image is required
                             </span>
                         )}
@@ -425,7 +475,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                             type="button"
                             onClick={handleClose}
                             disabled={saving}
-                            className="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-sm hover:bg-neutral-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Cancel
                         </button>
@@ -439,7 +489,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                                 saving ||
                                 loadingImages
                             }
-                            className="px-4 py-2 bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-neutral-900 dark:bg-neutral-700 text-white rounded-sm hover:bg-neutral-800 dark:hover:bg-neutral-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {saving ? "Saving..." : "Save Changes"}
                         </button>
