@@ -316,14 +316,11 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         setSaveError(null);
         try {
             await mutate("DELETE", `${base}/items/${itemId}`, undefined);
-            // Only update local state after server confirms deletion
-            setItems(prev => prev.filter((_, i) => i !== idx));
+            // Only update local state after server confirms deletion - filter by itemId instead of index
+            setItems(prev => prev.filter(item => item.id !== itemId));
             setEditingIdx(null);
-            setExpandedItems((prev) => {
-                const next = new Set(prev);
-                next.delete(idx);
-                return next;
-            });
+            // Remove the deleted item from expanded items using itemId
+            setExpandedItems(new Set(Array.from(expandedItems).filter(id => id !== itemId)));
             setSaveSuccess("Size deleted successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
             const freshSub = await onSubcategoryUpdate?.(sub.slug);

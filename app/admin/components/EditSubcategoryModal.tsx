@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, GripVertical, Trash2, Plus, Upload } from "lucide-react";
+import { X, GripVertical, Trash2, Plus, Upload, AlertCircle, CheckCircle } from "lucide-react";
 import { API_BASE_URL } from '@/lib/config/api';
 import { GalleryImage } from "@/lib/api/gallery";
 
@@ -31,6 +31,44 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [loadingImages, setLoadingImages] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+    const [dirty, setDirty] = useState(false);
+
+    // Unsaved changes protection
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (dirty) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [dirty]);
+
+    // Keyboard navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                handleClose();
+            }
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSave();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [dirty]);
+
+    const handleClose = () => {
+        if (dirty && !confirm('You have unsaved changes. Are you sure you want to close?')) {
+            return;
+        }
+        onClose();
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -125,7 +163,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
 
     const handleDelete = (index: number) => {
         if (images.length <= 1) {
-            alert('Subcategory must have at least 1 image');
+            setError("Subcategory must have at least 1 image");
             return;
         }
         
@@ -134,6 +172,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
             setDeletedImageIds(prev => [...prev, imageToDelete.id]);
             const newImages = images.filter((_, i) => i !== index);
             setImages(newImages);
+            setDirty(true);
         }
     };
 
@@ -169,7 +208,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
             }
         } catch (error) {
             console.error('Upload failed:', error);
-            alert('Failed to upload images. Please try again.');
+            setError("Failed to upload images. Please try again.");
         } finally {
             setUploading(false);
         }
@@ -179,16 +218,17 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
         if (saving) return;
 
         if (!name.trim()) {
-            alert("Subcategory name is required");
+            setError("Subcategory name is required");
             return;
         }
 
         if (images.length < 1) {
-            alert("Subcategory must have at least 1 image");
+            setError("Subcategory must have at least 1 image");
             return;
         }
 
         setSaving(true);
+        setError(null);
 
         try {
             const imageIds = images.map((image) => image.id);
@@ -198,10 +238,13 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                 imageIds,
                 deletedImageIds
             );
+            
+            setSuccess("Subcategory updated successfully!");
+            setTimeout(() => setSuccess(null), 3000);
+            setDirty(false);
         } catch (error) {
             console.error("Failed to save subcategory:", error);
-
-            alert(
+            setError(
                 error instanceof Error
                     ? error.message
                     : "Failed to save changes. Please try again."
@@ -226,13 +269,31 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                     </div>
                     <button
                         type="button"
-                        onClick={onClose}
+                        onClick={handleClose}
                         disabled={saving}
                         className="p-2 hover:bg-neutral-100 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         <X className="h-5 w-5 text-neutral-600" />
                     </button>
                 </div>
+
+                {/* Error Banner */}
+                {error && (
+                    <div className="flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-sm text-red-700 dark:text-red-300 text-sm mx-6 mt-4">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span className="flex-1">{error}</span>
+                        <button type="button" onClick={() => setError(null)} className="text-red-400 hover:text-red-600">×</button>
+                    </div>
+                )}
+
+                {/* Success Banner */}
+                {success && (
+                    <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-sm text-green-700 dark:text-green-300 text-sm mx-6 mt-4">
+                        <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                        <span className="flex-1">{success}</span>
+                        <button type="button" onClick={() => setSuccess(null)} className="text-green-400 hover:text-green-600">×</button>
+                    </div>
+                )}
 
                 {/* Content */}
                 <div className="p-6 overflow-y-auto flex-1">
@@ -244,10 +305,13 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                         <input
                             type="text"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(e) => { setName(e.target.value); setDirty(true); setError(null); }}
                             className="w-full px-4 py-2 border border-neutral-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
                             placeholder="Enter subcategory name"
                         />
+                        <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                            Choose a clear, descriptive name for your subcategory (e.g., "Small", "Medium", "Large")
+                        </p>
                     </div>
 
                     {/* Divider */}
@@ -359,7 +423,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                     <div className="flex gap-3">
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={handleClose}
                             disabled={saving}
                             className="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-sm hover:bg-neutral-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >

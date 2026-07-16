@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, AlertCircle } from "lucide-react";
 
 interface CreateSubcategoryModalProps {
     categoryId: number;
@@ -11,10 +11,11 @@ interface CreateSubcategoryModalProps {
 
 export function CreateSubcategoryModal({ categoryId, onClose, onCreate }: CreateSubcategoryModalProps) {
     const [name, setName] = useState("");
+    const [error, setError] = useState("");
 
     const handleCreate = () => {
         if (!name.trim()) {
-            alert('Subcategory name is required');
+            setError("Subcategory name is required");
             return;
         }
         
@@ -45,11 +46,17 @@ export function CreateSubcategoryModal({ categoryId, onClose, onCreate }: Create
                     <input
                         type="text"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => { setName(e.target.value); setError(""); }}
                         className="w-full px-4 py-2 border border-neutral-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
                         placeholder="Enter subcategory name"
                         autoFocus
                     />
+                    {error && (
+                        <div className="flex items-center gap-2 mt-2 text-sm text-red-600">
+                            <AlertCircle className="h-4 w-4" />
+                            <span>{error}</span>
+                        </div>
+                    )}
                     <p className="text-xs text-neutral-500 mt-2">
                         You can add images after creating the subcategory
                     </p>

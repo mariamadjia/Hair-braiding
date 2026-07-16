@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
             method: "GET",
             cache: "no-store",
             headers: authHeader ? { "Authorization": authHeader } : {},
-            signal: AbortSignal.timeout(10000)
+            signal: AbortSignal.timeout(15000)
         });
 
         console.log('[ADMIN SUBCATEGORY SUMMARIES] Backend response status:', res.status);

@@ -30,6 +30,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     onSubcategorySummariesRefresh?: (categorySlug: string) => Promise<any>;
 }) {
     const [name, setName] = useState(cat.name);
+    const [nameError, setNameError] = useState("");
     const [images, setImages] = useState<string[]>(() =>
         (cat.flippingImages ?? []).map(toProxyUrl)
     );
@@ -38,12 +39,14 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     const [addingSub, setAddingSub] = useState(false);
     const [newSubName, setNewSubName] = useState("");
     const [saving, setSaving] = useState(false);
+    const [loadingCategory, setLoadingCategory] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [subSummaries, setSubSummaries] = useState<SubcategorySummary[]>([]);
 
     useEffect(() => { 
         setName(cat.name); 
+        setNameError("");
         setImages((cat.flippingImages ?? []).map(toProxyUrl));
         setDirty(false); 
 
@@ -52,6 +55,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         const fetchCategoryDetail = async () => {
             if (!cat.slug) return;
 
+            setLoadingCategory(true);
             try {
                 const response = await fetch(`/api/admin/categories/${cat.slug}`, {
                     method: "GET",
@@ -64,25 +68,20 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 });
 
                 if (!response.ok) {
-                    console.error('[CategoryEditor] Failed to fetch category detail:', response.status);
                     return;
                 }
 
                 const detail = await response.json();
-                console.log('[CategoryEditor] Fetched category detail flippingImages:', detail.flippingImages);
-                console.log('[CategoryEditor] Fetched category detail galleryImages:', detail.galleryImages);
-
                 const proxiedImages = (detail.flippingImages ?? []).map((url: string) => {
-                    console.log('[CategoryEditor] Processing image URL:', url);
                     const proxied = toProxyUrl(url);
-                    console.log('[CategoryEditor] Proxied URL:', proxied);
                     return proxied;
                 });
-                console.log('[CategoryEditor] Final proxied images:', proxiedImages);
                 setImages(proxiedImages);
                 setGalleryImages((detail.galleryImages ?? []) as GalleryImage[]);
             } catch (error) {
                 console.error('[CategoryEditor] Failed to fetch category detail:', error);
+            } finally {
+                setLoadingCategory(false);
             }
         };
 
@@ -100,6 +99,45 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         loadSubs();
     }, [cat.slug, token, onLoadSubcategorySummaries]);
 
+    const validateName = (value: string) => {
+        if (!value.trim()) {
+            setNameError("Category name is required");
+            return false;
+        }
+        if (value.trim().length < 2) {
+            setNameError("Name must be at least 2 characters");
+            return false;
+        }
+        setNameError("");
+        return true;
+    };
+
+    const handleNameChange = (value: string) => {
+        setName(value);
+        setDirty(true);
+        setErrorMessage(null);
+        validateName(value);
+    };
+
+    // Keyboard navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                if (dirty && (name !== cat.name || images.length !== (cat.flippingImages ?? []).length)) {
+                    if (!confirm('You have unsaved changes. Leave without saving?')) return;
+                }
+                setSelection({ type: "root" });
+            }
+            if (e.key === 'Enter' && !e.shiftKey && !dirty) {
+                e.preventDefault();
+                save();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [dirty, name, images, cat, setSelection]);
+
     const guardedSetSelection = (next: Selection) => {
         if (saving) {
             setErrorMessage("Please wait for the current operation to complete.");
@@ -113,6 +151,13 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
 
     const save = async () => {
         if (saving) return; // Prevent concurrent mutations
+        
+        // Validate name
+        if (!validateName(name)) {
+            setErrorMessage("Please fix validation errors before saving.");
+            return;
+        }
+        
         if (images.length < 3) {
             setErrorMessage("Please upload at least 3 photos for the gallery.");
             return;
@@ -123,10 +168,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         }
         if (!cat.id) {
             setErrorMessage("Category ID is missing. Cannot save flipping images.");
-            return;
-        }
-        if (!name.trim()) {
-            setErrorMessage("Category name is required.");
             return;
         }
 
@@ -227,6 +268,12 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
 
     return (
         <div className="space-y-5">
+            {loadingCategory && (
+                <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neutral-900"></div>
+                </div>
+            )}
+
             {/* Success Banner */}
             {successMessage && (
                 <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-sm text-green-800 dark:text-green-200 text-sm">
@@ -277,7 +324,33 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             </div>
 
             <div className="space-y-4">
-                <div><label className={lbl}>Category Name</label><input className={inp} value={name} onChange={(e) => { setName(e.target.value); setDirty(true); }} /></div>
+                {loadingCategory ? (
+                    <div className="space-y-4">
+                        <div className="h-10 bg-neutral-200 dark:bg-neutral-700 rounded-sm animate-pulse"></div>
+                        <div className="border border-neutral-200 dark:border-neutral-700 rounded-sm p-4 bg-neutral-50 dark:bg-neutral-800">
+                            <div className="h-6 bg-neutral-200 dark:bg-neutral-700 rounded-sm animate-pulse mb-3"></div>
+                            <div className="h-32 bg-neutral-200 dark:bg-neutral-700 rounded-sm animate-pulse"></div>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <div>
+                            <label className={lbl}>Category Name</label>
+                            <input 
+                                className={`${inp} ${nameError ? "border-red-400" : ""}`} 
+                                value={name} 
+                                onChange={(e) => handleNameChange(e.target.value)} 
+                            />
+                            {nameError && (
+                                <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    {nameError}
+                                </p>
+                            )}
+                            <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                                Choose a clear, descriptive name for your category (e.g., "Box Braids")
+                            </p>
+                        </div>
                 
                 {/* Gallery Photos Section */}
                 <div className="border border-neutral-200 dark:border-neutral-700 rounded-sm p-4 bg-neutral-50 dark:bg-neutral-800">
@@ -290,7 +363,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                         images={images}
                         token={token}
                         categoryId={cat.id}
-                        onChange={(urls: string[]) => { setImages(urls); setDirty(true); }}
+                        onChange={(urls: string[]) => { setImages(urls); setDirty(true); setErrorMessage(null); }}
                     />
                     
                     {/* Status Indicator */}
@@ -319,10 +392,12 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     type="button"
                     onClick={save}
                     className={btnP}
-                    disabled={images.length < 3 || images.length > 5 || saving}
+                    disabled={images.length < 3 || images.length > 5 || saving || nameError !== ""}
                 >
                     {saving ? 'Saving...' : 'Save changes'}
                 </button>
+                </>
+                )}
             </div>
 
             <div className="border-t border-neutral-100 dark:border-neutral-700 pt-4 space-y-3">

@@ -11,6 +11,8 @@ function getAuthHeader(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  
   try {
     const authHeader = getAuthHeader(req);
     
@@ -20,7 +22,7 @@ export async function GET(req: NextRequest) {
       method: "GET",
       cache: "no-store",
       headers: authHeader ? { "Authorization": authHeader } : {} as Record<string, string>,
-      signal: AbortSignal.timeout(30000)
+      signal: AbortSignal.timeout(15000)
     });
 
     console.log('[ADMIN CATEGORIES] Backend response status:', res.status);

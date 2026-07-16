@@ -63,10 +63,24 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
     });
   };
 
-  const handleStep0Next = () => {
+  const handleStep0Next = async () => {
     const trimmed = catName.trim();
     if (!trimmed) { setCatNameError("Category name is required."); return; }
     if (trimmed.length < 2) { setCatNameError("Name must be at least 2 characters."); return; }
+    
+    // Check for slug uniqueness on backend
+    try {
+      const catSlug = slugify(trimmed);
+      const response = await fetch(`${API_BASE_URL}/api/categories/slug/${catSlug}`);
+      if (response.ok) {
+        setCatNameError("A category with this name already exists. Please choose a different name.");
+        return;
+      }
+    } catch (error) {
+      // If check fails, allow proceeding (backend will handle duplicate)
+      console.error("Slug uniqueness check failed:", error);
+    }
+    
     setCatNameError("");
     clearError();
     setStep(1);
