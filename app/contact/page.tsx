@@ -1,5 +1,5 @@
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import FooterWrapper from '@/components/FooterWrapper';
 
 export default function ContactPage() {
   return (
@@ -144,7 +144,7 @@ export default function ContactPage() {
         </div>
       </section>
 
-      <Footer />
+      <FooterWrapper />
     </>
   );
 }

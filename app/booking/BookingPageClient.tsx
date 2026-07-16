@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
+import FooterWrapper from "@/components/FooterWrapper";
 import type { BookingCategory } from "@/lib/booking-types";
 
 export default function BookingPageClient({ categories }: { categories: BookingCategory[] }) {
@@ -47,6 +48,7 @@ export default function BookingPageClient({ categories }: { categories: BookingC
                 </div>
             </section>
 
+            <FooterWrapper />
         </>
     );
 }

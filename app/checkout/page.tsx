@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import BookingCalendar from "@/components/BookingCalendar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import FooterWrapper from "@/components/FooterWrapper";
 
 function CheckoutContent() {
     const searchParams = useSearchParams();
@@ -222,7 +222,7 @@ function CheckoutContent() {
                 </div>
             </section>
 
-            <Footer />
+            <FooterWrapper />
         </>
     );
 }

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Plus, Minus, ChevronLeft, ChevronRight, X, Pencil } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import FooterWrapper from '@/components/FooterWrapper';
 import { toProxyUrl } from '@/lib/utils/image';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -674,7 +674,7 @@ export default function GalleryPage({
         )}
       </div>
       <div className="mt-16 md:mt-24">
-        <Footer />
+        <FooterWrapper />
       </div>
     </>
   );

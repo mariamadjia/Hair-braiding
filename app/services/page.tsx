@@ -1,6 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Services from "@/components/Services";
-import Footer from "@/components/Footer";
+import FooterWrapper from "@/components/FooterWrapper";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,7 +10,7 @@ export default function ServicesPage() {
         <>
             <Navbar />
             <Services />
-            <Footer />
+            <FooterWrapper />
         </>
     );
 }
