@@ -7,7 +7,7 @@ export default function Footer({ videoSrc = '/Footer/IMG_2004.mov' }: FooterProp
     <footer className="bg-[#2C1810] text-white w-full">
       
       {/* Mobile Layout */}
-      <div className="lg:hidden px-6 pt-12 pb-10">
+      <div className="lg:hidden px-6 pt-14 pb-10">
         {/* Centered Branding */}
         <h2 className="text-2xl font-semibold tracking-[0.25em] mb-8 text-center">
           BY AH BRAIDING
@@ -54,8 +54,15 @@ export default function Footer({ videoSrc = '/Footer/IMG_2004.mov' }: FooterProp
           >
             FACEBOOK
           </a>
-         
         </div>
+
+        {/* Mobile Navigation */}
+        <nav className="flex flex-wrap justify-center gap-6 mt-8 text-[13px] uppercase tracking-[0.18em] font-medium">
+          <a href="/" className="hover:opacity-70 transition-opacity">HOME</a>
+          <a href="/gallery" className="hover:opacity-70 transition-opacity">GALLERY</a>
+          <a href="/services" className="hover:opacity-70 transition-opacity">SERVICES</a>
+          <a href="/contact" className="hover:opacity-70 transition-opacity">CONTACT</a>
+        </nav>
       </div>
 
       {/* Desktop Layout */}
@@ -119,7 +126,14 @@ export default function Footer({ videoSrc = '/Footer/IMG_2004.mov' }: FooterProp
       <div className="px-6 py-6">
         {/* Mobile: Centered Credit */}
         <div className="lg:hidden text-center text-[10px] uppercase tracking-[0.15em] opacity-100">
-          DESIGNED BY Gloria Djonret
+          <a
+            href="https://www.gloria-djonret.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            DESIGNED BY Gloria Djonret
+          </a>
         </div>
 
         {/* Desktop: Navigation + Credit */}
