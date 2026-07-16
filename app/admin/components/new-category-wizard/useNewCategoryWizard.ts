@@ -71,10 +71,19 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
     // Check for slug uniqueness on backend
     try {
       const catSlug = slugify(trimmed);
-      const response = await fetch(`${API_BASE_URL}/api/categories/slug/${catSlug}`);
+
+      const response = await fetch(`${API_BASE_URL}/api/categories/exists/${catSlug}`, {
+        method: "GET",
+        cache: "no-store",
+      });
+
       if (response.ok) {
-        setCatNameError("A category with this name already exists. Please choose a different name.");
-        return;
+        const data = await response.json();
+
+        if (data.exists) {
+          setCatNameError("A category with this name already exists. Please choose a different name.");
+          return;
+        }
       }
     } catch (error) {
       // If check fails, allow proceeding (backend will handle duplicate)
@@ -378,14 +387,22 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
       const totalImages = allUploads.length;
       let uploadedCount = 0;
 
-      type UploadWithId = typeof allUploads[0] & { imageId: number };
+      type UploadWithId = typeof allUploads[0] & { imageId?: number; imageUrl?: string };
 
       // Upload images with progress feedback
       const uploadWithProgress = async (upload: typeof allUploads[0]): Promise<UploadWithId> => {
-        const image = await galleryApi.uploadImage({ file: upload.file });
-        uploadedCount++;
-        setSavePhase(`Uploading images… (${uploadedCount}/${totalImages})`);
-        return { ...upload, imageId: image.id };
+        // Use simple upload for size photos, gallery upload for others
+        if (upload.type === 'size') {
+          const url = await uploadFile(upload.file, token, {}, true);
+          uploadedCount++;
+          setSavePhase(`Uploading images… (${uploadedCount}/${totalImages})`);
+          return { ...upload, imageUrl: url };
+        } else {
+          const image = await galleryApi.uploadImage({ file: upload.file });
+          uploadedCount++;
+          setSavePhase(`Uploading images… (${uploadedCount}/${totalImages})`);
+          return { ...upload, imageId: image.id };
+        }
       };
 
       const uploadedImages = await Promise.all(
@@ -405,28 +422,28 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
           .map((u) => u.imageId);
 
         const sizes = sub.sizes.map((size, sizeIndex) => {
-          const sizePhotoIds = uploadedImages
-            .filter((u) => u.type === 'size' && u.subIndex === subIndex && u.sizeIndex === sizeIndex)
-            .map((u) => u.imageId);
+        const sizePhotos = uploadedImages
+          .filter((u) => u.type === 'size' && u.subIndex === subIndex && u.sizeIndex === sizeIndex)
+          .map((u) => u.imageUrl);
 
-          const lengths = size.lengths.map((length, lengthIndex) => {
-            const uploaded = uploadedImages.find(
-              (u) => u.type === 'length' && u.subIndex === subIndex && u.sizeIndex === sizeIndex && u.lengthIndex === lengthIndex
-            );
-            return {
-              name: (length.name || '').trim(),
-              price: (length.price || '').trim(),
-              notes: length.notes || undefined,
-              duration: length.duration || undefined,
-              imageId: uploaded?.imageId || null,
-            };
-          });
+        const lengths = size.lengths.map((length, lengthIndex) => {
+          const uploaded = uploadedImages.find(
+            (u) => u.type === 'length' && u.subIndex === subIndex && u.sizeIndex === sizeIndex && u.lengthIndex === lengthIndex
+          );
           return {
-            name: size.name.trim(),
-            sizePhotoIds,
-            lengths,
+            name: (length.name || '').trim(),
+            price: (length.price || '').trim(),
+            notes: length.notes || undefined,
+            duration: length.duration || undefined,
+            imageId: uploaded?.imageId || null,
           };
         });
+        return {
+          name: size.name.trim(),
+          sizePhotos,
+          lengths,
+        };
+      });
 
         return {
           name: sub.name.trim(),
