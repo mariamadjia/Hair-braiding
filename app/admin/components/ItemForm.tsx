@@ -84,10 +84,14 @@ export function ItemForm({
                         categoryId,
                         subcategoryId,
                         serviceItemId: item.id,
-                    }, true)
+                    }, true) // Use simple upload for size photos (not gallery)
                 )
             );
-            setItem((prev) => ({ ...prev, sizePhotos: [...rawSizePhotos, ...uploadedUrls] }));
+            // Only store in sizePhotos, ensure images/image are not affected
+            setItem((prev) => ({ 
+                ...prev, 
+                sizePhotos: [...rawSizePhotos, ...uploadedUrls]
+            }));
             setDirty(true);
         } catch (error) {
             console.error("Failed to upload size photos:", error);
@@ -135,7 +139,7 @@ export function ItemForm({
                         {uploadingSizePhotos ? (
                             <span className="text-xs">...</span>
                         ) : (
-                            <span className="text-xs font-medium">+ Add Size Photo</span>
+                            <Plus className="h-5 w-5" />
                         )}
                         <input
                             type="file"
@@ -173,7 +177,15 @@ export function ItemForm({
                 <button type="button" onClick={() => {
                     console.log("Saving item:", item);
                     setError(null);
-                    onSave(item);
+                    // Only send sizePhotos, not images/image to prevent gallery/cover issues
+                    const itemToSave = {
+                        ...item,
+                        sizePhotos: item.sizePhotos ?? [],
+                        // Explicitly clear images/image to prevent them from being used as gallery/cover
+                        images: undefined,
+                        image: undefined
+                    };
+                    onSave(itemToSave);
                     setSuccess("Item saved successfully!");
                     setTimeout(() => setSuccess(null), 3000);
                     setDirty(false);
