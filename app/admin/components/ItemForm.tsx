@@ -176,13 +176,11 @@ export function ItemForm({
                 <button type="button" onClick={() => {
                     console.log("Saving item:", item);
                     setError(null);
-                    // Only send sizePhotos, not images/image to prevent gallery/cover issues
+                    // Send the full item with sizePhotos, don't clear images/image
+                    // This ensures the View Photo button appears in the public website
                     const itemToSave = {
                         ...item,
                         sizePhotos: item.sizePhotos ?? [],
-                        // Explicitly clear images/image to prevent them from being used as gallery/cover
-                        images: undefined,
-                        image: undefined
                     };
                     onSave(itemToSave);
                     setSuccess("Item saved successfully!");
