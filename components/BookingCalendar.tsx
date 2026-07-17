@@ -65,8 +65,6 @@ export default function BookingCalendar({
     const [confirmationNumber, setConfirmationNumber] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stripePromise] = useState(() => getStripe());
-    const [dateAvailability, setDateAvailability] = useState<Record<string, boolean>>({});
-    const [loadingAvailability, setLoadingAvailability] = useState(false);
     
     const [formData, setFormData] = useState({
         firstName: "",
@@ -90,54 +88,6 @@ export default function BookingCalendar({
             window.removeEventListener('settingsUpdated', handleSettingsUpdate);
         };
     }, [selectedDate]);
-
-    // Fetch availability for the entire month when month changes
-    useEffect(() => {
-        fetchMonthAvailability(currentDate);
-    }, [currentDate]);
-
-    const fetchMonthAvailability = async (date: Date) => {
-        setLoadingAvailability(true);
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const availability: Record<string, boolean> = {};
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const checkDate = new Date(year, month, day);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            // Skip past dates
-            if (checkDate < today) {
-                availability[dateStr] = false;
-                continue;
-            }
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                    cache: 'no-store'
-                });
-
-                if (response.ok) {
-                    const slots = await response.json();
-                    const hasAvailableSlots = Array.isArray(slots) && slots.some((s: any) => s.isAvailable && s.availableSpots > 0);
-                    availability[dateStr] = hasAvailableSlots;
-                } else {
-                    availability[dateStr] = false;
-                }
-            } catch (error) {
-                availability[dateStr] = false;
-            }
-        }
-
-        setDateAvailability(availability);
-        setLoadingAvailability(false);
-    };
 
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
@@ -167,26 +117,7 @@ export default function BookingCalendar({
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // Disable past dates
-        if (date < today) return true;
-        
-        // Disable dates with no available slots
-        const dateStr = formatLocalDate(date);
-        return !dateAvailability[dateStr];
-    };
-
-    const isDateFullyBooked = (day: number | null) => {
-        if (!day) return false;
-        
-        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        // Only check for fully booked (not past dates)
-        if (date < today) return false;
-        
-        const dateStr = formatLocalDate(date);
-        return dateAvailability[dateStr] === false;
+        return date < today;
     };
 
     const isSameDay = (date1: Date | null, day: number | null) => {
@@ -531,43 +462,24 @@ export default function BookingCalendar({
                             </div>
                         ))}
                         
-                        {getDaysInMonth(currentDate).map((day, index) => {
-                            const disabled = isDateDisabled(day);
-                            const fullyBooked = isDateFullyBooked(day);
-                            const selected = isSameDay(selectedDate, day);
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            const isPast = day && new Date(currentDate.getFullYear(), currentDate.getMonth(), day).getTime() < today.getTime();
-                            
-                            return (
-                                <button
-                                    key={index}
-                                    onClick={() => handleDateSelect(day)}
-                                    disabled={disabled}
-                                    aria-label={day ? `${MONTHS[currentDate.getMonth()]} ${day}${disabled ? (isPast ? ' (past)' : ' (fully booked)') : ''}` : "Empty day"}
-                                    aria-pressed={selected}
-                                    className={cn(
-                                        "aspect-square p-2 text-sm font-medium rounded-sm transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-neutral-900 relative",
-                                        day === null && "invisible",
-                                        // Available dates
-                                        !disabled && !selected && "bg-white border border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 cursor-pointer text-neutral-700",
-                                        // Selected date
-                                        selected && "bg-[#2C1810] text-white border-[#2C1810]",
-                                        // Past dates
-                                        isPast && "bg-neutral-100 text-neutral-300 cursor-not-allowed border border-neutral-200",
-                                        // Fully booked dates (not past)
-                                        fullyBooked && !isPast && "bg-neutral-50 text-neutral-400 cursor-not-allowed border border-neutral-200"
-                                    )}
-                                >
-                                    <span className="relative z-10">{day}</span>
-                                    {fullyBooked && !isPast && (
-                                        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] text-neutral-400 leading-none">
-                                            No times
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
+                        {getDaysInMonth(currentDate).map((day, index) => (
+                            <button
+                                key={index}
+                                onClick={() => handleDateSelect(day)}
+                                disabled={isDateDisabled(day)}
+                                aria-label={day ? `${MONTHS[currentDate.getMonth()]} ${day}` : "Empty day"}
+                                aria-pressed={isSameDay(selectedDate, day)}
+                                className={cn(
+                                    "aspect-square p-2 text-sm font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
+                                    day === null && "invisible",
+                                    !isDateDisabled(day) && "bg-blue-50/80 hover:bg-blue-100 hover:scale-105 cursor-pointer text-blue-600 hover:shadow-md",
+                                    isDateDisabled(day) && "text-neutral-300 cursor-not-allowed",
+                                    isSameDay(selectedDate, day) && "bg-neutral-900 text-white hover:bg-neutral-800 shadow-lg scale-105"
+                                )}
+                            >
+                                {day}
+                            </button>
+                        ))}
                     </div>
                 </div>
             )}
