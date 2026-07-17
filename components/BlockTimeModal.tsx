@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Calendar, Clock, Trash2, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
 
 type BlockedSlot = {
@@ -53,7 +54,7 @@ export default function BlockTimeModal() {
     const fetchBlockedSlots = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = getAuthToken();
             const now = new Date();
             const futureDate = new Date();
             futureDate.setMonth(futureDate.getMonth() + 3);
@@ -105,7 +106,7 @@ export default function BlockTimeModal() {
         window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: true, error: null, success: false } }));
 
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = getAuthToken();
             const startDateTime = `${startDate}T${startTime}:00`;
             const endDateTime = `${endDate}T${endTime}:00`;
 

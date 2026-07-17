@@ -139,9 +139,10 @@ export default function AvailabilitySchedule() {
                                 }
                                 
                                 // Fallback: create single slot from business hours
+                                console.warn(`Could not load individual time slots for ${day.key}, using business hours fallback`);
                                 const openTime = existing.openTime?.substring(0, 5) || '09:00';
                                 const closeTime = existing.closeTime?.substring(0, 5) || '17:00';
-                                
+
                                 return {
                                     dayOfWeek: day.key,
                                     isAvailable: true,
@@ -519,6 +520,22 @@ export default function AvailabilitySchedule() {
                         window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: `Invalid time slot on ${day.dayOfWeek}`, success: false } }));
                         setSaving(false);
                         return;
+                    }
+                }
+
+                // Check for overlapping time slots
+                for (let i = 0; i < day.timeSlots.length; i++) {
+                    for (let j = i + 1; j < day.timeSlots.length; j++) {
+                        const slot1 = day.timeSlots[i];
+                        const slot2 = day.timeSlots[j];
+
+                        // Check if slots overlap
+                        if (slot1.startTime < slot2.endTime && slot1.endTime > slot2.startTime) {
+                            setError(`${day.dayOfWeek}: Time slots overlap. Please adjust the times to avoid overlap.`);
+                            window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: `Overlapping time slots on ${day.dayOfWeek}`, success: false } }));
+                            setSaving(false);
+                            return;
+                        }
                     }
                 }
             }
