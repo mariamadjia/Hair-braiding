@@ -76,7 +76,7 @@ export default function JoinUs() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-[#FFFDD0]">
+      <div className="min-h-screen bg-[#F6F5F1]">
         <div className="container mx-auto px-6 md:px-8 lg:px-12 py-12 md:py-24">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-3xl md:text-4xl font-light text-neutral-900 mb-8 text-center">

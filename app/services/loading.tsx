@@ -1,6 +1,6 @@
 export default function ServicesLoading() {
   return (
-    <div className="min-h-screen bg-[#FFFDD0] dark:bg-neutral-900 pt-24 md:pt-32">
+    <div className="min-h-screen bg-[#F6F5F1] dark:bg-neutral-900 pt-24 md:pt-32">
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="mb-14 text-center">
           <div className="mx-auto mb-4 h-4 w-28 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />

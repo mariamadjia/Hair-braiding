@@ -12,7 +12,7 @@ export default function BookingPageClient({ categories }: { categories: BookingC
     return (
         <>
             <Navbar />
-            <section className="relative overflow-hidden bg-[#FFFDD0] py-24 md:py-32 text-neutral-900 dark:bg-neutral-900 dark:text-white">
+            <section className="relative overflow-hidden bg-[#F6F5F1] py-24 md:py-32 text-neutral-900 dark:bg-neutral-900 dark:text-white">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <p className="text-xs uppercase tracking-[0.4em] text-neutral-500 dark:text-neutral-400 mb-4">Book Your Style</p>
                     <h1 className="text-4xl md:text-6xl font-light tracking-tight text-neutral-900 dark:text-white">
@@ -22,7 +22,7 @@ export default function BookingPageClient({ categories }: { categories: BookingC
                 <div className="pointer-events-none absolute -top-20 right-10 h-56 w-56 rounded-full bg-amber-100/30 blur-3xl" aria-hidden="true" />
             </section>
 
-            <section className="bg-[#FFFDD0] pb-24 md:pb-32 dark:bg-neutral-900">
+            <section className="bg-[#F6F5F1] pb-24 md:pb-32 dark:bg-neutral-900">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
                     <div className="divide-y divide-neutral-200/60 dark:divide-neutral-700">
                         {categories.map((category) => (

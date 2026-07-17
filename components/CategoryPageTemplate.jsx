@@ -56,7 +56,7 @@ export default function CategoryPageTemplate({
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-[#FFFDD0]">
+      <div className="min-h-screen bg-[#F6F5F1]">
         {/* Breadcrumb */}
         <div className="border-b border-[#2C1810]">
           <div className="container mx-auto px-6 md:px-8 lg:px-12 py-4">

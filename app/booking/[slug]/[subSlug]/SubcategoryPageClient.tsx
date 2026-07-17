@@ -181,7 +181,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     return (
         <>
             <Navbar />
-            <section className="relative overflow-hidden bg-[#FFFDD0] py-24 md:py-32 text-neutral-900">
+            <section className="relative overflow-hidden bg-[#F6F5F1] py-24 md:py-32 text-neutral-900">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
                     {heroImage && (
                         <div className="relative h-64 w-full max-w-xl mx-auto mb-6 rounded-sm overflow-hidden">
@@ -215,7 +215,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
             </section>
 
 
-            <section className="bg-[#FFFDD0] pb-24 md:pb-32">
+            <section className="bg-[#F6F5F1] pb-24 md:pb-32">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl space-y-6">
                     {items.map((item, index) => {
                         console.log(`[Item ${index}] Name:`, item.name);
@@ -226,7 +226,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                         return (
                         <div
                             key={`${item.name}-${index}`}
-                            className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-sm border border-neutral-200/60 bg-[#FFFDD0] py-6 px-6 md:px-8 transition-all duration-300 hover:bg-white/50"
+                            className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-sm border border-neutral-200/60 bg-[#F6F5F1] py-6 px-6 md:px-8 transition-all duration-300 hover:bg-white/50"
                         >
                             <div className="w-full text-neutral-900">
                                 <span className="block text-base md:text-lg font-light tracking-wide">

@@ -58,7 +58,7 @@ export default function CategoryDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#FFFDD0] flex items-center justify-center">
+            <div className="min-h-screen bg-[#F6F5F1] flex items-center justify-center">
                 <div className="text-neutral-600">Loading...</div>
             </div>
         );
@@ -66,14 +66,14 @@ export default function CategoryDetailPage() {
 
     if (!category) {
         return (
-            <div className="min-h-screen bg-[#FFFDD0] flex items-center justify-center">
+            <div className="min-h-screen bg-[#F6F5F1] flex items-center justify-center">
                 <div className="text-neutral-600">Category not found</div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#FFFDD0]">
+        <div className="min-h-screen bg-[#F6F5F1]">
             {/* Header */}
             <div className="bg-white border-b border-neutral-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
