@@ -61,6 +61,7 @@ export default function BookingCalendar({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+    const [datesWithNoSlots, setDatesWithNoSlots] = useState<Set<number>>(new Set());
     const [createdAppointmentId, setCreatedAppointmentId] = useState<number | null>(null);
     const [confirmationNumber, setConfirmationNumber] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,6 +89,49 @@ export default function BookingCalendar({
             window.removeEventListener('settingsUpdated', handleSettingsUpdate);
         };
     }, [selectedDate]);
+
+    // Fetch availability for the entire month when month changes
+    useEffect(() => {
+        const fetchMonthAvailability = async () => {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
+            const noSlotsDates = new Set<number>();
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (date < today) continue;
+                
+                const dateStr = formatLocalDate(date);
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        cache: 'no-store'
+                    });
+                    
+                    if (response.ok) {
+                        const slots = await response.json();
+                        const hasAvailableSlots = Array.isArray(slots) && slots.some((s: any) => s.isAvailable && s.availableSpots > 0);
+                        if (!hasAvailableSlots) {
+                            noSlotsDates.add(day);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Failed to fetch availability for ${dateStr}:`, error);
+                }
+            }
+            
+            setDatesWithNoSlots(noSlotsDates);
+        };
+        
+        fetchMonthAvailability();
+    }, [currentDate]);
 
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
@@ -118,6 +162,11 @@ export default function BookingCalendar({
         today.setHours(0, 0, 0, 0);
         
         return date < today;
+    };
+
+    const isDateFullyBooked = (day: number | null) => {
+        if (!day) return false;
+        return datesWithNoSlots.has(day);
     };
 
     const isSameDay = (date1: Date | null, day: number | null) => {
@@ -466,14 +515,15 @@ export default function BookingCalendar({
                             <button
                                 key={index}
                                 onClick={() => handleDateSelect(day)}
-                                disabled={isDateDisabled(day)}
+                                disabled={isDateDisabled(day) || isDateFullyBooked(day)}
                                 aria-label={day ? `${MONTHS[currentDate.getMonth()]} ${day}` : "Empty day"}
                                 aria-pressed={isSameDay(selectedDate, day)}
                                 className={cn(
                                     "aspect-square p-2 text-sm font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
                                     day === null && "invisible",
-                                    !isDateDisabled(day) && "bg-blue-50/80 hover:bg-blue-100 hover:scale-105 cursor-pointer text-blue-600 hover:shadow-md",
+                                    !isDateDisabled(day) && !isDateFullyBooked(day) && "bg-blue-50/80 hover:bg-blue-100 hover:scale-105 cursor-pointer text-blue-600 hover:shadow-md",
                                     isDateDisabled(day) && "text-neutral-300 cursor-not-allowed",
+                                    isDateFullyBooked(day) && "text-neutral-400 cursor-not-allowed bg-neutral-50",
                                     isSameDay(selectedDate, day) && "bg-neutral-900 text-white hover:bg-neutral-800 shadow-lg scale-105"
                                 )}
                             >
