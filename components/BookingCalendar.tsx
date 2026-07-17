@@ -62,6 +62,7 @@ export default function BookingCalendar({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stripePromise] = useState(() => getStripe());
     const [userTimezone, setUserTimezone] = useState<string>("");
+    const [datesWithNoAvailability, setDatesWithNoAvailability] = useState<Set<string>>(new Set());
     
     const [formData, setFormData] = useState({
         firstName: "",
@@ -120,7 +121,23 @@ export default function BookingCalendar({
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        return date < today;
+        const dateKey = formatLocalDate(date);
+        const hasNoAvailability = datesWithNoAvailability.has(dateKey);
+        
+        return date < today || hasNoAvailability;
+    };
+
+    const hasNoAvailability = (day: number | null) => {
+        if (!day) return false;
+        
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (date < today) return false;
+        
+        const dateKey = formatLocalDate(date);
+        return datesWithNoAvailability.has(dateKey);
     };
 
     const isSameDay = (date1: Date | null, day: number | null) => {
@@ -205,6 +222,19 @@ export default function BookingCalendar({
             });
             
             setAvailableSlots(slots);
+            
+            // Track dates with no availability
+            const dateKey = formatLocalDate(date);
+            const hasAvailableSlots = slots.some(slot => slot.available);
+            setDatesWithNoAvailability(prev => {
+                const newSet = new Set(prev);
+                if (hasAvailableSlots) {
+                    newSet.delete(dateKey);
+                } else {
+                    newSet.add(dateKey);
+                }
+                return newSet;
+            });
         } catch (error) {
             console.error('Error fetching available slots:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unable to load available times. Please try again later.';
@@ -464,14 +494,19 @@ export default function BookingCalendar({
                                 onClick={() => handleDateSelect(day)}
                                 disabled={isDateDisabled(day)}
                                 className={cn(
-                                    "aspect-square p-2 text-sm font-medium rounded-full transition-all duration-200",
+                                    "aspect-square p-2 text-sm font-medium rounded-full transition-all duration-200 relative",
                                     day === null && "invisible",
                                     !isDateDisabled(day) && "bg-blue-50/80 hover:bg-blue-100 hover:scale-105 cursor-pointer text-blue-600 hover:shadow-md",
-                                    isDateDisabled(day) && "text-neutral-300 cursor-not-allowed",
+                                    hasNoAvailability(day) && "bg-neutral-100 text-neutral-400 cursor-not-allowed",
+                                    isDateDisabled(day) && !hasNoAvailability(day) && "text-neutral-300 cursor-not-allowed",
                                     isSameDay(selectedDate, day) && "bg-neutral-900 text-white hover:bg-neutral-800 shadow-lg scale-105"
                                 )}
+                                title={hasNoAvailability(day) ? "No available times" : undefined}
                             >
                                 {day}
+                                {hasNoAvailability(day) && (
+                                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-neutral-400 rounded-full"></span>
+                                )}
                             </button>
                         ))}
                     </div>
