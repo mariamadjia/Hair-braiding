@@ -18,6 +18,8 @@ type TimeSlot = {
 type BookingCalendarProps = {
     className?: string;
     onBookingComplete?: (bookingData: BookingData) => void;
+    onDateSelected?: (date: Date | null) => void;
+    onTimeSelected?: (time: string | null) => void;
     serviceName?: string;
     serviceSize?: string;
     serviceLength?: string;
@@ -44,6 +46,8 @@ const MONTHS = [
 export default function BookingCalendar({ 
     className, 
     onBookingComplete,
+    onDateSelected,
+    onTimeSelected,
     serviceName,
     serviceSize,
     serviceLength,
@@ -130,6 +134,7 @@ export default function BookingCalendar({
         
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day!);
         setSelectedDate(date);
+        onDateSelected?.(date);
         setStep("time");
         setLoading(true);
         await fetchAvailableSlots(date);
@@ -224,6 +229,7 @@ export default function BookingCalendar({
 
     const handleTimeSelect = (time: string) => {
         setSelectedTime(time);
+        onTimeSelected?.(time);
         setStep("details");
     };
 
@@ -309,6 +315,7 @@ export default function BookingCalendar({
             if (error instanceof Error && error.message.includes('no longer available')) {
                 setStep("time");
                 setSelectedTime(null);
+                onTimeSelected?.(null);
                 await fetchAvailableSlots(selectedDate);
             }
         } finally {
@@ -364,6 +371,7 @@ export default function BookingCalendar({
     const resetToDateSelection = () => {
         setStep("date");
         setSelectedTime(null);
+        onTimeSelected?.(null);
     };
 
     const resetToTimeSelection = () => {
@@ -421,10 +429,13 @@ export default function BookingCalendar({
             {/* Date Selection */}
             {step === "date" && (
                 <div className="p-8">
+                    <p className="text-sm text-neutral-600 mb-6">
+                        Select a date to view available times
+                    </p>
                     <div className="flex items-center justify-between mb-8">
                         <button
                             onClick={goToPreviousMonth}
-                            className="p-2.5 hover:bg-neutral-100 rounded-full transition-all duration-200 hover:shadow-sm"
+                            className="p-2.5 hover:bg-neutral-100 rounded-full transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900"
                             aria-label="Previous month"
                         >
                             <ChevronLeft className="h-5 w-5 text-neutral-600" />
@@ -434,7 +445,7 @@ export default function BookingCalendar({
                         </h4>
                         <button
                             onClick={goToNextMonth}
-                            className="p-2.5 hover:bg-neutral-100 rounded-full transition-all duration-200 hover:shadow-sm"
+                            className="p-2.5 hover:bg-neutral-100 rounded-full transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900"
                             aria-label="Next month"
                         >
                             <ChevronRight className="h-5 w-5 text-neutral-600" />
@@ -456,8 +467,10 @@ export default function BookingCalendar({
                                 key={index}
                                 onClick={() => handleDateSelect(day)}
                                 disabled={isDateDisabled(day)}
+                                aria-label={day ? `${MONTHS[currentDate.getMonth()]} ${day}` : "Empty day"}
+                                aria-pressed={isSameDay(selectedDate, day)}
                                 className={cn(
-                                    "aspect-square p-2 text-sm font-medium rounded-full transition-all duration-200",
+                                    "aspect-square p-2 text-sm font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
                                     day === null && "invisible",
                                     !isDateDisabled(day) && "bg-blue-50/80 hover:bg-blue-100 hover:scale-105 cursor-pointer text-blue-600 hover:shadow-md",
                                     isDateDisabled(day) && "text-neutral-300 cursor-not-allowed",
@@ -475,26 +488,44 @@ export default function BookingCalendar({
             {step === "time" && (
                 <div className="p-8 space-y-8 max-h-[500px] overflow-y-auto">
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-12">
-                            <Loader2 className="h-8 w-8 animate-spin text-neutral-400 mb-3" />
-                            <p className="text-sm text-neutral-500">Loading available times...</p>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 text-neutral-500">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span className="text-sm">Loading available times...</span>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {[1, 2, 3, 4, 5, 6].map((i) => (
+                                    <div key={i} className="h-12 bg-neutral-100 rounded-lg animate-pulse" />
+                                ))}
+                            </div>
                         </div>
                     ) : error ? (
                         <div className="flex flex-col items-center justify-center py-12">
-                            <p className="text-sm text-red-600 text-center max-w-md">{error}</p>
-                            <button
+                            <p className="text-sm text-neutral-600 text-center max-w-md mb-4">We couldn't load available times. Please try again.</p>
+                            <Button
                                 onClick={() => {
                                     setError(null);
                                     if (selectedDate) fetchAvailableSlots(selectedDate);
                                 }}
-                                className="mt-4 text-sm text-neutral-600 underline hover:text-neutral-900"
+                                variant="outline"
+                                className="text-sm"
                             >
                                 Try again
-                            </button>
+                            </Button>
                         </div>
-                    ) : availableSlots.length === 0 ? (
+                    ) : availableSlots.filter(slot => slot.available).length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
-                            <p className="text-sm text-neutral-500">No available time slots for this date.</p>
+                            <p className="text-sm text-neutral-600 font-medium mb-1">No available times</p>
+                            <p className="text-sm text-neutral-500 mb-4">
+                                This date is fully booked or the salon is closed.
+                            </p>
+                            <Button
+                                onClick={resetToDateSelection}
+                                variant="outline"
+                                className="text-sm"
+                            >
+                                Choose another date
+                            </Button>
                         </div>
                     ) : (
                         <>
@@ -503,37 +534,33 @@ export default function BookingCalendar({
                         const hour = parseInt(slot.time.split(':')[0]);
                         const isPM = slot.time.includes('PM');
                         const hour24 = isPM && hour !== 12 ? hour + 12 : (!isPM && hour === 12 ? 0 : hour);
-                        return hour24 < 12;
+                        return hour24 < 12 && slot.available;
                     }).length > 0 && (
-                        <div>
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent"></div>
-                                <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-[0.15em]">Morning</h4>
-                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent"></div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-3">
+                        <fieldset className="space-y-3">
+                            <legend className="text-xs font-semibold uppercase tracking-[0.15em] text-neutral-500">Morning</legend>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {availableSlots.filter(slot => {
                                     const hour = parseInt(slot.time.split(':')[0]);
                                     const isPM = slot.time.includes('PM');
                                     const hour24 = isPM && hour !== 12 ? hour + 12 : (!isPM && hour === 12 ? 0 : hour);
-                                    return hour24 < 12;
+                                    return hour24 < 12 && slot.available;
                                 }).map((slot, index) => (
                                     <button
                                         key={index}
                                         onClick={() => handleTimeSelect(slot.time)}
-                                        disabled={!slot.available}
+                                        aria-label={`${slot.time} available`}
+                                        aria-pressed={selectedTime === slot.time}
                                         className={cn(
-                                            "px-4 py-3.5 text-sm font-medium rounded-lg border-2 transition-all duration-200",
-                                            slot.available && "border-neutral-200/60 hover:border-neutral-900 hover:bg-neutral-50 hover:shadow-md hover:scale-[1.02] cursor-pointer text-neutral-700",
-                                            !slot.available && "border-neutral-100 text-neutral-300 cursor-not-allowed bg-neutral-50/30",
-                                            selectedTime === slot.time && "bg-neutral-900 text-white border-neutral-900 shadow-lg scale-[1.02]"
+                                            "px-4 py-3.5 text-sm font-medium rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
+                                            "border-neutral-200/60 hover:border-neutral-900 hover:bg-neutral-50 hover:shadow-md hover:scale-[1.02] cursor-pointer text-neutral-700",
+                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810] shadow-lg scale-[1.02]"
                                         )}
                                     >
                                         {slot.time}
                                     </button>
                                 ))}
                             </div>
-                        </div>
+                        </fieldset>
                     )}
 
                     {/* Afternoon */}
@@ -541,37 +568,33 @@ export default function BookingCalendar({
                         const hour = parseInt(slot.time.split(':')[0]);
                         const isPM = slot.time.includes('PM');
                         const hour24 = isPM && hour !== 12 ? hour + 12 : (!isPM && hour === 12 ? 0 : hour);
-                        return hour24 >= 12 && hour24 < 17;
+                        return hour24 >= 12 && hour24 < 17 && slot.available;
                     }).length > 0 && (
-                        <div>
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent"></div>
-                                <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-[0.15em]">Afternoon</h4>
-                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent"></div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-3">
+                        <fieldset className="space-y-3">
+                            <legend className="text-xs font-semibold uppercase tracking-[0.15em] text-neutral-500">Afternoon</legend>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {availableSlots.filter(slot => {
                                     const hour = parseInt(slot.time.split(':')[0]);
                                     const isPM = slot.time.includes('PM');
                                     const hour24 = isPM && hour !== 12 ? hour + 12 : (!isPM && hour === 12 ? 0 : hour);
-                                    return hour24 >= 12 && hour24 < 17;
+                                    return hour24 >= 12 && hour24 < 17 && slot.available;
                                 }).map((slot, index) => (
                                     <button
                                         key={index}
                                         onClick={() => handleTimeSelect(slot.time)}
-                                        disabled={!slot.available}
+                                        aria-label={`${slot.time} available`}
+                                        aria-pressed={selectedTime === slot.time}
                                         className={cn(
-                                            "px-4 py-3.5 text-sm font-medium rounded-lg border-2 transition-all duration-200",
-                                            slot.available && "border-neutral-200/60 hover:border-neutral-900 hover:bg-neutral-50 hover:shadow-md hover:scale-[1.02] cursor-pointer text-neutral-700",
-                                            !slot.available && "border-neutral-100 text-neutral-300 cursor-not-allowed bg-neutral-50/30",
-                                            selectedTime === slot.time && "bg-neutral-900 text-white border-neutral-900 shadow-lg scale-[1.02]"
+                                            "px-4 py-3.5 text-sm font-medium rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
+                                            "border-neutral-200/60 hover:border-neutral-900 hover:bg-neutral-50 hover:shadow-md hover:scale-[1.02] cursor-pointer text-neutral-700",
+                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810] shadow-lg scale-[1.02]"
                                         )}
                                     >
                                         {slot.time}
                                     </button>
                                 ))}
                             </div>
-                        </div>
+                        </fieldset>
                     )}
 
                     {/* Evening */}
@@ -579,37 +602,33 @@ export default function BookingCalendar({
                         const hour = parseInt(slot.time.split(':')[0]);
                         const isPM = slot.time.includes('PM');
                         const hour24 = isPM && hour !== 12 ? hour + 12 : (!isPM && hour === 12 ? 0 : hour);
-                        return hour24 >= 17;
+                        return hour24 >= 17 && slot.available;
                     }).length > 0 && (
-                        <div>
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent"></div>
-                                <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-[0.15em]">Evening</h4>
-                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent"></div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-3">
+                        <fieldset className="space-y-3">
+                            <legend className="text-xs font-semibold uppercase tracking-[0.15em] text-neutral-500">Evening</legend>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {availableSlots.filter(slot => {
                                     const hour = parseInt(slot.time.split(':')[0]);
                                     const isPM = slot.time.includes('PM');
                                     const hour24 = isPM && hour !== 12 ? hour + 12 : (!isPM && hour === 12 ? 0 : hour);
-                                    return hour24 >= 17;
+                                    return hour24 >= 17 && slot.available;
                                 }).map((slot, index) => (
                                     <button
                                         key={index}
                                         onClick={() => handleTimeSelect(slot.time)}
-                                        disabled={!slot.available}
+                                        aria-label={`${slot.time} available`}
+                                        aria-pressed={selectedTime === slot.time}
                                         className={cn(
-                                            "px-4 py-3.5 text-sm font-medium rounded-lg border-2 transition-all duration-200",
-                                            slot.available && "border-neutral-200/60 hover:border-neutral-900 hover:bg-neutral-50 hover:shadow-md hover:scale-[1.02] cursor-pointer text-neutral-700",
-                                            !slot.available && "border-neutral-100 text-neutral-300 cursor-not-allowed bg-neutral-50/30",
-                                            selectedTime === slot.time && "bg-neutral-900 text-white border-neutral-900 shadow-lg scale-[1.02]"
+                                            "px-4 py-3.5 text-sm font-medium rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
+                                            "border-neutral-200/60 hover:border-neutral-900 hover:bg-neutral-50 hover:shadow-md hover:scale-[1.02] cursor-pointer text-neutral-700",
+                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810] shadow-lg scale-[1.02]"
                                         )}
                                     >
                                         {slot.time}
                                     </button>
                                 ))}
                             </div>
-                        </div>
+                        </fieldset>
                     )}
                     </>
                     )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CalendarDays, ChevronLeft, Clock, DollarSign, Info, Lock } from "lucide-react";
 
@@ -13,6 +13,8 @@ import FooterWrapper from "@/components/FooterWrapper";
 function CheckoutContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
     const categorySlug = searchParams.get("categorySlug") || "";
     const subcategorySlug = searchParams.get("subcategorySlug") || "";
@@ -125,6 +127,22 @@ function CheckoutContent() {
                                     </div>
                                 </div>
 
+                                {/* Selected Date/Time */}
+                                <div className="space-y-3 pb-4 border-b border-neutral-100">
+                                    <div className="flex justify-between items-center px-3 py-2">
+                                        <span className="text-neutral-500 text-xs tracking-wide">Selected Date</span>
+                                        <span className="text-neutral-900 font-medium text-sm">
+                                            {selectedDate ? selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Not selected'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center px-3 py-2">
+                                        <span className="text-neutral-500 text-xs tracking-wide">Selected Time</span>
+                                        <span className="text-neutral-900 font-medium text-sm">
+                                            {selectedTime || 'Not selected'}
+                                        </span>
+                                    </div>
+                                </div>
+
                                 {/* Price Breakdown */}
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center px-3 py-2">
@@ -220,6 +238,8 @@ function CheckoutContent() {
                                     serviceSize={serviceName}
                                     serviceLength={lengthLabel}
                                     servicePrice={price}
+                                    onDateSelected={setSelectedDate}
+                                    onTimeSelected={setSelectedTime}
                                     onBookingComplete={(bookingData) => {
                                         console.log("Booking completed:", bookingData);
                                     }}
