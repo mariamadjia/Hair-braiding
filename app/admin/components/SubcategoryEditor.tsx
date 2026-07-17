@@ -282,6 +282,17 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             await mutate("PUT", base, { name, image, displayOrder: sub.displayOrder?.toString(), subcategoryId: sub.id });
             const freshSub = await onSubcategoryUpdate?.(sub.slug);
             if (freshSub?.items) setItems(freshSub.items);
+            
+            // Update the selection with the potentially new slug
+            if (freshSub?.slug && freshSub.slug !== sub.slug) {
+                // Slug changed, update selection
+                setSelection({
+                    type: "subcategory",
+                    catSlug: cat.slug,
+                    subSlug: freshSub.slug
+                });
+            }
+            
             // Only update local state after server confirms
             setDirty(false);
             setSaveSuccess("Subcategory saved successfully!");
