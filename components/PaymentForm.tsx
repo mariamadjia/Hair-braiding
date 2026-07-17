@@ -47,35 +47,10 @@ export default function PaymentForm({
         return;
       }
 
-      const { error: paymentMethodError, paymentMethod } = await stripe.createPaymentMethod({
-        elements,
-        params: {
-          billing_details: {
-            name: customerName,
-            email: customerEmail,
-          },
-        },
-      });
-
-      if (paymentMethodError) {
-        setError(paymentMethodError.message || "Failed to create payment method");
-        setLoading(false);
-        return;
-      }
-
-      if (!paymentMethod || !paymentMethod.id) {
-        console.error("Payment method creation failed:", paymentMethod);
-        setError("Failed to create payment method");
-        setLoading(false);
-        return;
-      }
-
-      console.log("Payment method created successfully:", paymentMethod.id);
-
+      // Create payment intent on backend without payment method
       const requestBody = {
         amount,
         currency: "usd",
-        paymentMethodId: paymentMethod.id,
         appointmentId,
         customerEmail,
         customerName,
@@ -97,6 +72,23 @@ export default function PaymentForm({
       }
 
       const result = await response.json();
+      console.log("Payment intent created:", result);
+
+      // Confirm payment using the client secret
+      const { error: confirmError } = await stripe.confirmPayment({
+        elements,
+        clientSecret: result.clientSecret,
+        confirmParams: {
+          return_url: window.location.href,
+        },
+        redirect: 'if_required'
+      });
+
+      if (confirmError) {
+        setError(confirmError.message || "Payment confirmation failed");
+        setLoading(false);
+        return;
+      }
 
       if (result.status === "requires_capture") {
         onSuccess(result.paymentIntentId);
