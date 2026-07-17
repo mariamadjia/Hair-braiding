@@ -152,9 +152,10 @@ export default function BookingCalendar({
     const fetchAvailableSlots = async (date: Date) => {
         try {
             const dateStr = formatLocalDate(date);
-            console.log('Fetching slots for date:', dateStr);
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            console.log('Fetching slots for date:', dateStr, 'timezone:', timezone);
             
-            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}`, {
+            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -218,7 +219,8 @@ export default function BookingCalendar({
     const validateAvailability = async (date: Date, time: string): Promise<boolean> => {
         try {
             const dateStr = formatLocalDate(date);
-            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}`, {
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

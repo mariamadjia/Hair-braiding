@@ -5,13 +5,14 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
+    const timezone = searchParams.get("timezone") || "America/Los_Angeles";
     
     if (!date) {
         return NextResponse.json({ error: "Date parameter required" }, { status: 400 });
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${date}`, {
+        const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${date}&timezone=${timezone}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
         }
 
         const slots = await response.json();
-        return NextResponse.json({ date, slots, source: "backend" });
+        return NextResponse.json({ date, slots, source: "backend", timezone });
     } catch (error) {
         console.error('Availability fetch error:', error);
         return NextResponse.json({ error: "Failed to fetch availability" }, { status: 500 });
