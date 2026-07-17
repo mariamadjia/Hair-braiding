@@ -167,7 +167,7 @@ export default function BlockTimeModal() {
         if (!confirm('Are you sure you want to remove this blocked time?')) return;
 
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = getAuthToken();
             const response = await fetch(`${API_BASE_URL}/api/availability/blocked-times/${id}`, {
                 method: 'DELETE',
                 headers: {
@@ -195,6 +195,14 @@ export default function BlockTimeModal() {
             hour12: true
         });
     };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
