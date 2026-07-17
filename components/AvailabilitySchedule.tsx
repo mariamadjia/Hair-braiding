@@ -441,7 +441,9 @@ export default function AvailabilitySchedule() {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to save schedule: ${response.status}`);
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.error || `Failed to save schedule: ${response.status}`;
+                throw new Error(errorMessage);
             }
 
             setSuccess(true);

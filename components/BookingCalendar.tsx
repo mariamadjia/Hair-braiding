@@ -55,6 +55,7 @@ export default function BookingCalendar({
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [step, setStep] = useState<"date" | "time" | "details" | "payment">("date");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
     const [createdAppointmentId, setCreatedAppointmentId] = useState<number | null>(null);
     const [stripePromise] = useState(() => getStripe());
@@ -168,7 +169,13 @@ export default function BookingCalendar({
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Backend error:', errorText);
-                throw new Error(`Failed to fetch available slots: ${response.status}`);
+                if (response.status === 404) {
+                    throw new Error('Business hours not configured for this date. Please contact the salon.');
+                } else if (response.status === 500) {
+                    throw new Error('Unable to load available times. Please try again later.');
+                } else {
+                    throw new Error(`Failed to fetch available slots: ${response.status}`);
+                }
             }
             
             const backendSlots = await response.json();
@@ -191,6 +198,8 @@ export default function BookingCalendar({
             setAvailableSlots(slots);
         } catch (error) {
             console.error('Error fetching available slots:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unable to load available times. Please try again later.';
+            setError(errorMessage);
             setAvailableSlots([]);
         }
     };
@@ -476,6 +485,19 @@ export default function BookingCalendar({
                         <div className="flex flex-col items-center justify-center py-12">
                             <Loader2 className="h-8 w-8 animate-spin text-neutral-400 mb-3" />
                             <p className="text-sm text-neutral-500">Loading available times...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <p className="text-sm text-red-600 text-center max-w-md">{error}</p>
+                            <button
+                                onClick={() => {
+                                    setError(null);
+                                    if (selectedDate) fetchAvailableSlots(selectedDate);
+                                }}
+                                className="mt-4 text-sm text-neutral-600 underline hover:text-neutral-900"
+                            >
+                                Try again
+                            </button>
                         </div>
                     ) : availableSlots.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { isAuthorized } from "@/lib/utils/admin-route";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export async function GET(request: Request) {
+    // This is a public endpoint for customer booking, no auth required
+    // Admin operations are handled by separate protected endpoints
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
     const timezone = searchParams.get("timezone") || "America/Los_Angeles";
