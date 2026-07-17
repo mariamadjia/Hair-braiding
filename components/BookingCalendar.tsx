@@ -65,7 +65,6 @@ export default function BookingCalendar({
     const [confirmationNumber, setConfirmationNumber] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stripePromise] = useState(() => getStripe());
-    const [fullyBookedDates, setFullyBookedDates] = useState<Set<string>>(new Set());
     
     const [formData, setFormData] = useState({
         firstName: "",
@@ -89,50 +88,6 @@ export default function BookingCalendar({
             window.removeEventListener('settingsUpdated', handleSettingsUpdate);
         };
     }, [selectedDate]);
-
-    // Fetch availability for all days in current month
-    useEffect(() => {
-        const fetchMonthAvailability = async () => {
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            
-            const newFullyBookedDates = new Set<string>();
-            
-            for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(year, month, day);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                if (date < today) continue;
-                
-                const dateStr = formatLocalDate(date);
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
-                        method: 'GET',
-                        headers: { 'Content-Type': 'application/json' },
-                        cache: 'no-store'
-                    });
-                    
-                    if (response.ok) {
-                        const backendSlots = await response.json();
-                        const hasAvailableSlots = backendSlots.some((slot: any) => slot.isAvailable && slot.availableSpots > 0);
-                        if (!hasAvailableSlots) {
-                            newFullyBookedDates.add(dateStr);
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Failed to fetch availability for ${dateStr}:`, error);
-                }
-            }
-            
-            setFullyBookedDates(newFullyBookedDates);
-        };
-        
-        fetchMonthAvailability();
-    }, [currentDate]);
 
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
@@ -163,13 +118,6 @@ export default function BookingCalendar({
         today.setHours(0, 0, 0, 0);
         
         return date < today;
-    };
-
-    const isDateFullyBooked = (day: number | null) => {
-        if (!day) return false;
-        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        const dateStr = formatLocalDate(date);
-        return fullyBookedDates.has(dateStr);
     };
 
     const isSameDay = (date1: Date | null, day: number | null) => {
@@ -255,11 +203,6 @@ export default function BookingCalendar({
             });
             
             setAvailableSlots(slots);
-            
-            // Track fully booked dates
-            if (slots.filter(s => s.available).length === 0) {
-                setFullyBookedDates(prev => new Set(prev).add(dateStr));
-            }
         } catch (error) {
             console.error('Error fetching available slots:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unable to load available times. Please try again later.';
@@ -419,12 +362,10 @@ export default function BookingCalendar({
 
     const goToPreviousMonth = () => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-        setFullyBookedDates(new Set()); // Clear when changing months
     };
 
     const goToNextMonth = () => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-        setFullyBookedDates(new Set()); // Clear when changing months
     };
 
     const resetToDateSelection = () => {
@@ -525,15 +466,14 @@ export default function BookingCalendar({
                             <button
                                 key={index}
                                 onClick={() => handleDateSelect(day)}
-                                disabled={isDateDisabled(day) || isDateFullyBooked(day)}
+                                disabled={isDateDisabled(day)}
                                 aria-label={day ? `${MONTHS[currentDate.getMonth()]} ${day}` : "Empty day"}
                                 aria-pressed={isSameDay(selectedDate, day)}
                                 className={cn(
                                     "aspect-square p-2 text-sm font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
                                     day === null && "invisible",
-                                    !isDateDisabled(day) && !isDateFullyBooked(day) && "bg-blue-50/80 hover:bg-blue-100 hover:scale-105 cursor-pointer text-blue-600 hover:shadow-md",
+                                    !isDateDisabled(day) && "bg-blue-50/80 hover:bg-blue-100 hover:scale-105 cursor-pointer text-blue-600 hover:shadow-md",
                                     isDateDisabled(day) && "text-neutral-300 cursor-not-allowed",
-                                    isDateFullyBooked(day) && "text-neutral-400 cursor-not-allowed bg-neutral-100",
                                     isSameDay(selectedDate, day) && "bg-neutral-900 text-white hover:bg-neutral-800 shadow-lg scale-105"
                                 )}
                             >
@@ -575,7 +515,17 @@ export default function BookingCalendar({
                         </div>
                     ) : availableSlots.filter(slot => slot.available).length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
-                            <p className="text-xs text-neutral-400 tracking-wide">No available times</p>
+                            <p className="text-xs text-neutral-500 font-medium mb-1 tracking-wide">No available times</p>
+                            <p className="text-xs text-neutral-400 mb-4">
+                                This date is fully booked or the salon is closed.
+                            </p>
+                            <Button
+                                onClick={resetToDateSelection}
+                                variant="ghost"
+                                className="text-xs tracking-wide"
+                            >
+                                Choose another date
+                            </Button>
                         </div>
                     ) : (
                         <>
