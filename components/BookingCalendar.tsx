@@ -90,6 +90,50 @@ export default function BookingCalendar({
         };
     }, [selectedDate]);
 
+    // Fetch availability for all days in current month
+    useEffect(() => {
+        const fetchMonthAvailability = async () => {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
+            const newFullyBookedDates = new Set<string>();
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (date < today) continue;
+                
+                const dateStr = formatLocalDate(date);
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        cache: 'no-store'
+                    });
+                    
+                    if (response.ok) {
+                        const backendSlots = await response.json();
+                        const hasAvailableSlots = backendSlots.some((slot: any) => slot.isAvailable && slot.availableSpots > 0);
+                        if (!hasAvailableSlots) {
+                            newFullyBookedDates.add(dateStr);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Failed to fetch availability for ${dateStr}:`, error);
+                }
+            }
+            
+            setFullyBookedDates(newFullyBookedDates);
+        };
+        
+        fetchMonthAvailability();
+    }, [currentDate]);
+
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -375,10 +419,12 @@ export default function BookingCalendar({
 
     const goToPreviousMonth = () => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+        setFullyBookedDates(new Set()); // Clear when changing months
     };
 
     const goToNextMonth = () => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+        setFullyBookedDates(new Set()); // Clear when changing months
     };
 
     const resetToDateSelection = () => {
