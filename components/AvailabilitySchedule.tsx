@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { getAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
 import TimeDropdown from "./TimeDropdown";
+import MiniCalendarPreview from "./availability/MiniCalendarPreview";
 
 type TimeSlot = {
     startTime: string;
@@ -39,6 +40,10 @@ export default function AvailabilitySchedule() {
     const [slotDurationMinutes, setSlotDurationMinutes] = useState(60);
     const [maxAppointmentsPerSlot, setMaxAppointmentsPerSlot] = useState(1);
     const [expandedDay, setExpandedDay] = useState<string | null>(null);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showCopyConfirm, setShowCopyConfirm] = useState(false);
+    const [copySourceDay, setCopySourceDay] = useState<string | null>(null);
+    const [showTemplates, setShowTemplates] = useState(false);
 
     useEffect(() => {
         fetchSettings();
@@ -55,11 +60,20 @@ export default function AvailabilitySchedule() {
                 }))
             })));
         };
+
+        // Listen for save trigger from parent
+        const handleTriggerSave = (e: CustomEvent) => {
+            if (e.detail.tab === 'hours') {
+                saveSchedule();
+            }
+        };
         
         window.addEventListener('globalCapacityChanged', handleGlobalCapacityChange as EventListener);
+        window.addEventListener('triggerSave', handleTriggerSave as EventListener);
         
         return () => {
             window.removeEventListener('globalCapacityChanged', handleGlobalCapacityChange as EventListener);
+            window.removeEventListener('triggerSave', handleTriggerSave as EventListener);
         };
     }, []);
 
@@ -190,6 +204,8 @@ export default function AvailabilitySchedule() {
             }
             return day;
         }));
+        setHasUnsavedChanges(true);
+        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
     };
 
     const addTimeSlot = (dayKey: string) => {
@@ -206,6 +222,8 @@ export default function AvailabilitySchedule() {
             }
             return day;
         }));
+        setHasUnsavedChanges(true);
+        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
     };
 
     const removeTimeSlot = (dayKey: string, slotIndex: number) => {
@@ -218,6 +236,8 @@ export default function AvailabilitySchedule() {
             }
             return day;
         }));
+        setHasUnsavedChanges(true);
+        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
     };
 
     const updateTimeSlot = (dayKey: string, slotIndex: number, field: 'startTime' | 'endTime', value: string) => {
@@ -232,6 +252,8 @@ export default function AvailabilitySchedule() {
             }
             return day;
         }));
+        setHasUnsavedChanges(true);
+        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
     };
 
     const updateCapacity = (dayKey: string, slotIndex: number, capacity: number) => {
@@ -246,10 +268,22 @@ export default function AvailabilitySchedule() {
             }
             return day;
         }));
+        setHasUnsavedChanges(true);
+        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
     };
 
     const copyToAllDays = (sourceDayKey: string) => {
         const sourceDay = schedule.find(d => d.dayOfWeek === sourceDayKey);
+        if (!sourceDay) return;
+
+        setCopySourceDay(sourceDayKey);
+        setShowCopyConfirm(true);
+    };
+
+    const confirmCopy = () => {
+        if (!copySourceDay) return;
+
+        const sourceDay = schedule.find(d => d.dayOfWeek === copySourceDay);
         if (!sourceDay) return;
 
         setSchedule(prev => prev.map(day => ({
@@ -257,6 +291,55 @@ export default function AvailabilitySchedule() {
             isAvailable: sourceDay.isAvailable,
             timeSlots: JSON.parse(JSON.stringify(sourceDay.timeSlots))
         })));
+        setHasUnsavedChanges(true);
+        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
+        setShowCopyConfirm(false);
+        setCopySourceDay(null);
+    };
+
+    const cancelCopy = () => {
+        setShowCopyConfirm(false);
+        setCopySourceDay(null);
+    };
+
+    const applyTemplate = (template: string) => {
+        const templates: Record<string, DaySchedule[]> = {
+            '9to5': [
+                { dayOfWeek: 'MONDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
+                { dayOfWeek: 'TUESDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
+                { dayOfWeek: 'WEDNESDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
+                { dayOfWeek: 'THURSDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
+                { dayOfWeek: 'FRIDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
+                { dayOfWeek: 'SATURDAY', isAvailable: false, timeSlots: [] },
+                { dayOfWeek: 'SUNDAY', isAvailable: false, timeSlots: [] },
+            ],
+            'retail': [
+                { dayOfWeek: 'MONDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '21:00', capacity: 1 }] },
+                { dayOfWeek: 'TUESDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '21:00', capacity: 1 }] },
+                { dayOfWeek: 'WEDNESDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '21:00', capacity: 1 }] },
+                { dayOfWeek: 'THURSDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '21:00', capacity: 1 }] },
+                { dayOfWeek: 'FRIDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '21:00', capacity: 1 }] },
+                { dayOfWeek: 'SATURDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '20:00', capacity: 1 }] },
+                { dayOfWeek: 'SUNDAY', isAvailable: true, timeSlots: [{ startTime: '11:00', endTime: '18:00', capacity: 1 }] },
+            ],
+            'salon': [
+                { dayOfWeek: 'MONDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '19:00', capacity: 1 }] },
+                { dayOfWeek: 'TUESDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '19:00', capacity: 1 }] },
+                { dayOfWeek: 'WEDNESDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '19:00', capacity: 1 }] },
+                { dayOfWeek: 'THURSDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '19:00', capacity: 1 }] },
+                { dayOfWeek: 'FRIDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '19:00', capacity: 1 }] },
+                { dayOfWeek: 'SATURDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
+                { dayOfWeek: 'SUNDAY', isAvailable: false, timeSlots: [] },
+            ],
+        };
+
+        const selectedTemplate = templates[template];
+        if (selectedTemplate) {
+            setSchedule(selectedTemplate);
+            setHasUnsavedChanges(true);
+            window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
+            setShowTemplates(false);
+        }
     };
 
     const resetAllCapacities = () => {
@@ -408,12 +491,36 @@ export default function AvailabilitySchedule() {
         setError(null);
         setSuccess(false);
 
+        // Notify parent of save status
+        window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: true, error: null, success: false } }));
+
         try {
             const token = getAuthToken();
 
             if (!token) {
                 setError("No authentication token found. Please log in again.");
+                window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: "No authentication token found", success: false } }));
                 return;
+            }
+
+            // Validate schedule before saving
+            for (const day of schedule) {
+                if (day.isAvailable && day.timeSlots.length === 0) {
+                    setError(`${day.dayOfWeek} is marked as available but has no time slots. Please add time slots or mark the day as unavailable.`);
+                    window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: `${day.dayOfWeek} has no time slots`, success: false } }));
+                    setSaving(false);
+                    return;
+                }
+
+                // Validate time slots
+                for (const slot of day.timeSlots) {
+                    if (slot.startTime >= slot.endTime) {
+                        setError(`${day.dayOfWeek}: End time must be after start time`);
+                        window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: `Invalid time slot on ${day.dayOfWeek}`, success: false } }));
+                        setSaving(false);
+                        return;
+                    }
+                }
             }
 
             const payload = {
@@ -443,7 +550,15 @@ export default function AvailabilitySchedule() {
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 const errorMessage = errorData.error || `Failed to save schedule: ${response.status}`;
-                throw new Error(errorMessage);
+                
+                // Provide specific error messages
+                if (errorMessage.includes('overlap')) {
+                    throw new Error('Time slots overlap. Please check your time ranges.');
+                } else if (errorMessage.includes('invalid')) {
+                    throw new Error('Invalid time format. Please use HH:MM format (e.g., 09:00).');
+                } else {
+                    throw new Error(errorMessage);
+                }
             }
 
             setSuccess(true);
@@ -452,12 +567,19 @@ export default function AvailabilitySchedule() {
             // Reload fresh data from backend
             await fetchBusinessHours();
 
+            // Clear unsaved changes flag
+            setHasUnsavedChanges(false);
+            window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: false } }));
+            window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: null, success: true } }));
+
             window.dispatchEvent(new CustomEvent("settingsUpdated", {
                 detail: { businessHoursUpdated: true },
             }));
         } catch (error) {
             console.error("Error saving schedule:", error);
-            setError("Failed to save schedule");
+            const errorMessage = error instanceof Error ? error.message : "Failed to save schedule";
+            setError(errorMessage);
+            window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: errorMessage, success: false } }));
         } finally {
             setSaving(false);
         }
@@ -473,29 +595,67 @@ export default function AvailabilitySchedule() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h3 className="text-lg font-medium text-neutral-900">Availability Schedule</h3>
                     <p className="text-sm text-neutral-600">Set your available hours for each day of the week</p>
                 </div>
-                <Button
-                    onClick={saveSchedule}
-                    disabled={saving}
-                    className="bg-neutral-900 hover:bg-neutral-800"
-                >
-                    {saving ? (
-                        <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Saving...
-                        </>
-                    ) : (
-                        <>
-                            <Save className="h-4 w-4 mr-2" />
-                            Save Schedule
-                        </>
-                    )}
-                </Button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setShowTemplates(!showTemplates)}
+                        className="px-4 py-2 text-sm border border-neutral-300 rounded-md hover:bg-neutral-50 transition-colors"
+                    >
+                        Use Template
+                    </button>
+                    <Button
+                        onClick={saveSchedule}
+                        disabled={saving}
+                        className="bg-neutral-900 hover:bg-neutral-800"
+                    >
+                        {saving ? (
+                            <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="h-4 w-4 mr-2" />
+                                Save Schedule
+                            </>
+                        )}
+                    </Button>
+                </div>
             </div>
+
+            {/* Template Selection */}
+            {showTemplates && (
+                <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-neutral-900 mb-3">Choose a schedule template</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button
+                            onClick={() => applyTemplate('9to5')}
+                            className="p-4 border border-neutral-200 rounded-md hover:bg-white hover:border-blue-300 transition text-left"
+                        >
+                            <div className="font-medium text-neutral-900 mb-1">9-5 Weekdays</div>
+                            <div className="text-xs text-neutral-600">Mon-Fri: 9am-5pm</div>
+                        </button>
+                        <button
+                            onClick={() => applyTemplate('retail')}
+                            className="p-4 border border-neutral-200 rounded-md hover:bg-white hover:border-blue-300 transition text-left"
+                        >
+                            <div className="font-medium text-neutral-900 mb-1">Retail Hours</div>
+                            <div className="text-xs text-neutral-600">Mon-Sat: 10am-9pm, Sun: 11am-6pm</div>
+                        </button>
+                        <button
+                            onClick={() => applyTemplate('salon')}
+                            className="p-4 border border-neutral-200 rounded-md hover:bg-white hover:border-blue-300 transition text-left"
+                        >
+                            <div className="font-medium text-neutral-900 mb-1">Salon Hours</div>
+                            <div className="text-xs text-neutral-600">Mon-Sat: 9am-7pm, Sun: Closed</div>
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {error && (
                 <div className="bg-red-50 border border-red-200 rounded-sm p-4 text-sm text-red-800">
@@ -509,17 +669,18 @@ export default function AvailabilitySchedule() {
                 </div>
             )}
 
-            <div className="space-y-4">
-                {schedule.map((day) => {
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-4">
+                    {schedule.map((day) => {
                     const dayInfo = DAYS.find(d => d.key === day.dayOfWeek);
                     if (!dayInfo) return null;
 
                     return (
-                        <div key={day.dayOfWeek} className="bg-white border border-neutral-200 rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-3">
+                        <div key={day.dayOfWeek} className="bg-white border border-neutral-200 rounded-lg p-4 sm:p-6">
+                            <div className="flex items-center justify-between mb-3 sm:mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className={cn(
-                                        "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium",
+                                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-base font-medium",
                                         day.isAvailable 
                                             ? "bg-blue-100 text-blue-700" 
                                             : "bg-neutral-100 text-neutral-400"
@@ -527,7 +688,7 @@ export default function AvailabilitySchedule() {
                                         {dayInfo.abbr}
                                     </div>
                                     <div>
-                                        <div className="font-medium text-neutral-900">{dayInfo.label}</div>
+                                        <div className="font-medium text-neutral-900 text-sm sm:text-base">{dayInfo.label}</div>
                                         <div className="text-xs text-neutral-500">
                                             {day.isAvailable ? 'Available' : 'Unavailable'}
                                         </div>
@@ -538,23 +699,23 @@ export default function AvailabilitySchedule() {
                                     {day.isAvailable && (
                                         <button
                                             onClick={() => copyToAllDays(day.dayOfWeek)}
-                                            className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-sm transition"
+                                            className="p-2 sm:p-3 text-neutral-600 hover:bg-neutral-100 rounded-sm transition min-h-[44px] min-w-[44px] flex items-center justify-center"
                                             title="Copy to all days"
                                         >
-                                            <Copy className="h-4 w-4" />
+                                            <Copy className="h-4 w-4 sm:h-5 sm:w-5" />
                                         </button>
                                     )}
                                     <button
                                         onClick={() => toggleDayAvailability(day.dayOfWeek)}
                                         className={cn(
-                                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                                            "relative inline-flex h-6 w-11 sm:h-7 sm:w-13 items-center rounded-full transition-colors min-h-[44px] min-w-[52px]",
                                             day.isAvailable ? "bg-blue-600" : "bg-neutral-200"
                                         )}
                                     >
                                         <span
                                             className={cn(
-                                                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                                                day.isAvailable ? "translate-x-6" : "translate-x-1"
+                                                "inline-block h-4 w-4 sm:h-5 sm:w-5 transform rounded-full bg-white transition-transform",
+                                                day.isAvailable ? "translate-x-6 sm:translate-x-7" : "translate-x-1"
                                             )}
                                         />
                                     </button>
@@ -562,28 +723,28 @@ export default function AvailabilitySchedule() {
                             </div>
 
                             {day.isAvailable && (
-                                <div className="space-y-2 ml-13">
+                                <div className="space-y-2 sm:space-y-3 ml-13">
                                     {day.timeSlots.map((slot, slotIndex) => (
-                                        <div key={slotIndex} className="flex items-center gap-3">
-                                            <div className="flex items-center gap-2 flex-1">
+                                        <div key={slotIndex} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                            <div className="flex items-center gap-2 flex-1 w-full">
                                                 <TimeDropdown
                                                     value={slot.startTime}
                                                     onChange={(value) => updateTimeSlot(day.dayOfWeek, slotIndex, 'startTime', value)}
-                                                    className="w-32"
+                                                    className="w-full sm:w-32 min-h-[44px]"
                                                 />
                                                 <span className="text-neutral-400">-</span>
                                                 <TimeDropdown
                                                     value={slot.endTime}
                                                     onChange={(value) => updateTimeSlot(day.dayOfWeek, slotIndex, 'endTime', value)}
-                                                    className="w-32"
+                                                    className="w-full sm:w-32 min-h-[44px]"
                                                 />
                                                 {/* Only show capacity selector when breakdown is expanded (multiple slots) */}
                                                 {day.timeSlots.length > 1 && (
-                                                    <div className="flex items-center gap-2 ml-4">
+                                                    <div className="flex items-center gap-2 ml-0 sm:ml-4 mt-2 sm:mt-0">
                                                         <select
                                                             value={slot.capacity}
                                                             onChange={(e) => updateCapacity(day.dayOfWeek, slotIndex, parseInt(e.target.value))}
-                                                            className="w-20 px-2 py-2 border border-neutral-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            className="w-20 px-2 py-2 border border-neutral-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                                                         >
                                                             <option value="0">0</option>
                                                             <option value="1">1</option>
@@ -604,42 +765,42 @@ export default function AvailabilitySchedule() {
                                             {day.timeSlots.length > 1 && (
                                                 <button
                                                     onClick={() => removeTimeSlot(day.dayOfWeek, slotIndex)}
-                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-sm transition"
+                                                    className="p-2 sm:p-3 text-red-600 hover:bg-red-50 rounded-sm transition min-h-[44px] min-w-[44px] flex items-center justify-center self-start sm:self-auto"
                                                 >
-                                                    <X className="h-4 w-4" />
+                                                    <X className="h-4 w-4 sm:h-5 sm:w-5" />
                                                 </button>
                                             )}
                                         </div>
                                     ))}
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                                         {day.timeSlots.length === 1 && day.timeSlots[0].startTime && day.timeSlots[0].endTime && (
                                             <button
                                                 onClick={() => toggleBreakdown(day.dayOfWeek)}
-                                                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium py-2 px-3 min-h-[44px]"
                                             >
                                                 <Clock className="h-4 w-4" />
-                                                Show Breakdown
+                                                Split into time slots
                                             </button>
                                         )}
 
                                         {day.timeSlots.length > 1 && (
                                             <button
                                                 onClick={() => hideBreakdown(day.dayOfWeek)}
-                                                className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-700 font-medium"
+                                                className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-700 font-medium py-2 px-3 min-h-[44px]"
                                             >
                                                 <Clock className="h-4 w-4" />
-                                                Hide Breakdown
+                                                Merge to single range
                                             </button>
                                         )}
 
                                         {day.timeSlots.length > 0 && (
                                             <button
                                                 onClick={() => addTimeSlot(day.dayOfWeek)}
-                                                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium py-2 px-3 min-h-[44px]"
                                             >
                                                 <Plus className="h-4 w-4" />
-                                                Add hours
+                                                Add time slot
                                             </button>
                                         )}
                                     </div>
@@ -648,7 +809,48 @@ export default function AvailabilitySchedule() {
                         </div>
                     );
                 })}
+                </div>
+
+                {/* Calendar Preview Sidebar */}
+                <div className="lg:col-span-1">
+                    <MiniCalendarPreview schedule={schedule} />
+                </div>
             </div>
+
+            {/* Copy Confirmation Modal */}
+            {showCopyConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+                        <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0">
+                                <Copy className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-medium text-neutral-900 mb-2">
+                                    Copy Schedule to All Days
+                                </h3>
+                                <p className="text-sm text-neutral-600 mb-4">
+                                    This will copy {copySourceDay}'s schedule to all other days of the week. Any existing schedules on other days will be replaced. Are you sure?
+                                </p>
+                                <div className="flex gap-3 justify-end">
+                                    <button
+                                        onClick={cancelCopy}
+                                        className="px-4 py-2 text-sm font-medium text-neutral-700 border border-neutral-300 rounded-md hover:bg-neutral-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={confirmCopy}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                                    >
+                                        Copy to All Days
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

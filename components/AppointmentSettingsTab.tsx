@@ -3,16 +3,8 @@
 import { useState, useEffect } from "react";
 import { Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import TimePicker from "./TimePicker";
 import { getAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
-
-type DayHours = {
-    dayOfWeek: string;
-    isOpen: boolean;
-    openTime: string;
-    closeTime: string;
-};
 
 type AppointmentSettings = {
     slotDurationMinutes: number;
@@ -40,14 +32,6 @@ export default function AppointmentSettingsTab() {
         requireApproval: true,
         allowSameDayBooking: true
     });
-    const [businessHours, setBusinessHours] = useState<DayHours[]>(
-        DAYS.map(day => ({
-            dayOfWeek: day,
-            isOpen: day !== 'SUNDAY',
-            openTime: '09:00',
-            closeTime: '17:00'
-        }))
-    );
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -55,6 +39,19 @@ export default function AppointmentSettingsTab() {
 
     useEffect(() => {
         fetchSettings();
+
+        // Listen for save trigger from parent
+        const handleTriggerSave = (e: CustomEvent) => {
+            if (e.detail.tab === 'settings') {
+                saveSettings();
+            }
+        };
+
+        window.addEventListener('triggerSave', handleTriggerSave as EventListener);
+
+        return () => {
+            window.removeEventListener('triggerSave', handleTriggerSave as EventListener);
+        };
     }, []);
 
     const fetchSettings = async () => {
@@ -80,37 +77,6 @@ export default function AppointmentSettingsTab() {
                     allowSameDayBooking: data.allowSameDayBooking
                 });
             }
-
-            // Fetch business hours
-            const hoursResponse = await fetch(`${API_BASE_URL}/api/availability/business-hours`, {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (hoursResponse.ok) {
-                const hoursData = await hoursResponse.json();
-                if (Array.isArray(hoursData) && hoursData.length > 0) {
-                    const updatedHours = DAYS.map(day => {
-                        const existing = hoursData.find((h: any) => h.dayOfWeek === day);
-                        if (existing) {
-                            return {
-                                dayOfWeek: day,
-                                isOpen: existing.isOpen,
-                                openTime: existing.openTime?.substring(0, 5) || '09:00',
-                                closeTime: existing.closeTime?.substring(0, 5) || '17:00'
-                            };
-                        }
-                        return {
-                            dayOfWeek: day,
-                            isOpen: day !== 'SUNDAY',
-                            openTime: '09:00',
-                            closeTime: '17:00'
-                        };
-                    });
-                    setBusinessHours(updatedHours);
-                }
-            }
         } catch (error) {
             console.error('Error fetching settings:', error);
         } finally {
@@ -123,11 +89,15 @@ export default function AppointmentSettingsTab() {
         setError(null);
         setSuccess(false);
 
+        // Notify parent of save status
+        window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: true, error: null, success: false } }));
+
         try {
             const token = getAuthToken();
             
             if (!token) {
                 setError('No authentication token found. Please log in again.');
+                window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: 'No authentication token found', success: false } }));
                 setSaving(false);
                 return;
             }
@@ -142,28 +112,8 @@ export default function AppointmentSettingsTab() {
             });
 
             if (!settingsResponse.ok) {
-                throw new Error('Failed to save appointment settings');
-            }
-
-            // Save business hours for each day
-            for (const day of businessHours) {
-                const response = await fetch(`${API_BASE_URL}/api/availability/business-hours`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        dayOfWeek: day.dayOfWeek,
-                        openTime: day.isOpen ? day.openTime + ':00' : '00:00:00',
-                        closeTime: day.isOpen ? day.closeTime + ':00' : '00:00:00',
-                        isOpen: day.isOpen
-                    })
-                });
-
-                if (!response.ok) {
-                    console.error(`Failed to save ${day.dayOfWeek}`);
-                }
+                const errorData = await settingsResponse.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to save appointment settings');
             }
 
             setSuccess(true);
@@ -172,8 +122,7 @@ export default function AppointmentSettingsTab() {
             // Dispatch event to notify booking calendar to refresh
             window.dispatchEvent(new CustomEvent('settingsUpdated', { 
                 detail: { 
-                    slotDurationMinutes: settings.slotDurationMinutes,
-                    businessHours: businessHours
+                    slotDurationMinutes: settings.slotDurationMinutes
                 }
             }));
             
@@ -183,30 +132,16 @@ export default function AppointmentSettingsTab() {
                     maxAppointmentsPerSlot: settings.maxAppointmentsPerSlot 
                 }
             }));
+
+            window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: null, success: true } }));
         } catch (error) {
             console.error('Error saving settings:', error);
-            setError('Failed to save settings');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to save settings';
+            setError(errorMessage);
+            window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: errorMessage, success: false } }));
         } finally {
             setSaving(false);
         }
-    };
-
-    const copyMondayToAll = () => {
-        const monday = businessHours.find(d => d.dayOfWeek === 'MONDAY');
-        if (monday) {
-            setBusinessHours(businessHours.map(day => ({
-                ...day,
-                isOpen: monday.isOpen,
-                openTime: monday.openTime,
-                closeTime: monday.closeTime
-            })));
-        }
-    };
-
-    const updateDayHours = (dayOfWeek: string, field: keyof DayHours, value: any) => {
-        setBusinessHours(businessHours.map(day =>
-            day.dayOfWeek === dayOfWeek ? { ...day, [field]: value } : day
-        ));
     };
 
     const formatTime12 = (time24: string) => {
@@ -262,65 +197,6 @@ export default function AppointmentSettingsTab() {
                     Settings saved successfully!
                 </div>
             )}
-
-            {/* Business Hours Section */}
-            <div className="border border-neutral-200 rounded-lg p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h3 className="text-lg font-medium text-neutral-900">📅 Business Hours</h3>
-                        <p className="text-sm text-neutral-600">Set your operating hours for each day of the week</p>
-                    </div>
-                    <button
-                        onClick={copyMondayToAll}
-                        className="px-4 py-2 text-sm border border-neutral-300 rounded-md hover:bg-neutral-50 transition-colors"
-                    >
-                        Copy Monday to All Days
-                    </button>
-                </div>
-
-                <div className="space-y-3">
-                    {businessHours.map((day) => (
-                        <div key={day.dayOfWeek} className="flex items-center gap-4 p-3 border border-neutral-200 rounded-md">
-                            <div className="w-28 font-medium text-sm text-neutral-700">
-                                {day.dayOfWeek.charAt(0) + day.dayOfWeek.slice(1).toLowerCase()}
-                            </div>
-                            
-                            {day.isOpen ? (
-                                <>
-                                    <div className="w-36">
-                                        <TimePicker
-                                            value={day.openTime}
-                                            onChange={(value) => updateDayHours(day.dayOfWeek, 'openTime', value)}
-                                        />
-                                    </div>
-                                    <span className="text-neutral-500 text-sm">to</span>
-                                    <div className="w-36">
-                                        <TimePicker
-                                            value={day.closeTime}
-                                            onChange={(value) => updateDayHours(day.dayOfWeek, 'closeTime', value)}
-                                        />
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="flex-1 text-sm text-neutral-500 italic">Closed</div>
-                            )}
-
-                            <button
-                                onClick={() => updateDayHours(day.dayOfWeek, 'isOpen', !day.isOpen)}
-                                className={`ml-auto relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                    day.isOpen ? "bg-blue-600" : "bg-neutral-200"
-                                }`}
-                            >
-                                <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                        day.isOpen ? "translate-x-6" : "translate-x-1"
-                                    }`}
-                                />
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            </div>
 
             {/* Appointment Configuration Section */}
             <div className="border border-neutral-200 rounded-lg p-6 space-y-6">

@@ -22,6 +22,7 @@ export default function BlockTimeModal() {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     
     // Form state
     const [startDate, setStartDate] = useState('');
@@ -34,7 +35,20 @@ export default function BlockTimeModal() {
 
     useEffect(() => {
         fetchBlockedSlots();
-    }, []);
+
+        // Listen for save trigger from parent
+        const handleTriggerSave = (e: CustomEvent) => {
+            if (e.detail.tab === 'blocked' && showForm) {
+                createBlockedSlot();
+            }
+        };
+
+        window.addEventListener('triggerSave', handleTriggerSave as EventListener);
+
+        return () => {
+            window.removeEventListener('triggerSave', handleTriggerSave as EventListener);
+        };
+    }, [showForm, startDate, startTime, endDate, endTime, reason, isRecurring, recurrencePattern]);
 
     const fetchBlockedSlots = async () => {
         setLoading(true);
@@ -66,12 +80,30 @@ export default function BlockTimeModal() {
     };
 
     const createBlockedSlot = async () => {
+        // Validation
         if (!startDate || !endDate || !reason.trim()) {
-            alert('Please fill in all required fields');
+            alert('Please fill in all required fields: start date, end date, and reason');
+            return;
+        }
+
+        if (new Date(startDate) > new Date(endDate)) {
+            alert('End date must be on or after start date');
+            return;
+        }
+
+        if (startDate === endDate && startTime >= endTime) {
+            alert('End time must be after start time for the same day');
+            return;
+        }
+
+        if (isRecurring && !recurrencePattern) {
+            alert('Please select a recurrence pattern for recurring blocks');
             return;
         }
 
         setSaving(true);
+        window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: true, error: null, success: false } }));
+
         try {
             const token = localStorage.getItem('auth_token');
             const startDateTime = `${startDate}T${startTime}:00`;
@@ -92,7 +124,19 @@ export default function BlockTimeModal() {
                 })
             });
 
-            if (!response.ok) throw new Error('Failed to create blocked slot');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.error || 'Failed to create blocked slot';
+                
+                // Provide specific error messages
+                if (errorMessage.includes('overlap')) {
+                    throw new Error('This time overlaps with an existing blocked date. Please choose a different time.');
+                } else if (errorMessage.includes('invalid')) {
+                    throw new Error('Invalid date or time format. Please check your inputs.');
+                } else {
+                    throw new Error(errorMessage);
+                }
+            }
 
             // Reset form
             setStartDate('');
@@ -106,9 +150,13 @@ export default function BlockTimeModal() {
 
             // Refresh list
             fetchBlockedSlots();
+
+            window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: null, success: true } }));
         } catch (error) {
             console.error('Error creating blocked slot:', error);
-            alert('Failed to block time slot');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to block time slot';
+            alert(errorMessage);
+            window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: errorMessage, success: false } }));
         } finally {
             setSaving(false);
         }
@@ -159,8 +207,60 @@ export default function BlockTimeModal() {
                     className="bg-neutral-900 hover:bg-neutral-800"
                 >
                     <Plus className="h-4 w-4 mr-2" />
-                    Block Time
+                    Add Blocked Date
                 </Button>
+            </div>
+
+            {/* Quick Block Actions */}
+            <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                    onClick={() => {
+                        const today = new Date();
+                        setStartDate(today.toISOString().split('T')[0]);
+                        setStartTime('00:00');
+                        setEndDate(today.toISOString().split('T')[0]);
+                        setEndTime('23:59');
+                        setReason('Full day blocked');
+                        setIsRecurring(false);
+                        setShowForm(true);
+                    }}
+                    className="flex-1 px-4 py-4 border border-neutral-200 rounded-md hover:bg-neutral-50 transition-colors text-sm font-medium text-neutral-700 min-h-[48px]"
+                >
+                    Block Full Day
+                </button>
+                <button
+                    onClick={() => {
+                        const today = new Date();
+                        const nextWeek = new Date(today);
+                        nextWeek.setDate(nextWeek.getDate() + 7);
+                        setStartDate(today.toISOString().split('T')[0]);
+                        setStartTime('00:00');
+                        setEndDate(nextWeek.toISOString().split('T')[0]);
+                        setEndTime('23:59');
+                        setReason('Vacation');
+                        setIsRecurring(false);
+                        setShowForm(true);
+                    }}
+                    className="flex-1 px-4 py-4 border border-neutral-200 rounded-md hover:bg-neutral-50 transition-colors text-sm font-medium text-neutral-700 min-h-[48px]"
+                >
+                    Block Vacation
+                </button>
+                <button
+                    onClick={() => {
+                        const today = new Date();
+                        setStartDate(today.toISOString().split('T')[0]);
+                        setStartTime('12:00');
+                        setEndDate(today.toISOString().split('T')[0]);
+                        setEndTime('13:00');
+                        setReason('Lunch break');
+                        setIsRecurring(true);
+                        setRecurrencePattern('DAILY');
+                        setShowForm(true);
+                    }}
+                    className="flex-1 px-4 py-4 border border-neutral-200 rounded-md hover:bg-neutral-50 transition-colors text-sm font-medium text-neutral-700 min-h-[48px]"
+                >
+                    Block Lunch Break
+                </button>
             </div>
 
             {/* Create Form */}
@@ -289,7 +389,8 @@ export default function BlockTimeModal() {
             ) : blockedSlots.length === 0 ? (
                 <div className="text-center py-12 bg-neutral-50 border border-neutral-200 rounded-sm">
                     <Calendar className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
-                    <p className="text-neutral-500">No blocked time slots</p>
+                    <p className="text-neutral-500 mb-2">No blocked dates</p>
+                    <p className="text-sm text-neutral-400">Tap "Add Blocked Date" to block time when you're unavailable</p>
                 </div>
             ) : (
                 <div className="space-y-3">
