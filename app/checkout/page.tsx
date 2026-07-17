@@ -40,7 +40,7 @@ function CheckoutContent() {
     return (
         <>
             <Navbar />
-            <section className="bg-[#FFF5EE] pt-8 pb-12 md:pt-12 md:pb-16 text-neutral-900">
+            <section className="bg-[#C6B6A4] pt-8 pb-12 md:pt-12 md:pb-16 text-neutral-900">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <Button
                         type="button"
@@ -62,7 +62,7 @@ function CheckoutContent() {
                 </div>
             </section>
 
-            <section className="bg-[#FFF5EE] pb-24 md:pb-32 min-h-[70vh]">
+            <section className="bg-[#C6B6A4] pb-24 md:pb-32 min-h-[70vh]">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* Left Column - Appointment Summary */}
@@ -141,7 +141,7 @@ function CheckoutContent() {
                             </div>
 
     {/* Deposit Policy Card */}
-    <div className="bg-[#FFF5EE] rounded-2xl p-6 md:p-8 border border-neutral-200/70 shadow-[0_10px_35px_rgba(0,0,0,0.06)]">
+    <div className="bg-[#C6B6A4] rounded-2xl p-6 md:p-8 border border-neutral-200/70 shadow-[0_10px_35px_rgba(0,0,0,0.06)]">
         <div className="flex items-center gap-3 mb-5">
             <svg
                 className="w-10 h-10 text-amber-600 flex-shrink-0"

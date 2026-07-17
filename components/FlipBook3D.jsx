@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 
 const T = {
-  bg:        '#FFF5EE',
-  bgSection: '#FFF5EE',
+  bg:        '#C6B6A4',
+  bgSection: '#C6B6A4',
   rightPage: '#fefdfb',
   heading:   '#2d1f1a',
   body:      '#6a5a52',

@@ -46,7 +46,7 @@ export default function HeroWrapper() {
   }, []);
 
   if (loading) {
-    return <div className="min-h-[85vh] bg-[#FFF5EE]" />;
+    return <div className="min-h-[85vh] bg-[#C6B6A4]" />;
   }
 
   return <Hero videoSrc={heroVideoSrc} useVideo={useHeroVideo} />;

@@ -124,7 +124,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
     return (
         <>
             <Navbar />
-            <section className="relative overflow-hidden bg-[#FFF5EE] py-24 md:py-32 text-neutral-900">
+            <section className="relative overflow-hidden bg-[#C6B6A4] py-24 md:py-32 text-neutral-900">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <p className="text-xs uppercase tracking-[0.4em] text-neutral-500 mb-4">Select Your Style</p>
                     <h1 className="text-4xl md:text-6xl font-light tracking-tight text-neutral-900">
@@ -146,7 +146,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                 <div className="pointer-events-none absolute -top-20 right-10 h-56 w-56 rounded-full bg-amber-100/30 blur-3xl" aria-hidden="true" />
             </section>
 
-            <section className="bg-[#FFF5EE] pb-24 md:pb-32 min-h-[70vh]">
+            <section className="bg-[#C6B6A4] pb-24 md:pb-32 min-h-[70vh]">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl space-y-6">
                     {hasSubcategories ? (
                         <div className="divide-y divide-neutral-200/60">
@@ -185,7 +185,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                         {items.map((item, index) => (
                             <div
                                 key={`${item.name}-${index}`}
-                                className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-sm border border-neutral-200/60 bg-[#FFF5EE] py-6 px-6 md:px-8 transition-all duration-300 hover:bg-white/50"
+                                className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-sm border border-neutral-200/60 bg-[#C6B6A4] py-6 px-6 md:px-8 transition-all duration-300 hover:bg-white/50"
                             >
                                 <div className="w-full text-neutral-900">
                                     <span className="block text-base md:text-lg font-light tracking-wide">
