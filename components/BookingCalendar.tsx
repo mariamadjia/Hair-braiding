@@ -65,6 +65,7 @@ export default function BookingCalendar({
     const [confirmationNumber, setConfirmationNumber] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stripePromise] = useState(() => getStripe());
+    const [fullyBookedDates, setFullyBookedDates] = useState<Set<string>>(new Set());
     
     const [formData, setFormData] = useState({
         firstName: "",
@@ -118,6 +119,13 @@ export default function BookingCalendar({
         today.setHours(0, 0, 0, 0);
         
         return date < today;
+    };
+
+    const isDateFullyBooked = (day: number | null) => {
+        if (!day) return false;
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        const dateStr = formatLocalDate(date);
+        return fullyBookedDates.has(dateStr);
     };
 
     const isSameDay = (date1: Date | null, day: number | null) => {
@@ -203,6 +211,11 @@ export default function BookingCalendar({
             });
             
             setAvailableSlots(slots);
+            
+            // Track fully booked dates
+            if (slots.filter(s => s.available).length === 0) {
+                setFullyBookedDates(prev => new Set(prev).add(dateStr));
+            }
         } catch (error) {
             console.error('Error fetching available slots:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unable to load available times. Please try again later.';
@@ -466,14 +479,15 @@ export default function BookingCalendar({
                             <button
                                 key={index}
                                 onClick={() => handleDateSelect(day)}
-                                disabled={isDateDisabled(day)}
+                                disabled={isDateDisabled(day) || isDateFullyBooked(day)}
                                 aria-label={day ? `${MONTHS[currentDate.getMonth()]} ${day}` : "Empty day"}
                                 aria-pressed={isSameDay(selectedDate, day)}
                                 className={cn(
                                     "aspect-square p-2 text-sm font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
                                     day === null && "invisible",
-                                    !isDateDisabled(day) && "bg-blue-50/80 hover:bg-blue-100 hover:scale-105 cursor-pointer text-blue-600 hover:shadow-md",
+                                    !isDateDisabled(day) && !isDateFullyBooked(day) && "bg-blue-50/80 hover:bg-blue-100 hover:scale-105 cursor-pointer text-blue-600 hover:shadow-md",
                                     isDateDisabled(day) && "text-neutral-300 cursor-not-allowed",
+                                    isDateFullyBooked(day) && "text-neutral-400 cursor-not-allowed bg-neutral-100",
                                     isSameDay(selectedDate, day) && "bg-neutral-900 text-white hover:bg-neutral-800 shadow-lg scale-105"
                                 )}
                             >
@@ -515,17 +529,7 @@ export default function BookingCalendar({
                         </div>
                     ) : availableSlots.filter(slot => slot.available).length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
-                            <p className="text-xs text-neutral-500 font-medium mb-1 tracking-wide">No available times</p>
-                            <p className="text-xs text-neutral-400 mb-4">
-                                This date is fully booked or the salon is closed.
-                            </p>
-                            <Button
-                                onClick={resetToDateSelection}
-                                variant="ghost"
-                                className="text-xs tracking-wide"
-                            >
-                                Choose another date
-                            </Button>
+                            <p className="text-xs text-neutral-400 tracking-wide">No available times</p>
                         </div>
                     ) : (
                         <>
