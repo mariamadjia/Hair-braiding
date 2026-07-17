@@ -53,7 +53,7 @@ export default function Hero({ videoSrc, useVideo }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: "easeOut" }}
-          className="bg-[#C6B6A4] flex items-center justify-center px-6 pt-24 pb-10 md:py-0 md:px-16 lg:px-24"
+          className="bg-[#FFFDD0] flex items-center justify-center px-6 pt-24 pb-10 md:py-0 md:px-16 lg:px-24"
         >
           <div className="w-full max-w-lg text-center">
             {/* Headline */}
@@ -79,7 +79,7 @@ export default function Hero({ videoSrc, useVideo }) {
         </motion.div>
 
         {/* Media Section - Video or Image Carousel */}
-        <div className="relative h-[400px] sm:h-[500px] md:flex-1 md:h-auto bg-[#C6B6A4] px-6 md:p-0 overflow-hidden">
+        <div className="relative h-[400px] sm:h-[500px] md:flex-1 md:h-auto bg-[#FFFDD0] px-6 md:p-0 overflow-hidden">
           {useVideo && videoSrc ? (
             /* Background Video */
             <video
@@ -131,7 +131,7 @@ export default function Hero({ videoSrc, useVideo }) {
       </div>
       
       {/* CTA - Mobile only (below image) */}
-      <div className="md:hidden bg-[#C6B6A4] flex items-center justify-center py-6">
+      <div className="md:hidden bg-[#FFFDD0] flex items-center justify-center py-6">
         <Link
           href="/booking"
           className="inline-block border-b-2 border-neutral-900 pb-1 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-70"

@@ -7,7 +7,7 @@ export default function ContactPage() {
       <Navbar />
       
       {/* Main Contact Section */}
-      <section className="relative bg-[#C6B6A4] min-h-screen py-20 md:py-32">
+      <section className="relative bg-[#FFFDD0] min-h-screen py-20 md:py-32">
         <div className="container mx-auto px-6 md:px-8 lg:px-12">
           {/* Title */}
           <h1 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-12 text-center">

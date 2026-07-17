@@ -88,7 +88,7 @@ export default function Gallery() {
 
   if (loading) {
     return (
-      <section className="bg-[#C6B6A4] py-10 md:py-14 relative">
+      <section className="bg-[#FFFDD0] py-10 md:py-14 relative">
         <div className="absolute top-0 left-0 right-0 h-px bg-[#2C1810]"></div>
         <div className="container mx-auto px-6 md:px-8 lg:px-12">
           <div className="text-center mb-6 md:mb-10">
@@ -106,7 +106,7 @@ export default function Gallery() {
   }
 
   return (
-    <section className="bg-[#C6B6A4] py-10 md:py-14 relative">
+    <section className="bg-[#FFFDD0] py-10 md:py-14 relative">
       {/* Horizontal Separator Line */}
       <div className="absolute top-0 left-0 right-0 h-px bg-[#2C1810]"></div>
       

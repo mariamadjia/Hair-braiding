@@ -33,7 +33,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
   const items = propItems;
 
   return (
-    <section className="bg-[#C6B6A4] py-12 md:py-24">
+    <section className="bg-[#FFFDD0] py-12 md:py-24">
       <div className="container mx-auto px-6 md:px-8 lg:px-12">
         {/* Desktop: Side by side layout */}
         <div className="hidden lg:grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">

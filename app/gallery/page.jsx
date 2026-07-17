@@ -276,7 +276,7 @@ export default function GalleryPage({
   return (
     <>
       {!editMode && <Navbar />}
-      <div className="min-h-screen bg-[#C6B6A4]">
+      <div className="min-h-screen bg-[#FFFDD0]">
         {/* Main Content with Sidebar and Gallery */}
         <div className="container mx-auto px-6 md:px-8 lg:px-12 py-8">
           <div className="flex flex-col lg:flex-row gap-8">

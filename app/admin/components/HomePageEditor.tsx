@@ -707,7 +707,7 @@ export function HomePageEditor() {
         </div>
 
         {/* Hero Preview */}
-        <div className="flex-1 overflow-y-auto bg-[#C6B6A4] dark:bg-neutral-900">
+        <div className="flex-1 overflow-y-auto bg-[#FFFDD0] dark:bg-neutral-900">
           <div className="relative">
             <Hero videoSrc={heroVideoSrc} useVideo={useHeroVideo} />
             {/* Edit button overlay */}
