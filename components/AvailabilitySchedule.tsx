@@ -447,6 +447,9 @@ export default function AvailabilitySchedule() {
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
 
+            // Reload fresh data from backend
+            await fetchBusinessHours();
+
             window.dispatchEvent(new CustomEvent("settingsUpdated", {
                 detail: { businessHoursUpdated: true },
             }));

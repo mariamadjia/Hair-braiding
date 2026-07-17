@@ -158,7 +158,8 @@ export default function BookingCalendar({
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                }
+                },
+                cache: 'no-store'
             });
             
             console.log('Response status:', response.status);
@@ -173,8 +174,8 @@ export default function BookingCalendar({
             console.log('Received slots from backend:', backendSlots);
             
             if (!Array.isArray(backendSlots) || backendSlots.length === 0) {
-                console.warn('No slots returned from backend (business hours may not be configured), using fallback slots');
-                generateFallbackTimeSlots(date);
+                console.warn('No slots returned from backend (business hours may not be configured)');
+                setAvailableSlots([]);
                 return;
             }
             
@@ -189,28 +190,8 @@ export default function BookingCalendar({
             setAvailableSlots(slots);
         } catch (error) {
             console.error('Error fetching available slots:', error);
-            console.log('Using fallback time slots');
-            generateFallbackTimeSlots(date);
+            setAvailableSlots([]);
         }
-    };
-
-    const generateFallbackTimeSlots = (date: Date) => {
-        const slots: TimeSlot[] = [];
-        const startHour = 9;
-        const endHour = 17;
-        
-        for (let hour = startHour; hour < endHour; hour++) {
-            const slotDate = new Date(date);
-            slotDate.setHours(hour, 0, 0, 0);
-            const now = new Date();
-            
-            slots.push({
-                time: formatTime24To12(slotDate),
-                available: slotDate > now
-            });
-        }
-        
-        setAvailableSlots(slots);
     };
 
     const formatTime24To12 = (date: Date) => {
@@ -241,7 +222,8 @@ export default function BookingCalendar({
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                }
+                },
+                cache: 'no-store'
             });
 
             if (!response.ok) {
