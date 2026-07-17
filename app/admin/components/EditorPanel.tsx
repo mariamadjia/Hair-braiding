@@ -148,7 +148,9 @@ export function EditorPanel({
                 </div>
             );
         }
-        return wrapEditor(<div className="p-4 text-red-600">Subcategory not found. Please go back and try again.</div>);
+        // Don't show "Subcategory not found" error if we're in the middle of a save operation
+        // This prevents a brief flash of the error during the save->refresh cycle
+        return wrapEditor(<div className="p-4 text-neutral-500">Loading subcategory...</div>);
     }
 
     return wrapEditor(<SubcategoryEditor cat={cat} sub={sub} token={token} headers={headers} mutate={mutate} setSelection={setSelection} onUpdate={onUpdate} data={data} onSubcategoryUpdate={onSubcategoryUpdate} />);
