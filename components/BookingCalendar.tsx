@@ -429,7 +429,7 @@ export default function BookingCalendar({
             {/* Date Selection */}
             {step === "date" && (
                 <div className="p-8">
-                    <p className="text-sm text-neutral-600 mb-6">
+                    <p className="text-xs text-neutral-500 mb-6 tracking-wide">
                         Select a date to view available times
                     </p>
                     <div className="flex items-center justify-between mb-8">
@@ -489,40 +489,40 @@ export default function BookingCalendar({
                 <div className="p-8 space-y-8 max-h-[500px] overflow-y-auto">
                     {loading ? (
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-neutral-500">
+                            <div className="flex items-center gap-2 text-neutral-400">
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                <span className="text-sm">Loading available times...</span>
+                                <span className="text-xs tracking-wide">Loading available times...</span>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                                    <div key={i} className="h-12 bg-neutral-100 rounded-lg animate-pulse" />
+                                    <div key={i} className="h-12 bg-neutral-50 rounded-sm animate-pulse" />
                                 ))}
                             </div>
                         </div>
                     ) : error ? (
                         <div className="flex flex-col items-center justify-center py-12">
-                            <p className="text-sm text-neutral-600 text-center max-w-md mb-4">We couldn't load available times. Please try again.</p>
+                            <p className="text-xs text-neutral-500 text-center max-w-md mb-4 tracking-wide">We couldn't load available times. Please try again.</p>
                             <Button
                                 onClick={() => {
                                     setError(null);
                                     if (selectedDate) fetchAvailableSlots(selectedDate);
                                 }}
-                                variant="outline"
-                                className="text-sm"
+                                variant="ghost"
+                                className="text-xs tracking-wide"
                             >
                                 Try again
                             </Button>
                         </div>
                     ) : availableSlots.filter(slot => slot.available).length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
-                            <p className="text-sm text-neutral-600 font-medium mb-1">No available times</p>
-                            <p className="text-sm text-neutral-500 mb-4">
+                            <p className="text-xs text-neutral-500 font-medium mb-1 tracking-wide">No available times</p>
+                            <p className="text-xs text-neutral-400 mb-4">
                                 This date is fully booked or the salon is closed.
                             </p>
                             <Button
                                 onClick={resetToDateSelection}
-                                variant="outline"
-                                className="text-sm"
+                                variant="ghost"
+                                className="text-xs tracking-wide"
                             >
                                 Choose another date
                             </Button>
@@ -537,7 +537,7 @@ export default function BookingCalendar({
                         return hour24 < 12 && slot.available;
                     }).length > 0 && (
                         <fieldset className="space-y-3">
-                            <legend className="text-xs font-semibold uppercase tracking-[0.15em] text-neutral-500">Morning</legend>
+                            <legend className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">Morning</legend>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {availableSlots.filter(slot => {
                                     const hour = parseInt(slot.time.split(':')[0]);
@@ -551,9 +551,9 @@ export default function BookingCalendar({
                                         aria-label={`${slot.time} available`}
                                         aria-pressed={selectedTime === slot.time}
                                         className={cn(
-                                            "px-4 py-3.5 text-sm font-medium rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
-                                            "border-neutral-200/60 hover:border-neutral-900 hover:bg-neutral-50 hover:shadow-md hover:scale-[1.02] cursor-pointer text-neutral-700",
-                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810] shadow-lg scale-[1.02]"
+                                            "px-4 py-3 text-xs font-light tracking-wide rounded-sm border transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-neutral-900",
+                                            "border-neutral-200 hover:border-neutral-400 hover:bg-white cursor-pointer text-neutral-700",
+                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810]"
                                         )}
                                     >
                                         {slot.time}
@@ -571,7 +571,7 @@ export default function BookingCalendar({
                         return hour24 >= 12 && hour24 < 17 && slot.available;
                     }).length > 0 && (
                         <fieldset className="space-y-3">
-                            <legend className="text-xs font-semibold uppercase tracking-[0.15em] text-neutral-500">Afternoon</legend>
+                            <legend className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">Afternoon</legend>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {availableSlots.filter(slot => {
                                     const hour = parseInt(slot.time.split(':')[0]);
@@ -585,9 +585,9 @@ export default function BookingCalendar({
                                         aria-label={`${slot.time} available`}
                                         aria-pressed={selectedTime === slot.time}
                                         className={cn(
-                                            "px-4 py-3.5 text-sm font-medium rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
-                                            "border-neutral-200/60 hover:border-neutral-900 hover:bg-neutral-50 hover:shadow-md hover:scale-[1.02] cursor-pointer text-neutral-700",
-                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810] shadow-lg scale-[1.02]"
+                                            "px-4 py-3 text-xs font-light tracking-wide rounded-sm border transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-neutral-900",
+                                            "border-neutral-200 hover:border-neutral-400 hover:bg-white cursor-pointer text-neutral-700",
+                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810]"
                                         )}
                                     >
                                         {slot.time}
@@ -605,7 +605,7 @@ export default function BookingCalendar({
                         return hour24 >= 17 && slot.available;
                     }).length > 0 && (
                         <fieldset className="space-y-3">
-                            <legend className="text-xs font-semibold uppercase tracking-[0.15em] text-neutral-500">Evening</legend>
+                            <legend className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">Evening</legend>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {availableSlots.filter(slot => {
                                     const hour = parseInt(slot.time.split(':')[0]);
@@ -619,9 +619,9 @@ export default function BookingCalendar({
                                         aria-label={`${slot.time} available`}
                                         aria-pressed={selectedTime === slot.time}
                                         className={cn(
-                                            "px-4 py-3.5 text-sm font-medium rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
-                                            "border-neutral-200/60 hover:border-neutral-900 hover:bg-neutral-50 hover:shadow-md hover:scale-[1.02] cursor-pointer text-neutral-700",
-                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810] shadow-lg scale-[1.02]"
+                                            "px-4 py-3 text-xs font-light tracking-wide rounded-sm border transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-neutral-900",
+                                            "border-neutral-200 hover:border-neutral-400 hover:bg-white cursor-pointer text-neutral-700",
+                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810]"
                                         )}
                                     >
                                         {slot.time}
