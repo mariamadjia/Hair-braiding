@@ -61,6 +61,7 @@ export default function BookingCalendar({
     const [confirmationNumber, setConfirmationNumber] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stripePromise] = useState(() => getStripe());
+    const [userTimezone, setUserTimezone] = useState<string>("");
     
     const [formData, setFormData] = useState({
         firstName: "",
@@ -69,6 +70,12 @@ export default function BookingCalendar({
         phoneNumber: "",
         notes: ""
     });
+
+    // Detect user timezone on mount
+    useEffect(() => {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        setUserTimezone(timezone);
+    }, []);
 
     // Listen for settings updates and refresh slots
     useEffect(() => {
@@ -474,6 +481,16 @@ export default function BookingCalendar({
             {/* Time Selection */}
             {step === "time" && (
                 <div className="p-8 space-y-8 max-h-[500px] overflow-y-auto">
+                    {/* Timezone Indicator */}
+                    {userTimezone && (
+                        <div className="flex items-center justify-center gap-2 px-4 py-2 bg-neutral-50 rounded-lg border border-neutral-200">
+                            <Clock className="h-4 w-4 text-neutral-500" />
+                            <p className="text-xs text-neutral-600">
+                                Times shown in <span className="font-medium text-neutral-900">{userTimezone}</span>
+                            </p>
+                        </div>
+                    )}
+                    
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <Loader2 className="h-8 w-8 animate-spin text-neutral-400 mb-3" />
