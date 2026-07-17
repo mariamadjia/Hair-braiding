@@ -738,6 +738,7 @@ export default function BookingCalendar({
                             mode: "payment",
                             amount: 5000,
                             currency: "usd",
+                            paymentMethodCreation: "manual",
                             appearance: {
                                 theme: "stripe",
                                 variables: {
