@@ -83,6 +83,8 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
         }
 
         const params = new URLSearchParams({
+            categorySlug: category.slug,
+            subcategorySlug: subcategory.slug,
             service: item?.name ?? "Selected Service",
             price: item?.price ?? "",
             description: item?.description ?? "Professional braiding service",
@@ -163,6 +165,8 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
         console.log("Selected item:", selectedItem);
 
         const params = new URLSearchParams({
+            categorySlug: category.slug,
+            subcategorySlug: subcategory.slug,
             style: subcategory.name,
             size: selectedItem.name,
             length: option?.name ?? "",

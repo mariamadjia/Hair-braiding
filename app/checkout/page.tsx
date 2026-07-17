@@ -14,6 +14,8 @@ function CheckoutContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
+    const categorySlug = searchParams.get("categorySlug") || "";
+    const subcategorySlug = searchParams.get("subcategorySlug") || "";
     const styleName = searchParams.get("style") || searchParams.get("service") || "Service";
     const serviceName = searchParams.get("size") || searchParams.get("service") || "";
     const lengthLabel = searchParams.get("length") || "";
@@ -45,11 +47,17 @@ function CheckoutContent() {
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => router.back()}
+                        onClick={() => {
+                            if (categorySlug && subcategorySlug) {
+                                router.push(`/booking/${categorySlug}/${subcategorySlug}`);
+                            } else {
+                                router.back();
+                            }
+                        }}
                         className="mb-12 rounded-none border border-neutral-300 bg-transparent px-6 py-2.5 text-xs font-medium uppercase tracking-[0.25em] text-neutral-700 transition hover:border-neutral-900 hover:text-neutral-900"
                     >
                         <ChevronLeft className="h-3 w-3 mr-2" />
-                        Back
+                        Change Service
                     </Button>
                     <div className="text-center">
                         <h1 className="text-4xl md:text-6xl font-light tracking-wide text-neutral-900 leading-tight">

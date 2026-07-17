@@ -53,11 +53,13 @@ export default function BookingCalendar({
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
-    const [step, setStep] = useState<"date" | "time" | "details" | "payment">("date");
+    const [step, setStep] = useState<"date" | "time" | "details" | "payment" | "success">("date");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
     const [createdAppointmentId, setCreatedAppointmentId] = useState<number | null>(null);
+    const [confirmationNumber, setConfirmationNumber] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [stripePromise] = useState(() => getStripe());
     
     const [formData, setFormData] = useState({
@@ -257,8 +259,9 @@ export default function BookingCalendar({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedDate || !selectedTime) return;
+        if (!selectedDate || !selectedTime || isSubmitting) return;
 
+        setIsSubmitting(true);
         setLoading(true);
         
         const appointmentDateTime = convertTimeToDateTime(selectedDate, selectedTime);
@@ -297,6 +300,7 @@ export default function BookingCalendar({
 
             const result = await response.json();
             setCreatedAppointmentId(result.id);
+            setConfirmationNumber(`APT-${result.id}-${Date.now().toString().slice(-4)}`);
             setStep("payment");
         } catch (error) {
             console.error('Booking error:', error);
@@ -308,6 +312,7 @@ export default function BookingCalendar({
                 await fetchAvailableSlots(selectedDate);
             }
         } finally {
+            setIsSubmitting(false);
             setLoading(false);
         }
     };
@@ -323,23 +328,11 @@ export default function BookingCalendar({
             notes: formData.notes
         };
 
-        alert('Booking submitted successfully! Your card has been authorized for $50. You will only be charged if the admin approves your appointment. Check your email for confirmation.');
+        setStep("success");
         
         if (onBookingComplete) {
             onBookingComplete(bookingData);
         }
-        
-        setFormData({
-            firstName: "",
-            lastName: "",
-            email: "",
-            phoneNumber: "",
-            notes: ""
-        });
-        setSelectedDate(null);
-        setSelectedTime(null);
-        setCreatedAppointmentId(null);
-        setStep("date");
     };
 
     const convertTimeToDateTime = (date: Date, timeStr: string): string => {
@@ -702,10 +695,10 @@ export default function BookingCalendar({
 
                     <Button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || isSubmitting}
                         className="w-full rounded-none bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-3 text-xs font-medium uppercase tracking-[0.25em] transition"
                     >
-                        {loading ? (
+                        {loading || isSubmitting ? (
                             <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 Confirming...
@@ -748,6 +741,49 @@ export default function BookingCalendar({
                             customerName={`${formData.firstName} ${formData.lastName}`}
                         />
                     </Elements>
+                </div>
+            )}
+
+            {/* Success Step */}
+            {step === "success" && (
+                <div className="p-8 text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <h3 className="text-2xl font-light text-neutral-900 mb-4">Booking Confirmed!</h3>
+                    <p className="text-neutral-600 mb-6">Your card has been authorized for $50. You will only be charged if the admin approves your appointment.</p>
+                    
+                    {confirmationNumber && (
+                        <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-6">
+                            <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Confirmation Number</p>
+                            <p className="text-lg font-mono font-semibold text-neutral-900">{confirmationNumber}</p>
+                        </div>
+                    )}
+                    
+                    <p className="text-sm text-neutral-600 mb-6">Check your email for confirmation details.</p>
+                    
+                    <Button
+                        type="button"
+                        onClick={() => {
+                            setFormData({
+                                firstName: "",
+                                lastName: "",
+                                email: "",
+                                phoneNumber: "",
+                                notes: ""
+                            });
+                            setSelectedDate(null);
+                            setSelectedTime(null);
+                            setCreatedAppointmentId(null);
+                            setConfirmationNumber(null);
+                            setStep("date");
+                        }}
+                        className="w-full rounded-none bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-3 text-xs font-medium uppercase tracking-[0.25em] transition"
+                    >
+                        Book Another Appointment
+                    </Button>
                 </div>
             )}
         </div>
