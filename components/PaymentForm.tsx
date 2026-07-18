@@ -80,6 +80,12 @@ export default function PaymentForm({
         clientSecret: result.clientSecret,
         confirmParams: {
           return_url: window.location.href,
+          payment_method_data: {
+            billing_details: {
+              name: customerName,
+              email: customerEmail,
+            },
+          },
         },
         redirect: 'if_required'
       });
