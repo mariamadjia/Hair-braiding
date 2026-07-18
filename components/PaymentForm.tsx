@@ -75,7 +75,7 @@ export default function PaymentForm({
       console.log("Payment intent created:", result);
 
       // Confirm payment using the client secret
-      const { error: confirmError } = await stripe.confirmPayment({
+      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
         clientSecret: result.clientSecret,
         confirmParams: {
@@ -96,10 +96,13 @@ export default function PaymentForm({
         return;
       }
 
-      if (result.status === "requires_capture") {
-        onSuccess(result.paymentIntentId);
+      console.log("Payment confirmed:", paymentIntent);
+
+      // Check if payment is in the correct state
+      if (paymentIntent && (paymentIntent.status === "requires_capture" || paymentIntent.status === "succeeded")) {
+        onSuccess(paymentIntent.id);
       } else {
-        setError("Payment authorization failed. Please try again.");
+        setError(`Payment authorization failed. Status: ${paymentIntent?.status || 'unknown'}`);
       }
     } catch (err) {
       console.error("Payment error:", err);
