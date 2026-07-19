@@ -53,7 +53,7 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
         { id: "bookings", label: "Bookings", icon: Calendar },
         { id: "availability", label: "Availability", icon: Clock },
         { id: "customers", label: "Customers", icon: Users },
-        { id: "pricing", label: "Pricing", icon: DollarSign },
+        { id: "pricing", label: "Pricing", icon: DollarSign, comingSoon: true },
         { id: "gallery", label: "Gallery", icon: ImageIcon },
         { 
             id: "settings", 
