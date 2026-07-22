@@ -15,6 +15,8 @@ type TimeSlot = {
     available: boolean;
 };
 
+type DateAvailability = "loading" | "available" | "unavailable" | "error";
+
 type BookingCalendarProps = {
     className?: string;
     onBookingComplete?: (bookingData: BookingData) => void;
@@ -69,6 +71,8 @@ export default function BookingCalendar({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stripePromise] = useState(() => getStripe());
     const availabilityRequest = useRef<AbortController | null>(null);
+    const slotsCache = useRef(new Map<string, TimeSlot[]>());
+    const [dateAvailability, setDateAvailability] = useState<Record<string, DateAvailability>>({});
 
     useEffect(() => () => availabilityRequest.current?.abort(), []);
     
@@ -83,8 +87,10 @@ export default function BookingCalendar({
     // Listen for settings updates and refresh slots
     useEffect(() => {
         const handleSettingsUpdate = () => {
+            slotsCache.current.clear();
+            setDateAvailability({});
             if (selectedDate) {
-                fetchAvailableSlots(selectedDate);
+                fetchAvailableSlots(selectedDate, true);
             }
         };
 
@@ -123,7 +129,8 @@ export default function BookingCalendar({
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        return date < today;
+        const status = dateAvailability[formatLocalDate(date)];
+        return date < today || status === "unavailable";
     };
 
     const isSameDay = (date1: Date | null, day: number | null) => {
@@ -163,54 +170,42 @@ export default function BookingCalendar({
         return `${year}-${month}-${day}T${hour}:${minute}:00`;
     };
 
-    const fetchAvailableSlots = async (date: Date) => {
+    const requestSlots = async (date: Date, signal?: AbortSignal): Promise<TimeSlot[]> => {
+        const dateStr = formatLocalDate(date);
+        const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=America%2FChicago`, {
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store',
+            signal
+        });
+        if (!response.ok) throw new Error(response.status === 500
+            ? 'Unable to load available times. Please try again later.'
+            : `Failed to fetch available slots: ${response.status}`);
+        const backendSlots = await response.json();
+        if (!Array.isArray(backendSlots)) return [];
+        return backendSlots.map((slot: any) => ({
+            time: formatTime24To12(slot.startTime),
+            available: slot.isAvailable && slot.availableSpots > 0
+        }));
+    };
+
+    const fetchAvailableSlots = async (date: Date, force = false) => {
+        const dateStr = formatLocalDate(date);
+        const cached = slotsCache.current.get(dateStr);
+        if (!force && cached) {
+            setError(null);
+            setAvailableSlots(cached);
+            return;
+        }
         availabilityRequest.current?.abort();
         const controller = new AbortController();
         availabilityRequest.current = controller;
         try {
-            const dateStr = formatLocalDate(date);
-            const timezone = "America/Chicago";
-            console.log('Fetching slots for date:', dateStr, 'timezone:', timezone);
-            
-            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                cache: 'no-store',
-                signal: controller.signal
-            });
-            
-            console.log('Response status:', response.status);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Backend error:', errorText);
-                if (response.status === 404) {
-                    throw new Error('Business hours not configured for this date. Please contact the salon.');
-                } else if (response.status === 500) {
-                    throw new Error('Unable to load available times. Please try again later.');
-                } else {
-                    throw new Error(`Failed to fetch available slots: ${response.status}`);
-                }
-            }
-            
-            const backendSlots = await response.json();
-            console.log('Received slots from backend:', backendSlots);
-            
-            if (!Array.isArray(backendSlots) || backendSlots.length === 0) {
-                console.warn('No slots returned from backend (business hours may not be configured)');
-                setAvailableSlots([]);
-                return;
-            }
-            
-            const slots: TimeSlot[] = backendSlots.map((slot: any) => {
-                return {
-                    time: formatTime24To12(slot.startTime),
-                    available: slot.isAvailable && slot.availableSpots > 0
-                };
-            });
-            
+            const slots = await requestSlots(date, controller.signal);
+            slotsCache.current.set(dateStr, slots);
+            setDateAvailability(previous => ({
+                ...previous,
+                [dateStr]: slots.some(slot => slot.available) ? "available" : "unavailable"
+            }));
             setError(null);
             setAvailableSlots(slots);
         } catch (error) {
@@ -223,6 +218,47 @@ export default function BookingCalendar({
             if (availabilityRequest.current === controller) availabilityRequest.current = null;
         }
     };
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const dates = getDaysInMonth(currentDate)
+            .filter((day): day is number => day !== null)
+            .map(day => new Date(currentDate.getFullYear(), currentDate.getMonth(), day))
+            .filter(date => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return date >= today && !slotsCache.current.has(formatLocalDate(date));
+            });
+
+        setDateAvailability(previous => {
+            const next = { ...previous };
+            dates.forEach(date => { next[formatLocalDate(date)] = "loading"; });
+            return next;
+        });
+
+        const prefetch = async () => {
+            for (let index = 0; index < dates.length && !controller.signal.aborted; index += 4) {
+                const batch = dates.slice(index, index + 4);
+                await Promise.all(batch.map(async date => {
+                    const key = formatLocalDate(date);
+                    try {
+                        const slots = await requestSlots(date, controller.signal);
+                        slotsCache.current.set(key, slots);
+                        setDateAvailability(previous => ({
+                            ...previous,
+                            [key]: slots.some(slot => slot.available) ? "available" : "unavailable"
+                        }));
+                    } catch (error) {
+                        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+                            setDateAvailability(previous => ({ ...previous, [key]: "error" }));
+                        }
+                    }
+                }));
+            }
+        };
+        void prefetch();
+        return () => controller.abort();
+    }, [currentDate.getFullYear(), currentDate.getMonth()]);
 
     const formatTime24To12 = (dateTime: string) => {
         const [, time = "00:00"] = dateTime.split("T");
@@ -386,7 +422,23 @@ export default function BookingCalendar({
     };
 
     const goToPreviousMonth = () => {
+        const today = new Date();
+        if (currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth()) return;
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+    };
+
+    const canGoToPreviousMonth = () => {
+        const today = new Date();
+        return currentDate.getFullYear() > today.getFullYear()
+            || (currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() > today.getMonth());
+    };
+
+    const isToday = (day: number | null) => {
+        if (!day) return false;
+        const today = new Date();
+        return day === today.getDate()
+            && currentDate.getMonth() === today.getMonth()
+            && currentDate.getFullYear() === today.getFullYear();
     };
 
     const goToNextMonth = () => {
@@ -460,7 +512,8 @@ export default function BookingCalendar({
                     <div className="flex items-center justify-between mb-8">
                         <button
                             onClick={goToPreviousMonth}
-                            className="p-2.5 hover:bg-neutral-100 rounded-full transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900"
+                            disabled={!canGoToPreviousMonth()}
+                            className="p-2.5 hover:bg-neutral-100 rounded-full transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 disabled:opacity-25 disabled:pointer-events-none"
                             aria-label="Previous month"
                         >
                             <ChevronLeft className="h-5 w-5 text-neutral-600" />
@@ -477,7 +530,7 @@ export default function BookingCalendar({
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-7 gap-3">
+                    <div className="grid grid-cols-7 gap-2 sm:gap-3">
                         {DAYS.map((day) => (
                             <div
                                 key={day}
@@ -487,24 +540,39 @@ export default function BookingCalendar({
                             </div>
                         ))}
                         
-                        {getDaysInMonth(currentDate).map((day, index) => (
+                        {getDaysInMonth(currentDate).map((day, index) => {
+                            const date = day ? new Date(currentDate.getFullYear(), currentDate.getMonth(), day) : null;
+                            const status = date ? dateAvailability[formatLocalDate(date)] : undefined;
+                            return (
                             <button
                                 key={index}
                                 onClick={() => handleDateSelect(day)}
                                 disabled={isDateDisabled(day)}
-                                aria-label={day ? `${MONTHS[currentDate.getMonth()]} ${day}` : "Empty day"}
+                                aria-label={day ? `${MONTHS[currentDate.getMonth()]} ${day}${status === 'available' ? ', appointments available' : status === 'unavailable' ? ', unavailable' : ''}` : "Empty day"}
                                 aria-pressed={isSameDay(selectedDate, day)}
                                 className={cn(
-                                    "aspect-square p-2 text-sm font-medium rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
+                                    "relative aspect-square min-h-11 p-2 text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
                                     day === null && "invisible",
-                                    !isDateDisabled(day) && "bg-blue-50/80 hover:bg-blue-100 hover:scale-105 cursor-pointer text-blue-600 hover:shadow-md",
-                                    isDateDisabled(day) && "text-neutral-300 cursor-not-allowed",
-                                    isSameDay(selectedDate, day) && "bg-neutral-900 text-white hover:bg-neutral-800 shadow-lg scale-105"
+                                    !isDateDisabled(day) && "bg-neutral-50 hover:bg-emerald-50 hover:-translate-y-0.5 cursor-pointer text-neutral-800 hover:shadow-sm",
+                                    isDateDisabled(day) && "text-neutral-300 bg-neutral-50/40 cursor-not-allowed line-through decoration-neutral-300",
+                                    isToday(day) && !isSameDay(selectedDate, day) && "ring-1 ring-inset ring-neutral-400 font-semibold",
+                                    isSameDay(selectedDate, day) && "bg-neutral-900 text-white hover:bg-neutral-800 shadow-md -translate-y-0.5"
                                 )}
                             >
                                 {day}
+                                {status === "loading" && day && (
+                                    <span className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-neutral-300 animate-pulse" />
+                                )}
+                                {status === "available" && day && !isSameDay(selectedDate, day) && (
+                                    <span className="absolute bottom-1.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-emerald-500" />
+                                )}
                             </button>
-                        ))}
+                        )})}
+                    </div>
+                    <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-neutral-500">
+                        <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Available</span>
+                        <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-neutral-200" /> Fully booked or closed</span>
+                        <span className="ml-auto">San Antonio Central Time</span>
                     </div>
                 </div>
             )}
@@ -512,6 +580,17 @@ export default function BookingCalendar({
             {/* Time Selection */}
             {step === "time" && (
                 <div className="p-8 space-y-8 max-h-[500px] overflow-y-auto">
+                    {selectedDate && (
+                        <div className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
+                            <div>
+                                <p className="text-sm font-medium text-neutral-900">
+                                    {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                                </p>
+                                <p className="text-xs text-neutral-500 mt-0.5">Choose an available appointment start</p>
+                            </div>
+                            <span className="shrink-0 text-[11px] font-medium text-neutral-500">Central Time</span>
+                        </div>
+                    )}
                     {loading ? (
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 text-neutral-400">
