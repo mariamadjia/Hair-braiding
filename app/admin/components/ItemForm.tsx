@@ -78,14 +78,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
             {error && <div role="alert" tabIndex={-1} className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"><AlertCircle className="h-4 w-4" /><span className="flex-1">{error}</span><button type="button" aria-label="Dismiss error" onClick={() => setError(null)}><X className="h-4 w-4" /></button></div>}
             {success && <div role="status" className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700"><CheckCircle className="h-4 w-4" />{success}</div>}
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <label><span className={lbl}>Size or service name *</span><input className={inp} value={item.name} onChange={event => set("name", event.target.value)} placeholder="Small" /></label>
-                <label><span className={lbl}>Base price</span><input className={inp} inputMode="decimal" value={item.price ?? ""} onChange={event => set("price", event.target.value)} placeholder="200.00" /><span className="mt-1 block text-xs text-neutral-500">Used when there are no length options.</span></label>
-                <label className="sm:col-span-2"><span className={lbl}>Customer description</span><textarea className={`${inp} min-h-24 resize-y`} value={item.description ?? ""} onChange={event => set("description", event.target.value)} placeholder="What customers should know about this service" /></label>
-                <label className="sm:col-span-2"><span className={lbl}>Internal/service notes</span><textarea className={`${inp} min-h-20 resize-y`} value={item.notes ?? ""} onChange={event => set("notes", event.target.value)} placeholder="Preparation, deposit, or staff notes" /></label>
-                <label><span className={lbl}>Primary image URL</span><input className={inp} inputMode="url" value={item.image ?? ""} onChange={event => set("image", event.target.value)} placeholder="https://…" /></label>
-                <label><span className={lbl}>Image position</span><input className={inp} value={item.objectPosition ?? ""} onChange={event => set("objectPosition", event.target.value)} placeholder="center center" /></label>
-            </div>
+            <label className="block"><span className={lbl}>Size or service name *</span><input className={inp} value={item.name} onChange={event => set("name", event.target.value)} placeholder="Small" /></label>
 
             <fieldset><legend className={lbl}>Photos for this size</legend><div className="flex flex-wrap gap-2">
                 <label aria-label="Upload size photos" className={`flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-violet-300 text-violet-600 focus-within:ring-2 focus-within:ring-violet-400 ${uploading ? "opacity-50" : "hover:bg-violet-50"}`}>{uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}<input type="file" accept="image/*" multiple className="sr-only" disabled={uploading || saving} onChange={uploadPhotos} /></label>
