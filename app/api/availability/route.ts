@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     // Admin operations are handled by separate protected endpoints
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
-    const timezone = searchParams.get("timezone") || "America/Los_Angeles";
+    const timezone = searchParams.get("timezone") || "America/Chicago";
     
     if (!date) {
         return NextResponse.json({ error: "Date parameter required" }, { status: 400 });

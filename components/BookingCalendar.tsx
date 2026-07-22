@@ -169,7 +169,7 @@ export default function BookingCalendar({
         availabilityRequest.current = controller;
         try {
             const dateStr = formatLocalDate(date);
-            const timezone = "America/Los_Angeles";
+            const timezone = "America/Chicago";
             console.log('Fetching slots for date:', dateStr, 'timezone:', timezone);
             
             const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
@@ -251,7 +251,7 @@ export default function BookingCalendar({
     const validateAvailability = async (date: Date, time: string): Promise<boolean> => {
         try {
             const dateStr = formatLocalDate(date);
-            const timezone = "America/Los_Angeles";
+            const timezone = "America/Chicago";
             const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
                 method: 'GET',
                 headers: {
@@ -814,7 +814,7 @@ export default function BookingCalendar({
                         </div>
                     )}
                     
-                    <p className="text-sm text-neutral-600 mb-6">The salon will contact you after reviewing your request. All appointment times are Pacific Time.</p>
+                    <p className="text-sm text-neutral-600 mb-6">The salon will contact you after reviewing your request. All appointment times are San Antonio Central Time.</p>
 
                     
                     <Button

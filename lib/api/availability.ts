@@ -49,7 +49,7 @@ export const availabilityApi = {
 
   // Get available slots for a date
   getAvailableSlots: async (date: string, serviceId?: number, lengthOptionId?: number): Promise<AvailableSlot[]> => {
-    const params = new URLSearchParams({ date, timezone: 'America/Los_Angeles' });
+    const params = new URLSearchParams({ date, timezone: 'America/Chicago' });
     if (serviceId) params.set('serviceId', String(serviceId));
     if (lengthOptionId) params.set('lengthOptionId', String(lengthOptionId));
     const response = await fetch(`${API_BASE_URL}/api/availability/slots?${params}`);

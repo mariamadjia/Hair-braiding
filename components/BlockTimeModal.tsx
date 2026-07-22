@@ -18,7 +18,7 @@ type BlockedSlot = {
     createdAt: string;
 };
 
-const SALON_TIME_ZONE = 'America/Los_Angeles';
+const SALON_TIME_ZONE = 'America/Chicago';
 
 const salonDate = (date: Date) => new Intl.DateTimeFormat('en-CA', {
     timeZone: SALON_TIME_ZONE,
@@ -201,7 +201,7 @@ export default function BlockTimeModal() {
         const hour12 = hour % 12 || 12;
         const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' })
             .format(new Date(Date.UTC(year, month - 1, 1)));
-        return `${monthLabel} ${day}, ${year}, ${hour12}:${String(minute).padStart(2, '0')} ${ampm} PT`;
+        return `${monthLabel} ${day}, ${year}, ${hour12}:${String(minute).padStart(2, '0')} ${ampm} CT`;
     };
 
     if (loading) {
@@ -283,7 +283,7 @@ export default function BlockTimeModal() {
             {/* Create Form */}
             {showForm && (
                 <div className="bg-neutral-50 border border-neutral-200 rounded-sm p-6">
-                    <p className="text-xs text-neutral-500 mb-4">All blocked dates and times use Pacific Time.</p>
+                    <p className="text-xs text-neutral-500 mb-4">All blocked dates and times use San Antonio Central Time.</p>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <div>
                             <label className="block text-sm font-medium text-neutral-700 mb-2">
