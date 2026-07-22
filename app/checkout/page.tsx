@@ -60,10 +60,6 @@ function CheckoutContent() {
                 const optionExists = service.lengthOptions?.some((option: { id: number }) => option.id === lengthOptionId);
                 if (service.lengthOptions?.length && !optionIsRequired) throw new Error("Choose a length before checking out.");
                 if (optionIsRequired && !optionExists) throw new Error("The selected length is no longer available.");
-                const requestedTexture = searchParams.get("texture") || "";
-                if (service.hairTextures?.length && !service.hairTextures.includes(requestedTexture)) {
-                    throw new Error("The selected hair texture is no longer available.");
-                }
                 setAuthoritativeService(service);
             })
             .catch(error => {
@@ -73,10 +69,7 @@ function CheckoutContent() {
             })
             .finally(() => setServiceLoading(false));
         return () => controller.abort();
-    }, [serviceId]);
-
-    if (serviceLoading) return <><Navbar /><main className="flex min-h-[65vh] items-center justify-center bg-[#F6F5F1]"><LoadingSpinner /></main><FooterWrapper /></>;
-    if (serviceError || !authoritativeService) return <><Navbar /><main className="flex min-h-[65vh] items-center justify-center bg-[#F6F5F1] px-6"><div role="alert" className="max-w-lg rounded-xl border border-red-200 bg-white p-8 text-center"><AlertCircle className="mx-auto mb-3 h-7 w-7 text-red-600" /><h1 className="font-serif text-2xl">Service unavailable</h1><p className="mt-2 text-sm text-neutral-600">{serviceError}</p><Button className="mt-6" onClick={() => router.back()}>Choose another service</Button></div></main><FooterWrapper /></>;
+    }, [serviceId, lengthOptionId]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,6 +80,9 @@ function CheckoutContent() {
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [router]);
+
+    if (serviceLoading) return <><Navbar /><main className="flex min-h-[65vh] items-center justify-center bg-[#F6F5F1]"><LoadingSpinner /></main><FooterWrapper /></>;
+    if (serviceError || !authoritativeService) return <><Navbar /><main className="flex min-h-[65vh] items-center justify-center bg-[#F6F5F1] px-6"><div role="alert" className="max-w-lg rounded-xl border border-red-200 bg-white p-8 text-center"><AlertCircle className="mx-auto mb-3 h-7 w-7 text-red-600" /><h1 className="font-serif text-2xl">Service unavailable</h1><p className="mt-2 text-sm text-neutral-600">{serviceError}</p><Button className="mt-6" onClick={() => router.back()}>Choose another service</Button></div></main><FooterWrapper /></>;
 
     return (
         <>
