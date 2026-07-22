@@ -3,10 +3,9 @@ import fs from "fs";
 import path from "path";
 
 const BACKEND_API_URL = (
-  process.env.BACKEND_API_URL || "http://localhost:8080"
+  process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || "https://backend-hairbraiding.onrender.com"
 ).replace(/\/$/, "");
 
-console.log('BACKEND_API_URL:', BACKEND_API_URL);
 
 const MAX_HERO_IMAGES = 5;
 

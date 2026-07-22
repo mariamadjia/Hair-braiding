@@ -809,6 +809,7 @@ export default function BookingCalendar({
                     )}
                     
                     <p className="text-sm text-neutral-600 mb-6">The salon will contact you after reviewing your request. All appointment times are Pacific Time.</p>
+
                     
                     <Button
                         type="button"
