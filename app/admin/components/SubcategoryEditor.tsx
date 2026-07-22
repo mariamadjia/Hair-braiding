@@ -71,6 +71,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
+    const [bulkFoundationEnabled, setBulkFoundationEnabled] = useState(false);
+    const [bulkFoundationAdjustment, setBulkFoundationAdjustment] = useState("0");
+    const [applyingFoundations, setApplyingFoundations] = useState(false);
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
 
@@ -78,7 +81,14 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         setName(sub.name);
         setImage(sub.image ?? "");
         setDirty(false);
-        setItems(Array.isArray(sub.items) ? sub.items : []);
+        const nextItems = Array.isArray(sub.items) ? sub.items : [];
+        setItems(nextItems);
+        const allFoundationsEnabled = nextItems.length > 0 && nextItems.every(item => item.foundationChoicesEnabled);
+        setBulkFoundationEnabled(allFoundationsEnabled);
+        if (allFoundationsEnabled) {
+            const adjustments = new Set(nextItems.map(item => item.knotlessPriceAdjustment || "0"));
+            if (adjustments.size === 1) setBulkFoundationAdjustment(adjustments.values().next().value ?? "0");
+        }
         // Seed gallery images from the already-loaded subcategory detail (no extra fetch)
         const preloaded = (sub.galleryImages ?? []) as GalleryImage[];
         setGalleryImages(preloaded);
@@ -390,6 +400,42 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         }
     };
 
+    const applyFoundationToAllSizes = async () => {
+        const persistedItems = items.filter((item): item is BookingItem & { id: number } => typeof item.id === "number");
+        if (!persistedItems.length || applyingFoundations || saving) return;
+        const pricePattern = /^\d+(?:\.\d{1,2})?$/;
+        const adjustment = bulkFoundationAdjustment.trim();
+        if (bulkFoundationEnabled && !pricePattern.test(adjustment)) {
+            setSaveError("Enter a valid Knotless adjustment before applying it to all sizes.");
+            return;
+        }
+
+        setApplyingFoundations(true);
+        setSaveError(null);
+        try {
+            const updatedItems = persistedItems.map(item => ({
+                ...item,
+                foundationChoicesEnabled: bulkFoundationEnabled,
+                knotlessPriceAdjustment: bulkFoundationEnabled ? adjustment : "0",
+            }));
+            await Promise.all(updatedItems.map(item =>
+                mutate("PUT", `${base}/items`, { item, itemId: item.id, subcategoryId: sub.id })
+            ));
+            setItems(previous => previous.map(item => {
+                const updated = updatedItems.find(candidate => candidate.id === item.id);
+                return updated ?? item;
+            }));
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.items) setItems(freshSub.items);
+            setSaveSuccess(`Foundation choices ${bulkFoundationEnabled ? "applied to" : "removed from"} all ${updatedItems.length} sizes.`);
+            setTimeout(() => setSaveSuccess(null), 3000);
+        } catch (error) {
+            setSaveError(error instanceof Error ? error.message : "Unable to update foundation choices for all sizes.");
+        } finally {
+            setApplyingFoundations(false);
+        }
+    };
+
     const deleteItem = async (itemId?: number) => {
         if (!itemId || saving) return;
         const itemName = items.find(item => item.id === itemId)?.name ?? "this size";
@@ -609,6 +655,16 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                     <button type="button" onClick={() => { setAddingItem(true); setEditingId(null); }} className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" />Add Size</button>
                 </div>
                 <div className="p-4 space-y-3">
+                    {items.length > 0 && <section aria-labelledby="bulk-foundation-title" className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800/50">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                            <div className="max-w-xl"><h4 id="bulk-foundation-title" className="text-sm font-semibold text-neutral-900 dark:text-white">Apply braid foundation to all sizes</h4><p className="mt-1 text-xs text-neutral-500">Use one setting for every size in {sub.name}. You can still edit individual sizes afterward.</p></div>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                                <label className="flex min-h-10 items-center gap-3 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-600 dark:bg-neutral-900"><input type="checkbox" checked={bulkFoundationEnabled} onChange={event => setBulkFoundationEnabled(event.target.checked)} className="h-4 w-4 accent-[#2C1810] focus:ring-2 focus:ring-[#2C1810]" /><span>Offer Regular and Knotless</span></label>
+                                {bulkFoundationEnabled && <label className="block"><span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">Knotless adjustment</span><span className="flex min-h-10 items-center rounded-lg border border-neutral-300 bg-white focus-within:ring-2 focus-within:ring-[#2C1810] dark:border-neutral-600 dark:bg-neutral-900"><span className="pl-3 text-sm text-neutral-500">$</span><input aria-label="Knotless adjustment for all sizes" inputMode="decimal" value={bulkFoundationAdjustment} onChange={event => setBulkFoundationAdjustment(event.target.value.replace(/[^0-9.]/g, ""))} className="w-24 bg-transparent px-2 py-2 text-sm outline-none" /></span></label>}
+                                <button type="button" onClick={() => void applyFoundationToAllSizes()} disabled={applyingFoundations || saving || !items.some(item => item.id)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#2C1810] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#1a0f0a] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">{applyingFoundations && <Loader2 className="h-4 w-4 animate-spin" />}{applyingFoundations ? "Applying…" : "Apply to all sizes"}</button>
+                            </div>
+                        </div>
+                    </section>}
                     {addingItem && (
                         <div className="rounded-lg border-2 border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-900/10 p-4">
                             <ItemForm
@@ -661,6 +717,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                         ) : (
                                                             <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full">No lengths</span>
                                                         )}
+                                                        {item.foundationChoicesEnabled && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full">Regular + Knotless</span>}
                                                     </div>
                                                     <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{servicePriceLabel(item)} · {item.sizePhotos?.length ?? 0} photos</p>
                                                 </button>
