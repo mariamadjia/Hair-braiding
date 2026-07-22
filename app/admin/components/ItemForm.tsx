@@ -7,7 +7,6 @@ import { LengthOptionsEditor } from "./LengthOptionsEditor";
 import { toProxyUrl } from "@/lib/utils/image";
 import { AlertCircle, CheckCircle, Loader2, Plus, X } from "lucide-react";
 import { uploadFile } from "../utils";
-import { formatPrice } from "@/lib/utils/price";
 
 export function ItemForm({ initial, token, onSave, onCancel }: { initial: BookingItem; token: string; categoryId?: number; subcategoryId?: number; onSave: (item: BookingItem) => Promise<void>; onCancel: () => void }) {
     const [item, setItem] = useState<BookingItem>(initial);
@@ -62,9 +61,6 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
         finally { setUploading(false); event.target.value = ""; }
     };
 
-    const prices = (item.lengthOptions ?? []).map(option => Number((option.price ?? "").replace(/[^0-9.]/g, ""))).filter(Number.isFinite);
-    const previewPrice = prices.length ? `${formatPrice(Math.min(...prices))}${Math.min(...prices) === Math.max(...prices) ? "" : ` – ${formatPrice(Math.max(...prices))}`}` : formatPrice(item.price);
-
     return (
         <form onSubmit={(event) => { event.preventDefault(); void handleSave(); }} className="space-y-5 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900/40">
             {error && <div role="alert" tabIndex={-1} className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"><AlertCircle className="h-4 w-4" /><span className="flex-1">{error}</span><button type="button" aria-label="Dismiss error" onClick={() => setError(null)}><X className="h-4 w-4" /></button></div>}
@@ -78,8 +74,6 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
             </div></fieldset>
 
             <LengthOptionsEditor options={item.lengthOptions ?? []} onChange={options => set("lengthOptions", options)} />
-
-            <section aria-label="Customer preview" className="rounded-xl border border-violet-200 bg-white p-4 dark:border-violet-800 dark:bg-neutral-900"><p className="text-[10px] font-semibold uppercase tracking-widest text-violet-600">Customer preview</p><div className="mt-3 flex gap-4">{(item.image || photos[0]) && <img src={toProxyUrl(item.image || photos[0])} alt="" className="h-20 w-20 rounded-lg object-cover" />}<div><h4 className="font-semibold text-neutral-900 dark:text-white">{item.name || "Untitled service"}</h4><p className="mt-1 text-sm font-medium text-violet-700">{previewPrice}</p>{item.description && <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{item.description}</p>}<p className="mt-2 text-xs text-neutral-400">{item.lengthOptions?.length ?? 0} lengths · {photos.length} photos</p></div></div></section>
 
             <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t bg-neutral-50/95 px-4 py-3 backdrop-blur dark:bg-neutral-900/95"><span className="hidden text-xs text-neutral-500 sm:block">Save shortcut: Ctrl/⌘ + Enter</span><div className="ml-auto flex gap-2"><button type="button" onClick={handleCancel} className={btnS} disabled={saving}>Cancel</button><button type="submit" className={`${btnP} inline-flex min-w-24 items-center justify-center gap-2`} disabled={!dirty || !item.name.trim() || saving || uploading}>{saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{saving ? "Saving…" : "Save service"}</button></div></div>
         </form>
