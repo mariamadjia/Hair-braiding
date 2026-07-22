@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 export default function LengthGuideOverlay({ onClose }: { onClose: () => void }) {
     return (
         <div
-            className="fixed inset-0 z-[60] flex flex-col bg-white text-neutral-900"
+            className="fixed inset-0 z-[60] flex flex-col bg-white text-neutral-900 lg:absolute lg:inset-auto lg:left-[calc(100%+1rem)] lg:top-0 lg:h-full lg:w-[32rem] lg:overflow-hidden lg:rounded-xl lg:border lg:border-neutral-200 lg:shadow-[0_20px_60px_rgb(0,0,0,0.3)]"
             role="dialog"
             aria-modal="true"
             aria-labelledby="length-guide-title"
@@ -16,7 +16,7 @@ export default function LengthGuideOverlay({ onClose }: { onClose: () => void })
                     type="button"
                     onClick={onClose}
                     className="absolute left-3 flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#2C1810]"
-                    aria-label="Back to length options"
+                    aria-label="Close length guide"
                 >
                     <ArrowLeft className="h-5 w-5" />
                 </button>
@@ -39,7 +39,8 @@ export default function LengthGuideOverlay({ onClose }: { onClose: () => void })
 
             <footer className="shrink-0 border-t border-neutral-200 bg-white p-4 shadow-[0_-10px_24px_rgba(0,0,0,0.06)] sm:px-8">
                 <Button type="button" variant="outline" onClick={onClose} className="mx-auto block w-full max-w-xl rounded-lg py-3 text-xs font-semibold uppercase tracking-wider">
-                    Back to length options
+                    <span className="lg:hidden">Back to length options</span>
+                    <span className="hidden lg:inline">Close length guide</span>
                 </Button>
             </footer>
         </div>

@@ -341,7 +341,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                     aria-labelledby="options-modal-title"
                 >
                     <div
-                        className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white text-neutral-900 shadow-[0_20px_60px_rgb(0,0,0,0.3)] md:max-h-[85vh]"
+                        className={`relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col rounded-xl bg-white text-neutral-900 shadow-[0_20px_60px_rgb(0,0,0,0.3)] transition-transform duration-300 md:max-h-[85vh] ${showLengthGuide ? "overflow-hidden lg:-translate-x-[17rem] lg:overflow-visible" : "overflow-hidden"}`}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <style jsx>{`
