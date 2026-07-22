@@ -10,6 +10,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import Navbar from "@/components/Navbar";
 import FooterWrapper from "@/components/FooterWrapper";
 import { API_BASE_URL } from "@/lib/config/api";
+import { toProxyUrl } from "@/lib/utils/image";
 
 type AuthoritativeService = {
     id: number;
@@ -17,9 +18,10 @@ type AuthoritativeService = {
     price?: string;
     description?: string;
     image?: string;
+    sizePhotos?: string[];
     subcategoryName?: string;
     hairTextures?: string[];
-    lengthOptions?: Array<{ id: number; name?: string; price?: string }>;
+    lengthOptions?: Array<{ id: number; name?: string; price?: string; imageUrl?: string }>;
 };
 
 function CheckoutContent() {
@@ -44,7 +46,13 @@ function CheckoutContent() {
     const price = selectedOption?.price || authoritativeService?.price || "";
     const description = authoritativeService?.description || "";
     const texture = searchParams.get("texture") || "";
-    const image = authoritativeService?.image || "";
+    const image = toProxyUrl(
+        selectedOption?.imageUrl
+        || authoritativeService?.sizePhotos?.[0]
+        || authoritativeService?.image
+        || searchParams.get("image")
+        || ""
+    );
 
     useEffect(() => {
         if (!serviceId) {
