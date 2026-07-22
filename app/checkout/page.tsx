@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CalendarDays, ChevronLeft, Clock, DollarSign, Info, Lock } from "lucide-react";
+import { AlertCircle, CalendarDays, ChevronLeft, Clock, DollarSign, Info, Lock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import BookingCalendar from "@/components/BookingCalendar";
@@ -17,7 +17,9 @@ type AuthoritativeService = {
     price?: string;
     description?: string;
     image?: string;
-    lengthOptions?: Array<{ id: number; name?: string; price?: string; duration?: string }>;
+    subcategoryName?: string;
+    hairTextures?: string[];
+    lengthOptions?: Array<{ id: number; name?: string; price?: string }>;
 };
 
 function CheckoutContent() {
@@ -26,6 +28,8 @@ function CheckoutContent() {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [authoritativeService, setAuthoritativeService] = useState<AuthoritativeService | null>(null);
+    const [serviceLoading, setServiceLoading] = useState(true);
+    const [serviceError, setServiceError] = useState<string | null>(null);
 
     const categorySlug = searchParams.get("categorySlug") || "";
     const subcategorySlug = searchParams.get("subcategorySlug") || "";
@@ -34,31 +38,45 @@ function CheckoutContent() {
     const lengthOptionIdParam = searchParams.get("lengthOptionId");
     const lengthOptionId = lengthOptionIdParam && /^\d+$/.test(lengthOptionIdParam) ? Number(lengthOptionIdParam) : undefined;
     const selectedOption = authoritativeService?.lengthOptions?.find(option => option.id === lengthOptionId);
-    const styleName = searchParams.get("style") || authoritativeService?.name || searchParams.get("service") || "Service";
-    const serviceName = authoritativeService?.name || searchParams.get("size") || searchParams.get("service") || "";
-    const lengthLabel = selectedOption?.name || searchParams.get("length") || "";
-    const price = selectedOption?.price || authoritativeService?.price || searchParams.get("price") || "";
-    const duration = selectedOption?.duration || searchParams.get("duration") || "";
-    const description = authoritativeService?.description || searchParams.get("description") || "";
+    const styleName = authoritativeService?.subcategoryName || authoritativeService?.name || "Service";
+    const serviceName = authoritativeService?.name || "";
+    const lengthLabel = selectedOption?.name || "";
+    const price = selectedOption?.price || authoritativeService?.price || "";
+    const description = authoritativeService?.description || "";
     const texture = searchParams.get("texture") || "";
-    const image = decodeURIComponent(searchParams.get("image") || "");
-    const refreshToken = searchParams.toString();
-
-    console.log("Checkout - Received image URL:", image);
-    console.log("Checkout - Full search params:", refreshToken);
+    const image = authoritativeService?.image || "";
 
     useEffect(() => {
-        if (!serviceId) return;
+        if (!serviceId) {
+            setServiceError("This checkout link does not contain a valid service.");
+            setServiceLoading(false);
+            return;
+        }
         const controller = new AbortController();
         fetch(`${API_BASE_URL}/api/services/${serviceId}`, { signal: controller.signal })
             .then(response => response.ok ? response.json() : Promise.reject(new Error("Service unavailable")))
-            .then(setAuthoritativeService)
+            .then(service => {
+                const optionIsRequired = Boolean(lengthOptionId);
+                const optionExists = service.lengthOptions?.some((option: { id: number }) => option.id === lengthOptionId);
+                if (service.lengthOptions?.length && !optionIsRequired) throw new Error("Choose a length before checking out.");
+                if (optionIsRequired && !optionExists) throw new Error("The selected length is no longer available.");
+                const requestedTexture = searchParams.get("texture") || "";
+                if (service.hairTextures?.length && !service.hairTextures.includes(requestedTexture)) {
+                    throw new Error("The selected hair texture is no longer available.");
+                }
+                setAuthoritativeService(service);
+            })
             .catch(error => {
                 if (error instanceof DOMException && error.name === "AbortError") return;
                 console.error("Unable to load authoritative service details", error);
-            });
+                setServiceError(error instanceof Error ? error.message : "This service is unavailable.");
+            })
+            .finally(() => setServiceLoading(false));
         return () => controller.abort();
     }, [serviceId]);
+
+    if (serviceLoading) return <><Navbar /><main className="flex min-h-[65vh] items-center justify-center bg-[#F6F5F1]"><LoadingSpinner /></main><FooterWrapper /></>;
+    if (serviceError || !authoritativeService) return <><Navbar /><main className="flex min-h-[65vh] items-center justify-center bg-[#F6F5F1] px-6"><div role="alert" className="max-w-lg rounded-xl border border-red-200 bg-white p-8 text-center"><AlertCircle className="mx-auto mb-3 h-7 w-7 text-red-600" /><h1 className="font-serif text-2xl">Service unavailable</h1><p className="mt-2 text-sm text-neutral-600">{serviceError}</p><Button className="mt-6" onClick={() => router.back()}>Choose another service</Button></div></main><FooterWrapper /></>;
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -269,11 +287,10 @@ function CheckoutContent() {
                                     servicePrice={price}
                                     serviceId={serviceId}
                                     lengthOptionId={lengthOptionId}
+                                    selectedTexture={texture}
                                     onDateSelected={setSelectedDate}
                                     onTimeSelected={setSelectedTime}
-                                    onBookingComplete={(bookingData) => {
-                                        console.log("Booking completed:", bookingData);
-                                    }}
+                                    onBookingComplete={() => undefined}
                                 />
                             </div>
                         </div>

@@ -20,7 +20,7 @@ export function ItemForm({
   token: string;
   categoryId?: number;
   subcategoryId?: number;
-  onSave: (item: BookingItem) => void;
+  onSave: (item: BookingItem) => Promise<void>;
   onCancel: () => void;
 }) {
     const [item, setItem] = useState<BookingItem>(initial);
@@ -43,9 +43,9 @@ export function ItemForm({
     // Keyboard navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Enter' && !e.shiftKey && !dirty) {
+            if (e.key === 'Enter' && !e.shiftKey && dirty) {
                 e.preventDefault();
-                onSave(item);
+                void handleSave();
             }
             if (e.key === 'Escape') {
                 e.preventDefault();
@@ -55,6 +55,19 @@ export function ItemForm({
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [item, dirty, onSave]);
+
+    const handleSave = async () => {
+        if (!item.name.trim()) return;
+        setError(null);
+        try {
+            await onSave({ ...item, sizePhotos: item.sizePhotos ?? [] });
+            setSuccess("Item saved successfully!");
+            setTimeout(() => setSuccess(null), 3000);
+            setDirty(false);
+        } catch (caught) {
+            setError(caught instanceof Error ? caught.message : "Unable to save this item.");
+        }
+    };
 
     const handleCancel = () => {
         if (dirty && !confirm('You have unsaved changes. Are you sure you want to cancel?')) {
@@ -168,27 +181,27 @@ export function ItemForm({
                     )}
                 </div>
             </div>
+            <div>
+                <label className={lbl} htmlFor={`textures-${item.id ?? "new"}`}>Hair textures</label>
+                <input
+                    id={`textures-${item.id ?? "new"}`}
+                    className={inp}
+                    value={(item.hairTextures ?? []).join(", ")}
+                    onChange={(event) => {
+                        set("hairTextures", event.target.value.split(",").map(value => value.trim()).filter(Boolean));
+                        setDirty(true);
+                        setError(null);
+                    }}
+                    placeholder="Deep Wave, Body Wave, Kinky Curly"
+                />
+                <p className="mt-1 text-xs text-neutral-500">Separate customer choices with commas.</p>
+            </div>
             <LengthOptionsEditor
                 options={item.lengthOptions ?? []}
                 onChange={(opts) => { set("lengthOptions", opts); setDirty(true); setError(null); }}
             />
             <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => {
-                    console.log("Saving item:", item);
-                    setError(null);
-                    // Ensure sizePhotos are never copied to images/image to prevent gallery/cover issues
-                    const itemToSave = {
-                        ...item,
-                        sizePhotos: item.sizePhotos ?? [],
-                        // Explicitly clear images/image to prevent them from being used as gallery/cover
-                        images: [],
-                        image: ""
-                    };
-                    onSave(itemToSave);
-                    setSuccess("Item saved successfully!");
-                    setTimeout(() => setSuccess(null), 3000);
-                    setDirty(false);
-                }} className={btnP} disabled={!item.name.trim()}>Save</button>
+                <button type="button" onClick={() => void handleSave()} className={btnP} disabled={!item.name.trim()}>Save</button>
                 <button type="button" onClick={handleCancel} className={btnS}>Cancel</button>
             </div>
         </div>

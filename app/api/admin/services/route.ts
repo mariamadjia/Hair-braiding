@@ -5,19 +5,8 @@ export const runtime = "nodejs";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 function isAuthorized(req: NextRequest) {
-    // Check for x-admin-token (legacy)
-    const adminToken = req.headers.get("x-admin-token");
-    if (adminToken === process.env.ADMIN_SECRET) {
-        return true;
-    }
-    
-    // Check for Bearer token (JWT)
     const authHeader = req.headers.get("authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-        return true;
-    }
-    
-    return false;
+    return Boolean(authHeader?.startsWith("Bearer ") && authHeader.length > 7);
 }
 
 export async function GET(req: NextRequest) {
@@ -25,6 +14,7 @@ export async function GET(req: NextRequest) {
     
     try {
         const response = await fetch(`${API_URL}/api/services`, {
+            headers: { Authorization: req.headers.get("authorization") || "" },
             signal: AbortSignal.timeout(10000)
         });
         if (!response.ok) {
@@ -56,7 +46,7 @@ export async function POST(req: NextRequest) {
         });
         
         if (!response.ok) {
-            return NextResponse.json({ error: "Failed to create service" }, { status: response.status });
+            return NextResponse.json(await response.json().catch(() => ({ error: "Failed to create service" })), { status: response.status });
         }
         
         const data = await response.json();

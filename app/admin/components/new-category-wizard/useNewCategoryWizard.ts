@@ -455,7 +455,6 @@ export function useNewCategoryWizard({ token, mutate, onDone }: Pick<WizardProps
             name: (length.name || '').trim(),
             price: (length.price || '').trim(),
             notes: length.notes || undefined,
-            duration: length.duration || undefined,
             imageId: uploaded?.imageId || null,
           };
         });

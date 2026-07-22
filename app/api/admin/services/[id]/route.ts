@@ -5,19 +5,8 @@ export const runtime = "nodejs";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 function isAuthorized(req: NextRequest) {
-    // Check for x-admin-token (legacy)
-    const adminToken = req.headers.get("x-admin-token");
-    if (adminToken === process.env.ADMIN_SECRET) {
-        return true;
-    }
-    
-    // Check for Bearer token (JWT)
     const authHeader = req.headers.get("authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-        return true;
-    }
-    
-    return false;
+    return Boolean(authHeader?.startsWith("Bearer ") && authHeader.length > 7);
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -27,10 +16,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     
     try {
         const response = await fetch(`${API_URL}/api/services/${id}`, {
+            headers: { Authorization: req.headers.get("authorization") || "" },
             signal: AbortSignal.timeout(10000)
         });
         if (!response.ok) {
-            return NextResponse.json({ error: "Service not found" }, { status: 404 });
+            return NextResponse.json(await response.json().catch(() => ({ error: "Unable to load service" })), { status: response.status });
         }
         const data = await response.json();
         return NextResponse.json(data);
@@ -59,7 +49,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         });
         
         if (!response.ok) {
-            return NextResponse.json({ error: "Failed to update service" }, { status: response.status });
+            return NextResponse.json(await response.json().catch(() => ({ error: "Failed to update service" })), { status: response.status });
         }
         
         const data = await response.json();
@@ -86,7 +76,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         });
         
         if (!response.ok) {
-            return NextResponse.json({ error: "Failed to delete service" }, { status: response.status });
+            return NextResponse.json(await response.json().catch(() => ({ error: "Failed to archive service" })), { status: response.status });
         }
         
         const data = await response.json();

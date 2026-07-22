@@ -18,6 +18,7 @@ export type Appointment = {
     selectedService?: string;
     selectedSize?: string;
     selectedLength?: string;
+    selectedTexture?: string;
     price?: string;
     appointmentDateTime: string;
     appointmentEndDateTime?: string;
@@ -325,7 +326,7 @@ function AppointmentManagement() {
                                             <p className="flex items-center gap-2"><Calendar className="h-4 w-4 shrink-0" />{formatDateTime(appointment.appointmentDateTime)}</p>
                                             <a className="flex min-w-0 items-center gap-2 hover:text-neutral-900 hover:underline" href={`mailto:${appointment.customer.email}`}><Mail className="h-4 w-4 shrink-0" /><span className="truncate">{appointment.customer.email}</span></a>
                                             <a className="flex items-center gap-2 hover:text-neutral-900 hover:underline" href={`tel:${appointment.customer.phoneNumber}`}><Phone className="h-4 w-4 shrink-0" />{appointment.customer.phoneNumber}</a>
-                                            {appointment.durationMinutes && <p className="flex items-center gap-2"><Clock className="h-4 w-4" />{appointment.durationMinutes} minutes{appointment.appointmentEndDateTime ? ` · ends ${formatDateTime(appointment.appointmentEndDateTime)}` : ""}</p>}
+                                            {appointment.selectedTexture && <p>Texture: {appointment.selectedTexture}</p>}
                                         </div>
                                         <div className="mt-4 rounded-sm border border-neutral-200 bg-neutral-50 p-4">
                                             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Appointment summary</p>
@@ -392,7 +393,7 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
                 <div><dt className="text-neutral-500">Status</dt><dd className="font-medium">{appointment.status}</dd></div>
                 <div><dt className="text-neutral-500">Payment</dt><dd className="font-medium">{appointment.paymentStatus?.replaceAll("_", " ") || "Unknown"}</dd></div>
                 <div><dt className="text-neutral-500">Service</dt><dd className="font-medium">{appointment.selectedService || appointment.service?.name || "—"}</dd></div>
-                <div><dt className="text-neutral-500">Duration</dt><dd className="font-medium">{appointment.durationMinutes ? `${appointment.durationMinutes} minutes` : "—"}</dd></div>
+                <div><dt className="text-neutral-500">Hair texture</dt><dd className="font-medium">{appointment.selectedTexture || "—"}</dd></div>
                 <div><dt className="text-neutral-500">Size</dt><dd className="font-medium">{appointment.selectedSize || "—"}</dd></div>
                 <div><dt className="text-neutral-500">Length</dt><dd className="font-medium">{appointment.selectedLength || "—"}</dd></div>
             </dl>

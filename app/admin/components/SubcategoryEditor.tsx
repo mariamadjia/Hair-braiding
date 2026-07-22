@@ -18,6 +18,7 @@ const SIZE_ORDER = ['XSmall', 'Small', 'Medium', 'Smedium', 'Large', 'Jumbo'];
 
 function sortItemsBySize(items: BookingItem[]): { item: BookingItem; originalIdx: number }[] {
     return items.map((item, idx) => ({ item, originalIdx: idx })).sort((a, b) => {
+        if ((a.item.displayOrder ?? 0) !== (b.item.displayOrder ?? 0)) return (a.item.displayOrder ?? 0) - (b.item.displayOrder ?? 0);
         const indexA = SIZE_ORDER.indexOf(a.item.name.trim());
         const indexB = SIZE_ORDER.indexOf(b.item.name.trim());
         if (indexA !== -1 && indexB !== -1) {
@@ -329,13 +330,24 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         if (saving) return; // Prevent concurrent mutations
         if (!item.name?.trim()) {
             setSaveError("Size name is required.");
-            return;
+            throw new Error("Size name is required.");
         }
+        const options = item.lengthOptions ?? [];
+        const pricePattern = /^\$?\d+(?:\.\d{1,2})?$/;
+        if (!item.price?.trim() && options.length === 0) throw new Error("Add a price or at least one length option.");
+        if (item.price?.trim() && !pricePattern.test(item.price.trim())) throw new Error("Enter a valid non-negative price.");
+        const normalizedNames = options.map(option => option.name?.trim().toLowerCase() ?? "");
+        if (options.some(option => !option.name?.trim() || !option.price?.trim() || !pricePattern.test(option.price.trim()))) {
+            throw new Error("Every length option needs a name and a valid price.");
+        }
+        if (new Set(normalizedNames).size !== normalizedNames.length) throw new Error("Length option names must be unique.");
         setSaving(true);
         setSaveError(null);
         try {
             if (idx !== null) {
-                await mutate("PUT", `${base}/items`, { itemIndex: idx, item, itemId: items[idx]?.id, subcategoryId: sub.id });
+                const itemId = items[idx]?.id;
+                if (!itemId) throw new Error("This item has no stable ID. Refresh the page before editing it.");
+                await mutate("PUT", `${base}/items`, { item, itemId, subcategoryId: sub.id });
                 // Only update local state after server confirms
                 setItems(prev => prev.map((existing, i) => i === idx ? item : existing));
                 setEditingIdx(null);
@@ -375,14 +387,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             if (freshSub?.items) {
                 setItems(freshSub.items);
             }
+            throw error;
         } finally {
             setSaving(false);
         }
     };
 
     const deleteItem = async (idx: number, itemId?: number) => {
-        console.log('[SubcategoryEditor] deleteItem called with idx:', idx, 'itemId:', itemId);
-        
         // Always use itemId if available, never rely on array index
         if (!itemId) {
             console.error('[SubcategoryEditor] No itemId provided, cannot delete safely');
@@ -393,7 +404,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         if (saving) return; // Prevent concurrent mutations
         
         const itemName = items?.[idx]?.name ?? "this size";
-        if (!confirm(`Delete "${itemName}"?`)) return;
+        if (!confirm(`Archive "${itemName}"? It will disappear from booking but remain on existing appointments.`)) return;
         
         setSaving(true);
         setSaveError(null);
@@ -404,7 +415,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             setEditingIdx(null);
             // Remove the deleted item from expanded items using itemId
             setExpandedItems(new Set(Array.from(expandedItems).filter(id => id !== itemId)));
-            setSaveSuccess("Size deleted successfully!");
+            setSaveSuccess("Size archived successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
             const freshSub = await onSubcategoryUpdate?.(sub.slug);
             if (freshSub?.items) setItems(freshSub.items);
@@ -705,9 +716,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                                         <img src={toProxyUrl(option.imageUrl)} alt={option.name} className="w-8 h-8 rounded object-cover flex-shrink-0 border border-neutral-200" />
                                                                     )}
                                                                     <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate">{option.name}</span>
-                                                                    {option.duration && (
-                                                                        <span className="text-[10px] text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded flex-shrink-0">{option.duration}</span>
-                                                                    )}
                                                                 </div>
                                                                 <span className="text-sm font-semibold text-violet-700 dark:text-violet-300 flex-shrink-0 ml-3">{formatPrice(option.price)}</span>
                                                             </div>

@@ -56,7 +56,6 @@ export default function CalendarView({ appointments, onAppointmentClick, onRange
     const time = (value: string) => new Date(value).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
     const eventTime = (appointment: Appointment) => {
         if (appointment.appointmentEndDateTime) return `${time(appointment.appointmentDateTime)}–${time(appointment.appointmentEndDateTime)}`;
-        if (appointment.durationMinutes) return `${time(appointment.appointmentDateTime)} · ${appointment.durationMinutes}m`;
         return time(appointment.appointmentDateTime);
     };
 

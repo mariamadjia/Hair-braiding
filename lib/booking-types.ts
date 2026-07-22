@@ -16,7 +16,6 @@ export type LengthOption = {
     id?: number;
     name?: string;
     price?: string;
-    duration?: string;
     notes?: string;
     imageUrl?: string;
 };
@@ -35,6 +34,7 @@ export type BookingItem = {
     availableSizes?: string[];
     lengthOptions?: LengthOption[];
     hairTextures?: string[];
+    displayOrder?: number;
 };
 
 export type GalleryImageItem = {

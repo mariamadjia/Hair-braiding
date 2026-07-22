@@ -15,6 +15,7 @@ const SIZE_ORDER = ['XSmall', 'Small', 'Medium', 'Smedium', 'Large', 'Jumbo'];
 
 function sortItemsBySize(items: BookingItem[]): BookingItem[] {
     return [...items].sort((a, b) => {
+        if ((a.displayOrder ?? 0) !== (b.displayOrder ?? 0)) return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
         const indexA = SIZE_ORDER.indexOf(a.name.trim());
         const indexB = SIZE_ORDER.indexOf(b.name.trim());
         if (indexA !== -1 && indexB !== -1) {
@@ -24,6 +25,14 @@ function sortItemsBySize(items: BookingItem[]): BookingItem[] {
         if (indexB !== -1) return 1;
         return 0;
     });
+}
+
+function itemPriceLabel(item: BookingItem): string {
+    const prices = (item.lengthOptions ?? []).map(option => Number((option.price ?? "").replace(/[^0-9.]/g, ""))).filter(Number.isFinite);
+    if (prices.length === 0) return formatPrice(item.price);
+    const minimum = Math.min(...prices);
+    const maximum = Math.max(...prices);
+    return minimum === maximum ? formatPrice(minimum) : `${formatPrice(minimum)} - ${formatPrice(maximum)}`;
 }
 
 export default function SubcategoryPageClient({ category, subcategory }: { category: BookingCategory; subcategory: BookingSubcategory }) {
@@ -56,10 +65,6 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
     const lengthOptions = selectedItem?.lengthOptions ?? [];
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
-    console.log("[photoGallery] photoItem:", photoItem?.name);
-    console.log("[photoGallery] photoItem.sizePhotos:", photoItem?.sizePhotos);
-    console.log("[photoGallery] photoItem.images:", photoItem?.images);
-    console.log("[photoGallery] photoItem.image:", photoItem?.image);
     
     const photoGallery = (photoItem?.sizePhotos?.length ? photoItem.sizePhotos : 
         photoItem?.images?.length ? photoItem.images : 
@@ -67,17 +72,14 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
         .filter(Boolean)
         .map(toProxyUrl);
     
-    console.log("[photoGallery] Final photoGallery:", photoGallery);
     const hasMultiplePhotos = photoGallery.length > 1;
 
     const openModalForItem = (index: number) => {
         const item = items[index];
-        console.log("openModalForItem called for:", item?.name);
-        console.log("Item has length options:", item?.lengthOptions?.length);
         
-        if (item?.lengthOptions?.length) {
+        if (item?.lengthOptions?.length || item?.hairTextures?.length) {
             setSelectedItemIndex(index);
-            setSelectedLength(null);
+            setSelectedLength(item.lengthOptions?.length ? null : "__none__");
             setSelectedTexture(item?.hairTextures?.[0] ?? null);
             return;
         }
@@ -89,11 +91,9 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
             service: item?.name ?? "Selected Service",
             price: item?.price ?? "",
             description: item?.description ?? "Professional braiding service",
-            image: encodeURIComponent(item?.image ?? subcategory.image ?? ""),
+            image: item?.image ?? subcategory.image ?? "",
         });
 
-        console.log("Direct booking - Image URL:", params.get("image"));
-        console.log("Direct booking - Full URL:", `/checkout?${params.toString()}`);
         router.push(`/checkout?${params.toString()}`);
     };
 
@@ -105,10 +105,6 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
 
     const openPhotoModal = (index: number) => {
         const item = items[index];
-        console.log("[openPhotoModal] Item:", item?.name);
-        console.log("[openPhotoModal] sizePhotos:", item?.sizePhotos);
-        console.log("[openPhotoModal] images:", item?.images);
-        console.log("[openPhotoModal] image:", item?.image);
         
         if (item?.image || item?.images?.length || item?.sizePhotos?.length) {
             setPhotoItemIndex(index);
@@ -155,15 +151,10 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     }, [photoItemIndex, selectedItemIndex, hasMultiplePhotos]);
 
     const handleModalSelect = () => {
-        console.log("handleModalSelect called");
         if (!selectedItem || !selectedLength) return;
         if (selectedItem.hairTextures?.length && !selectedTexture) return;
 
-        const option = lengthOptions.find((opt, idx) => (opt.name ?? `option-${idx}`) === selectedLength);
-
-        console.log("Selected item image:", selectedItem.image);
-        console.log("Subcategory image:", subcategory.image);
-        console.log("Selected item:", selectedItem);
+        const option = lengthOptions.find((opt) => opt.id?.toString() === selectedLength);
 
         const params = new URLSearchParams({
             categorySlug: category.slug,
@@ -174,14 +165,11 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
             length: option?.name ?? "",
             lengthOptionId: option?.id?.toString() ?? "",
             price: option?.price ?? selectedItem.price ?? "",
-            duration: option?.duration ?? "",
             description: selectedItem.description ?? "Professional braiding service",
             texture: selectedTexture ?? "",
-            image: encodeURIComponent(selectedItem.image || subcategory.image || ""),
+            image: selectedItem.image || subcategory.image || "",
         });
 
-        console.log("Final image URL being passed:", params.get("image"));
-        console.log("Full URL:", `/checkout?${params.toString()}`);
         router.push(`/checkout?${params.toString()}`);
         closeModal();
     };
@@ -226,10 +214,6 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
             <section className="bg-[#F6F5F1] pb-24 md:pb-32">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl space-y-6">
                     {items.map((item, index) => {
-                        console.log(`[Item ${index}] Name:`, item.name);
-                        console.log(`[Item ${index}] sizePhotos:`, item.sizePhotos);
-                        console.log(`[Item ${index}] images:`, item.images);
-                        console.log(`[Item ${index}] image:`, item.image);
                         
                         return (
                         <div
@@ -243,10 +227,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:text-sm text-neutral-600 font-light">
                                     {item.lengthOptions && item.lengthOptions.length > 0 && (
                                         <span className="font-medium">
-                                            {item.lengthOptions.length === 1 
-                                                ? formatPrice(item.lengthOptions[0].price) 
-                                                : `${formatPrice(item.lengthOptions[0].price)} - ${formatPrice(item.lengthOptions[item.lengthOptions.length - 1].price)}`
-                                            }
+                                            {itemPriceLabel(item)}
                                         </span>
                                     )}
                                     {item.lengthOptions && item.lengthOptions.length > 0 && (
@@ -384,7 +365,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
 
                         <div className="mt-5 space-y-3">
                             {lengthOptions.map((option, idx) => {
-                                const optionKey = option.name ?? `option-${idx}`;
+                                const optionKey = option.id?.toString() ?? `option-${idx}`;
                                 const isSelected = selectedLength === optionKey;
                                 return (
                                     <div key={optionKey} className="space-y-3">
@@ -442,6 +423,14 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                     </div>
                                 );
                             })}
+                            {lengthOptions.length === 0 && selectedItem?.hairTextures?.length ? (
+                                <div className="rounded-none border border-neutral-200 bg-neutral-50 p-4">
+                                    <label className="mb-2 block text-[10px] font-medium uppercase tracking-[0.3em] text-neutral-600" htmlFor="texture-only-selection">Select Human Hair Texture</label>
+                                    <select id="texture-only-selection" value={selectedTexture ?? ""} onChange={(event) => setSelectedTexture(event.target.value || null)} className="w-full rounded-none border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-900 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                                        {selectedItem.hairTextures.map(texture => <option key={texture} value={texture}>{texture}</option>)}
+                                    </select>
+                                </div>
+                            ) : null}
                         </div>
 
                         <Button

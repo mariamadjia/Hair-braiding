@@ -110,36 +110,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
     }
     
     const { slug, subSlug } = await params;
-    const { itemIndex, item, itemId, subcategoryId } = await req.json();
+    const { item, itemId, subcategoryId } = await req.json();
 
-    console.log('[PUT ITEMS] itemId:', itemId, 'subcategoryId:', subcategoryId, 'itemIndex:', itemIndex);
+    console.log('[PUT ITEMS] itemId:', itemId, 'subcategoryId:', subcategoryId);
 
     try {
-        let resolvedItemId = itemId;
-
-        // Only do expensive lookups if itemId wasn't provided
-        if (!resolvedItemId) {
-            console.log('[PUT ITEMS] itemId missing, falling back to slug lookup...');
-            const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
-                headers: { 'Authorization': getAuthHeader(req), 'Content-Type': 'application/json' }
-            });
-            if (!categoryResponse.ok) return NextResponse.json({ error: "Category not found" }, { status: 404 });
-            const category = await categoryResponse.json();
-            const subcategory = category.subcategories?.find((s: any) => s.slug === subSlug);
-            if (!subcategory) return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
-
-            const itemsResponse = await fetch(`${API_URL}/api/services/subcategory/${subcategory.id}`, {
-                headers: { 'Authorization': getAuthHeader(req) }
-            });
-            if (itemsResponse.ok) {
-                const items = await itemsResponse.json();
-                resolvedItemId = items[itemIndex]?.id ?? subcategory.items?.[itemIndex]?.id;
-            } else {
-                resolvedItemId = subcategory.items?.[itemIndex]?.id;
-            }
-        }
-
-        if (!resolvedItemId) {
+        const resolvedItemId = Number(itemId);
+        if (!Number.isSafeInteger(resolvedItemId) || resolvedItemId <= 0) {
             return NextResponse.json({ error: "Item not found or missing ID" }, { status: 404 });
         }
 
@@ -150,7 +127,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
                 'Authorization': getAuthHeader(req),
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(item)
+            body: JSON.stringify({ ...item, subcategory: { id: subcategoryId } })
         });
         
         console.log('[PUT ITEMS] Backend response status:', response.status);

@@ -63,7 +63,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
         
         console.log('[DELETE ITEM] Item deleted successfully');
         revalidatePublicBookingPages(slug, subSlug);
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, archived: true });
     } catch (error) {
         console.error('[DELETE ITEM] Failed to delete item:', error);
         return NextResponse.json({ error: "Failed to delete item" }, { status: 500 });

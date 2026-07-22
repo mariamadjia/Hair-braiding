@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-hairbraiding.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const categoryId = searchParams.get('categoryId');
         const subcategoryId = searchParams.get('subcategoryId');
+        if ((categoryId && !/^\d+$/.test(categoryId)) || (subcategoryId && !/^\d+$/.test(subcategoryId))) {
+            return NextResponse.json({ error: "Invalid service filter" }, { status: 400 });
+        }
         
         let url = `${API_URL}/api/services`;
         

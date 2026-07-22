@@ -11,6 +11,14 @@ import type { BookingCategory } from "@/lib/booking-types";
 import Navbar from "@/components/Navbar";
 import { formatPrice } from "@/lib/utils/price";
 
+function itemPriceLabel(item: NonNullable<BookingCategory["items"]>[number]): string {
+    const prices = (item.lengthOptions ?? []).map(option => Number((option.price ?? "").replace(/[^0-9.]/g, ""))).filter(Number.isFinite);
+    if (prices.length === 0) return formatPrice(item.price);
+    const minimum = Math.min(...prices);
+    const maximum = Math.max(...prices);
+    return minimum === maximum ? formatPrice(minimum) : `${formatPrice(minimum)} - ${formatPrice(maximum)}`;
+}
+
 export default function CategoryPageClient({ category }: { category: BookingCategory }) {
 
     const router = useRouter();
@@ -25,19 +33,20 @@ export default function CategoryPageClient({ category }: { category: BookingCate
     const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
     const openModalForItem = (index: number) => {
         const item = items[index];
-        if (item?.lengthOptions?.length) {
+        if (item?.lengthOptions?.length || item?.hairTextures?.length) {
             setSelectedItemIndex(index);
-            setSelectedLength(null);
+            setSelectedLength(item.lengthOptions?.length ? null : "__none__");
             setSelectedTexture(item?.hairTextures?.[0] ?? null);
             return;
         }
 
         const params = new URLSearchParams({
+            categorySlug: category.slug,
+            serviceId: item?.id?.toString() ?? "",
             service: item?.name ?? "Selected Service",
             price: item?.price ?? "",
-            duration: "2-4 hours",
             description: item?.description ?? "Professional braiding service",
-            image: encodeURIComponent(item?.image ?? subcategories[0]?.image ?? ""),
+            image: item?.image ?? subcategories[0]?.image ?? "",
         });
         router.push(`/checkout?${params.toString()}`);
     };
@@ -103,20 +112,18 @@ export default function CategoryPageClient({ category }: { category: BookingCate
         if (!selectedItem || !selectedLength) return;
         if (selectedItem.hairTextures?.length && !selectedTexture) return;
 
-        const option = lengthOptions.find((opt, idx) => (opt.name ?? `option-${idx}`) === selectedLength);
-
-        console.log("CategoryPage - Selected item image:", selectedItem.image);
-        console.log("CategoryPage - Selected item:", selectedItem);
+        const option = lengthOptions.find((opt) => opt.id?.toString() === selectedLength);
 
         const params = new URLSearchParams({
+            categorySlug: category.slug,
+            serviceId: selectedItem.id?.toString() ?? "",
             service: selectedItem.name,
             length: option?.name ?? "",
             lengthOptionId: option?.id?.toString() ?? "",
             price: option?.price ?? selectedItem.price ?? "",
-            duration: option?.duration ?? "2-4 hours",
             description: selectedItem.description ?? "Professional braiding service",
             texture: selectedTexture ?? "",
-            image: encodeURIComponent(selectedItem.image ?? subcategories[0]?.image ?? ""),
+            image: selectedItem.image ?? subcategories[0]?.image ?? "",
         });
         router.push(`/checkout?${params.toString()}`);
         closeModal();
@@ -195,10 +202,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:text-sm text-neutral-600 font-light">
                                         {item.lengthOptions && item.lengthOptions.length > 0 && (
                                             <span className="font-medium">
-                                                {item.lengthOptions.length === 1 
-                                                    ? item.lengthOptions[0].price 
-                                                    : `${item.lengthOptions[0].price} - ${item.lengthOptions[item.lengthOptions.length - 1].price}`
-                                                }
+                                                {itemPriceLabel(item)}
                                             </span>
                                         )}
                                         {item.lengthOptions && item.lengthOptions.length > 0 && (
@@ -328,7 +332,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
 
                         <div className="mt-5 space-y-3">
                             {lengthOptions.map((option, idx) => {
-                                const optionKey = option.name || `option-${idx}`;
+                                const optionKey = option.id?.toString() || `option-${idx}`;
                                 const isSelected = selectedLength === optionKey;
                                 return (
                                     <div key={optionKey} className="space-y-3">
@@ -359,9 +363,6 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                                                         <div className="text-sm font-medium tracking-wide text-neutral-900">
                                                             {option.name}
                                                         </div>
-                                                    )}
-                                                    {option.duration && (
-                                                        <div className="text-xs text-neutral-500 font-light">{option.duration}</div>
                                                     )}
                                                     {option.notes && (
                                                         <div className="text-xs text-neutral-500 font-light">{option.notes}</div>
@@ -395,6 +396,14 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                                     </div>
                                 );
                             })}
+                            {lengthOptions.length === 0 && selectedItem?.hairTextures?.length ? (
+                                <div className="rounded-none border border-neutral-200 bg-neutral-50 p-4">
+                                    <label className="mb-2 block text-[10px] font-medium uppercase tracking-[0.3em] text-neutral-600" htmlFor="category-texture-only-selection">Select Human Hair Texture</label>
+                                    <select id="category-texture-only-selection" value={selectedTexture ?? ""} onChange={(event) => setSelectedTexture(event.target.value || null)} className="w-full rounded-none border border-neutral-300 bg-white px-4 py-2.5 text-sm text-neutral-900 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900">
+                                        {selectedItem.hairTextures.map(texture => <option key={texture} value={texture}>{texture}</option>)}
+                                    </select>
+                                </div>
+                            ) : null}
                         </div>
 
                         <Button
