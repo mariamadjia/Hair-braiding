@@ -12,6 +12,7 @@ type PaymentFormProps = {
   onSuccess: (paymentIntentId: string) => void;
   onBack: () => void;
   appointmentId?: number;
+  paymentToken?: string;
   customerEmail: string;
   customerName: string;
 };
@@ -21,6 +22,7 @@ export default function PaymentForm({
   onSuccess,
   onBack,
   appointmentId,
+  paymentToken,
   customerEmail,
   customerName,
 }: PaymentFormProps) {
@@ -48,12 +50,13 @@ export default function PaymentForm({
       }
 
       // Create payment intent on backend without payment method
+      if (!appointmentId || !paymentToken) {
+        throw new Error("Your booking session has expired. Please start again.");
+      }
+
       const requestBody = {
-        amount,
-        currency: "usd",
         appointmentId,
-        customerEmail,
-        customerName,
+        paymentToken,
       };
 
       console.log("Sending payment intent request:", requestBody);
@@ -68,7 +71,7 @@ export default function PaymentForm({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to authorize payment");
+        throw new Error(errorData.error || errorData.message || "Failed to authorize payment");
       }
 
       const result = await response.json();

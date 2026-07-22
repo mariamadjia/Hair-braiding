@@ -18,6 +18,8 @@ function CheckoutContent() {
 
     const categorySlug = searchParams.get("categorySlug") || "";
     const subcategorySlug = searchParams.get("subcategorySlug") || "";
+    const serviceIdParam = searchParams.get("serviceId");
+    const serviceId = serviceIdParam && /^\d+$/.test(serviceIdParam) ? Number(serviceIdParam) : undefined;
     const styleName = searchParams.get("style") || searchParams.get("service") || "Service";
     const serviceName = searchParams.get("size") || searchParams.get("service") || "";
     const lengthLabel = searchParams.get("length") || "";
@@ -238,6 +240,7 @@ function CheckoutContent() {
                                     serviceSize={serviceName}
                                     serviceLength={lengthLabel}
                                     servicePrice={price}
+                                    serviceId={serviceId}
                                     onDateSelected={setSelectedDate}
                                     onTimeSelected={setSelectedTime}
                                     onBookingComplete={(bookingData) => {

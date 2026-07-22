@@ -62,6 +62,7 @@ export default function BookingCalendar({
     const [error, setError] = useState<string | null>(null);
     const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
     const [createdAppointmentId, setCreatedAppointmentId] = useState<number | null>(null);
+    const [paymentToken, setPaymentToken] = useState<string | null>(null);
     const [confirmationNumber, setConfirmationNumber] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stripePromise] = useState(() => getStripe());
@@ -202,6 +203,7 @@ export default function BookingCalendar({
                 };
             });
             
+            setError(null);
             setAvailableSlots(slots);
         } catch (error) {
             console.error('Error fetching available slots:', error);
@@ -265,7 +267,7 @@ export default function BookingCalendar({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedDate || !selectedTime || isSubmitting) return;
+        if (!selectedDate || !selectedTime || !serviceId || isSubmitting) return;
 
         setIsSubmitting(true);
         setLoading(true);
@@ -290,7 +292,7 @@ export default function BookingCalendar({
                     email: formData.email,
                     phoneNumber: formData.phoneNumber,
                     appointmentDateTime: appointmentDateTime,
-                    serviceId: serviceId || null,
+                    serviceId,
                     serviceName: serviceName || null,
                     selectedSize: serviceSize || null,
                     selectedLength: serviceLength || null,
@@ -301,12 +303,13 @@ export default function BookingCalendar({
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to create appointment');
+                throw new Error(errorData.error || errorData.message || 'Failed to create appointment');
             }
 
             const result = await response.json();
             setCreatedAppointmentId(result.id);
-            setConfirmationNumber(`APT-${result.id}-${Date.now().toString().slice(-4)}`);
+            setPaymentToken(result.paymentToken);
+            setConfirmationNumber(`APT-${result.id}`);
             setStep("payment");
         } catch (error) {
             console.error('Booking error:', error);
@@ -757,10 +760,17 @@ export default function BookingCalendar({
                             onSuccess={handlePaymentSuccess}
                             onBack={() => setStep("details")}
                             appointmentId={createdAppointmentId || undefined}
+                            paymentToken={paymentToken || undefined}
                             customerEmail={formData.email}
                             customerName={`${formData.firstName} ${formData.lastName}`}
                         />
                     </Elements>
+                </div>
+            )}
+
+            {step === "payment" && !stripePromise && (
+                <div className="p-6 text-center text-sm text-red-700">
+                    Payments are temporarily unavailable. Please contact the salon or try again later.
                 </div>
             )}
 
@@ -797,6 +807,7 @@ export default function BookingCalendar({
                             setSelectedDate(null);
                             setSelectedTime(null);
                             setCreatedAppointmentId(null);
+                            setPaymentToken(null);
                             setConfirmationNumber(null);
                             setStep("date");
                         }}
