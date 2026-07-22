@@ -69,7 +69,7 @@ export default function Hero({ videoSrc, useVideo }) {
             {/* CTA - Desktop only */}
             <div className="hidden md:block">
               <Link
-                href="/booking"
+                href="/services"
                 className="inline-block border-b-2 border-neutral-900 pb-1 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-70"
               >
                 Book an Appointment
@@ -133,7 +133,7 @@ export default function Hero({ videoSrc, useVideo }) {
       {/* CTA - Mobile only (below image) */}
       <div className="md:hidden bg-[#F6F5F1] flex items-center justify-center py-6">
         <Link
-          href="/booking"
+          href="/services"
           className="inline-block border-b-2 border-neutral-900 pb-1 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-70"
         >
           Book an Appointment

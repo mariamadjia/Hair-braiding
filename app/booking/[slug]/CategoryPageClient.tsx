@@ -144,7 +144,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                             variant="outline"
                             className="rounded-none border border-neutral-300 bg-transparent px-6 py-2.5 text-xs font-medium uppercase tracking-[0.25em] text-neutral-700 transition hover:border-neutral-900 hover:text-neutral-900"
                         >
-                            <Link href="/booking">
+                            <Link href="/services">
                                 <ChevronLeft className="h-3 w-3 mr-2" />
                                 Back to Services
                             </Link>
