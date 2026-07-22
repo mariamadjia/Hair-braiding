@@ -3,7 +3,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import type { CategoriesData, CategorySummary, SubcategorySummary } from "@/lib/booking-types";
 import { EditorPanel } from "./components/EditorPanel";
-import { PreviewServicesList, PreviewCategoryDetail, PreviewSubcategoryDetail } from "./components/PreviewComponents";
+import { PreviewCategoryDetail, PreviewSubcategoryDetail } from "./components/PreviewComponents";
 import { AdminSidebar } from "./components/AdminSidebar";
 import { ThemeProvider } from "./context/ThemeContext";
 import { authApi } from "@/lib/api/auth";

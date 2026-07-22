@@ -39,9 +39,9 @@ export function PreviewServicesList({ categories }: { categories: BookingCategor
     return (
         <div>
             <div className="text-center py-12 border-b border-neutral-100 dark:border-neutral-700 mb-2">
-                <p className="text-xs uppercase tracking-[0.4em] text-neutral-500 dark:text-neutral-400 mb-4">Our Expertise</p>
+                <p className="text-xs uppercase tracking-[0.4em] text-neutral-500 dark:text-neutral-400 mb-4">Book Your Style</p>
                 <h2 className="text-4xl font-light tracking-tight text-neutral-900 dark:text-white">
-                    Signature <span className="font-serif italic">Services</span>
+                    Service <span className="font-serif italic">Categories</span>
                 </h2>
             </div>
             <div className="divide-y divide-neutral-200/60 dark:divide-neutral-700">

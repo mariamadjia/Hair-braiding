@@ -16,7 +16,7 @@ export default function BookingPageClient({ categories }: { categories: BookingC
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <p className="text-xs uppercase tracking-[0.4em] text-neutral-500 dark:text-neutral-400 mb-4">Book Your Style</p>
                     <h1 className="text-4xl md:text-6xl font-light tracking-tight text-neutral-900 dark:text-white">
-                        Services <span className="font-serif italic">Categories</span>
+                        Service <span className="font-serif italic">Categories</span>
                     </h1>
                 </div>
                 <div className="pointer-events-none absolute -top-20 right-10 h-56 w-56 rounded-full bg-amber-100/30 blur-3xl" aria-hidden="true" />
