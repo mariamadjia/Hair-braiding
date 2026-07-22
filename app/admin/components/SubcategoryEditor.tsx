@@ -8,7 +8,7 @@ import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ItemForm } from "./ItemForm";
-import { ArrowDown, ArrowUp, ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, Package, Plus, Edit3, ChevronDown, ChevronUp, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
 
@@ -387,59 +387,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         }
     };
 
-    const deleteItem = async (itemId?: number) => {
-        // Always use itemId if available, never rely on array index
-        if (!itemId) {
-            console.error('[SubcategoryEditor] No itemId provided, cannot delete safely');
-            setSaveError("Cannot delete: item ID is missing. Please refresh and try again.");
-            return;
-        }
-        
-        if (saving) return; // Prevent concurrent mutations
-        
-        const itemName = items.find(item => item.id === itemId)?.name ?? "this size";
-        if (!confirm(`Remove "${itemName}" from booking? Existing appointments will not be changed.`)) return;
-        
-        setSaving(true);
-        setSaveError(null);
-        try {
-            await mutate("DELETE", `${base}/items/${itemId}`, undefined);
-            // Only update local state after server confirms deletion - filter by itemId instead of index
-            setItems(prev => prev.filter(item => item.id !== itemId));
-            setEditingId(null);
-            // Remove the deleted item from expanded items using itemId
-            setExpandedItems(new Set(Array.from(expandedItems).filter(id => id !== itemId)));
-            setSaveSuccess("Size removed successfully!");
-            setTimeout(() => setSaveSuccess(null), 3000);
-            const freshSub = await onSubcategoryUpdate?.(sub.slug);
-            if (freshSub?.items) setItems(freshSub.items);
-        } catch (error) {
-            console.error("Failed to delete item:", error);
-            let errorMessage = "Delete failed. Please refresh the page.";
-            
-            if (error instanceof Error) {
-                if (error.message.includes('network') || error.message.includes('fetch')) {
-                    errorMessage = "Network error. Please check your connection and try again.";
-                } else if (error.message.includes('401') || error.message.includes('403')) {
-                    errorMessage = "Authentication error. Please log in again.";
-                } else if (error.message.includes('404')) {
-                    errorMessage = "Size not found. It may have been already deleted.";
-                } else if (error.message.includes('conflict') || error.message.includes('409')) {
-                    errorMessage = "Cannot delete: size is in use by existing bookings.";
-                }
-            }
-            
-            setSaveError(errorMessage);
-            // Re-fetch to ensure state is consistent
-            const freshSub = await onSubcategoryUpdate?.(sub.slug);
-            if (freshSub?.items) {
-                setItems(freshSub.items);
-            }
-        } finally {
-            setSaving(false);
-        }
-    };
-
     const toggleExpand = (itemId?: number) => {
         if (!itemId) return;
         setExpandedItems(prev => {
@@ -699,9 +646,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                     </button>
                                                     <button type="button" onClick={() => { setEditingId(item.id ?? null); setAddingItem(false); }} aria-label={`Edit ${item.name}`} className="p-2 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors opacity-100 focus:ring-2 focus:ring-violet-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" title="Edit">
                                                         <Edit3 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
-                                                    </button>
-                                                    <button type="button" onClick={() => deleteItem(item.id)} aria-label={`Archive ${item.name}`} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-100 focus:ring-2 focus:ring-red-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" title="Archive">
-                                                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
                                                     </button>
                                                 </div>
                                             </div>
