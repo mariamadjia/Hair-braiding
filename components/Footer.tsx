@@ -1,8 +1,13 @@
+'use client';
+
+import { useReducedMotion } from 'framer-motion';
+
 interface FooterProps {
   videoSrc?: string;
 }
 
 export default function Footer({ videoSrc = '/Footer/IMG_2004.mov' }: FooterProps = {}) {
+  const reduceMotion = useReducedMotion();
   return (
     <footer className="bg-[#2C1810] text-white w-full">
       
@@ -20,7 +25,7 @@ export default function Footer({ videoSrc = '/Footer/IMG_2004.mov' }: FooterProp
               key={`mobile-${videoSrc}`}
               className="w-full h-full object-cover"
               style={{ objectPosition: 'center 30%' }}
-              autoPlay
+              autoPlay={!reduceMotion}
               loop
               muted
               playsInline
@@ -109,7 +114,7 @@ export default function Footer({ videoSrc = '/Footer/IMG_2004.mov' }: FooterProp
                 key={`desktop-${videoSrc}`}
                 className="w-full h-full object-cover"
                 style={{ objectPosition: 'center 30%' }}
-                autoPlay
+                autoPlay={!reduceMotion}
                 loop
                 muted
                 playsInline

@@ -612,7 +612,7 @@ export default function FlipBook3D() {
           Next →
         </button>
       </div>
-      <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+      <div style={{ display: 'flex', gap: 0, marginTop: 3 }}>
         {spreads.map((_, i) => (
           <button 
             key={i} 
@@ -620,16 +620,26 @@ export default function FlipBook3D() {
             aria-label={`Go to page ${i + 1}`}
             aria-current={i === current ? 'true' : 'false'}
             style={{ 
-              width: i === current ? 20 : 6, 
-              height: 6, 
-              borderRadius: i === current ? 3 : '50%', 
-              background: i === current ? T.dotOn : T.dotOff, 
+              width: 24,
+              height: 24,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
               border: 'none', 
               cursor: 'pointer', 
               transition: 'all 0.3s', 
               padding: 0 
             }}
-          />
+          >
+            <span aria-hidden="true" style={{
+              display: 'block',
+              width: i === current ? 20 : 6,
+              height: 6,
+              borderRadius: i === current ? 3 : '50%',
+              background: i === current ? T.dotOn : T.dotOff,
+            }} />
+          </button>
         ))}
       </div>
     </>

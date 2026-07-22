@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Edit } from 'lucide-react';
 
 const defaultItems = [
@@ -31,6 +31,7 @@ const defaultItems = [
 
 export default function Welcome({ items: propItems = defaultItems, editMode = false, onEditItem } = {}) {
   const items = propItems;
+  const reduceMotion = useReducedMotion();
 
   return (
     <section className="bg-[#F6F5F1] py-12 md:py-24">
@@ -43,7 +44,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
               Welcome to AH Braiding.
             </h2>
             <p className="text-[15px] md:text-[16px] leading-relaxed text-neutral-700 font-light">
-              More than braids—AH Braiding is a space for self-expression, skill-building, and growth rooted in beauty, culture, and confidence.
+              More than braids—AH Braiding is a San Antonio space for self-expression, beauty, culture, and confidence. Choose your style, review pricing and deposit details, then request an available time.
             </p>
           </div>
 
@@ -73,7 +74,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                       {item.type === 'video' ? (
                         <video
                           className="w-full h-full object-cover"
-                          autoPlay
+                          autoPlay={!reduceMotion}
                           loop
                           muted
                           playsInline
@@ -92,7 +93,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                     {item.type === 'video' ? (
                       <video
                         className="w-full h-full object-cover"
-                        autoPlay
+                        autoPlay={!reduceMotion}
                         loop
                         muted
                         playsInline
@@ -127,10 +128,10 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
           {/* Intro Text */}
           <div className="text-center px-4">
             <h2 className="text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 mb-4">
-              Welcome to the Studio.
+              Welcome to AH Braiding.
             </h2>
             <p className="text-[15px] leading-relaxed text-neutral-700 font-light max-w-md mx-auto">
-              Introducing a one-of-a-kind experience by luxury braider AH Braiding—offering exclusive in-studio appointments, curated brand partnerships, and expert-led online courses for aspiring braiders.
+              More than braids—AH Braiding is a San Antonio space for self-expression, beauty, culture, and confidence. Choose your style, review pricing and deposit details, then request an available time.
             </p>
           </div>
 
@@ -158,7 +159,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                     {items[0].type === 'video' ? (
                       <video
                         className="w-full h-full object-cover"
-                        autoPlay
+                        autoPlay={!reduceMotion}
                         loop
                         muted
                         playsInline
@@ -177,7 +178,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                   {items[0].type === 'video' ? (
                     <video
                       className="w-full h-full object-cover"
-                      autoPlay
+                      autoPlay={!reduceMotion}
                       loop
                       muted
                       playsInline
@@ -252,7 +253,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                     {items[1].type === 'video' ? (
                       <video
                         className="w-full h-full object-cover"
-                        autoPlay
+                        autoPlay={!reduceMotion}
                         loop
                         muted
                         playsInline
@@ -271,7 +272,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                   {items[1].type === 'video' ? (
                     <video
                       className="w-full h-full object-cover"
-                      autoPlay
+                      autoPlay={!reduceMotion}
                       loop
                       muted
                       playsInline
@@ -312,7 +313,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                     {items[2].type === 'video' ? (
                       <video
                         className="w-full h-full object-cover"
-                        autoPlay
+                        autoPlay={!reduceMotion}
                         loop
                         muted
                         playsInline
@@ -331,7 +332,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                   {items[2].type === 'video' ? (
                     <video
                       className="w-full h-full object-cover"
-                      autoPlay
+                      autoPlay={!reduceMotion}
                       loop
                       muted
                       playsInline

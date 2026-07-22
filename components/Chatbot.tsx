@@ -28,7 +28,7 @@ export default function Chatbot() {
     setIsMounted(true);
   }, []);
 
-  // Show prompt after 3 seconds on page load
+  // Give visitors time to read before showing the optional desktop prompt.
   useEffect(() => {
     if (!isMounted) return;
     
@@ -36,7 +36,7 @@ export default function Chatbot() {
       if (!isOpen) {
         setShowPrompt(true);
       }
-    }, 3000);
+    }, 8000);
 
     return () => clearTimeout(timer);
   }, [isOpen, isMounted]);
@@ -126,7 +126,7 @@ export default function Chatbot() {
       <>
         {/* Prompt Bubble */}
         {showPrompt && (
-          <div className="fixed bottom-6 right-24 z-50 animate-bounce">
+          <div className="fixed bottom-6 right-24 z-50 hidden animate-bounce motion-reduce:animate-none sm:block">
             <div className="bg-white dark:bg-neutral-800 rounded-2xl rounded-br-sm shadow-2xl p-4 max-w-sm border border-neutral-200 dark:border-neutral-700 relative">
               <button
                 onClick={() => setShowPrompt(false)}

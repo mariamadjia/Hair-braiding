@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useReducedMotion } from 'framer-motion';
 
 export default function Gallery() {
   const router = useRouter();
@@ -10,10 +11,15 @@ export default function Gallery() {
   const [isFlipping, setIsFlipping] = useState({});
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   // Load collections from API
   useEffect(() => {
     const loadCollections = async () => {
+      setLoadError(false);
+      setLoading(true);
       try {
         const res = await fetch('/api/gallery-collections');
         if (!res.ok) {
@@ -27,15 +33,17 @@ export default function Gallery() {
         console.error('Failed to load gallery collections:', error);
         // Set empty collections on error to prevent infinite loading
         setCollections([]);
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     };
 
     loadCollections();
-  }, []);
+  }, [retryCount]);
 
   useEffect(() => {
+    if (reduceMotion) return;
     const interval = setInterval(() => {
       collections.forEach((collection, index) => {
         if (collection.images.length > 1) {
@@ -57,7 +65,7 @@ export default function Gallery() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [collections]);
+  }, [collections, reduceMotion]);
 
   const handlePrevImage = (collectionIndex, e) => {
     e.stopPropagation();
@@ -120,6 +128,19 @@ export default function Gallery() {
             Our Work Collection
           </p>
         </div>
+
+        {loadError && (
+          <div role="alert" className="mb-8 text-center">
+            <p className="mb-3 text-sm text-neutral-600">The gallery could not be loaded right now.</p>
+            <button
+              type="button"
+              onClick={() => setRetryCount((count) => count + 1)}
+              className="min-h-11 border border-neutral-900 px-5 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-900"
+            >
+              Retry gallery
+            </button>
+          </div>
+        )}
 
         {/* Gallery Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -192,14 +213,14 @@ export default function Gallery() {
                       <>
                         <button
                           onClick={(e) => handlePrevImage(index, e)}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                          className="absolute left-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity duration-300 hover:bg-black/70 group-hover:opacity-100 focus:opacity-100"
                           aria-label="Previous image"
                         >
                           <ChevronLeft size={20} />
                         </button>
                         <button
                           onClick={(e) => handleNextImage(index, e)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                          className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity duration-300 hover:bg-black/70 group-hover:opacity-100 focus:opacity-100"
                           aria-label="Next image"
                         >
                           <ChevronRight size={20} />
