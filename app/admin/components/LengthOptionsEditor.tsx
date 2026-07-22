@@ -21,7 +21,7 @@ export function LengthOptionsEditor({
                 <div key={opt.id ?? `new-${i}`} className="border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 space-y-2 bg-white dark:bg-neutral-900">
                     <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1.5 items-center">
                         <input aria-label={`Length option ${i + 1} name`} className={inp} placeholder="Name" value={opt.name ?? ""} onChange={(e) => update(i, "name", e.target.value)} />
-                        <input aria-label={`Length option ${i + 1} price`} inputMode="decimal" className={inp} placeholder="Price" value={opt.price ?? ""} onChange={(e) => update(i, "price", e.target.value)} />
+                        <input aria-label={`Length option ${i + 1} price`} inputMode="decimal" className={inp} placeholder="$Price" value={`$${(opt.price ?? "").replace(/^\$+/, "")}`} onChange={(e) => update(i, "price", e.target.value.replace(/^\$+/, ""))} />
                         <input aria-label={`Length option ${i + 1} notes`} className={inp} placeholder="Notes" value={opt.notes ?? ""} onChange={(e) => update(i, "notes", e.target.value)} />
                         <button aria-label={`Delete length option ${i + 1}`} type="button" onClick={() => onChange(options.filter((_, idx) => idx !== i))} className={btnD}>×</button>
                     </div>

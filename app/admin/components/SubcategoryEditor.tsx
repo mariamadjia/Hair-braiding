@@ -8,7 +8,7 @@ import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ItemForm } from "./ItemForm";
-import { ArchiveRestore, ArrowDown, ArrowUp, ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle, Loader2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
 
@@ -71,9 +71,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
-    const [archivedItems, setArchivedItems] = useState<BookingItem[]>([]);
-    const [showArchived, setShowArchived] = useState(false);
-    const [loadingArchived, setLoadingArchived] = useState(false);
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
 
@@ -401,7 +398,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         if (saving) return; // Prevent concurrent mutations
         
         const itemName = items.find(item => item.id === itemId)?.name ?? "this size";
-        if (!confirm(`Archive "${itemName}"? It will disappear from booking but remain on existing appointments.`)) return;
+        if (!confirm(`Remove "${itemName}" from booking? Existing appointments will not be changed.`)) return;
         
         setSaving(true);
         setSaveError(null);
@@ -412,7 +409,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             setEditingId(null);
             // Remove the deleted item from expanded items using itemId
             setExpandedItems(new Set(Array.from(expandedItems).filter(id => id !== itemId)));
-            setSaveSuccess("Size archived successfully!");
+            setSaveSuccess("Size removed successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
             const freshSub = await onSubcategoryUpdate?.(sub.slug);
             if (freshSub?.items) setItems(freshSub.items);
@@ -454,34 +451,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             }
             return next;
         });
-    };
-
-    const loadArchived = async () => {
-        if (!sub.id) return;
-        setLoadingArchived(true); setSaveError(null);
-        try {
-            const response = await fetch(`/api/admin/services?archived=true&subcategoryId=${sub.id}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
-            const payload = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(payload.error || "Unable to load archived services.");
-            setArchivedItems(payload);
-        } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to load archived services."); }
-        finally { setLoadingArchived(false); }
-    };
-
-    const toggleArchived = () => { const next = !showArchived; setShowArchived(next); if (next) void loadArchived(); };
-
-    const restoreItem = async (itemId: number) => {
-        setSaving(true); setSaveError(null);
-        try {
-            const response = await fetch(`/api/admin/services/${itemId}/restore`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-            const payload = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(payload.error || "Unable to restore service.");
-            setArchivedItems(previous => previous.filter(item => item.id !== itemId));
-            const freshSub = await onSubcategoryUpdate?.(sub.slug);
-            if (freshSub?.items) setItems(freshSub.items);
-            setSaveSuccess("Service restored to booking.");
-        } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to restore service."); }
-        finally { setSaving(false); }
     };
 
     const reorderItem = async (itemId: number, offset: number) => {
@@ -664,11 +633,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                             <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full">{items.length}</span>
                         )}
                     </div>
-                    <div className="flex items-center gap-2"><button type="button" onClick={toggleArchived} className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400"><ArchiveRestore className="h-3.5 w-3.5" /> Archived</button><button type="button" onClick={() => { setAddingItem(true); setEditingId(null); }} className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" />Add Size</button></div>
+                    <button type="button" onClick={() => { setAddingItem(true); setEditingId(null); }} className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" />Add Size</button>
                 </div>
                 <div className="p-4 space-y-3">
-                    {showArchived && <section className="rounded-lg border border-amber-200 bg-amber-50/60 p-3" aria-label="Archived services"><div className="mb-2 flex items-center justify-between"><h4 className="text-xs font-semibold uppercase tracking-wider text-amber-800">Archived services</h4><button type="button" onClick={toggleArchived} aria-label="Close archived services" className="text-amber-800"><X className="h-4 w-4" /></button></div>{loadingArchived ? <div role="status" className="flex items-center gap-2 py-4 text-sm text-amber-800"><Loader2 className="h-4 w-4 animate-spin" />Loading archived services…</div> : archivedItems.length === 0 ? <p className="py-3 text-sm text-amber-800">No archived services in this subcategory.</p> : <div className="space-y-2">{archivedItems.map(item => <div key={item.id} className="flex items-center justify-between rounded-lg border border-amber-200 bg-white px-3 py-2"><div><p className="text-sm font-semibold">{item.name}</p><p className="text-xs text-neutral-500">{servicePriceLabel(item)}</p></div><button type="button" disabled={saving} onClick={() => item.id && void restoreItem(item.id)} className="rounded-lg bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Restore</button></div>)}</div>}</section>}
-
                     {addingItem && (
                         <div className="rounded-lg border-2 border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-900/10 p-4">
                             <ItemForm
@@ -722,7 +689,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                             <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full">No lengths</span>
                                                         )}
                                                     </div>
-                                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{servicePriceLabel(item)} · {item.hairTextures?.length ?? 0} textures · {item.sizePhotos?.length ?? 0} photos</p>
+                                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{servicePriceLabel(item)} · {item.sizePhotos?.length ?? 0} photos</p>
                                                 </button>
                                                 <div className="flex items-center gap-1 flex-shrink-0">
                                                     <button type="button" disabled={orderedIndex === 0 || saving} onClick={() => item.id && void reorderItem(item.id, -1)} aria-label={`Move ${item.name} up`} className="p-2 hover:bg-neutral-100 rounded-lg disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
