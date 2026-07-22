@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Ruler } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { BookingCategory, BookingSubcategory, BookingItem } from "@/lib/booking-types";
 import Navbar from "@/components/Navbar";
+import LengthGuideOverlay from "@/components/LengthGuideOverlay";
 import { formatPrice } from "@/lib/utils/price";
 import { toProxyUrl } from "@/lib/utils/image";
 
@@ -43,6 +44,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const [photoItemIndex, setPhotoItemIndex] = useState<number | null>(null);
     const [photoImageIndex, setPhotoImageIndex] = useState(0);
     const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
+    const [showLengthGuide, setShowLengthGuide] = useState(false);
     const items = sortItemsBySize(subcategory.items ?? []);
     const subcategoryGalleryImageUrls =
         subcategory.galleryImages && subcategory.galleryImages.length > 0
@@ -82,6 +84,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
             setSelectedItemIndex(index);
             setSelectedLength(item.lengthOptions?.length ? null : "__none__");
             setSelectedTexture(item?.hairTextures?.[0] ?? null);
+            setShowLengthGuide(false);
             return;
         }
 
@@ -102,6 +105,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
         setSelectedItemIndex(null);
         setSelectedLength(null);
         setSelectedTexture(null);
+        setShowLengthGuide(false);
     };
 
     const openPhotoModal = (index: number) => {
@@ -131,7 +135,9 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
-                if (photoItemIndex !== null) {
+                if (showLengthGuide) {
+                    setShowLengthGuide(false);
+                } else if (photoItemIndex !== null) {
                     closePhotoModal();
                 } else if (selectedItemIndex !== null) {
                     closeModal();
@@ -149,7 +155,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [photoItemIndex, selectedItemIndex, hasMultiplePhotos]);
+    }, [photoItemIndex, selectedItemIndex, hasMultiplePhotos, showLengthGuide]);
 
     const handleModalSelect = () => {
         if (!selectedItem || !selectedLength) return;
@@ -356,6 +362,9 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 </p>
                             )}
                             <p className="mt-3 text-sm font-medium text-neutral-900">Choose your preferred length.</p>
+                            <button type="button" onClick={() => setShowLengthGuide(true)} className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#2C1810] underline decoration-[#2C1810]/40 underline-offset-4 transition hover:decoration-[#2C1810] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2">
+                                <Ruler className="h-4 w-4" /> View length guide
+                            </button>
                         </div>
 
                         <div className="relative flex-1 space-y-2 overflow-y-auto px-6 py-4 md:px-8 scrollbar-hide">
@@ -433,6 +442,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 Book Now{selectedLengthOption?.price ? ` · ${formatPrice(selectedLengthOption.price)}` : ""}
                             </Button>
                         </div>
+                        {showLengthGuide && <LengthGuideOverlay onClose={() => setShowLengthGuide(false)} />}
                     </div>
                 </div>
             )}
