@@ -8,7 +8,7 @@ import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ItemForm } from "./ItemForm";
-import { ArrowDown, ArrowUp, ChevronRight, Package, Plus, Edit3, ChevronDown, ChevronUp, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
 
@@ -387,6 +387,29 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         }
     };
 
+    const deleteItem = async (itemId?: number) => {
+        if (!itemId || saving) return;
+        const itemName = items.find(item => item.id === itemId)?.name ?? "this size";
+        if (!confirm(`Delete "${itemName}"?`)) return;
+
+        setSaving(true);
+        setSaveError(null);
+        try {
+            await mutate("DELETE", `${base}/items/${itemId}`, undefined);
+            setItems(previous => previous.filter(item => item.id !== itemId));
+            setEditingId(null);
+            setExpandedItems(previous => new Set(Array.from(previous).filter(id => id !== itemId)));
+            setSaveSuccess("Size deleted successfully!");
+            setTimeout(() => setSaveSuccess(null), 3000);
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.items) setItems(freshSub.items);
+        } catch (error) {
+            setSaveError(error instanceof Error ? error.message : "Delete failed. Please try again.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const toggleExpand = (itemId?: number) => {
         if (!itemId) return;
         setExpandedItems(prev => {
@@ -646,6 +669,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                     </button>
                                                     <button type="button" onClick={() => { setEditingId(item.id ?? null); setAddingItem(false); }} aria-label={`Edit ${item.name}`} className="p-2 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors opacity-100 focus:ring-2 focus:ring-violet-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" title="Edit">
                                                         <Edit3 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+                                                    </button>
+                                                    <button type="button" disabled={saving} onClick={() => deleteItem(item.id)} aria-label={`Delete ${item.name}`} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-100 focus:ring-2 focus:ring-red-400 disabled:opacity-40 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" title="Delete">
+                                                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
                                                     </button>
                                                 </div>
                                             </div>
