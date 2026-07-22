@@ -212,6 +212,8 @@ export default function AvailabilitySchedule() {
         setError(null);
         setSuccess(false);
         window.dispatchEvent(new CustomEvent("saveStatus", { detail: { saving: true } }));
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 20000);
         try {
             const token = getAuthToken();
             if (!token) throw new Error("Your admin session has expired. Please sign in again.");
@@ -228,7 +230,8 @@ export default function AvailabilitySchedule() {
             const response = await fetch(`${API_BASE_URL}/api/availability/schedule`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: controller.signal
             });
             if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
@@ -239,10 +242,13 @@ export default function AvailabilitySchedule() {
             window.dispatchEvent(new CustomEvent("unsavedChanges", { detail: { hasChanges: false } }));
             window.dispatchEvent(new CustomEvent("saveStatus", { detail: { saving: false, success: true } }));
         } catch (caught) {
-            const message = caught instanceof Error ? caught.message : "Could not save availability.";
+            const message = caught instanceof DOMException && caught.name === "AbortError"
+                ? "Saving took longer than 20 seconds. Nothing was confirmed—please try again."
+                : caught instanceof Error ? caught.message : "Could not save availability.";
             setError(message);
             window.dispatchEvent(new CustomEvent("saveStatus", { detail: { saving: false, error: message } }));
         } finally {
+            window.clearTimeout(timeout);
             setSaving(false);
         }
     };
