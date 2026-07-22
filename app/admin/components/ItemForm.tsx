@@ -11,7 +11,6 @@ import { formatPrice } from "@/lib/utils/price";
 
 export function ItemForm({ initial, token, onSave, onCancel }: { initial: BookingItem; token: string; categoryId?: number; subcategoryId?: number; onSave: (item: BookingItem) => Promise<void>; onCancel: () => void }) {
     const [item, setItem] = useState<BookingItem>(initial);
-    const [textureDraft, setTextureDraft] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [dirty, setDirty] = useState(false);
@@ -63,13 +62,6 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
         finally { setUploading(false); event.target.value = ""; }
     };
 
-    const addTexture = () => {
-        const texture = textureDraft.trim();
-        if (!texture) return;
-        if ((item.hairTextures ?? []).some(value => value.toLowerCase() === texture.toLowerCase())) { setError("That texture is already listed."); return; }
-        set("hairTextures", [...(item.hairTextures ?? []), texture]); setTextureDraft("");
-    };
-
     const prices = (item.lengthOptions ?? []).map(option => Number((option.price ?? "").replace(/[^0-9.]/g, ""))).filter(Number.isFinite);
     const previewPrice = prices.length ? `${formatPrice(Math.min(...prices))}${Math.min(...prices) === Math.max(...prices) ? "" : ` – ${formatPrice(Math.max(...prices))}`}` : formatPrice(item.price);
 
@@ -85,11 +77,9 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                 {photos.map((photo, index) => <div key={`${photo}-${index}`} className="group relative"><img src={toProxyUrl(photo)} alt={`Size photo ${index + 1}`} className="h-16 w-16 rounded-lg border object-cover" /><button type="button" aria-label={`Remove size photo ${index + 1}`} onClick={() => set("sizePhotos", photos.filter((_, photoIndex) => photoIndex !== index))} className="absolute -right-1 -top-1 rounded-full bg-red-600 p-1 text-white opacity-100 focus:ring-2 focus:ring-red-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"><X className="h-3 w-3" /></button></div>)}
             </div></fieldset>
 
-            <fieldset className="space-y-2"><legend className={lbl}>Customer hair-texture choices</legend><div className="flex flex-wrap gap-2">{(item.hairTextures ?? []).map(texture => <span key={texture.toLowerCase()} className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-3 py-1.5 text-xs font-medium text-violet-800">{texture}<button type="button" aria-label={`Remove ${texture}`} onClick={() => set("hairTextures", item.hairTextures?.filter(value => value !== texture) ?? [])}><X className="h-3.5 w-3.5" /></button></span>)}</div><div className="flex gap-2"><input className={inp} value={textureDraft} onChange={event => setTextureDraft(event.target.value)} onKeyDown={event => { if (event.key === "Enter" || event.key === ",") { event.preventDefault(); addTexture(); } }} placeholder="Deep Wave" /><button type="button" className={btnS} onClick={addTexture}>Add</button></div></fieldset>
-
             <LengthOptionsEditor options={item.lengthOptions ?? []} onChange={options => set("lengthOptions", options)} />
 
-            <section aria-label="Customer preview" className="rounded-xl border border-violet-200 bg-white p-4 dark:border-violet-800 dark:bg-neutral-900"><p className="text-[10px] font-semibold uppercase tracking-widest text-violet-600">Customer preview</p><div className="mt-3 flex gap-4">{(item.image || photos[0]) && <img src={toProxyUrl(item.image || photos[0])} alt="" className="h-20 w-20 rounded-lg object-cover" />}<div><h4 className="font-semibold text-neutral-900 dark:text-white">{item.name || "Untitled service"}</h4><p className="mt-1 text-sm font-medium text-violet-700">{previewPrice}</p>{item.description && <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{item.description}</p>}<p className="mt-2 text-xs text-neutral-400">{item.lengthOptions?.length ?? 0} lengths · {item.hairTextures?.length ?? 0} texture choices · {photos.length} photos</p></div></div></section>
+            <section aria-label="Customer preview" className="rounded-xl border border-violet-200 bg-white p-4 dark:border-violet-800 dark:bg-neutral-900"><p className="text-[10px] font-semibold uppercase tracking-widest text-violet-600">Customer preview</p><div className="mt-3 flex gap-4">{(item.image || photos[0]) && <img src={toProxyUrl(item.image || photos[0])} alt="" className="h-20 w-20 rounded-lg object-cover" />}<div><h4 className="font-semibold text-neutral-900 dark:text-white">{item.name || "Untitled service"}</h4><p className="mt-1 text-sm font-medium text-violet-700">{previewPrice}</p>{item.description && <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{item.description}</p>}<p className="mt-2 text-xs text-neutral-400">{item.lengthOptions?.length ?? 0} lengths · {photos.length} photos</p></div></div></section>
 
             <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t bg-neutral-50/95 px-4 py-3 backdrop-blur dark:bg-neutral-900/95"><span className="hidden text-xs text-neutral-500 sm:block">Save shortcut: Ctrl/⌘ + Enter</span><div className="ml-auto flex gap-2"><button type="button" onClick={handleCancel} className={btnS} disabled={saving}>Cancel</button><button type="submit" className={`${btnP} inline-flex min-w-24 items-center justify-center gap-2`} disabled={!dirty || !item.name.trim() || saving || uploading}>{saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{saving ? "Saving…" : "Save service"}</button></div></div>
         </form>
