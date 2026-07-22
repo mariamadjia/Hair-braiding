@@ -7,6 +7,7 @@ import { PreviewServicesList, PreviewCategoryDetail, PreviewSubcategoryDetail } 
 import { AdminSidebar } from "./components/AdminSidebar";
 import { ThemeProvider } from "./context/ThemeContext";
 import { authApi } from "@/lib/api/auth";
+import type { CustomerListState } from "@/components/CustomerTable";
 
 // Lazy load heavy components
 const Dashboard = lazy(() => import("./components/Dashboard").then(m => ({ default: m.Dashboard })));
@@ -35,6 +36,9 @@ export default function AdminPage() {
     const [selection, setSelection] = useState<Selection>({ type: "root" });
     const [currentSection, setCurrentSection] = useState("dashboard");
     const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+    const [customerListState, setCustomerListState] = useState<CustomerListState>({
+        query: "", segment: "ALL", sort: "NAME_ASC", page: 0
+    });
     
     // New state for lazy loading
     const [categorySummaries, setCategorySummaries] = useState<CategorySummary[]>([]);
@@ -520,6 +524,7 @@ export default function AdminPage() {
 
     const handleSectionChange = (section: string) => {
         setCurrentSection(section);
+        if (section !== "customers") setSelectedCustomerId(null);
         // Reset selection when changing sections
         if (section === "categories") {
             setSelection({ type: "root" });
@@ -780,15 +785,19 @@ export default function AdminPage() {
                     <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
                         <Suspense fallback={<div className="p-12 text-neutral-500">Loading customers…</div>}>
                             {selectedCustomerId ? (
-                                <div className="p-8">
+                                <div className="p-4 sm:p-8">
                                     <CustomerDetails
                                         customerId={selectedCustomerId}
                                         onBack={() => setSelectedCustomerId(null)}
                                     />
                                 </div>
                             ) : (
-                                <div className="p-8">
-                                    <CustomerTable onViewDetails={setSelectedCustomerId} />
+                                <div className="p-4 sm:p-8">
+                                    <CustomerTable
+                                        onViewDetails={setSelectedCustomerId}
+                                        state={customerListState}
+                                        onStateChange={setCustomerListState}
+                                    />
                                 </div>
                             )}
                         </Suspense>
