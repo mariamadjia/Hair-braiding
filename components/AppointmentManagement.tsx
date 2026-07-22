@@ -18,6 +18,7 @@ export type Appointment = {
     selectedService?: string;
     selectedSize?: string;
     selectedLength?: string;
+    selectedFoundation?: string;
     selectedTexture?: string;
     price?: string;
     appointmentDateTime: string;
@@ -334,6 +335,7 @@ function AppointmentManagement() {
                                             <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm text-neutral-700">
                                                 {appointment.selectedSize && <span><b>Size:</b> {appointment.selectedSize}</span>}
                                                 {appointment.selectedLength && <span><b>Length:</b> {appointment.selectedLength}</span>}
+                                                {appointment.selectedFoundation && <span><b>Foundation:</b> {appointment.selectedFoundation === "KNOTLESS" ? "Knotless" : "Regular"}</span>}
                                                 {parseMoney(appointment.price) && <span className="font-bold text-neutral-900">{parseMoney(appointment.price)}</span>}
                                             </div>
                                         </div>
@@ -396,6 +398,7 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
                 <div><dt className="text-neutral-500">Hair texture</dt><dd className="font-medium">{appointment.selectedTexture || "—"}</dd></div>
                 <div><dt className="text-neutral-500">Size</dt><dd className="font-medium">{appointment.selectedSize || "—"}</dd></div>
                 <div><dt className="text-neutral-500">Length</dt><dd className="font-medium">{appointment.selectedLength || "—"}</dd></div>
+                <div><dt className="text-neutral-500">Foundation</dt><dd className="font-medium">{appointment.selectedFoundation ? (appointment.selectedFoundation === "KNOTLESS" ? "Knotless" : "Regular") : "—"}</dd></div>
             </dl>
             <div className="mt-6 border-t pt-5 text-sm"><h3 className="font-semibold">Customer</h3><p className="mt-2 flex items-center gap-2"><User className="h-4 w-4" />{appointment.customer.firstName} {appointment.customer.lastName}</p><a href={`mailto:${appointment.customer.email}`} className="mt-2 flex items-center gap-2 hover:underline"><Mail className="h-4 w-4" />{appointment.customer.email}</a><a href={`tel:${appointment.customer.phoneNumber}`} className="mt-2 flex items-center gap-2 hover:underline"><Phone className="h-4 w-4" />{appointment.customer.phoneNumber}</a></div>
             {appointment.notes && <div className="mt-6 border-t pt-5 text-sm"><h3 className="flex items-center gap-2 font-semibold"><MessageSquare className="h-4 w-4" />Customer notes</h3><p className="mt-2 whitespace-pre-wrap text-neutral-700">{appointment.notes}</p></div>}

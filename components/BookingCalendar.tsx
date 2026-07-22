@@ -29,6 +29,7 @@ type BookingCalendarProps = {
     serviceId?: number;
     lengthOptionId?: number;
     selectedTexture?: string;
+    selectedFoundation?: string;
 };
 
 type BookingData = {
@@ -58,7 +59,8 @@ export default function BookingCalendar({
     servicePrice,
     serviceId,
     lengthOptionId,
-    selectedTexture
+    selectedTexture,
+    selectedFoundation
 }: BookingCalendarProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -357,6 +359,7 @@ export default function BookingCalendar({
                     selectedLength: serviceLength || null,
                     lengthOptionId: lengthOptionId || null,
                     selectedTexture: selectedTexture || null,
+                    selectedFoundation: selectedFoundation || null,
                     price: servicePrice ? servicePrice.replace('$', '').trim() : null,
                     notes: formData.notes
                 })

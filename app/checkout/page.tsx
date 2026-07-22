@@ -21,6 +21,8 @@ type AuthoritativeService = {
     sizePhotos?: string[];
     subcategoryName?: string;
     hairTextures?: string[];
+    foundationChoicesEnabled?: boolean;
+    knotlessPriceAdjustment?: string;
     lengthOptions?: Array<{ id: number; name?: string; price?: string; imageUrl?: string }>;
 };
 
@@ -43,7 +45,11 @@ function CheckoutContent() {
     const styleName = authoritativeService?.subcategoryName || authoritativeService?.name || "Service";
     const serviceName = authoritativeService?.name || "";
     const lengthLabel = selectedOption?.name || "";
-    const price = selectedOption?.price || authoritativeService?.price || "";
+    const foundation = searchParams.get("foundation") || "";
+    const basePrice = selectedOption?.price || authoritativeService?.price || "";
+    const price = foundation === "KNOTLESS"
+        ? String(Number(basePrice.replace(/[^0-9.]/g, "")) + Number((authoritativeService?.knotlessPriceAdjustment || "0").replace(/[^0-9.]/g, "")))
+        : basePrice;
     const description = authoritativeService?.description || "";
     const texture = searchParams.get("texture") || "";
     const image = toProxyUrl(
@@ -68,6 +74,8 @@ function CheckoutContent() {
                 const optionExists = service.lengthOptions?.some((option: { id: number }) => option.id === lengthOptionId);
                 if (service.lengthOptions?.length && !optionIsRequired) throw new Error("Choose a length before checking out.");
                 if (optionIsRequired && !optionExists) throw new Error("The selected length is no longer available.");
+                if (service.foundationChoicesEnabled && !["REGULAR", "KNOTLESS"].includes(foundation)) throw new Error("Choose a braid foundation before checking out.");
+                if (!service.foundationChoicesEnabled && foundation) throw new Error("This service does not offer braid foundation choices.");
                 setAuthoritativeService(service);
             })
             .catch(error => {
@@ -77,7 +85,7 @@ function CheckoutContent() {
             })
             .finally(() => setServiceLoading(false));
         return () => controller.abort();
-    }, [serviceId, lengthOptionId]);
+    }, [serviceId, lengthOptionId, foundation]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -292,6 +300,7 @@ function CheckoutContent() {
                                     serviceId={serviceId}
                                     lengthOptionId={lengthOptionId}
                                     selectedTexture={texture}
+                                    selectedFoundation={foundation}
                                     onDateSelected={setSelectedDate}
                                     onTimeSelected={setSelectedTime}
                                     onBookingComplete={() => undefined}

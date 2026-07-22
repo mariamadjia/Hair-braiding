@@ -25,6 +25,7 @@ export interface Appointment {
   selectedService?: string;
   selectedSize?: string;
   selectedLength?: string;
+  selectedFoundation?: string;
   price?: string;
   appointmentDateTime: string;
   status: string;
@@ -46,6 +47,7 @@ export interface CreateAppointmentRequest {
   serviceName?: string | null;
   selectedSize?: string | null;
   selectedLength?: string | null;
+  selectedFoundation?: string | null;
   price?: string | null;
   notes?: string;
 }

@@ -44,6 +44,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const [photoItemIndex, setPhotoItemIndex] = useState<number | null>(null);
     const [photoImageIndex, setPhotoImageIndex] = useState(0);
     const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
+    const [selectedFoundation, setSelectedFoundation] = useState<"REGULAR" | "KNOTLESS" | null>(null);
     const [showLengthGuide, setShowLengthGuide] = useState(false);
     const items = sortItemsBySize(subcategory.items ?? []);
     const subcategoryGalleryImageUrls =
@@ -80,10 +81,11 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const openModalForItem = (index: number) => {
         const item = items[index];
         
-        if (item?.lengthOptions?.length || item?.hairTextures?.length) {
+        if (item?.lengthOptions?.length || item?.hairTextures?.length || item?.foundationChoicesEnabled) {
             setSelectedItemIndex(index);
             setSelectedLength(item.lengthOptions?.length ? null : "__none__");
             setSelectedTexture(item?.hairTextures?.[0] ?? null);
+            setSelectedFoundation(null);
             setShowLengthGuide(false);
             return;
         }
@@ -105,6 +107,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
         setSelectedItemIndex(null);
         setSelectedLength(null);
         setSelectedTexture(null);
+        setSelectedFoundation(null);
         setShowLengthGuide(false);
     };
 
@@ -159,6 +162,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
 
     const handleModalSelect = () => {
         if (!selectedItem || !selectedLength) return;
+        if (selectedItem.foundationChoicesEnabled && !selectedFoundation) return;
         if (selectedItem.hairTextures?.length && !selectedTexture) return;
 
         const option = lengthOptions.find((opt) => opt.id?.toString() === selectedLength);
@@ -174,6 +178,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
             price: option?.price ?? selectedItem.price ?? "",
             description: selectedItem.description ?? "Professional braiding service",
             texture: selectedTexture ?? "",
+            foundation: selectedFoundation ?? "",
             image: selectedItem.image || subcategory.image || "",
         });
 
@@ -368,6 +373,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                         </div>
 
                         <div className="relative flex-1 space-y-2 overflow-y-auto px-6 py-4 md:px-8 scrollbar-hide">
+                            {selectedItem.foundationChoicesEnabled && <div className="mb-5 space-y-3 border-b border-neutral-200 pb-5"><p className="text-sm font-medium text-neutral-900">Choose your braid foundation.</p><div className="grid grid-cols-2 gap-3">{([['REGULAR', 'Regular', 'Traditional foundation'], ['KNOTLESS', 'Knotless', 'Lightweight, natural finish']] as const).map(([value, label, detail]) => { const selected = selectedFoundation === value; return <button key={value} type="button" onClick={() => setSelectedFoundation(value)} className={`min-h-24 rounded-lg border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2 ${selected ? 'border-[#2C1810] bg-[#FAF7F2]' : 'border-neutral-200 hover:border-neutral-400'}`}><span className="flex items-center gap-2 text-sm font-semibold"><span className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${selected ? 'border-[#2C1810] bg-[#2C1810] text-white' : 'border-neutral-300'}`}>{selected ? '✓' : ''}</span>{label}</span><span className="mt-2 block text-xs text-neutral-500">{detail}</span>{value === 'KNOTLESS' && <span className="mt-1 block text-xs text-neutral-600">+{formatPrice(selectedItem.knotlessPriceAdjustment || '0')} by length</span>}</button>; })}</div>{selectedFoundation && <p className="text-xs text-neutral-600">{selectedFoundation === 'KNOTLESS' ? 'Knotless' : 'Regular'} selected · Prices updated</p>}</div>}
                             {lengthOptions.map((option, idx) => {
                                 const optionKey = option.id?.toString() ?? `option-${idx}`;
                                 const isSelected = selectedLength === optionKey;
@@ -402,7 +408,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                                     )}
                                                 </div>
                                             </div>
-                                            {option.price && <span className="text-base font-medium text-neutral-900">{formatPrice(option.price)}</span>}
+                                            {option.price && <span className="text-base font-medium text-neutral-900">{formatPrice(Number(option.price.replace(/[^0-9.]/g, '')) + (selectedFoundation === 'KNOTLESS' ? Number((selectedItem.knotlessPriceAdjustment || '0').replace(/[^0-9.]/g, '')) : 0))}</span>}
                                         </button>
                                         {isSelected && selectedItem?.hairTextures?.length ? (
                                             <div className="pl-9 pr-4">
@@ -438,8 +444,8 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                         </div>
 
                         <div className="relative shrink-0 border-t border-neutral-200 bg-white p-4 shadow-[0_-12px_24px_rgba(0,0,0,0.08)] md:px-8">
-                            <Button type="button" disabled={!selectedLength || (selectedItem.hairTextures?.length ? !selectedTexture : false)} onClick={handleModalSelect} className="w-full rounded-lg bg-[#2C1810] py-3 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#1a0f0a] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500 disabled:hover:bg-neutral-300">
-                                Book Now{selectedLengthOption?.price ? ` · ${formatPrice(selectedLengthOption.price)}` : ""}
+                            <Button type="button" disabled={!selectedLength || (selectedItem.foundationChoicesEnabled ? !selectedFoundation : false) || (selectedItem.hairTextures?.length ? !selectedTexture : false)} onClick={handleModalSelect} className="w-full rounded-lg bg-[#2C1810] py-3 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#1a0f0a] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500 disabled:hover:bg-neutral-300">
+                                Book Now{selectedLengthOption?.price ? ` · ${formatPrice(Number(selectedLengthOption.price.replace(/[^0-9.]/g, '')) + (selectedFoundation === 'KNOTLESS' ? Number((selectedItem.knotlessPriceAdjustment || '0').replace(/[^0-9.]/g, '')) : 0))}` : ""}
                             </Button>
                         </div>
                         {showLengthGuide && <LengthGuideOverlay onClose={() => setShowLengthGuide(false)} />}

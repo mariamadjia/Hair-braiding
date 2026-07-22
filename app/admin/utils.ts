@@ -8,7 +8,7 @@ export function slugify(s: string) {
 }
 
 export function emptyItem(): BookingItem {
-    return { name: "", price: "", description: "", lengthOptions: [] };
+    return { name: "", price: "", description: "", lengthOptions: [], foundationChoicesEnabled: false, knotlessPriceAdjustment: "0" };
 }
 
 export function emptyLengthOption(): LengthOption {

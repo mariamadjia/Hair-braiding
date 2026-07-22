@@ -35,6 +35,8 @@ export type BookingItem = {
     lengthOptions?: LengthOption[];
     hairTextures?: string[];
     displayOrder?: number;
+    foundationChoicesEnabled?: boolean;
+    knotlessPriceAdjustment?: string;
 };
 
 export type GalleryImageItem = {
