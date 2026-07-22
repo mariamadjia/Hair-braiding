@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from "react";
 import type { BookingCategory, BookingSubcategory, CategoriesData, BookingItem } from "@/lib/booking-types";
-import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { emptyItem } from "../utils";
 import { formatPrice } from "@/lib/utils/price";
 import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
-import type { GalleryImageItem } from "@/lib/booking-types";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ItemForm } from "./ItemForm";
-import { ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle } from "lucide-react";
+import { ArchiveRestore, ArrowDown, ArrowUp, ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle, Loader2, X } from "lucide-react";
 import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
 
@@ -28,6 +26,13 @@ function sortItemsBySize(items: BookingItem[]): { item: BookingItem; originalIdx
         if (indexB !== -1) return 1;
         return a.originalIdx - b.originalIdx;
     });
+}
+
+function servicePriceLabel(item: BookingItem) {
+    const prices = (item.lengthOptions ?? []).map(option => Number((option.price ?? "").replace(/[^0-9.]/g, ""))).filter(Number.isFinite);
+    if (!prices.length) return formatPrice(item.price);
+    const minimum = Math.min(...prices); const maximum = Math.max(...prices);
+    return minimum === maximum ? formatPrice(minimum) : `${formatPrice(minimum)} – ${formatPrice(maximum)}`;
 }
 
 type Selection =
@@ -57,7 +62,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [images, setImages] = useState(sub.images ?? []);
     const [dirty, setDirty] = useState(false);
     const [addingItem, setAddingItem] = useState(false);
-    const [editingIdx, setEditingIdx] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
     const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(
         (sub.galleryImages ?? []) as GalleryImage[]
@@ -66,6 +71,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
+    const [archivedItems, setArchivedItems] = useState<BookingItem[]>([]);
+    const [showArchived, setShowArchived] = useState(false);
+    const [loadingArchived, setLoadingArchived] = useState(false);
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
 
@@ -95,14 +103,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             });
         }
     }, [sub.items]);
-
-    const syncFromGallery = () => {
-        if (galleryImages.length > 0) {
-            const galleryUrls = galleryImages.map(img => img.imageUrl);
-            setImages(galleryUrls);
-            setDirty(true);
-        }
-    };
 
     const uploadGalleryImage = async (file: File) => {
         if (saving) {
@@ -272,7 +272,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     };
 
     const save = async () => {
-        if (saving) return; // Prevent concurrent mutations
+        if (saving) throw new Error("Another change is still being saved.");
         if (!name.trim()) {
             setSaveError("Subcategory name is required.");
             return;
@@ -326,8 +326,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         }
     };
 
-    const saveItem = async (item: BookingItem, idx: number | null) => {
-        if (saving) return; // Prevent concurrent mutations
+    const saveItem = async (item: BookingItem, itemId: number | null) => {
+        if (saving) throw new Error("Another change is still being saved.");
         if (!item.name?.trim()) {
             setSaveError("Size name is required.");
             throw new Error("Size name is required.");
@@ -344,13 +344,10 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         setSaving(true);
         setSaveError(null);
         try {
-            if (idx !== null) {
-                const itemId = items[idx]?.id;
-                if (!itemId) throw new Error("This item has no stable ID. Refresh the page before editing it.");
+            if (itemId !== null) {
                 await mutate("PUT", `${base}/items`, { item, itemId, subcategoryId: sub.id });
-                // Only update local state after server confirms
-                setItems(prev => prev.map((existing, i) => i === idx ? item : existing));
-                setEditingIdx(null);
+                setItems(prev => prev.map(existing => existing.id === itemId ? { ...item, id: itemId } : existing));
+                setEditingId(null);
                 setSaveSuccess("Size saved successfully!");
                 setTimeout(() => setSaveSuccess(null), 3000);
                 const freshSub = await onSubcategoryUpdate?.(sub.slug);
@@ -393,7 +390,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         }
     };
 
-    const deleteItem = async (idx: number, itemId?: number) => {
+    const deleteItem = async (itemId?: number) => {
         // Always use itemId if available, never rely on array index
         if (!itemId) {
             console.error('[SubcategoryEditor] No itemId provided, cannot delete safely');
@@ -403,7 +400,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         
         if (saving) return; // Prevent concurrent mutations
         
-        const itemName = items?.[idx]?.name ?? "this size";
+        const itemName = items.find(item => item.id === itemId)?.name ?? "this size";
         if (!confirm(`Archive "${itemName}"? It will disappear from booking but remain on existing appointments.`)) return;
         
         setSaving(true);
@@ -412,7 +409,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             await mutate("DELETE", `${base}/items/${itemId}`, undefined);
             // Only update local state after server confirms deletion - filter by itemId instead of index
             setItems(prev => prev.filter(item => item.id !== itemId));
-            setEditingIdx(null);
+            setEditingId(null);
             // Remove the deleted item from expanded items using itemId
             setExpandedItems(new Set(Array.from(expandedItems).filter(id => id !== itemId)));
             setSaveSuccess("Size archived successfully!");
@@ -446,16 +443,76 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         }
     };
 
-    const toggleExpand = (idx: number) => {
+    const toggleExpand = (itemId?: number) => {
+        if (!itemId) return;
         setExpandedItems(prev => {
             const next = new Set(prev);
-            if (next.has(idx)) {
-                next.delete(idx);
+            if (next.has(itemId)) {
+                next.delete(itemId);
             } else {
-                next.add(idx);
+                next.add(itemId);
             }
             return next;
         });
+    };
+
+    const loadArchived = async () => {
+        if (!sub.id) return;
+        setLoadingArchived(true); setSaveError(null);
+        try {
+            const response = await fetch(`/api/admin/services?archived=true&subcategoryId=${sub.id}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || "Unable to load archived services.");
+            setArchivedItems(payload);
+        } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to load archived services."); }
+        finally { setLoadingArchived(false); }
+    };
+
+    const toggleArchived = () => { const next = !showArchived; setShowArchived(next); if (next) void loadArchived(); };
+
+    const restoreItem = async (itemId: number) => {
+        setSaving(true); setSaveError(null);
+        try {
+            const response = await fetch(`/api/admin/services/${itemId}/restore`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || "Unable to restore service.");
+            setArchivedItems(previous => previous.filter(item => item.id !== itemId));
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.items) setItems(freshSub.items);
+            setSaveSuccess("Service restored to booking.");
+        } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to restore service."); }
+        finally { setSaving(false); }
+    };
+
+    const reorderItem = async (itemId: number, offset: number) => {
+        const ordered = sortItemsBySize(items).map(entry => entry.item);
+        const index = ordered.findIndex(item => item.id === itemId);
+        const target = index + offset;
+        if (index < 0 || target < 0 || target >= ordered.length) return;
+        [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
+        setItems(ordered.map((item, displayOrder) => ({ ...item, displayOrder })));
+        setSaving(true); setSaveError(null);
+        try {
+            const response = await fetch("/api/admin/services/reorder", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ serviceIds: ordered.map(item => item.id) }) });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || "Unable to reorder services.");
+            setSaveSuccess("Customer display order updated.");
+        } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to reorder services."); const freshSub = await onSubcategoryUpdate?.(sub.slug); if (freshSub?.items) setItems(freshSub.items); }
+        finally { setSaving(false); }
+    };
+
+    const setCoverPhoto = async (imageId: number) => {
+        const selected = galleryImages.find(imageItem => imageItem.id === imageId);
+        if (!selected) return;
+        const ordered = [selected, ...galleryImages.filter(imageItem => imageItem.id !== imageId)];
+        setSaving(true); setSaveError(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/gallery/reorder`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(ordered.map(imageItem => imageItem.id)) });
+            if (!response.ok) throw new Error("Unable to set the cover photo.");
+            setGalleryImages(ordered);
+            setSaveSuccess("Cover photo updated.");
+        } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to set the cover photo."); }
+        finally { setSaving(false); }
     };
 
     const coverPhoto = galleryImages[0] ? toProxyUrl(galleryImages[0].imageUrl) : null;
@@ -465,13 +522,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         <div className="space-y-4">
             {/* Banners */}
             {saveSuccess && (
-                <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-800 dark:text-green-200 text-sm">
+                <div role="status" className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-800 dark:text-green-200 text-sm">
                     <CheckCircle className="w-4 h-4 flex-shrink-0 text-green-600" />
                     <span className="flex-1 font-medium">{saveSuccess}</span>
                 </div>
             )}
             {saveError && (
-                <div className="flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
+                <div role="alert" className="flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     <span className="flex-1">{saveError}</span>
                     <button type="button" onClick={() => setSaveError(null)} className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
@@ -566,11 +623,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                             onClick={() => deleteGalleryImage(img.id)}
                                             className="absolute top-1 right-1 w-5 h-5 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
                                             title="Remove"
+                                            aria-label={`Remove ${img.title || `photo ${i + 1}`}`}
                                         >
                                             <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                                             </svg>
                                         </button>
+                                        {i !== 0 && <button type="button" onClick={() => void setCoverPhoto(img.id)} className="absolute bottom-1 left-1 right-1 rounded bg-black/70 px-1 py-1 text-[9px] font-semibold text-white opacity-100 focus:ring-2 focus:ring-violet-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">Set cover</button>}
                                     </div>
                                 ))}
                                 <label className="w-20 h-20 border-2 border-dashed border-violet-200 dark:border-violet-800 rounded-lg flex flex-col items-center justify-center text-violet-400 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all cursor-pointer">
@@ -597,7 +656,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
             {/* Sizes card */}
             <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden">
-                <div className="px-5 py-3.5 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/60 flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-neutral-50 px-4 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/60 sm:px-5">
                     <div className="flex items-center gap-2">
                         <Package className="w-3.5 h-3.5 text-violet-500" />
                         <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-600 dark:text-neutral-300">Sizes</h3>
@@ -605,16 +664,11 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                             <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full">{items.length}</span>
                         )}
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => { setAddingItem(true); setEditingIdx(null); }}
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
-                    >
-                        <Plus className="w-3.5 h-3.5" />
-                        Add Size
-                    </button>
+                    <div className="flex items-center gap-2"><button type="button" onClick={toggleArchived} className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400"><ArchiveRestore className="h-3.5 w-3.5" /> Archived</button><button type="button" onClick={() => { setAddingItem(true); setEditingId(null); }} className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" />Add Size</button></div>
                 </div>
                 <div className="p-4 space-y-3">
+                    {showArchived && <section className="rounded-lg border border-amber-200 bg-amber-50/60 p-3" aria-label="Archived services"><div className="mb-2 flex items-center justify-between"><h4 className="text-xs font-semibold uppercase tracking-wider text-amber-800">Archived services</h4><button type="button" onClick={toggleArchived} aria-label="Close archived services" className="text-amber-800"><X className="h-4 w-4" /></button></div>{loadingArchived ? <div role="status" className="flex items-center gap-2 py-4 text-sm text-amber-800"><Loader2 className="h-4 w-4 animate-spin" />Loading archived services…</div> : archivedItems.length === 0 ? <p className="py-3 text-sm text-amber-800">No archived services in this subcategory.</p> : <div className="space-y-2">{archivedItems.map(item => <div key={item.id} className="flex items-center justify-between rounded-lg border border-amber-200 bg-white px-3 py-2"><div><p className="text-sm font-semibold">{item.name}</p><p className="text-xs text-neutral-500">{servicePriceLabel(item)}</p></div><button type="button" disabled={saving} onClick={() => item.id && void restoreItem(item.id)} className="rounded-lg bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Restore</button></div>)}</div>}</section>}
+
                     {addingItem && (
                         <div className="rounded-lg border-2 border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-900/10 p-4">
                             <ItemForm
@@ -638,17 +692,17 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {sortItemsBySize(items).map(({ item, originalIdx }) => (
-                                <div key={originalIdx}>
-                                    {editingIdx === originalIdx ? (
+                            {sortItemsBySize(items).map(({ item, originalIdx }, orderedIndex, orderedEntries) => (
+                                <div key={item.id ?? `new-${originalIdx}`}>
+                                    {editingId === item.id ? (
                                         <div className="rounded-lg border-2 border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-900/10 p-4">
                                             <ItemForm
                                                 initial={item}
                                                 token={token}
                                                 categoryId={cat.id}
                                                 subcategoryId={sub.id}
-                                                onSave={(updated) => saveItem(updated, originalIdx)}
-                                                onCancel={() => setEditingIdx(null)}
+                                                onSave={(updated) => saveItem(updated, item.id ?? null)}
+                                                onCancel={() => setEditingId(null)}
                                             />
                                         </div>
                                     ) : (
@@ -657,7 +711,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                 {item.image && (
                                                     <img src={item.image} alt={item.name} className="w-14 h-14 flex-shrink-0 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-sm" />
                                                 )}
-                                                <button type="button" onClick={() => toggleExpand(originalIdx)} className="flex-1 min-w-0 text-left">
+                                                <button type="button" onClick={() => toggleExpand(item.id)} aria-expanded={item.id ? expandedItems.has(item.id) : false} className="flex-1 min-w-0 text-left focus:outline-none focus:ring-2 focus:ring-violet-400">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm font-semibold text-neutral-900 dark:text-white">{item.name}</span>
                                                         {item.lengthOptions?.length ? (
@@ -668,27 +722,24 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                             <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full">No lengths</span>
                                                         )}
                                                     </div>
-                                                    {item.lengthOptions?.length ? (
-                                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                                                            {formatPrice(item.lengthOptions[0].price)}
-                                                            {item.lengthOptions.length > 1 && ` – ${formatPrice(item.lengthOptions[item.lengthOptions.length - 1].price)}`}
-                                                        </p>
-                                                    ) : null}
+                                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{servicePriceLabel(item)} · {item.hairTextures?.length ?? 0} textures · {item.sizePhotos?.length ?? 0} photos</p>
                                                 </button>
                                                 <div className="flex items-center gap-1 flex-shrink-0">
-                                                    <button type="button" onClick={() => toggleExpand(originalIdx)} className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors" title={expandedItems.has(originalIdx) ? "Collapse" : "Expand"}>
-                                                        {expandedItems.has(originalIdx) ? <ChevronUp className="w-4 h-4 text-neutral-400" /> : <ChevronDown className="w-4 h-4 text-neutral-400" />}
+                                                    <button type="button" disabled={orderedIndex === 0 || saving} onClick={() => item.id && void reorderItem(item.id, -1)} aria-label={`Move ${item.name} up`} className="p-2 hover:bg-neutral-100 rounded-lg disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
+                                                    <button type="button" disabled={orderedIndex === orderedEntries.length - 1 || saving} onClick={() => item.id && void reorderItem(item.id, 1)} aria-label={`Move ${item.name} down`} className="p-2 hover:bg-neutral-100 rounded-lg disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button>
+                                                    <button type="button" onClick={() => toggleExpand(item.id)} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors" title={item.id && expandedItems.has(item.id) ? "Collapse" : "Expand"}>
+                                                        {item.id && expandedItems.has(item.id) ? <ChevronUp className="w-4 h-4 text-neutral-400" /> : <ChevronDown className="w-4 h-4 text-neutral-400" />}
                                                     </button>
-                                                    <button type="button" onClick={() => { setEditingIdx(originalIdx); setAddingItem(false); }} className="p-1.5 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="Edit">
+                                                    <button type="button" onClick={() => { setEditingId(item.id ?? null); setAddingItem(false); }} aria-label={`Edit ${item.name}`} className="p-2 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors opacity-100 focus:ring-2 focus:ring-violet-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" title="Edit">
                                                         <Edit3 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
                                                     </button>
-                                                    <button type="button" onClick={() => deleteItem(originalIdx, item.id)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="Delete">
+                                                    <button type="button" onClick={() => deleteItem(item.id)} aria-label={`Archive ${item.name}`} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-100 focus:ring-2 focus:ring-red-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" title="Archive">
                                                         <Trash2 className="w-3.5 h-3.5 text-red-500" />
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            {expandedItems.has(originalIdx) && (
+                                            {item.id && expandedItems.has(item.id) && (
                                                 <div className="border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 px-4 py-3">
                                                     {item.sizePhotos && item.sizePhotos.length > 0 && (
                                                         <div className="mb-3">

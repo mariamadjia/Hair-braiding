@@ -58,7 +58,6 @@ export function EditorPanel({
 }) {
     const headers = { 
         "Content-Type": "application/json", 
-        "x-admin-token": token,
         "Authorization": `Bearer ${token}`
     };
 
@@ -71,9 +70,11 @@ export function EditorPanel({
         });
         
         if (!res.ok) {
-            const errorText = await res.text();
-            console.error(`[MUTATE] Error: ${res.status} - ${errorText}`);
-            throw new Error(`Failed to ${method} ${path}: ${res.status} ${errorText}`);
+            const payload = await res.json().catch(() => null);
+            const nested = typeof payload?.error === "string" && payload.error.trim().startsWith("{")
+                ? (() => { try { return JSON.parse(payload.error)?.error; } catch { return null; } })()
+                : null;
+            throw new Error(nested || payload?.error || payload?.message || `Unable to save changes (${res.status}).`);
         }
         
         const text = await res.text();
@@ -89,7 +90,7 @@ export function EditorPanel({
 
     const wrapEditor = (node: React.ReactNode) => (
         <div className="flex-1 min-w-0 overflow-y-auto">
-            <div className="px-8 py-6 max-w-4xl mx-auto">{node}</div>
+            <div className="mx-auto max-w-4xl px-4 py-4 sm:px-8 sm:py-6">{node}</div>
         </div>
     );
 

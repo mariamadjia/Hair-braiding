@@ -5,205 +5,100 @@ import type { BookingItem } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS } from "../constants";
 import { LengthOptionsEditor } from "./LengthOptionsEditor";
 import { toProxyUrl } from "@/lib/utils/image";
-import { Plus, X, AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Loader2, Plus, X } from "lucide-react";
 import { uploadFile } from "../utils";
+import { formatPrice } from "@/lib/utils/price";
 
-export function ItemForm({
-  initial,
-  token,
-  categoryId,
-  subcategoryId,
-  onSave,
-  onCancel,
-}: {
-  initial: BookingItem;
-  token: string;
-  categoryId?: number;
-  subcategoryId?: number;
-  onSave: (item: BookingItem) => Promise<void>;
-  onCancel: () => void;
-}) {
+export function ItemForm({ initial, token, onSave, onCancel }: { initial: BookingItem; token: string; categoryId?: number; subcategoryId?: number; onSave: (item: BookingItem) => Promise<void>; onCancel: () => void }) {
     const [item, setItem] = useState<BookingItem>(initial);
+    const [textureDraft, setTextureDraft] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [dirty, setDirty] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const photos = item.sizePhotos ?? [];
 
-    // Unsaved changes protection
     useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (dirty) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
-        };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+        const beforeUnload = (event: BeforeUnloadEvent) => { if (dirty) event.preventDefault(); };
+        window.addEventListener("beforeunload", beforeUnload);
+        return () => window.removeEventListener("beforeunload", beforeUnload);
     }, [dirty]);
 
-    // Keyboard navigation
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Enter' && !e.shiftKey && dirty) {
-                e.preventDefault();
-                void handleSave();
-            }
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                handleCancel();
-            }
+        const keyboardSave = (event: KeyboardEvent) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && dirty && !saving) { event.preventDefault(); void handleSave(); }
         };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [item, dirty, onSave]);
+        window.addEventListener("keydown", keyboardSave);
+        return () => window.removeEventListener("keydown", keyboardSave);
+    }, [item, dirty, saving]);
+
+    const set = (field: keyof BookingItem, value: unknown) => { setItem(previous => ({ ...previous, [field]: value })); setDirty(true); setError(null); };
 
     const handleSave = async () => {
-        if (!item.name.trim()) return;
-        setError(null);
+        if (!item.name.trim() || saving || uploading) return;
+        setSaving(true); setError(null);
         try {
-            await onSave({ ...item, sizePhotos: item.sizePhotos ?? [] });
-            setSuccess("Item saved successfully!");
+            await onSave({ ...item, sizePhotos: photos });
+            setDirty(false); setSuccess("Service saved successfully.");
             setTimeout(() => setSuccess(null), 3000);
-            setDirty(false);
         } catch (caught) {
-            setError(caught instanceof Error ? caught.message : "Unable to save this item.");
-        }
+            setError(caught instanceof Error ? caught.message : "Unable to save this service.");
+        } finally { setSaving(false); }
     };
 
     const handleCancel = () => {
-        if (dirty && !confirm('You have unsaved changes. Are you sure you want to cancel?')) {
-            return;
-        }
+        if (dirty && !confirm("You have unsaved changes. Cancel editing?")) return;
         onCancel();
     };
 
-    useEffect(() => {
-        setItem(initial);
-    }, [initial.id, initial.name]);
-
-    const set = (field: keyof BookingItem, val: unknown) => setItem((prev) => ({ ...prev, [field]: val }));
-
-    const [uploadingSizePhotos, setUploadingSizePhotos] = useState(false);
-    const rawSizePhotos = item.sizePhotos ?? [];
-    const displaySizePhotos = rawSizePhotos.map(toProxyUrl).filter(Boolean);
-
-    const handleSizePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files) return;
-        setUploadingSizePhotos(true);
+    const uploadPhotos = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files?.length) return;
+        setUploading(true); setError(null);
         try {
-            const uploadedUrls = await Promise.all(
-                Array.from(files).map((file) =>
-                    uploadFile(file, token, {
-                        // Don't pass any relationship parameters to prevent gallery association
-                        // No categoryId, subcategoryId, or serviceItemId
-                    }, true) // Use simple upload for size photos (not gallery)
-                )
-            );
-            // Only store in sizePhotos, ensure images/image are not affected
-            setItem((prev) => ({ 
-                ...prev, 
-                sizePhotos: [...rawSizePhotos, ...uploadedUrls]
-            }));
-            setDirty(true);
-        } catch (error) {
-            console.error("Failed to upload size photos:", error);
-            setError("Failed to upload size photos. Please try again.");
-        } finally {
-            setUploadingSizePhotos(false);
-            e.target.value = "";
-        }
+            const urls = await Promise.all(Array.from(files).map(file => uploadFile(file, token, {}, true)));
+            set("sizePhotos", [...photos, ...urls]);
+        } catch { setError("Failed to upload one or more size photos."); }
+        finally { setUploading(false); event.target.value = ""; }
     };
 
-    const removeSizePhoto = (index: number) => {
-        setItem((prev) => ({ ...prev, sizePhotos: rawSizePhotos.filter((_, i) => i !== index) }));
-        setDirty(true);
+    const addTexture = () => {
+        const texture = textureDraft.trim();
+        if (!texture) return;
+        if ((item.hairTextures ?? []).some(value => value.toLowerCase() === texture.toLowerCase())) { setError("That texture is already listed."); return; }
+        set("hairTextures", [...(item.hairTextures ?? []), texture]); setTextureDraft("");
     };
+
+    const prices = (item.lengthOptions ?? []).map(option => Number((option.price ?? "").replace(/[^0-9.]/g, ""))).filter(Number.isFinite);
+    const previewPrice = prices.length ? `${formatPrice(Math.min(...prices))}${Math.min(...prices) === Math.max(...prices) ? "" : ` – ${formatPrice(Math.max(...prices))}`}` : formatPrice(item.price);
 
     return (
-        <div className="border border-neutral-200 rounded-sm p-3 space-y-2.5 bg-neutral-50">
-            {/* Error Banner */}
-            {error && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-sm text-red-700 dark:text-red-300 text-xs">
-                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                    <span className="flex-1">{error}</span>
-                    <button type="button" onClick={() => setError(null)} className="text-red-400 hover:text-red-600 text-xs">×</button>
-                </div>
-            )}
+        <form onSubmit={(event) => { event.preventDefault(); void handleSave(); }} className="space-y-5 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900/40">
+            {error && <div role="alert" tabIndex={-1} className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"><AlertCircle className="h-4 w-4" /><span className="flex-1">{error}</span><button type="button" aria-label="Dismiss error" onClick={() => setError(null)}><X className="h-4 w-4" /></button></div>}
+            {success && <div role="status" className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700"><CheckCircle className="h-4 w-4" />{success}</div>}
 
-            {/* Success Banner */}
-            {success && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-sm text-green-700 dark:text-green-300 text-xs">
-                    <CheckCircle className="w-3 h-3 flex-shrink-0" />
-                    <span className="flex-1">{success}</span>
-                    <button type="button" onClick={() => setSuccess(null)} className="text-green-400 hover:text-green-600 text-xs">×</button>
-                </div>
-            )}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label><span className={lbl}>Size or service name *</span><input className={inp} value={item.name} onChange={event => set("name", event.target.value)} placeholder="Small" /></label>
+                <label><span className={lbl}>Base price</span><input className={inp} inputMode="decimal" value={item.price ?? ""} onChange={event => set("price", event.target.value)} placeholder="200.00" /><span className="mt-1 block text-xs text-neutral-500">Used when there are no length options.</span></label>
+                <label className="sm:col-span-2"><span className={lbl}>Customer description</span><textarea className={`${inp} min-h-24 resize-y`} value={item.description ?? ""} onChange={event => set("description", event.target.value)} placeholder="What customers should know about this service" /></label>
+                <label className="sm:col-span-2"><span className={lbl}>Internal/service notes</span><textarea className={`${inp} min-h-20 resize-y`} value={item.notes ?? ""} onChange={event => set("notes", event.target.value)} placeholder="Preparation, deposit, or staff notes" /></label>
+                <label><span className={lbl}>Primary image URL</span><input className={inp} inputMode="url" value={item.image ?? ""} onChange={event => set("image", event.target.value)} placeholder="https://…" /></label>
+                <label><span className={lbl}>Image position</span><input className={inp} value={item.objectPosition ?? ""} onChange={event => set("objectPosition", event.target.value)} placeholder="center center" /></label>
+            </div>
 
-            <div><label className={lbl}>Size *</label><input className={inp} value={item.name} onChange={(e) => { set("name", e.target.value); setDirty(true); setError(null); }} />
-            <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-                Enter the size name (e.g., "Small", "Medium", "Large")
-            </p>
-            </div>
-            <div>
-                <label className={lbl}>Photos for this size</label>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                    <label className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-dashed ${uploadingSizePhotos ? 'border-neutral-300 text-neutral-400 cursor-not-allowed' : 'border-violet-300 text-violet-500 hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:border-violet-700 dark:hover:bg-violet-950/30'}`}>
-                        {uploadingSizePhotos ? (
-                            <span className="text-xs">...</span>
-                        ) : (
-                            <Plus className="h-5 w-5" />
-                        )}
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="hidden"
-                            onChange={handleSizePhotoUpload}
-                            disabled={uploadingSizePhotos}
-                        />
-                    </label>
-                    {displaySizePhotos.slice(0, 3).map((photo, index) => (
-                        <div key={index} className="relative group">
-                            <img src={photo} alt="" className="h-10 w-10 rounded-md border border-neutral-200 object-cover dark:border-neutral-700" />
-                            <button
-                                type="button"
-                                onClick={() => removeSizePhoto(index)}
-                                className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-700 text-white opacity-0 group-hover:opacity-100"
-                            >
-                                <X className="h-3 w-3" />
-                            </button>
-                        </div>
-                    ))}
-                    {displaySizePhotos.length > 3 && (
-                        <span className="flex h-10 w-10 items-center justify-center rounded-md border border-neutral-200 bg-neutral-50 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                            +{displaySizePhotos.length - 3}
-                        </span>
-                    )}
-                </div>
-            </div>
-            <div>
-                <label className={lbl} htmlFor={`textures-${item.id ?? "new"}`}>Hair textures</label>
-                <input
-                    id={`textures-${item.id ?? "new"}`}
-                    className={inp}
-                    value={(item.hairTextures ?? []).join(", ")}
-                    onChange={(event) => {
-                        set("hairTextures", event.target.value.split(",").map(value => value.trim()).filter(Boolean));
-                        setDirty(true);
-                        setError(null);
-                    }}
-                    placeholder="Deep Wave, Body Wave, Kinky Curly"
-                />
-                <p className="mt-1 text-xs text-neutral-500">Separate customer choices with commas.</p>
-            </div>
-            <LengthOptionsEditor
-                options={item.lengthOptions ?? []}
-                onChange={(opts) => { set("lengthOptions", opts); setDirty(true); setError(null); }}
-            />
-            <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => void handleSave()} className={btnP} disabled={!item.name.trim()}>Save</button>
-                <button type="button" onClick={handleCancel} className={btnS}>Cancel</button>
-            </div>
-        </div>
+            <fieldset><legend className={lbl}>Photos for this size</legend><div className="flex flex-wrap gap-2">
+                <label aria-label="Upload size photos" className={`flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-violet-300 text-violet-600 focus-within:ring-2 focus-within:ring-violet-400 ${uploading ? "opacity-50" : "hover:bg-violet-50"}`}>{uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}<input type="file" accept="image/*" multiple className="sr-only" disabled={uploading || saving} onChange={uploadPhotos} /></label>
+                {photos.map((photo, index) => <div key={`${photo}-${index}`} className="group relative"><img src={toProxyUrl(photo)} alt={`Size photo ${index + 1}`} className="h-16 w-16 rounded-lg border object-cover" /><button type="button" aria-label={`Remove size photo ${index + 1}`} onClick={() => set("sizePhotos", photos.filter((_, photoIndex) => photoIndex !== index))} className="absolute -right-1 -top-1 rounded-full bg-red-600 p-1 text-white opacity-100 focus:ring-2 focus:ring-red-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"><X className="h-3 w-3" /></button></div>)}
+            </div></fieldset>
+
+            <fieldset className="space-y-2"><legend className={lbl}>Customer hair-texture choices</legend><div className="flex flex-wrap gap-2">{(item.hairTextures ?? []).map(texture => <span key={texture.toLowerCase()} className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-3 py-1.5 text-xs font-medium text-violet-800">{texture}<button type="button" aria-label={`Remove ${texture}`} onClick={() => set("hairTextures", item.hairTextures?.filter(value => value !== texture) ?? [])}><X className="h-3.5 w-3.5" /></button></span>)}</div><div className="flex gap-2"><input className={inp} value={textureDraft} onChange={event => setTextureDraft(event.target.value)} onKeyDown={event => { if (event.key === "Enter" || event.key === ",") { event.preventDefault(); addTexture(); } }} placeholder="Deep Wave" /><button type="button" className={btnS} onClick={addTexture}>Add</button></div></fieldset>
+
+            <LengthOptionsEditor options={item.lengthOptions ?? []} onChange={options => set("lengthOptions", options)} />
+
+            <section aria-label="Customer preview" className="rounded-xl border border-violet-200 bg-white p-4 dark:border-violet-800 dark:bg-neutral-900"><p className="text-[10px] font-semibold uppercase tracking-widest text-violet-600">Customer preview</p><div className="mt-3 flex gap-4">{(item.image || photos[0]) && <img src={toProxyUrl(item.image || photos[0])} alt="" className="h-20 w-20 rounded-lg object-cover" />}<div><h4 className="font-semibold text-neutral-900 dark:text-white">{item.name || "Untitled service"}</h4><p className="mt-1 text-sm font-medium text-violet-700">{previewPrice}</p>{item.description && <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{item.description}</p>}<p className="mt-2 text-xs text-neutral-400">{item.lengthOptions?.length ?? 0} lengths · {item.hairTextures?.length ?? 0} texture choices · {photos.length} photos</p></div></div></section>
+
+            <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t bg-neutral-50/95 px-4 py-3 backdrop-blur dark:bg-neutral-900/95"><span className="hidden text-xs text-neutral-500 sm:block">Save shortcut: Ctrl/⌘ + Enter</span><div className="ml-auto flex gap-2"><button type="button" onClick={handleCancel} className={btnS} disabled={saving}>Cancel</button><button type="submit" className={`${btnP} inline-flex min-w-24 items-center justify-center gap-2`} disabled={!dirty || !item.name.trim() || saving || uploading}>{saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{saving ? "Saving…" : "Save service"}</button></div></div>
+        </form>
     );
 }

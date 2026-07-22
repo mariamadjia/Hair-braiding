@@ -13,12 +13,18 @@ export async function GET(req: NextRequest) {
     if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     
     try {
-        const response = await fetch(`${API_URL}/api/services`, {
+        const requestUrl = new URL(req.url);
+        const archived = requestUrl.searchParams.get("archived") === "true";
+        const subcategoryId = requestUrl.searchParams.get("subcategoryId");
+        const backendUrl = archived
+            ? `${API_URL}/api/admin/services/archived${subcategoryId ? `?subcategoryId=${encodeURIComponent(subcategoryId)}` : ""}`
+            : `${API_URL}/api/services`;
+        const response = await fetch(backendUrl, {
             headers: { Authorization: req.headers.get("authorization") || "" },
             signal: AbortSignal.timeout(10000)
         });
         if (!response.ok) {
-            return NextResponse.json({ error: "Failed to get services" }, { status: response.status });
+            return NextResponse.json(await response.json().catch(() => ({ error: "Failed to get services" })), { status: response.status });
         }
         const data = await response.json();
         return NextResponse.json(data);
