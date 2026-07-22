@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAuthToken } from "@/lib/utils/auth";
@@ -36,6 +36,13 @@ export default function AppointmentSettingsTab() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const settingsRef = useRef(settings);
+    settingsRef.current = settings;
+
+    const updateSetting = <K extends keyof AppointmentSettings>(key: K, value: AppointmentSettings[K]) => {
+        setSettings(previous => ({ ...previous, [key]: value }));
+        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
+    };
 
     useEffect(() => {
         fetchSettings();
@@ -85,6 +92,7 @@ export default function AppointmentSettingsTab() {
     };
 
     const saveSettings = async () => {
+        const currentSettings = settingsRef.current;
         setSaving(true);
         setError(null);
         setSuccess(false);
@@ -108,7 +116,7 @@ export default function AppointmentSettingsTab() {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(settings)
+                body: JSON.stringify(currentSettings)
             });
 
             if (!settingsResponse.ok) {
@@ -117,19 +125,20 @@ export default function AppointmentSettingsTab() {
             }
 
             setSuccess(true);
+            window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: false } }));
             setTimeout(() => setSuccess(false), 3000);
             
             // Dispatch event to notify booking calendar to refresh
             window.dispatchEvent(new CustomEvent('settingsUpdated', { 
                 detail: { 
-                    slotDurationMinutes: settings.slotDurationMinutes
+                    slotDurationMinutes: currentSettings.slotDurationMinutes
                 }
             }));
             
             // Dispatch event to sync global capacity to all slots in AvailabilitySchedule
             window.dispatchEvent(new CustomEvent('globalCapacityChanged', { 
                 detail: { 
-                    maxAppointmentsPerSlot: settings.maxAppointmentsPerSlot 
+                    maxAppointmentsPerSlot: currentSettings.maxAppointmentsPerSlot
                 }
             }));
 
@@ -212,7 +221,7 @@ export default function AppointmentSettingsTab() {
                     </label>
                     <select
                         value={settings.slotDurationMinutes}
-                        onChange={(e) => setSettings({ ...settings, slotDurationMinutes: parseInt(e.target.value) })}
+                        onChange={(e) => updateSetting('slotDurationMinutes', parseInt(e.target.value))}
                         className="w-full px-4 py-2 border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value={15}>15 minutes</option>
@@ -239,7 +248,7 @@ export default function AppointmentSettingsTab() {
                             min="1"
                             max="365"
                             value={settings.advanceBookingDays}
-                            onChange={(e) => setSettings({ ...settings, advanceBookingDays: parseInt(e.target.value) || 1 })}
+                            onChange={(e) => updateSetting('advanceBookingDays', parseInt(e.target.value) || 1)}
                             className="w-32 px-4 py-2 border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <span className="text-sm text-neutral-600">days</span>
@@ -259,7 +268,7 @@ export default function AppointmentSettingsTab() {
                         min="1"
                         max="10"
                         value={settings.maxAppointmentsPerSlot}
-                        onChange={(e) => setSettings({ ...settings, maxAppointmentsPerSlot: parseInt(e.target.value) || 1 })}
+                        onChange={(e) => updateSetting('maxAppointmentsPerSlot', parseInt(e.target.value) || 1)}
                         className="w-32 px-4 py-2 border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <p className="text-xs text-neutral-500">
@@ -270,7 +279,9 @@ export default function AppointmentSettingsTab() {
                 {/* Require Approval */}
                 <div className="flex items-start gap-3">
                     <button
-                        onClick={() => setSettings({ ...settings, requireApproval: !settings.requireApproval })}
+                        onClick={() => updateSetting('requireApproval', !settings.requireApproval)}
+                        role="switch"
+                        aria-checked={settings.requireApproval}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                             settings.requireApproval ? "bg-blue-600" : "bg-neutral-200"
                         }`}
@@ -294,7 +305,9 @@ export default function AppointmentSettingsTab() {
                 {/* Allow Same-Day Booking */}
                 <div className="flex items-start gap-3">
                     <button
-                        onClick={() => setSettings({ ...settings, allowSameDayBooking: !settings.allowSameDayBooking })}
+                        onClick={() => updateSetting('allowSameDayBooking', !settings.allowSameDayBooking)}
+                        role="switch"
+                        aria-checked={settings.allowSameDayBooking}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                             settings.allowSameDayBooking ? "bg-blue-600" : "bg-neutral-200"
                         }`}

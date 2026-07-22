@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Plus, X, Clock, Save, Loader2, Copy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,21 @@ const DAYS = [
     { key: 'SUNDAY', label: 'Sunday', abbr: 'S' }
 ];
 
+const createBookingSlots = (startTime: string, endTime: string, intervalMinutes: number, capacity: number): TimeSlot[] => {
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+    let current = startHour * 60 + startMinute;
+    const end = endHour * 60 + endMinute;
+    const slots: TimeSlot[] = [];
+    while (current < end) {
+        const next = Math.min(current + intervalMinutes, end);
+        const format = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+        slots.push({ startTime: format(current), endTime: format(next), capacity });
+        current += intervalMinutes;
+    }
+    return slots;
+};
+
 export default function AvailabilitySchedule() {
     const [schedule, setSchedule] = useState<DaySchedule[]>([]);
     const [loading, setLoading] = useState(true);
@@ -44,6 +59,8 @@ export default function AvailabilitySchedule() {
     const [showCopyConfirm, setShowCopyConfirm] = useState(false);
     const [copySourceDay, setCopySourceDay] = useState<string | null>(null);
     const [showTemplates, setShowTemplates] = useState(false);
+    const scheduleRef = useRef<DaySchedule[]>([]);
+    scheduleRef.current = schedule;
 
     useEffect(() => {
         fetchSettings();
@@ -115,7 +132,11 @@ export default function AvailabilitySchedule() {
                             if (existing && existing.isOpen) {
                                 // Fetch individual time slots for this day
                                 try {
-                                    const slotsResponse = await fetch(`${API_BASE_URL}/api/time-slots/${day.key}`);
+                                    const token = getAuthToken();
+                                    if (!token) throw new Error('Your admin session has expired. Please sign in again.');
+                                    const slotsResponse = await fetch(`${API_BASE_URL}/api/time-slots/${day.key}`, {
+                                        headers: { 'Authorization': `Bearer ${token}` }
+                                    });
                                     
                                     if (slotsResponse.ok) {
                                         const slotsData = await slotsResponse.json();
@@ -133,21 +154,12 @@ export default function AvailabilitySchedule() {
                                                 }))
                                             };
                                         }
+                                    } else {
+                                        throw new Error(`Could not load ${day.label} slots (${slotsResponse.status})`);
                                     }
                                 } catch (error) {
-                                    console.error(`Error fetching slots for ${day.key}:`, error);
+                                    throw error;
                                 }
-                                
-                                // Fallback: create single slot from business hours
-                                console.warn(`Could not load individual time slots for ${day.key}, using business hours fallback`);
-                                const openTime = existing.openTime?.substring(0, 5) || '09:00';
-                                const closeTime = existing.closeTime?.substring(0, 5) || '17:00';
-
-                                return {
-                                    dayOfWeek: day.key,
-                                    isAvailable: true,
-                                    timeSlots: [{ startTime: openTime, endTime: closeTime, capacity: maxAppointmentsPerSlot }]
-                                };
                             }
                             
                             return {
@@ -162,12 +174,11 @@ export default function AvailabilitySchedule() {
                 } else {
                     initializeSchedule();
                 }
-            } else {
-                initializeSchedule();
-            }
+            } else throw new Error(`Could not load business hours (${hoursResponse.status})`);
         } catch (error) {
             console.error('Error fetching business hours:', error);
-            initializeSchedule();
+            setError(error instanceof Error ? error.message : 'Could not load the saved schedule.');
+            setSchedule([]);
         } finally {
             setLoading(false);
         }
@@ -263,7 +274,7 @@ export default function AvailabilitySchedule() {
                 return {
                     ...day,
                     timeSlots: day.timeSlots.map((slot, idx) => 
-                        idx === slotIndex ? { ...slot, capacity: Math.max(0, Math.min(10, capacity)) } : slot
+                        idx === slotIndex ? { ...slot, capacity: Math.max(1, Math.min(10, capacity)) } : slot
                     )
                 };
             }
@@ -336,7 +347,12 @@ export default function AvailabilitySchedule() {
 
         const selectedTemplate = templates[template];
         if (selectedTemplate) {
-            setSchedule(selectedTemplate);
+            setSchedule(selectedTemplate.map(day => ({
+                ...day,
+                timeSlots: day.timeSlots.flatMap(slot =>
+                    createBookingSlots(slot.startTime, slot.endTime, slotDurationMinutes, maxAppointmentsPerSlot)
+                )
+            })));
             setHasUnsavedChanges(true);
             window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
             setShowTemplates(false);
@@ -413,26 +429,6 @@ export default function AvailabilitySchedule() {
     };
 
     const hideBreakdown = (dayKey: string) => {
-        const day = schedule.find(d => d.dayOfWeek === dayKey);
-        if (!day || day.timeSlots.length <= 1) return;
-
-        // Collapse all slots back to a single time range
-        const firstSlot = day.timeSlots[0];
-        const lastSlot = day.timeSlots[day.timeSlots.length - 1];
-        
-        setSchedule(prev => prev.map(d => 
-            d.dayOfWeek === dayKey 
-                ? { 
-                    ...d, 
-                    timeSlots: [{
-                        startTime: firstSlot.startTime,
-                        endTime: lastSlot.endTime,
-                        capacity: maxAppointmentsPerSlot
-                    }]
-                }
-                : d
-        ));
-        
         setExpandedDay(null);
     };
 
@@ -449,35 +445,7 @@ export default function AvailabilitySchedule() {
             endTime = day.timeSlots[day.timeSlots.length - 1].endTime;
         }
 
-        // Generate slots based on slot duration
-        const generatedSlots: TimeSlot[] = [];
-        const [startHour, startMin] = startTime.split(':').map(Number);
-        const [endHour, endMin] = endTime.split(':').map(Number);
-        
-        let currentMinutes = startHour * 60 + startMin;
-        const endMinutes = endHour * 60 + endMin;
-        const finalEndMinutes = endMinutes < currentMinutes ? endMinutes + 24 * 60 : endMinutes;
-        
-        while (currentMinutes < finalEndMinutes) {
-            const nextMinutes = currentMinutes + slotDurationMinutes;
-            if (nextMinutes > finalEndMinutes) break;
-            
-            const slotStartHour = Math.floor(currentMinutes / 60) % 24;
-            const slotStartMin = currentMinutes % 60;
-            const slotEndHour = Math.floor(nextMinutes / 60) % 24;
-            const slotEndMin = nextMinutes % 60;
-            
-            const slotStart = `${slotStartHour.toString().padStart(2, '0')}:${slotStartMin.toString().padStart(2, '0')}`;
-            const slotEnd = `${slotEndHour.toString().padStart(2, '0')}:${slotEndMin.toString().padStart(2, '0')}`;
-            
-            generatedSlots.push({
-                startTime: slotStart,
-                endTime: slotEnd,
-                capacity: maxAppointmentsPerSlot
-            });
-            
-            currentMinutes = nextMinutes;
-        }
+        const generatedSlots = createBookingSlots(startTime, endTime, slotDurationMinutes, maxAppointmentsPerSlot);
 
         // Update the schedule with generated slots
         setSchedule(prev => prev.map(d => 
@@ -505,7 +473,8 @@ export default function AvailabilitySchedule() {
             }
 
             // Validate schedule before saving
-            for (const day of schedule) {
+            const currentSchedule = scheduleRef.current;
+            for (const day of currentSchedule) {
                 if (day.isAvailable && day.timeSlots.length === 0) {
                     setError(`${day.dayOfWeek} is marked as available but has no time slots. Please add time slots or mark the day as unavailable.`);
                     window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: `${day.dayOfWeek} has no time slots`, success: false } }));
@@ -541,7 +510,7 @@ export default function AvailabilitySchedule() {
             }
 
             const payload = {
-                days: schedule.map((day) => ({
+                days: currentSchedule.map((day) => ({
                     dayOfWeek: day.dayOfWeek,
                     isAvailable: day.isAvailable,
                     timeSlots: day.isAvailable

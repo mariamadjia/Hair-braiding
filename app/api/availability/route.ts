@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { isAuthorized } from "@/lib/utils/admin-route";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-hairbraiding.onrender.com';
 
@@ -15,7 +14,8 @@ export async function GET(request: Request) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${date}&timezone=${timezone}`, {
+        const params = new URLSearchParams({ date, timezone });
+        const response = await fetch(`${API_BASE_URL}/api/availability/slots?${params}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

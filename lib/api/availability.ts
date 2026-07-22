@@ -59,7 +59,10 @@ export const availabilityApi = {
 
   // Get time slots for a day
   getTimeSlots: async (dayOfWeek: string): Promise<TimeSlot[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/time-slots/${dayOfWeek}`);
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/api/time-slots/${dayOfWeek}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
     if (!response.ok) throw new Error('Failed to fetch time slots');
     return response.json();
   },
@@ -79,9 +82,10 @@ export const availabilityApi = {
   },
 
   // Get blocked times
-  getBlockedTimes: async (): Promise<BlockedTime[]> => {
+  getBlockedTimes: async (startDate: string, endDate: string): Promise<BlockedTime[]> => {
     const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}/api/availability/blocked-times`, {
+    const params = new URLSearchParams({ startDate, endDate });
+    const response = await fetch(`${API_BASE_URL}/api/availability/blocked-times?${params}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -94,7 +98,7 @@ export const availabilityApi = {
   // Save blocked time
   saveBlockedTime: async (blockedTime: Omit<BlockedTime, 'id'>): Promise<void> => {
     const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}/api/availability/blocked-times`, {
+    const response = await fetch(`${API_BASE_URL}/api/availability/block-time`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Clock, User, Mail, MessageSquare, Loader2, Phone } from "lucide-react";
 import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,9 @@ export default function BookingCalendar({
     const [confirmationNumber, setConfirmationNumber] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stripePromise] = useState(() => getStripe());
+    const availabilityRequest = useRef<AbortController | null>(null);
+
+    useEffect(() => () => availabilityRequest.current?.abort(), []);
     
     const [formData, setFormData] = useState({
         firstName: "",
@@ -161,19 +164,21 @@ export default function BookingCalendar({
     };
 
     const fetchAvailableSlots = async (date: Date) => {
+        availabilityRequest.current?.abort();
+        const controller = new AbortController();
+        availabilityRequest.current = controller;
         try {
             const dateStr = formatLocalDate(date);
             const timezone = "America/Los_Angeles";
             console.log('Fetching slots for date:', dateStr, 'timezone:', timezone);
             
-            const serviceQuery = serviceId ? `&serviceId=${serviceId}` : "";
-            const optionQuery = lengthOptionId ? `&lengthOptionId=${lengthOptionId}` : "";
-            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}${serviceQuery}${optionQuery}`, {
+            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                cache: 'no-store'
+                cache: 'no-store',
+                signal: controller.signal
             });
             
             console.log('Response status:', response.status);
@@ -209,10 +214,13 @@ export default function BookingCalendar({
             setError(null);
             setAvailableSlots(slots);
         } catch (error) {
+            if (error instanceof DOMException && error.name === 'AbortError') return;
             console.error('Error fetching available slots:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unable to load available times. Please try again later.';
             setError(errorMessage);
             setAvailableSlots([]);
+        } finally {
+            if (availabilityRequest.current === controller) availabilityRequest.current = null;
         }
     };
 
@@ -244,9 +252,7 @@ export default function BookingCalendar({
         try {
             const dateStr = formatLocalDate(date);
             const timezone = "America/Los_Angeles";
-            const serviceQuery = serviceId ? `&serviceId=${serviceId}` : "";
-            const optionQuery = lengthOptionId ? `&lengthOptionId=${lengthOptionId}` : "";
-            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}${serviceQuery}${optionQuery}`, {
+            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

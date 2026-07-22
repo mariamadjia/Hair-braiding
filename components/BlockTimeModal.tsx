@@ -18,6 +18,13 @@ type BlockedSlot = {
     createdAt: string;
 };
 
+const SALON_TIME_ZONE = 'America/Los_Angeles';
+
+const salonDate = (date: Date) => new Intl.DateTimeFormat('en-CA', {
+    timeZone: SALON_TIME_ZONE,
+    year: 'numeric', month: '2-digit', day: '2-digit'
+}).format(date);
+
 export default function BlockTimeModal() {
     const [blockedSlots, setBlockedSlots] = useState<BlockedSlot[]>([]);
     const [loading, setLoading] = useState(true);
@@ -58,9 +65,11 @@ export default function BlockTimeModal() {
             const now = new Date();
             const futureDate = new Date();
             futureDate.setMonth(futureDate.getMonth() + 3);
+            const startRange = `${salonDate(now)}T00:00:00`;
+            const endRange = `${salonDate(futureDate)}T23:59:59`;
 
             const response = await fetch(
-                `${API_BASE_URL}/api/availability/blocked-times?startDate=${now.toISOString()}&endDate=${futureDate.toISOString()}`,
+                `${API_BASE_URL}/api/availability/blocked-times?startDate=${encodeURIComponent(startRange)}&endDate=${encodeURIComponent(endRange)}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -185,15 +194,14 @@ export default function BlockTimeModal() {
     };
 
     const formatDateTime = (dateTimeString: string) => {
-        const date = new Date(dateTimeString);
-        return date.toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        });
+        const [datePart, timePart = '00:00'] = dateTimeString.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hour, minute] = timePart.split(':').map(Number);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' })
+            .format(new Date(Date.UTC(year, month - 1, 1)));
+        return `${monthLabel} ${day}, ${year}, ${hour12}:${String(minute).padStart(2, '0')} ${ampm} PT`;
     };
 
     if (loading) {
@@ -225,9 +233,9 @@ export default function BlockTimeModal() {
                 <button
                     onClick={() => {
                         const today = new Date();
-                        setStartDate(today.toISOString().split('T')[0]);
+                        setStartDate(salonDate(today));
                         setStartTime('00:00');
-                        setEndDate(today.toISOString().split('T')[0]);
+                        setEndDate(salonDate(today));
                         setEndTime('23:59');
                         setReason('Full day blocked');
                         setIsRecurring(false);
@@ -242,9 +250,9 @@ export default function BlockTimeModal() {
                         const today = new Date();
                         const nextWeek = new Date(today);
                         nextWeek.setDate(nextWeek.getDate() + 7);
-                        setStartDate(today.toISOString().split('T')[0]);
+                        setStartDate(salonDate(today));
                         setStartTime('00:00');
-                        setEndDate(nextWeek.toISOString().split('T')[0]);
+                        setEndDate(salonDate(nextWeek));
                         setEndTime('23:59');
                         setReason('Vacation');
                         setIsRecurring(false);
@@ -257,9 +265,9 @@ export default function BlockTimeModal() {
                 <button
                     onClick={() => {
                         const today = new Date();
-                        setStartDate(today.toISOString().split('T')[0]);
+                        setStartDate(salonDate(today));
                         setStartTime('12:00');
-                        setEndDate(today.toISOString().split('T')[0]);
+                        setEndDate(salonDate(today));
                         setEndTime('13:00');
                         setReason('Lunch break');
                         setIsRecurring(true);
@@ -275,6 +283,7 @@ export default function BlockTimeModal() {
             {/* Create Form */}
             {showForm && (
                 <div className="bg-neutral-50 border border-neutral-200 rounded-sm p-6">
+                    <p className="text-xs text-neutral-500 mb-4">All blocked dates and times use Pacific Time.</p>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <div>
                             <label className="block text-sm font-medium text-neutral-700 mb-2">
