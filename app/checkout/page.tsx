@@ -9,29 +9,56 @@ import BookingCalendar from "@/components/BookingCalendar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import Navbar from "@/components/Navbar";
 import FooterWrapper from "@/components/FooterWrapper";
+import { API_BASE_URL } from "@/lib/config/api";
+
+type AuthoritativeService = {
+    id: number;
+    name: string;
+    price?: string;
+    description?: string;
+    image?: string;
+    lengthOptions?: Array<{ id: number; name?: string; price?: string; duration?: string }>;
+};
 
 function CheckoutContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
+    const [authoritativeService, setAuthoritativeService] = useState<AuthoritativeService | null>(null);
 
     const categorySlug = searchParams.get("categorySlug") || "";
     const subcategorySlug = searchParams.get("subcategorySlug") || "";
     const serviceIdParam = searchParams.get("serviceId");
     const serviceId = serviceIdParam && /^\d+$/.test(serviceIdParam) ? Number(serviceIdParam) : undefined;
-    const styleName = searchParams.get("style") || searchParams.get("service") || "Service";
-    const serviceName = searchParams.get("size") || searchParams.get("service") || "";
-    const lengthLabel = searchParams.get("length") || "";
-    const price = searchParams.get("price") || "";
-    const duration = searchParams.get("duration") || "";
-    const description = searchParams.get("description") || "";
+    const lengthOptionIdParam = searchParams.get("lengthOptionId");
+    const lengthOptionId = lengthOptionIdParam && /^\d+$/.test(lengthOptionIdParam) ? Number(lengthOptionIdParam) : undefined;
+    const selectedOption = authoritativeService?.lengthOptions?.find(option => option.id === lengthOptionId);
+    const styleName = searchParams.get("style") || authoritativeService?.name || searchParams.get("service") || "Service";
+    const serviceName = authoritativeService?.name || searchParams.get("size") || searchParams.get("service") || "";
+    const lengthLabel = selectedOption?.name || searchParams.get("length") || "";
+    const price = selectedOption?.price || authoritativeService?.price || searchParams.get("price") || "";
+    const duration = selectedOption?.duration || searchParams.get("duration") || "";
+    const description = authoritativeService?.description || searchParams.get("description") || "";
     const texture = searchParams.get("texture") || "";
     const image = decodeURIComponent(searchParams.get("image") || "");
     const refreshToken = searchParams.toString();
 
     console.log("Checkout - Received image URL:", image);
     console.log("Checkout - Full search params:", refreshToken);
+
+    useEffect(() => {
+        if (!serviceId) return;
+        const controller = new AbortController();
+        fetch(`${API_BASE_URL}/api/services/${serviceId}`, { signal: controller.signal })
+            .then(response => response.ok ? response.json() : Promise.reject(new Error("Service unavailable")))
+            .then(setAuthoritativeService)
+            .catch(error => {
+                if (error instanceof DOMException && error.name === "AbortError") return;
+                console.error("Unable to load authoritative service details", error);
+            });
+        return () => controller.abort();
+    }, [serviceId]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -241,6 +268,7 @@ function CheckoutContent() {
                                     serviceLength={lengthLabel}
                                     servicePrice={price}
                                     serviceId={serviceId}
+                                    lengthOptionId={lengthOptionId}
                                     onDateSelected={setSelectedDate}
                                     onTimeSelected={setSelectedTime}
                                     onBookingComplete={(bookingData) => {

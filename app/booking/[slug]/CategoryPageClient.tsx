@@ -111,6 +111,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
         const params = new URLSearchParams({
             service: selectedItem.name,
             length: option?.name ?? "",
+            lengthOptionId: option?.id?.toString() ?? "",
             price: option?.price ?? selectedItem.price ?? "",
             duration: option?.duration ?? "2-4 hours",
             description: selectedItem.description ?? "Professional braiding service",

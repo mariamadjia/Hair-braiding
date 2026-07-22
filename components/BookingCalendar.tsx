@@ -25,6 +25,7 @@ type BookingCalendarProps = {
     serviceLength?: string;
     servicePrice?: string;
     serviceId?: number;
+    lengthOptionId?: number;
 };
 
 type BookingData = {
@@ -52,7 +53,8 @@ export default function BookingCalendar({
     serviceSize,
     serviceLength,
     servicePrice,
-    serviceId
+    serviceId,
+    lengthOptionId
 }: BookingCalendarProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -161,10 +163,12 @@ export default function BookingCalendar({
     const fetchAvailableSlots = async (date: Date) => {
         try {
             const dateStr = formatLocalDate(date);
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const timezone = "America/Los_Angeles";
             console.log('Fetching slots for date:', dateStr, 'timezone:', timezone);
             
-            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
+            const serviceQuery = serviceId ? `&serviceId=${serviceId}` : "";
+            const optionQuery = lengthOptionId ? `&lengthOptionId=${lengthOptionId}` : "";
+            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}${serviceQuery}${optionQuery}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -196,9 +200,8 @@ export default function BookingCalendar({
             }
             
             const slots: TimeSlot[] = backendSlots.map((slot: any) => {
-                const startTime = new Date(slot.startTime);
                 return {
-                    time: formatTime24To12(startTime),
+                    time: formatTime24To12(slot.startTime),
                     available: slot.isAvailable && slot.availableSpots > 0
                 };
             });
@@ -213,9 +216,11 @@ export default function BookingCalendar({
         }
     };
 
-    const formatTime24To12 = (date: Date) => {
-        const hours = date.getHours();
-        const minutes = date.getMinutes();
+    const formatTime24To12 = (dateTime: string) => {
+        const [, time = "00:00"] = dateTime.split("T");
+        const [hourText, minuteText] = time.split(":");
+        const hours = Number(hourText);
+        const minutes = Number(minuteText);
         const ampm = hours >= 12 ? 'PM' : 'AM';
         const hour12 = hours % 12 || 12;
         return `${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
@@ -238,8 +243,10 @@ export default function BookingCalendar({
     const validateAvailability = async (date: Date, time: string): Promise<boolean> => {
         try {
             const dateStr = formatLocalDate(date);
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
+            const timezone = "America/Los_Angeles";
+            const serviceQuery = serviceId ? `&serviceId=${serviceId}` : "";
+            const optionQuery = lengthOptionId ? `&lengthOptionId=${lengthOptionId}` : "";
+            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}${serviceQuery}${optionQuery}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -254,7 +261,7 @@ export default function BookingCalendar({
 
             const slots = await response.json();
             const slot = slots.find((s: any) => {
-                const slotTime = formatTime24To12(new Date(s.startTime));
+                const slotTime = formatTime24To12(s.startTime);
                 return slotTime === time;
             });
 
@@ -267,7 +274,11 @@ export default function BookingCalendar({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedDate || !selectedTime || !serviceId || isSubmitting) return;
+        if (!selectedDate || !selectedTime || isSubmitting) return;
+        if (!serviceId) {
+            setError("This service is not configured for online booking. Please choose it again or contact the salon.");
+            return;
+        }
 
         setIsSubmitting(true);
         setLoading(true);
@@ -275,6 +286,10 @@ export default function BookingCalendar({
         const appointmentDateTime = convertTimeToDateTime(selectedDate, selectedTime);
 
         try {
+            if (createdAppointmentId && paymentToken) {
+                setStep("payment");
+                return;
+            }
             // Validate availability before booking
             const isAvailable = await validateAvailability(selectedDate, selectedTime);
             if (!isAvailable) {
@@ -296,6 +311,7 @@ export default function BookingCalendar({
                     serviceName: serviceName || null,
                     selectedSize: serviceSize || null,
                     selectedLength: serviceLength || null,
+                    lengthOptionId: lengthOptionId || null,
                     price: servicePrice ? servicePrice.replace('$', '').trim() : null,
                     notes: formData.notes
                 })
@@ -782,8 +798,8 @@ export default function BookingCalendar({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h3 className="text-2xl font-light text-neutral-900 mb-4">Booking Confirmed!</h3>
-                    <p className="text-neutral-600 mb-6">Your card has been authorized for $50. You will only be charged if the admin approves your appointment.</p>
+                    <h3 className="text-2xl font-light text-neutral-900 mb-4">Appointment Request Submitted</h3>
+                    <p className="text-neutral-600 mb-6">Your card has been authorized for $50. The salon will review your request before the hold is captured.</p>
                     
                     {confirmationNumber && (
                         <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-6">
@@ -792,7 +808,7 @@ export default function BookingCalendar({
                         </div>
                     )}
                     
-                    <p className="text-sm text-neutral-600 mb-6">Check your email for confirmation details.</p>
+                    <p className="text-sm text-neutral-600 mb-6">The salon will contact you after reviewing your request. All appointment times are Pacific Time.</p>
                     
                     <Button
                         type="button"

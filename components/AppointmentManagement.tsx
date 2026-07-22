@@ -34,6 +34,10 @@ type Appointment = {
     approvedAt?: string;
     createdAt: string;
     updatedAt: string;
+    paymentStatus?: string;
+    paymentIntentId?: string;
+    depositAmount?: number;
+    durationMinutes?: number;
 };
 
 function AppointmentManagement() {
@@ -122,13 +126,16 @@ function AppointmentManagement() {
                 body: JSON.stringify({ adminNotes: notes || '' })
             });
 
-            if (!response.ok) throw new Error('Failed to approve appointment');
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || 'Failed to approve appointment');
+            }
             
             await fetchAppointments();
             alert('Appointment approved successfully!');
         } catch (error) {
             console.error('Error approving appointment:', error);
-            alert('Failed to approve appointment');
+            alert(error instanceof Error ? error.message : 'Failed to approve appointment');
         } finally {
             setActionLoading(null);
         }
@@ -154,13 +161,60 @@ function AppointmentManagement() {
                 body: JSON.stringify({ adminNotes: notes })
             });
 
-            if (!response.ok) throw new Error('Failed to deny appointment');
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || 'Failed to deny appointment');
+            }
             
             await fetchAppointments();
             alert('Appointment denied');
         } catch (error) {
             console.error('Error denying appointment:', error);
-            alert('Failed to deny appointment');
+            alert(error instanceof Error ? error.message : 'Failed to deny appointment');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleRetryCapture = async (appointment: Appointment) => {
+        if (!appointment.paymentIntentId) return;
+        setActionLoading(appointment.id);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/payments/capture`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                },
+                body: JSON.stringify({ paymentIntentId: appointment.paymentIntentId }),
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || 'Payment capture retry failed');
+            }
+            await fetchAppointments();
+        } catch (error) {
+            alert(error instanceof Error ? error.message : 'Payment capture retry failed');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleRetryCancellation = async (appointment: Appointment) => {
+        if (!appointment.paymentIntentId) return;
+        setActionLoading(appointment.id);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/payments/cancel/${appointment.paymentIntentId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || 'Payment release retry failed');
+            }
+            await fetchAppointments();
+        } catch (error) {
+            alert(error instanceof Error ? error.message : 'Payment release retry failed');
         } finally {
             setActionLoading(null);
         }
@@ -339,6 +393,25 @@ function AppointmentManagement() {
                                             <Phone className="h-4 w-4" />
                                             <span>{appointment.customer.phoneNumber}</span>
                                         </div>
+                                        {appointment.paymentStatus && (
+                                            <div className={cn("font-medium",
+                                                appointment.paymentStatus.includes("FAILED") ? "text-red-700" : "text-neutral-700")}>
+                                                Payment: {appointment.paymentStatus.replaceAll("_", " ")}
+                                            </div>
+                                        )}
+                                        {appointment.paymentStatus === 'CAPTURE_FAILED' && appointment.paymentIntentId && (
+                                            <Button type="button" size="sm" onClick={() => handleRetryCapture(appointment)}
+                                                disabled={actionLoading === appointment.id}>
+                                                Retry payment capture
+                                            </Button>
+                                        )}
+                                        {appointment.paymentStatus === 'CANCELLATION_FAILED' && appointment.paymentIntentId && (
+                                            <Button type="button" size="sm" variant="outline"
+                                                onClick={() => handleRetryCancellation(appointment)}
+                                                disabled={actionLoading === appointment.id}>
+                                                Retry payment release
+                                            </Button>
+                                        )}
                                     </div>
 
                                     {/* Appointment Summary */}
