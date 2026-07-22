@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Settings, Clock, Ban, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AvailabilitySchedule from "./AvailabilitySchedule";
@@ -18,6 +18,7 @@ export default function AvailabilitySettings() {
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const saveAndSwitch = useRef(false);
 
     // Listen for unsaved changes events from child components
     useEffect(() => {
@@ -29,6 +30,15 @@ export default function AvailabilitySettings() {
             setSaving(e.detail.saving || false);
             setSaveError(e.detail.error || null);
             setSaveSuccess(e.detail.success || false);
+            if (e.detail.success && saveAndSwitch.current) {
+                saveAndSwitch.current = false;
+                setHasUnsavedChanges(false);
+                setShowUnsavedWarning(false);
+                setPendingTab(current => {
+                    if (current) setActiveTab(current);
+                    return null;
+                });
+            }
         };
 
         window.addEventListener('unsavedChanges', handleUnsavedChanges as EventListener);
@@ -66,6 +76,12 @@ export default function AvailabilitySettings() {
     const cancelTabChange = () => {
         setShowUnsavedWarning(false);
         setPendingTab(null);
+    };
+
+    const saveBeforeTabChange = () => {
+        saveAndSwitch.current = true;
+        setShowUnsavedWarning(false);
+        window.dispatchEvent(new CustomEvent('triggerSave', { detail: { tab: activeTab } }));
     };
 
     return (
@@ -137,7 +153,7 @@ export default function AvailabilitySettings() {
                                     Unsaved Changes
                                 </h3>
                                 <p className="text-sm text-neutral-600 mb-4">
-                                    You have unsaved changes. If you switch tabs, your changes will be lost. Would you like to save first?
+                                    Save your changes before switching, or discard them.
                                 </p>
                                 <div className="flex gap-3 justify-end">
                                     <button
@@ -145,6 +161,13 @@ export default function AvailabilitySettings() {
                                         className="px-4 py-2 text-sm font-medium text-neutral-700 border border-neutral-300 rounded-md hover:bg-neutral-50"
                                     >
                                         Stay on This Tab
+                                    </button>
+                                    <button
+                                        onClick={saveBeforeTabChange}
+                                        disabled={saving}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                                    >
+                                        Save and Switch
                                     </button>
                                     <button
                                         onClick={confirmTabChange}

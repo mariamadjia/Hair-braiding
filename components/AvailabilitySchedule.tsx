@@ -1,842 +1,277 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Plus, X, Clock, Save, Loader2, Copy, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Clock, Copy, Loader2, Minus, Plus, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { getAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
-import TimeDropdown from "./TimeDropdown";
-import MiniCalendarPreview from "./availability/MiniCalendarPreview";
+import { getAuthToken } from "@/lib/utils/auth";
 
-type TimeSlot = {
-    startTime: string;
-    endTime: string;
-    capacity: number; // Number of people who can book this slot
-};
-
-type DaySchedule = {
+type SavedSlot = { startTime: string; endTime: string; capacity: number };
+type AvailabilityWindow = { id: string; startTime: string; endTime: string };
+type DayAvailability = {
     dayOfWeek: string;
-    isAvailable: boolean;
-    timeSlots: TimeSlot[];
+    enabled: boolean;
+    windows: AvailabilityWindow[];
+    capacities: Record<string, number>;
 };
 
 const DAYS = [
-    { key: 'MONDAY', label: 'Monday', abbr: 'M' },
-    { key: 'TUESDAY', label: 'Tuesday', abbr: 'T' },
-    { key: 'WEDNESDAY', label: 'Wednesday', abbr: 'W' },
-    { key: 'THURSDAY', label: 'Thursday', abbr: 'T' },
-    { key: 'FRIDAY', label: 'Friday', abbr: 'F' },
-    { key: 'SATURDAY', label: 'Saturday', abbr: 'S' },
-    { key: 'SUNDAY', label: 'Sunday', abbr: 'S' }
+    { key: "MONDAY", label: "Monday" }, { key: "TUESDAY", label: "Tuesday" },
+    { key: "WEDNESDAY", label: "Wednesday" }, { key: "THURSDAY", label: "Thursday" },
+    { key: "FRIDAY", label: "Friday" }, { key: "SATURDAY", label: "Saturday" },
+    { key: "SUNDAY", label: "Sunday" }
 ];
 
-const createBookingSlots = (startTime: string, endTime: string, intervalMinutes: number, capacity: number): TimeSlot[] => {
-    const [startHour, startMinute] = startTime.split(':').map(Number);
-    const [endHour, endMinute] = endTime.split(':').map(Number);
-    let current = startHour * 60 + startMinute;
-    const end = endHour * 60 + endMinute;
-    const slots: TimeSlot[] = [];
-    while (current < end) {
-        const next = Math.min(current + intervalMinutes, end);
-        const format = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
-        slots.push({ startTime: format(current), endTime: format(next), capacity });
-        current += intervalMinutes;
+const windowId = () => `window-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const minutes = (time: string) => {
+    const [hour, minute] = time.split(":").map(Number);
+    return hour * 60 + minute;
+};
+const timeValue = (value: number) => `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+const displayTime = (time: string) => {
+    const [hourText, minute] = time.split(":");
+    const hour = Number(hourText);
+    return `${hour % 12 || 12}:${minute} ${hour >= 12 ? "PM" : "AM"}`;
+};
+
+const startsForWindow = (window: AvailabilityWindow, gap: number) => {
+    const starts: string[] = [];
+    for (let value = minutes(window.startTime); value < minutes(window.endTime); value += gap) starts.push(timeValue(value));
+    return starts;
+};
+
+const windowsFromSlots = (slots: SavedSlot[]): AvailabilityWindow[] => {
+    if (!slots.length) return [];
+    const sorted = [...slots].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    const windows: AvailabilityWindow[] = [];
+    let start = sorted[0].startTime;
+    let end = sorted[0].endTime;
+    for (const slot of sorted.slice(1)) {
+        if (slot.startTime === end) end = slot.endTime;
+        else {
+            windows.push({ id: windowId(), startTime: start, endTime: end });
+            start = slot.startTime;
+            end = slot.endTime;
+        }
     }
-    return slots;
+    windows.push({ id: windowId(), startTime: start, endTime: end });
+    return windows;
 };
 
 export default function AvailabilitySchedule() {
-    const [schedule, setSchedule] = useState<DaySchedule[]>([]);
+    const [schedule, setSchedule] = useState<DayAvailability[]>([]);
+    const [slotGap, setSlotGap] = useState(60);
+    const [defaultCapacity, setDefaultCapacity] = useState(1);
+    const [expandedDay, setExpandedDay] = useState<string | null>("MONDAY");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
-    const [slotDurationMinutes, setSlotDurationMinutes] = useState(60);
-    const [maxAppointmentsPerSlot, setMaxAppointmentsPerSlot] = useState(1);
-    const [expandedDay, setExpandedDay] = useState<string | null>(null);
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-    const [showCopyConfirm, setShowCopyConfirm] = useState(false);
-    const [copySourceDay, setCopySourceDay] = useState<string | null>(null);
-    const [showTemplates, setShowTemplates] = useState(false);
-    const scheduleRef = useRef<DaySchedule[]>([]);
+    const scheduleRef = useRef(schedule);
+    const slotGapRef = useRef(slotGap);
+    const defaultCapacityRef = useRef(defaultCapacity);
     scheduleRef.current = schedule;
+    slotGapRef.current = slotGap;
+    defaultCapacityRef.current = defaultCapacity;
 
-    useEffect(() => {
-        fetchSettings();
-        fetchBusinessHours();
-        
-        // Listen for global capacity changes from Settings tab
-        const handleGlobalCapacityChange = (e: CustomEvent) => {
-            const newCapacity = e.detail.maxAppointmentsPerSlot;
-            setSchedule(prev => prev.map(day => ({
-                ...day,
-                timeSlots: day.timeSlots.map(slot => ({
-                    ...slot,
-                    capacity: newCapacity
-                }))
-            })));
-        };
-
-        // Listen for save trigger from parent
-        const handleTriggerSave = (e: CustomEvent) => {
-            if (e.detail.tab === 'hours') {
-                saveSchedule();
-            }
-        };
-        
-        window.addEventListener('globalCapacityChanged', handleGlobalCapacityChange as EventListener);
-        window.addEventListener('triggerSave', handleTriggerSave as EventListener);
-        
-        return () => {
-            window.removeEventListener('globalCapacityChanged', handleGlobalCapacityChange as EventListener);
-            window.removeEventListener('triggerSave', handleTriggerSave as EventListener);
-        };
-    }, []);
-
-    const fetchSettings = async () => {
-        try {
-            const token = getAuthToken();
-            const response = await fetch(`${API_BASE_URL}/api/appointments/settings`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setSlotDurationMinutes(data.slotDurationMinutes || 60);
-                setMaxAppointmentsPerSlot(data.maxAppointmentsPerSlot || 1);
-            }
-        } catch (error) {
-            console.error('Error fetching settings:', error);
-        }
+    const markChanged = () => {
+        setSuccess(false);
+        window.dispatchEvent(new CustomEvent("unsavedChanges", { detail: { hasChanges: true } }));
     };
 
-    const fetchBusinessHours = async () => {
+    useEffect(() => {
+        void loadSchedule();
+        const save = (event: Event) => {
+            const detail = (event as CustomEvent).detail;
+            if (detail?.tab === "hours") void saveSchedule();
+        };
+        window.addEventListener("triggerSave", save);
+        return () => window.removeEventListener("triggerSave", save);
+    }, []);
+
+    const loadSchedule = async () => {
         setLoading(true);
+        setError(null);
         try {
-            // Fetch business hours to check which days are open
-            const hoursResponse = await fetch(`${API_BASE_URL}/api/availability/business-hours`);
-            
-            if (hoursResponse.ok) {
-                const hoursData = await hoursResponse.json();
-                
-                if (Array.isArray(hoursData) && hoursData.length > 0) {
-                    // Load individual time slots for each day
-                    const loadedSchedule: DaySchedule[] = await Promise.all(
-                        DAYS.map(async (day) => {
-                            const existing = hoursData.find((h: any) => h.dayOfWeek === day.key);
-                            
-                            if (existing && existing.isOpen) {
-                                // Fetch individual time slots for this day
-                                try {
-                                    const token = getAuthToken();
-                                    if (!token) throw new Error('Your admin session has expired. Please sign in again.');
-                                    const slotsResponse = await fetch(`${API_BASE_URL}/api/time-slots/${day.key}`, {
-                                        headers: { 'Authorization': `Bearer ${token}` }
-                                    });
-                                    
-                                    if (slotsResponse.ok) {
-                                        const slotsData = await slotsResponse.json();
-                                        console.log(`Loaded ${day.key} slots:`, slotsData);
-                                        
-                                        if (Array.isArray(slotsData) && slotsData.length > 0) {
-                                            // Use saved individual slots
-                                            return {
-                                                dayOfWeek: day.key,
-                                                isAvailable: true,
-                                                timeSlots: slotsData.map((slot: any) => ({
-                                                    startTime: slot.startTime,
-                                                    endTime: slot.endTime,
-                                                    capacity: slot.capacity || 1
-                                                }))
-                                            };
-                                        }
-                                    } else {
-                                        throw new Error(`Could not load ${day.label} slots (${slotsResponse.status})`);
-                                    }
-                                } catch (error) {
-                                    throw error;
-                                }
-                            }
-                            
-                            return {
-                                dayOfWeek: day.key,
-                                isAvailable: false,
-                                timeSlots: []
-                            };
-                        })
-                    );
-                    
-                    setSchedule(loadedSchedule);
-                } else {
-                    initializeSchedule();
-                }
-            } else throw new Error(`Could not load business hours (${hoursResponse.status})`);
-        } catch (error) {
-            console.error('Error fetching business hours:', error);
-            setError(error instanceof Error ? error.message : 'Could not load the saved schedule.');
+            const token = getAuthToken();
+            if (!token) throw new Error("Your admin session has expired. Please sign in again.");
+            const headers = { Authorization: `Bearer ${token}` };
+            const [settingsResponse, hoursResponse] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/appointments/settings`, { headers, cache: "no-store" }),
+                fetch(`${API_BASE_URL}/api/availability/business-hours`, { cache: "no-store" })
+            ]);
+            if (!settingsResponse.ok || !hoursResponse.ok) throw new Error("Could not load the saved availability settings.");
+            const settings = await settingsResponse.json();
+            const hours = await hoursResponse.json();
+            const gap = settings.slotDurationMinutes || 60;
+            const capacity = settings.maxAppointmentsPerSlot || 1;
+            setSlotGap(gap);
+            setDefaultCapacity(capacity);
+
+            const loaded = await Promise.all(DAYS.map(async day => {
+                const businessDay = hours.find((item: any) => item.dayOfWeek === day.key);
+                if (!businessDay?.isOpen) return { dayOfWeek: day.key, enabled: false, windows: [], capacities: {} };
+                const response = await fetch(`${API_BASE_URL}/api/time-slots/${day.key}`, { headers, cache: "no-store" });
+                if (!response.ok) throw new Error(`Could not load ${day.label}. Please refresh and sign in again.`);
+                const slots: SavedSlot[] = await response.json();
+                const fallback = [{
+                    id: windowId(),
+                    startTime: businessDay.openTime?.slice(0, 5) || "09:00",
+                    endTime: businessDay.closeTime?.slice(0, 5) || "17:00"
+                }];
+                return {
+                    dayOfWeek: day.key,
+                    enabled: true,
+                    windows: slots.length ? windowsFromSlots(slots) : fallback,
+                    capacities: Object.fromEntries(slots.map(slot => [slot.startTime.slice(0, 5), slot.capacity || capacity]))
+                };
+            }));
+            setSchedule(loaded);
+        } catch (caught) {
             setSchedule([]);
+            setError(caught instanceof Error ? caught.message : "Could not load availability.");
         } finally {
             setLoading(false);
         }
     };
 
-    const initializeSchedule = () => {
-        // Initialize with default schedule - 1 hour slots from 7 AM to 7 PM
-        const defaultTimeSlots: TimeSlot[] = [];
-        for (let hour = 7; hour < 19; hour++) { // 7 AM to 7 PM (19:00)
-            const startTime = `${String(hour).padStart(2, '0')}:00`;
-            const endTime = `${String(hour + 1).padStart(2, '0')}:00`;
-            defaultTimeSlots.push({ startTime, endTime, capacity: 1 });
-        }
-        
-        const defaultSchedule: DaySchedule[] = DAYS.map(day => ({
-            dayOfWeek: day.key,
-            isAvailable: day.key !== 'SUNDAY',
-            timeSlots: day.key !== 'SUNDAY' ? [...defaultTimeSlots] : []
-        }));
-        
-        setSchedule(defaultSchedule);
+    const updateDay = (key: string, updater: (day: DayAvailability) => DayAvailability) => {
+        setSchedule(previous => previous.map(day => day.dayOfWeek === key ? updater(day) : day));
+        markChanged();
     };
 
-    const toggleDayAvailability = (dayKey: string) => {
-        setSchedule(prev => prev.map(day => {
-            if (day.dayOfWeek === dayKey) {
-                const newIsAvailable = !day.isAvailable;
-                return {
-                    ...day,
-                    isAvailable: newIsAvailable,
-                    timeSlots: newIsAvailable && day.timeSlots.length === 0 
-                        ? [{ startTime: '09:00', endTime: '10:00', capacity: 1 }]
-                        : day.timeSlots
-                };
+    const updateWindow = (dayKey: string, id: string, field: "startTime" | "endTime", value: string) =>
+        updateDay(dayKey, day => ({ ...day, windows: day.windows.map(window => window.id === id ? { ...window, [field]: value } : window) }));
+
+    const generatedStarts = (day: DayAvailability) => day.windows.flatMap(window => startsForWindow(window, slotGap));
+
+    const validate = (days: DayAvailability[]) => {
+        for (const day of days) {
+            if (!day.enabled) continue;
+            if (!day.windows.length) throw new Error(`${day.dayOfWeek} needs at least one availability window.`);
+            const sorted = [...day.windows].sort((a, b) => a.startTime.localeCompare(b.startTime));
+            for (const [index, window] of sorted.entries()) {
+                if (minutes(window.endTime) <= minutes(window.startTime)) throw new Error(`${day.dayOfWeek}: available-until time must be after available-from time.`);
+                if (index && minutes(window.startTime) < minutes(sorted[index - 1].endTime)) throw new Error(`${day.dayOfWeek}: availability windows cannot overlap.`);
             }
-            return day;
-        }));
-        setHasUnsavedChanges(true);
-        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
-    };
-
-    const addTimeSlot = (dayKey: string) => {
-        setSchedule(prev => prev.map(day => {
-            if (day.dayOfWeek === dayKey) {
-                const lastSlot = day.timeSlots[day.timeSlots.length - 1];
-                const newStartTime = lastSlot ? lastSlot.endTime : '09:00';
-                const newEndTime = lastSlot ? addHours(lastSlot.endTime, 1) : '10:00';
-                
-                return {
-                    ...day,
-                    timeSlots: [...day.timeSlots, { startTime: newStartTime, endTime: newEndTime, capacity: 1 }]
-                };
-            }
-            return day;
-        }));
-        setHasUnsavedChanges(true);
-        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
-    };
-
-    const removeTimeSlot = (dayKey: string, slotIndex: number) => {
-        setSchedule(prev => prev.map(day => {
-            if (day.dayOfWeek === dayKey) {
-                return {
-                    ...day,
-                    timeSlots: day.timeSlots.filter((_, idx) => idx !== slotIndex)
-                };
-            }
-            return day;
-        }));
-        setHasUnsavedChanges(true);
-        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
-    };
-
-    const updateTimeSlot = (dayKey: string, slotIndex: number, field: 'startTime' | 'endTime', value: string) => {
-        setSchedule(prev => prev.map(day => {
-            if (day.dayOfWeek === dayKey) {
-                return {
-                    ...day,
-                    timeSlots: day.timeSlots.map((slot, idx) => 
-                        idx === slotIndex ? { ...slot, [field]: value } : slot
-                    )
-                };
-            }
-            return day;
-        }));
-        setHasUnsavedChanges(true);
-        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
-    };
-
-    const updateCapacity = (dayKey: string, slotIndex: number, capacity: number) => {
-        setSchedule(prev => prev.map(day => {
-            if (day.dayOfWeek === dayKey) {
-                return {
-                    ...day,
-                    timeSlots: day.timeSlots.map((slot, idx) => 
-                        idx === slotIndex ? { ...slot, capacity: Math.max(1, Math.min(10, capacity)) } : slot
-                    )
-                };
-            }
-            return day;
-        }));
-        setHasUnsavedChanges(true);
-        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
-    };
-
-    const copyToAllDays = (sourceDayKey: string) => {
-        const sourceDay = schedule.find(d => d.dayOfWeek === sourceDayKey);
-        if (!sourceDay) return;
-
-        setCopySourceDay(sourceDayKey);
-        setShowCopyConfirm(true);
-    };
-
-    const confirmCopy = () => {
-        if (!copySourceDay) return;
-
-        const sourceDay = schedule.find(d => d.dayOfWeek === copySourceDay);
-        if (!sourceDay) return;
-
-        setSchedule(prev => prev.map(day => ({
-            ...day,
-            isAvailable: sourceDay.isAvailable,
-            timeSlots: JSON.parse(JSON.stringify(sourceDay.timeSlots))
-        })));
-        setHasUnsavedChanges(true);
-        window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
-        setShowCopyConfirm(false);
-        setCopySourceDay(null);
-    };
-
-    const cancelCopy = () => {
-        setShowCopyConfirm(false);
-        setCopySourceDay(null);
-    };
-
-    const applyTemplate = (template: string) => {
-        const templates: Record<string, DaySchedule[]> = {
-            '9to5': [
-                { dayOfWeek: 'MONDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
-                { dayOfWeek: 'TUESDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
-                { dayOfWeek: 'WEDNESDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
-                { dayOfWeek: 'THURSDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
-                { dayOfWeek: 'FRIDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
-                { dayOfWeek: 'SATURDAY', isAvailable: false, timeSlots: [] },
-                { dayOfWeek: 'SUNDAY', isAvailable: false, timeSlots: [] },
-            ],
-            'retail': [
-                { dayOfWeek: 'MONDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '21:00', capacity: 1 }] },
-                { dayOfWeek: 'TUESDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '21:00', capacity: 1 }] },
-                { dayOfWeek: 'WEDNESDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '21:00', capacity: 1 }] },
-                { dayOfWeek: 'THURSDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '21:00', capacity: 1 }] },
-                { dayOfWeek: 'FRIDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '21:00', capacity: 1 }] },
-                { dayOfWeek: 'SATURDAY', isAvailable: true, timeSlots: [{ startTime: '10:00', endTime: '20:00', capacity: 1 }] },
-                { dayOfWeek: 'SUNDAY', isAvailable: true, timeSlots: [{ startTime: '11:00', endTime: '18:00', capacity: 1 }] },
-            ],
-            'salon': [
-                { dayOfWeek: 'MONDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '19:00', capacity: 1 }] },
-                { dayOfWeek: 'TUESDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '19:00', capacity: 1 }] },
-                { dayOfWeek: 'WEDNESDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '19:00', capacity: 1 }] },
-                { dayOfWeek: 'THURSDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '19:00', capacity: 1 }] },
-                { dayOfWeek: 'FRIDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '19:00', capacity: 1 }] },
-                { dayOfWeek: 'SATURDAY', isAvailable: true, timeSlots: [{ startTime: '09:00', endTime: '17:00', capacity: 1 }] },
-                { dayOfWeek: 'SUNDAY', isAvailable: false, timeSlots: [] },
-            ],
-        };
-
-        const selectedTemplate = templates[template];
-        if (selectedTemplate) {
-            setSchedule(selectedTemplate.map(day => ({
-                ...day,
-                timeSlots: day.timeSlots.flatMap(slot =>
-                    createBookingSlots(slot.startTime, slot.endTime, slotDurationMinutes, maxAppointmentsPerSlot)
-                )
-            })));
-            setHasUnsavedChanges(true);
-            window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: true } }));
-            setShowTemplates(false);
         }
-    };
-
-    const resetAllCapacities = () => {
-        setSchedule(prev => prev.map(day => ({
-            ...day,
-            timeSlots: day.timeSlots.map(slot => ({
-                ...slot,
-                capacity: maxAppointmentsPerSlot
-            }))
-        })));
-    };
-
-    const addHours = (time: string, hours: number): string => {
-        const [h, m] = time.split(':').map(Number);
-        const newHour = (h + hours) % 24;
-        return `${String(newHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    };
-
-    const generateBreakdownSlots = (startTime: string, endTime: string) => {
-        const slots = [];
-        const [startHour, startMin] = startTime.split(':').map(Number);
-        const [endHour, endMin] = endTime.split(':').map(Number);
-        
-        let currentMinutes = startHour * 60 + startMin;
-        const endMinutes = endHour * 60 + endMin;
-        
-        // Handle overnight hours
-        const finalEndMinutes = endMinutes < currentMinutes ? endMinutes + 24 * 60 : endMinutes;
-        
-        while (currentMinutes < finalEndMinutes) {
-            const nextMinutes = currentMinutes + slotDurationMinutes;
-            if (nextMinutes > finalEndMinutes) break;
-            
-            const slotStartHour = Math.floor(currentMinutes / 60) % 24;
-            const slotStartMin = currentMinutes % 60;
-            const slotEndHour = Math.floor(nextMinutes / 60) % 24;
-            const slotEndMin = nextMinutes % 60;
-            
-            const slotStart = `${slotStartHour.toString().padStart(2, '0')}:${slotStartMin.toString().padStart(2, '0')}`;
-            const slotEnd = `${slotEndHour.toString().padStart(2, '0')}:${slotEndMin.toString().padStart(2, '0')}`;
-            
-            slots.push({
-                start: formatTime12(slotStart),
-                end: formatTime12(slotEnd)
-            });
-            
-            currentMinutes = nextMinutes;
-        }
-        
-        return slots;
-    };
-
-    const formatTime12 = (time24: string) => {
-        const [hours, minutes] = time24.split(':');
-        const hour = parseInt(hours);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const hour12 = hour % 12 || 12;
-        return `${hour12}:${minutes} ${ampm}`;
-    };
-
-    const toggleBreakdown = (dayKey: string) => {
-        if (expandedDay === dayKey) {
-            // Hide breakdown
-            setExpandedDay(null);
-        } else {
-            // Show breakdown by generating slots
-            generateSlotsForDay(dayKey);
-            setExpandedDay(dayKey);
-        }
-    };
-
-    const hideBreakdown = (dayKey: string) => {
-        setExpandedDay(null);
-    };
-
-    const generateSlotsForDay = (dayKey: string) => {
-        const day = schedule.find(d => d.dayOfWeek === dayKey);
-        if (!day || !day.isAvailable) return;
-
-        // Get the overall time range (earliest start to latest end)
-        let startTime = '07:00';
-        let endTime = '19:00';
-        
-        if (day.timeSlots.length > 0) {
-            startTime = day.timeSlots[0].startTime;
-            endTime = day.timeSlots[day.timeSlots.length - 1].endTime;
-        }
-
-        const generatedSlots = createBookingSlots(startTime, endTime, slotDurationMinutes, maxAppointmentsPerSlot);
-
-        // Update the schedule with generated slots
-        setSchedule(prev => prev.map(d => 
-            d.dayOfWeek === dayKey 
-                ? { ...d, timeSlots: generatedSlots }
-                : d
-        ));
     };
 
     const saveSchedule = async () => {
+        const current = scheduleRef.current;
+        const currentGap = slotGapRef.current;
+        const currentDefaultCapacity = defaultCapacityRef.current;
         setSaving(true);
         setError(null);
         setSuccess(false);
-
-        // Notify parent of save status
-        window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: true, error: null, success: false } }));
-
+        window.dispatchEvent(new CustomEvent("saveStatus", { detail: { saving: true } }));
         try {
+            validate(current);
             const token = getAuthToken();
-
-            if (!token) {
-                setError("No authentication token found. Please log in again.");
-                window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: "No authentication token found", success: false } }));
-                return;
-            }
-
-            // Validate schedule before saving
-            const currentSchedule = scheduleRef.current;
-            for (const day of currentSchedule) {
-                if (day.isAvailable && day.timeSlots.length === 0) {
-                    setError(`${day.dayOfWeek} is marked as available but has no time slots. Please add time slots or mark the day as unavailable.`);
-                    window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: `${day.dayOfWeek} has no time slots`, success: false } }));
-                    setSaving(false);
-                    return;
-                }
-
-                // Validate time slots
-                for (const slot of day.timeSlots) {
-                    if (slot.startTime >= slot.endTime) {
-                        setError(`${day.dayOfWeek}: End time must be after start time`);
-                        window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: `Invalid time slot on ${day.dayOfWeek}`, success: false } }));
-                        setSaving(false);
-                        return;
-                    }
-                }
-
-                // Check for overlapping time slots
-                for (let i = 0; i < day.timeSlots.length; i++) {
-                    for (let j = i + 1; j < day.timeSlots.length; j++) {
-                        const slot1 = day.timeSlots[i];
-                        const slot2 = day.timeSlots[j];
-
-                        // Check if slots overlap
-                        if (slot1.startTime < slot2.endTime && slot1.endTime > slot2.startTime) {
-                            setError(`${day.dayOfWeek}: Time slots overlap. Please adjust the times to avoid overlap.`);
-                            window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: `Overlapping time slots on ${day.dayOfWeek}`, success: false } }));
-                            setSaving(false);
-                            return;
-                        }
-                    }
-                }
-            }
-
-            const payload = {
-                days: currentSchedule.map((day) => ({
+            if (!token) throw new Error("Your admin session has expired. Please sign in again.");
+            const payload = { days: current.map(day => ({
+                dayOfWeek: day.dayOfWeek,
+                isAvailable: day.enabled,
+                timeSlots: day.enabled ? day.windows.flatMap(window => startsForWindow(window, currentGap).map(start => ({
                     dayOfWeek: day.dayOfWeek,
-                    isAvailable: day.isAvailable,
-                    timeSlots: day.isAvailable
-                        ? day.timeSlots.map((slot) => ({
-                            dayOfWeek: day.dayOfWeek,
-                            startTime: slot.startTime,
-                            endTime: slot.endTime,
-                            capacity: slot.capacity,
-                        }))
-                        : [],
-                })),
-            };
-
+                    startTime: start,
+                    endTime: timeValue(Math.min(minutes(start) + currentGap, minutes(window.endTime))),
+                    capacity: day.capacities[start] || currentDefaultCapacity
+                }))) : []
+            })) };
             const response = await fetch(`${API_BASE_URL}/api/availability/schedule`, {
                 method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
+                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
             });
-
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMessage = errorData.error || `Failed to save schedule: ${response.status}`;
-                
-                // Provide specific error messages
-                if (errorMessage.includes('overlap')) {
-                    throw new Error('Time slots overlap. Please check your time ranges.');
-                } else if (errorMessage.includes('invalid')) {
-                    throw new Error('Invalid time format. Please use HH:MM format (e.g., 09:00).');
-                } else {
-                    throw new Error(errorMessage);
-                }
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || "Could not save availability.");
             }
-
             setSuccess(true);
-            setTimeout(() => setSuccess(false), 3000);
-
-            // Reload fresh data from backend
-            await fetchBusinessHours();
-
-            // Clear unsaved changes flag
-            setHasUnsavedChanges(false);
-            window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: false } }));
-            window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: null, success: true } }));
-
-            window.dispatchEvent(new CustomEvent("settingsUpdated", {
-                detail: { businessHoursUpdated: true },
-            }));
-        } catch (error) {
-            console.error("Error saving schedule:", error);
-            const errorMessage = error instanceof Error ? error.message : "Failed to save schedule";
-            setError(errorMessage);
-            window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: errorMessage, success: false } }));
+            window.dispatchEvent(new CustomEvent("unsavedChanges", { detail: { hasChanges: false } }));
+            window.dispatchEvent(new CustomEvent("saveStatus", { detail: { saving: false, success: true } }));
+        } catch (caught) {
+            const message = caught instanceof Error ? caught.message : "Could not save availability.";
+            setError(message);
+            window.dispatchEvent(new CustomEvent("saveStatus", { detail: { saving: false, error: message } }));
         } finally {
             setSaving(false);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
-            </div>
-        );
-    }
+    const copyMonday = () => {
+        const monday = schedule.find(day => day.dayOfWeek === "MONDAY");
+        if (!monday) return;
+        setSchedule(previous => previous.map(day => day.dayOfWeek === "MONDAY" ? day : ({
+            ...day, enabled: monday.enabled,
+            windows: monday.windows.map(window => ({ ...window, id: windowId() })),
+            capacities: { ...monday.capacities }
+        })));
+        markChanged();
+    };
+
+    const totalStarts = useMemo(() => schedule.reduce((sum, day) => sum + (day.enabled ? generatedStarts(day).length : 0), 0), [schedule, slotGap]);
+
+    if (loading) return <div className="flex min-h-72 items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-neutral-400" /></div>;
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col gap-4 border-b border-neutral-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h3 className="text-lg font-medium text-neutral-900">Availability Schedule</h3>
-                    <p className="text-sm text-neutral-600">Set your available hours for each day of the week</p>
+                    <div className="flex items-center gap-2"><Clock className="h-5 w-5" /><h2 className="text-lg font-medium">Weekly availability</h2></div>
+                    <p className="mt-1 text-sm text-neutral-500">Set working windows. Customer start times are generated every {slotGap} minutes.</p>
+                    <p className="mt-1 text-xs font-medium text-neutral-500">San Antonio Central Time · {totalStarts} customer start{totalStarts === 1 ? "" : "s"} per week</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setShowTemplates(!showTemplates)}
-                        className="px-4 py-2 text-sm border border-neutral-300 rounded-md hover:bg-neutral-50 transition-colors"
-                    >
-                        Use Template
-                    </button>
-                    <Button
-                        onClick={saveSchedule}
-                        disabled={saving}
-                        className="bg-neutral-900 hover:bg-neutral-800"
-                    >
-                        {saving ? (
-                            <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Saving...
-                            </>
-                        ) : (
-                            <>
-                                <Save className="h-4 w-4 mr-2" />
-                                Save Schedule
-                            </>
-                        )}
-                    </Button>
+                <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" onClick={copyMonday} disabled={!schedule.length}><Copy className="mr-2 h-4 w-4" />Copy Monday to week</Button>
                 </div>
             </div>
 
-            {/* Template Selection */}
-            {showTemplates && (
-                <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-neutral-900 mb-3">Choose a schedule template</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <button
-                            onClick={() => applyTemplate('9to5')}
-                            className="p-4 border border-neutral-200 rounded-md hover:bg-white hover:border-blue-300 transition text-left"
-                        >
-                            <div className="font-medium text-neutral-900 mb-1">9-5 Weekdays</div>
-                            <div className="text-xs text-neutral-600">Mon-Fri: 9am-5pm</div>
-                        </button>
-                        <button
-                            onClick={() => applyTemplate('retail')}
-                            className="p-4 border border-neutral-200 rounded-md hover:bg-white hover:border-blue-300 transition text-left"
-                        >
-                            <div className="font-medium text-neutral-900 mb-1">Retail Hours</div>
-                            <div className="text-xs text-neutral-600">Mon-Sat: 10am-9pm, Sun: 11am-6pm</div>
-                        </button>
-                        <button
-                            onClick={() => applyTemplate('salon')}
-                            className="p-4 border border-neutral-200 rounded-md hover:bg-white hover:border-blue-300 transition text-left"
-                        >
-                            <div className="font-medium text-neutral-900 mb-1">Salon Hours</div>
-                            <div className="text-xs text-neutral-600">Mon-Sat: 9am-7pm, Sun: Closed</div>
-                        </button>
-                    </div>
-                </div>
-            )}
+            {error && <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error} {!schedule.length && <button onClick={loadSchedule} className="ml-2 font-semibold underline">Try again</button>}</div>}
+            {success && <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">Availability saved. The customer calendar has been refreshed.</div>}
 
-            {error && (
-                <div className="bg-red-50 border border-red-200 rounded-sm p-4 text-sm text-red-800">
-                    {error}
-                </div>
-            )}
-
-            {success && (
-                <div className="bg-green-50 border border-green-200 rounded-sm p-4 text-sm text-green-800">
-                    Schedule saved successfully!
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-4">
-                    {schedule.map((day) => {
-                    const dayInfo = DAYS.find(d => d.key === day.dayOfWeek);
-                    if (!dayInfo) return null;
-
+            <div className="space-y-3">
+                {schedule.map(day => {
+                    const label = DAYS.find(item => item.key === day.dayOfWeek)?.label || day.dayOfWeek;
+                    const starts = day.enabled ? generatedStarts(day) : [];
+                    const expanded = expandedDay === day.dayOfWeek;
                     return (
-                        <div key={day.dayOfWeek} className="bg-white border border-neutral-200 rounded-lg p-4 sm:p-6">
-                            <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className={cn(
-                                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-base font-medium",
-                                        day.isAvailable 
-                                            ? "bg-blue-100 text-blue-700" 
-                                            : "bg-neutral-100 text-neutral-400"
-                                    )}>
-                                        {dayInfo.abbr}
-                                    </div>
-                                    <div>
-                                        <div className="font-medium text-neutral-900 text-sm sm:text-base">{dayInfo.label}</div>
-                                        <div className="text-xs text-neutral-500">
-                                            {day.isAvailable ? 'Available' : 'Unavailable'}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    {day.isAvailable && (
-                                        <button
-                                            onClick={() => copyToAllDays(day.dayOfWeek)}
-                                            className="p-2 sm:p-3 text-neutral-600 hover:bg-neutral-100 rounded-sm transition min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                            title="Copy to all days"
-                                        >
-                                            <Copy className="h-4 w-4 sm:h-5 sm:w-5" />
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => toggleDayAvailability(day.dayOfWeek)}
-                                        className={cn(
-                                            "relative inline-flex h-6 w-11 sm:h-7 sm:w-13 items-center rounded-full transition-colors min-h-[44px] min-w-[52px]",
-                                            day.isAvailable ? "bg-blue-600" : "bg-neutral-200"
-                                        )}
-                                    >
-                                        <span
-                                            className={cn(
-                                                "inline-block h-4 w-4 sm:h-5 sm:w-5 transform rounded-full bg-white transition-transform",
-                                                day.isAvailable ? "translate-x-6 sm:translate-x-7" : "translate-x-1"
-                                            )}
-                                        />
-                                    </button>
-                                </div>
+                        <section key={day.dayOfWeek} className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+                            <div className="flex min-h-16 items-center gap-3 px-4 sm:px-5">
+                                <button type="button" role="switch" aria-checked={day.enabled} aria-label={`${label} availability`} onClick={() => updateDay(day.dayOfWeek, current => ({
+                                    ...current,
+                                    enabled: !current.enabled,
+                                    windows: !current.enabled && !current.windows.length ? [{ id: windowId(), startTime: "09:00", endTime: "17:00" }] : current.windows
+                                }))} className={`relative h-6 w-11 shrink-0 rounded-full transition ${day.enabled ? "bg-emerald-600" : "bg-neutral-300"}`}>
+                                    <span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${day.enabled ? "left-6" : "left-1"}`} />
+                                </button>
+                                <div className="min-w-0 flex-1"><h3 className="font-medium text-neutral-900">{label}</h3><p className="truncate text-xs text-neutral-500">{day.enabled ? `${day.windows.length} window${day.windows.length === 1 ? "" : "s"} · ${starts.length} customer starts` : "Unavailable"}</p></div>
+                                {day.enabled && <button type="button" onClick={() => setExpandedDay(expanded ? null : day.dayOfWeek)} className="flex min-h-11 items-center gap-2 rounded-md px-3 text-sm text-neutral-600 hover:bg-neutral-50">Edit {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</button>}
                             </div>
 
-                            {day.isAvailable && (
-                                <div className="space-y-2 sm:space-y-3 ml-13">
-                                    {day.timeSlots.map((slot, slotIndex) => (
-                                        <div key={slotIndex} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                                            <div className="flex items-center gap-2 flex-1 w-full">
-                                                <TimeDropdown
-                                                    value={slot.startTime}
-                                                    onChange={(value) => updateTimeSlot(day.dayOfWeek, slotIndex, 'startTime', value)}
-                                                    className="w-full sm:w-32 min-h-[44px]"
-                                                />
-                                                <span className="text-neutral-400">-</span>
-                                                <TimeDropdown
-                                                    value={slot.endTime}
-                                                    onChange={(value) => updateTimeSlot(day.dayOfWeek, slotIndex, 'endTime', value)}
-                                                    className="w-full sm:w-32 min-h-[44px]"
-                                                />
-                                                {/* Only show capacity selector when breakdown is expanded (multiple slots) */}
-                                                {day.timeSlots.length > 1 && (
-                                                    <div className="flex items-center gap-2 ml-0 sm:ml-4 mt-2 sm:mt-0">
-                                                        <select
-                                                            value={slot.capacity}
-                                                            onChange={(e) => updateCapacity(day.dayOfWeek, slotIndex, parseInt(e.target.value))}
-                                                            className="w-20 px-2 py-2 border border-neutral-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
-                                                        >
-                                                            <option value="0">0</option>
-                                                            <option value="1">1</option>
-                                                            <option value="2">2</option>
-                                                            <option value="3">3</option>
-                                                            <option value="4">4</option>
-                                                            <option value="5">5</option>
-                                                            <option value="6">6</option>
-                                                            <option value="7">7</option>
-                                                            <option value="8">8</option>
-                                                            <option value="9">9</option>
-                                                            <option value="10">10</option>
-                                                        </select>
-                                                        <span className="text-xs text-neutral-500">slots</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {day.timeSlots.length > 1 && (
-                                                <button
-                                                    onClick={() => removeTimeSlot(day.dayOfWeek, slotIndex)}
-                                                    className="p-2 sm:p-3 text-red-600 hover:bg-red-50 rounded-sm transition min-h-[44px] min-w-[44px] flex items-center justify-center self-start sm:self-auto"
-                                                >
-                                                    <X className="h-4 w-4 sm:h-5 sm:w-5" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
-
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                                        {day.timeSlots.length === 1 && day.timeSlots[0].startTime && day.timeSlots[0].endTime && (
-                                            <button
-                                                onClick={() => toggleBreakdown(day.dayOfWeek)}
-                                                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium py-2 px-3 min-h-[44px]"
-                                            >
-                                                <Clock className="h-4 w-4" />
-                                                Split into time slots
-                                            </button>
-                                        )}
-
-                                        {day.timeSlots.length > 1 && (
-                                            <button
-                                                onClick={() => hideBreakdown(day.dayOfWeek)}
-                                                className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-700 font-medium py-2 px-3 min-h-[44px]"
-                                            >
-                                                <Clock className="h-4 w-4" />
-                                                Merge to single range
-                                            </button>
-                                        )}
-
-                                        {day.timeSlots.length > 0 && (
-                                            <button
-                                                onClick={() => addTimeSlot(day.dayOfWeek)}
-                                                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium py-2 px-3 min-h-[44px]"
-                                            >
-                                                <Plus className="h-4 w-4" />
-                                                Add time slot
-                                            </button>
-                                        )}
-                                    </div>
+                            {day.enabled && expanded && <div className="space-y-5 border-t border-neutral-200 bg-neutral-50/50 p-4 sm:p-5">
+                                <div className="space-y-3">
+                                    {day.windows.map((window, index) => <div key={window.id} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                                        <label className="text-xs font-medium text-neutral-600">Available from<input type="time" value={window.startTime} onChange={event => updateWindow(day.dayOfWeek, window.id, "startTime", event.target.value)} className="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
+                                        <label className="text-xs font-medium text-neutral-600">Available until<input type="time" value={window.endTime} onChange={event => updateWindow(day.dayOfWeek, window.id, "endTime", event.target.value)} className="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
+                                        <button type="button" disabled={day.windows.length === 1} aria-label={`Remove window ${index + 1}`} onClick={() => updateDay(day.dayOfWeek, current => ({ ...current, windows: current.windows.filter(item => item.id !== window.id) }))} className="flex min-h-11 items-center justify-center rounded-md border border-neutral-200 px-3 text-red-600 hover:bg-red-50 disabled:opacity-30"><Trash2 className="h-4 w-4" /></button>
+                                    </div>)}
+                                    <button type="button" onClick={() => updateDay(day.dayOfWeek, current => ({ ...current, windows: [...current.windows, { id: windowId(), startTime: "14:00", endTime: "18:00" }] }))} className="flex min-h-11 items-center gap-2 rounded-md border border-dashed border-neutral-300 px-4 text-sm font-medium text-neutral-600 hover:border-neutral-500 hover:bg-white"><Plus className="h-4 w-4" />Add another window</button>
                                 </div>
-                            )}
-                        </div>
+
+                                <div>
+                                    <div className="mb-3 flex items-center justify-between"><div><h4 className="text-sm font-medium text-neutral-900">Customer booking starts</h4><p className="text-xs text-neutral-500">Adjust capacity for any individual start time.</p></div><span className="text-xs text-neutral-500">Default capacity: {defaultCapacity}</span></div>
+                                    {starts.length ? <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{starts.map(start => {
+                                        const capacity = day.capacities[start] || defaultCapacity;
+                                        return <div key={start} className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2.5"><div><p className="text-sm font-medium">{displayTime(start)}</p><p className="text-[11px] text-neutral-500">appointment start</p></div><div className="flex items-center gap-1" aria-label={`${capacity} booking spots`}><button type="button" onClick={() => updateDay(day.dayOfWeek, current => ({ ...current, capacities: { ...current.capacities, [start]: Math.max(1, capacity - 1) } }))} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-neutral-100" aria-label={`Decrease ${displayTime(start)} capacity`}><Minus className="h-3.5 w-3.5" /></button><span className="flex min-w-12 items-center justify-center gap-1 text-sm font-semibold"><Users className="h-3.5 w-3.5" />{capacity}</span><button type="button" onClick={() => updateDay(day.dayOfWeek, current => ({ ...current, capacities: { ...current.capacities, [start]: Math.min(10, capacity + 1) } }))} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-neutral-100" aria-label={`Increase ${displayTime(start)} capacity`}><Plus className="h-3.5 w-3.5" /></button></div></div>;
+                                    })}</div> : <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">This window does not produce any customer start times. Check its from/until values.</div>}
+                                </div>
+                            </div>}
+                        </section>
                     );
                 })}
-                </div>
-
-                {/* Calendar Preview Sidebar */}
-                <div className="lg:col-span-1">
-                    <MiniCalendarPreview schedule={schedule} />
-                </div>
             </div>
-
-            {/* Copy Confirmation Modal */}
-            {showCopyConfirm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-                        <div className="flex items-start gap-4">
-                            <div className="flex-shrink-0">
-                                <Copy className="h-6 w-6 text-blue-600" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-lg font-medium text-neutral-900 mb-2">
-                                    Copy Schedule to All Days
-                                </h3>
-                                <p className="text-sm text-neutral-600 mb-4">
-                                    This will copy {copySourceDay}'s schedule to all other days of the week. Any existing schedules on other days will be replaced. Are you sure?
-                                </p>
-                                <div className="flex gap-3 justify-end">
-                                    <button
-                                        onClick={cancelCopy}
-                                        className="px-4 py-2 text-sm font-medium text-neutral-700 border border-neutral-300 rounded-md hover:bg-neutral-50"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={confirmCopy}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-                                    >
-                                        Copy to All Days
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
