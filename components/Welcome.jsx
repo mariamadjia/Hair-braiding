@@ -72,13 +72,12 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                     <div className="aspect-[3/5] bg-neutral-200 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
                       {item.type === 'video' ? (
                         <video
-                          src={item.src}
                           className="w-full h-full object-cover"
                           autoPlay
                           loop
                           muted
                           playsInline
-                        />
+                        ><source src={item.src} media="(min-width: 1024px)" /></video>
                       ) : (
                         <img
                           src={item.src}
@@ -92,13 +91,12 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                   <div className="aspect-[3/5] bg-neutral-200 overflow-hidden">
                     {item.type === 'video' ? (
                       <video
-                        src={item.src}
                         className="w-full h-full object-cover"
                         autoPlay
                         loop
                         muted
                         playsInline
-                      />
+                      ><source src={item.src} media="(min-width: 1024px)" /></video>
                     ) : (
                       <img
                         src={item.src}
@@ -159,13 +157,12 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                   <div className="aspect-[3/5] bg-neutral-200 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
                     {items[0].type === 'video' ? (
                       <video
-                        src={items[0].src}
                         className="w-full h-full object-cover"
                         autoPlay
                         loop
                         muted
                         playsInline
-                      />
+                      ><source src={items[0].src} media="(max-width: 1023px)" /></video>
                     ) : (
                       <img
                         src={items[0].src}
@@ -179,13 +176,12 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                 <div className="aspect-[3/5] bg-neutral-200 overflow-hidden">
                   {items[0].type === 'video' ? (
                     <video
-                      src={items[0].src}
                       className="w-full h-full object-cover"
                       autoPlay
                       loop
                       muted
                       playsInline
-                    />
+                    ><source src={items[0].src} media="(max-width: 1023px)" /></video>
                   ) : (
                     <img
                       src={items[0].src}
@@ -255,13 +251,12 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                   <div className="aspect-[3/5] bg-neutral-200 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
                     {items[1].type === 'video' ? (
                       <video
-                        src={items[1].src}
                         className="w-full h-full object-cover"
                         autoPlay
                         loop
                         muted
                         playsInline
-                      />
+                      ><source src={items[1].src} media="(max-width: 1023px)" /></video>
                     ) : (
                       <img
                         src={items[1].src}
@@ -275,13 +270,12 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                 <div className="aspect-[3/5] bg-neutral-200 overflow-hidden">
                   {items[1].type === 'video' ? (
                     <video
-                      src={items[1].src}
                       className="w-full h-full object-cover"
                       autoPlay
                       loop
                       muted
                       playsInline
-                    />
+                    ><source src={items[1].src} media="(max-width: 1023px)" /></video>
                   ) : (
                     <img
                       src={items[1].src}
@@ -317,13 +311,12 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                   <div className="aspect-[3/5] bg-neutral-200 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
                     {items[2].type === 'video' ? (
                       <video
-                        src={items[2].src}
                         className="w-full h-full object-cover"
                         autoPlay
                         loop
                         muted
                         playsInline
-                      />
+                      ><source src={items[2].src} media="(max-width: 1023px)" /></video>
                     ) : (
                       <img
                         src={items[2].src}
@@ -337,13 +330,12 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                 <div className="aspect-[3/5] bg-neutral-200 overflow-hidden">
                   {items[2].type === 'video' ? (
                     <video
-                      src={items[2].src}
                       className="w-full h-full object-cover"
                       autoPlay
                       loop
                       muted
                       playsInline
-                    />
+                    ><source src={items[2].src} media="(max-width: 1023px)" /></video>
                   ) : (
                     <img
                       src={items[2].src}

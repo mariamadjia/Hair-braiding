@@ -47,7 +47,10 @@ export async function GET() {
     return NextResponse.json({ collections });
   } catch (error) {
     console.error('Error fetching gallery collections:', error);
-    return NextResponse.json({ collections: [] });
+    return NextResponse.json(
+      { collections: [], error: 'The gallery is temporarily unavailable' },
+      { status: 503 }
+    );
   }
 }
 

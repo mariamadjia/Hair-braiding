@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
@@ -14,6 +15,7 @@ const DEFAULT_HERO_IMAGES = [
 export default function Hero({ videoSrc, useVideo }) {
   const [images, setImages] = useState(DEFAULT_HERO_IMAGES);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     // Try to fetch images from API, but keep defaults if it fails
@@ -35,14 +37,14 @@ export default function Hero({ videoSrc, useVideo }) {
   }, []);
 
   useEffect(() => {
-    if (images.length === 0) return;
+    if (images.length === 0 || reduceMotion) return;
     
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
     }, 4000); // Change image every 4 seconds
 
     return () => clearInterval(interval);
-  }, [images.length]);
+  }, [images.length, reduceMotion]);
 
   return (
     <section className="flex flex-col md:flex-row md:min-h-[85vh] relative">
@@ -50,7 +52,7 @@ export default function Hero({ videoSrc, useVideo }) {
       <div className="flex flex-col md:flex-1 md:grid md:grid-cols-2">
         {/* Text Content */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: "easeOut" }}
           className="bg-[#F6F5F1] flex items-center justify-center px-6 pt-24 pb-10 md:py-0 md:px-16 lg:px-24"
@@ -93,17 +95,24 @@ export default function Hero({ videoSrc, useVideo }) {
           ) : images.length > 0 ? (
             /* Image Carousel */
             <>
-              <AnimatePresence mode="wait">
-                <motion.img
+              <AnimatePresence initial={false} mode="sync">
+                <motion.div
                   key={currentImageIndex}
-                  src={images[currentImageIndex]}
-                  alt="Luxury braiding portfolio"
-                  className="w-full h-full max-w-md mx-auto object-cover md:absolute md:inset-0 md:max-w-none"
+                  className="absolute inset-x-6 inset-y-0 max-w-md mx-auto md:inset-0 md:max-w-none"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
-                />
+                  transition={{ duration: reduceMotion ? 0 : 0.35 }}
+                >
+                  <Image
+                    src={images[currentImageIndex]}
+                    alt={`AH Braiding portfolio style ${currentImageIndex + 1}`}
+                    fill
+                    priority={currentImageIndex === 0}
+                    sizes="(max-width: 767px) calc(100vw - 48px), 50vw"
+                    className="object-cover"
+                  />
+                </motion.div>
               </AnimatePresence>
 
               {/* Image Indicators */}
@@ -112,13 +121,12 @@ export default function Hero({ videoSrc, useVideo }) {
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`h-1.5 rounded-full transition-all ${
-                      index === currentImageIndex
-                        ? "w-8 bg-white"
-                        : "w-1.5 bg-white/50 hover:bg-white/75"
-                    }`}
+                    className="flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                     aria-label={`Go to image ${index + 1}`}
-                  />
+                    aria-current={index === currentImageIndex ? "true" : undefined}
+                  >
+                    <span className={`block h-1.5 rounded-full transition-all ${index === currentImageIndex ? "w-8 bg-white" : "w-1.5 bg-white/60"}`} />
+                  </button>
                 ))}
               </div>
             </>
@@ -144,7 +152,7 @@ export default function Hero({ videoSrc, useVideo }) {
       <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px overflow-hidden">
         <motion.div
           className="w-full h-full bg-[#2C1810] origin-top"
-          initial={{ scaleY: 0 }}
+          initial={reduceMotion ? false : { scaleY: 0 }}
           animate={{ scaleY: 1 }}
           transition={{ duration: 1.5, ease: "easeOut" }}
         />

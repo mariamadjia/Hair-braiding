@@ -17,14 +17,13 @@ export default function Footer({ videoSrc = '/Footer/IMG_2004.mov' }: FooterProp
         <div className="w-full max-w-xs mx-auto mb-8">
           <div className="aspect-[4/5] overflow-hidden">
             <video
-              src={videoSrc}
               className="w-full h-full object-cover"
               style={{ objectPosition: 'center 30%' }}
               autoPlay
               loop
               muted
               playsInline
-            />
+            ><source src={videoSrc} media="(max-width: 1023px)" /></video>
           </div>
         </div>
 
@@ -106,14 +105,13 @@ export default function Footer({ videoSrc = '/Footer/IMG_2004.mov' }: FooterProp
           <div>
             <div className="w-[300px] md:w-[380px] lg:w-[450px] aspect-[6/5] overflow-hidden">
               <video
-                src={videoSrc}
                 className="w-full h-full object-cover"
                 style={{ objectPosition: 'center 30%' }}
                 autoPlay
                 loop
                 muted
                 playsInline
-              />
+              ><source src={videoSrc} media="(min-width: 1024px)" /></video>
             </div>
           </div>
         </div>

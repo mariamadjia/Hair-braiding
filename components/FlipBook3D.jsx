@@ -734,7 +734,9 @@ export default function FlipBook3D() {
           padding: '60px 20px 50px', 
           display: 'flex', 
           flexDirection: 'column', 
-          alignItems: 'center' 
+          alignItems: 'center',
+          width: '100%',
+          overflowX: 'clip'
         }}
         aria-label="The Braid Book - Interactive guide to protective hairstyles"
       >
@@ -746,7 +748,7 @@ export default function FlipBook3D() {
           style={{ 
             perspective: '2500px', 
             perspectiveOrigin: '50% 50%',
-            width: 'min(900px,96vw)', 
+            width: 'min(900px,calc(100vw - 72px))',
             height: 'clamp(420px,70vw,600px)', 
             position: 'relative', 
             minHeight: 300,

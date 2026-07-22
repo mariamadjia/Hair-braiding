@@ -132,8 +132,17 @@ export default function Gallery() {
               <div 
                 key={index} 
                 className="group cursor-pointer"
+                role="link"
+                tabIndex={0}
+                aria-label={`View ${item.title} styles`}
                 onClick={() => {
                   if (item.slug) {
+                    router.push(`/${item.slug}`);
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if ((event.key === 'Enter' || event.key === ' ') && item.slug) {
+                    event.preventDefault();
                     router.push(`/${item.slug}`);
                   }
                 }}

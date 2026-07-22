@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Footer from "@/components/Footer";
 import { API_BASE_URL } from "@/lib/config/api";
+import { getHomepageSettings } from "@/lib/homepage-settings";
 
 const DEFAULT_FOOTER_VIDEO = "/Footer/IMG_2004.mov";
 
@@ -42,18 +43,7 @@ export default function FooterWrapper() {
   useEffect(() => {
     const loadFooterVideo = async () => {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/homepage-settings`,
-          {
-            cache: "no-store",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Could not load homepage settings");
-        }
-
-        const data = await response.json();
+        const data = await getHomepageSettings();
 
         setFooterVideoSrc(
           resolveMediaUrl(data.footerVideoSrc)
