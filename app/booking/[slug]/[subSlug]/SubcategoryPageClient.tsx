@@ -64,6 +64,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
 
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
     const lengthOptions = selectedItem?.lengthOptions ?? [];
+    const selectedLengthOption = lengthOptions.find((option) => option.id?.toString() === selectedLength);
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
     
     const photoGallery = (photoItem?.sizePhotos?.length ? photoItem.sizePhotos : 
@@ -327,14 +328,14 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
 
             {selectedItem && lengthOptions.length > 0 && (
                 <div 
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-8" 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-4 md:py-8"
                     onClick={closeModal}
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="options-modal-title"
                 >
                     <div
-                        className="relative w-full max-w-md max-h-[85vh] overflow-y-auto rounded-sm bg-white p-8 md:p-10 text-neutral-900 shadow-[0_20px_60px_rgb(0,0,0,0.3)] scrollbar-hide"
+                        className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white text-neutral-900 shadow-[0_20px_60px_rgb(0,0,0,0.3)] md:max-h-[85vh]"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <style jsx>{`
@@ -346,24 +347,18 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 scrollbar-width: none;
                             }
                         `}</style>
-                        <button
-                            type="button"
-                            onClick={closeModal}
-                            className="absolute right-6 top-6 text-xl leading-none text-neutral-400 hover:text-neutral-700"
-                            aria-label="Close modal"
-                        >
-                            ×
-                        </button>
-                        <div className="space-y-2 pb-6 border-b border-neutral-200/60 text-left">
-                            <h2 id="options-modal-title" className="text-xl font-light tracking-wide text-neutral-900">{selectedItem.name}</h2>
+                        <div className="relative shrink-0 border-b border-neutral-200/60 bg-white px-6 py-5 pr-16 text-left md:px-8 md:py-6">
+                            <button type="button" onClick={closeModal} className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full text-2xl leading-none text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-900" aria-label="Close modal">×</button>
+                            <h2 id="options-modal-title" className="text-xl font-light tracking-wide text-neutral-900 md:text-2xl">{selectedItem.name}</h2>
                             {selectedItem.description && (
                                 <p className="text-sm text-neutral-600 font-light whitespace-pre-line">
                                     {selectedItem.description}
                                 </p>
                             )}
+                            <p className="mt-3 text-sm font-medium text-neutral-900">Choose your preferred length.</p>
                         </div>
 
-                        <div className="mt-5 space-y-3">
+                        <div className="relative flex-1 space-y-2 overflow-y-auto px-6 py-4 md:px-8 scrollbar-hide">
                             {lengthOptions.map((option, idx) => {
                                 const optionKey = option.id?.toString() ?? `option-${idx}`;
                                 const isSelected = selectedLength === optionKey;
@@ -377,8 +372,8 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                                     setSelectedTexture((prev) => prev ?? selectedItem.hairTextures?.[0] ?? null);
                                                 }
                                             }}
-                                            className={`flex w-full items-center justify-between rounded-none border px-5 py-4 text-left transition ${
-                                                isSelected ? "border-neutral-900 bg-neutral-50" : "border-neutral-200 bg-white hover:border-neutral-400"
+                                            className={`flex min-h-20 w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-1 ${
+                                                isSelected ? "border-[#2C1810] bg-[#FAF7F2] shadow-sm" : "border-neutral-200 bg-white hover:border-neutral-400"
                                             }`}
                                         >
                                             <div className="flex items-start gap-4">
@@ -391,7 +386,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                                 </span>
                                                 <div className="space-y-1">
                                                     {option.name && (
-                                                        <div className="text-sm font-medium tracking-wide text-neutral-900">{option.name}</div>
+                                                        <div className="text-sm font-medium tracking-wide text-neutral-900">{option.name === "Arm Pit" ? "Armpit" : option.name}</div>
                                                     )}
                                                     {option.notes && (
                                                         <div className="text-xs text-neutral-500 font-light">{option.notes}</div>
@@ -433,14 +428,11 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                             ) : null}
                         </div>
 
-                        <Button
-                            type="button"
-                            disabled={!selectedLength || (selectedItem.hairTextures?.length ? !selectedTexture : false)}
-                            onClick={handleModalSelect}
-                            className="mt-8 w-full rounded-none bg-[#2C1810] text-white py-3 text-xs uppercase tracking-wider font-semibold hover:bg-[#1a0f0a] transition-colors disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500 disabled:hover:bg-neutral-300"
-                        >
-                            Book Now
-                        </Button>
+                        <div className="relative shrink-0 border-t border-neutral-200 bg-white p-4 shadow-[0_-12px_24px_rgba(0,0,0,0.08)] md:px-8">
+                            <Button type="button" disabled={!selectedLength || (selectedItem.hairTextures?.length ? !selectedTexture : false)} onClick={handleModalSelect} className="w-full rounded-lg bg-[#2C1810] py-3 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#1a0f0a] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500 disabled:hover:bg-neutral-300">
+                                Book Now{selectedLengthOption?.price ? ` · ${formatPrice(selectedLengthOption.price)}` : ""}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}
