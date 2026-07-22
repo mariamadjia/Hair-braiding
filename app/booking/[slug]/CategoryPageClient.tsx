@@ -224,7 +224,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                                         className="rounded-none bg-[#2C1810] text-white px-4 py-2 text-[10px] md:text-xs uppercase tracking-wider font-semibold hover:bg-[#1a0f0a] transition-colors shrink-0 whitespace-nowrap"
                                         onClick={() => openModalForItem(index)}
                                     >
-                                        Select
+                                        Book Now
                                     </Button>
                                 </div>
                             </div>
