@@ -112,7 +112,7 @@ export default async function Services() {
                       className="rounded-none bg-[#2C1810] px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#1a0f0a] md:text-xs"
                     >
                       <Link href={`/booking/${category.slug}`} prefetch={true}>
-                        Book Now
+                        Select
                       </Link>
                     </Button>
                   </div>

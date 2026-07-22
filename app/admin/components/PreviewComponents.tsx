@@ -85,7 +85,7 @@ export function PreviewServicesList({ categories }: { categories: BookingCategor
                             )}
                         </div>
                         <span className="px-5 py-2 text-[10px] font-medium uppercase tracking-[0.3em] border border-neutral-900 dark:border-neutral-400 text-neutral-900 dark:text-neutral-300 shrink-0">
-                            Book Now
+                            Select
                         </span>
                     </div>
                 ))}
@@ -150,7 +150,7 @@ function PreviewItemRow({ item }: { item: BookingItem }) {
                             View Photo{gallery.length > 1 ? `s (${gallery.length})` : ""}
                         </button>
                     )}
-                    <span className="px-5 py-2 text-[10px] font-medium uppercase tracking-[0.3em] border border-neutral-900 text-neutral-900 whitespace-nowrap">Book Now</span>
+                    <span className="px-5 py-2 text-[10px] font-medium uppercase tracking-[0.3em] border border-neutral-900 text-neutral-900 whitespace-nowrap">Select</span>
                 </div>
             </div>
             {photoOpen && gallery.length > 0 && <PhotoModal gallery={gallery} name={item.name} onClose={() => setPhotoOpen(false)} />}
@@ -242,7 +242,7 @@ export function PreviewCategoryDetail({ category }: { category: BookingCategory 
                                         </>
                                     )}
                                 </div>
-                                <span className="px-5 py-2 text-[10px] font-medium uppercase tracking-[0.3em] border border-neutral-900 text-neutral-900">Book Now</span>
+                                <span className="px-5 py-2 text-[10px] font-medium uppercase tracking-[0.3em] border border-neutral-900 text-neutral-900">Select</span>
                             </div>
                         ))}
                     </div>
