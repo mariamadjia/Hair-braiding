@@ -67,10 +67,12 @@ const BackCoverSVG = ({ endPage = BRAID_BOOK_END_PAGE }) => (
     <circle cx="180" cy="200" r="100" fill="none" stroke="#C8714A" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.3"/>
     <circle cx="180" cy="200" r="80"  fill="none" stroke="#444"    strokeWidth="0.5" opacity="0.2"/>
     <text x="180" y="160" textAnchor="middle" fill="#C8714A" fontSize="36" fontFamily="serif">✦</text>
-    <foreignObject x="35" y="176" width="290" height="70">
-      <div xmlns="http://www.w3.org/1999/xhtml" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: 'Georgia,serif', textAlign: 'center', lineHeight: 1.5 }}>{endPage.backQuote}</div>
+    <foreignObject x="105" y="174" width="150" height="64">
+      <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: 'rgba(255,255,255,0.7)', fontSize: 11, fontFamily: 'Georgia,serif', textAlign: 'center', lineHeight: 1.45, overflowWrap: 'anywhere' }}>{endPage.backQuote}</div>
     </foreignObject>
-    <text x="180" y="262" textAnchor="middle" fill="#666" fontSize="10" fontFamily="Georgia,serif" fontStyle="italic">{endPage.backAttribution}</text>
+    <foreignObject x="115" y="242" width="130" height="28">
+      <div xmlns="http://www.w3.org/1999/xhtml" style={{ color: '#666', fontSize: 9, fontFamily: 'Georgia,serif', fontStyle: 'italic', textAlign: 'center', lineHeight: 1.35, overflowWrap: 'anywhere' }}>{endPage.backAttribution}</div>
+    </foreignObject>
     <text x="180" y="350" textAnchor="middle" fill="#C8714A" fontSize="10" opacity="0.4">✦  ✦  ✦</text>
   </svg>
 );
