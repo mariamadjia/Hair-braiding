@@ -937,6 +937,30 @@ export function HomePageEditor() {
     }
   };
 
+  const uploadBraidBookImage = async (styleId: number, file: File) => {
+    setStatusMessage('Uploading Braid Book image…');
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const token = getAuthToken();
+      body.append('title', `Braid Book style ${styleId}`);
+      body.append('altText', `Braid Book style ${styleId}`);
+      const response = await fetch(`${API_BASE_URL}/api/gallery/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body,
+      });
+      if (!response.ok) throw new Error(`Image upload failed (${response.status})`);
+      const uploaded = await response.json();
+      const index = braidBookStyles.findIndex((style) => style.id === styleId);
+      if (index >= 0) updateBraidBookStyle(index, 'image', uploaded.imageUrl || uploaded.url);
+      setStatusMessage('Image uploaded. Save the Braid Book to publish it.');
+    } catch (error) {
+      console.error('Failed to upload Braid Book image:', error);
+      setStatusMessage('The Braid Book image could not be uploaded.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-neutral-50 dark:bg-neutral-900">
@@ -1057,7 +1081,13 @@ export function HomePageEditor() {
                 <FlipBook3D
                   editMode
                   styles={braidBookStyles}
-                  onEditStyle={(style: Record<string, unknown>) => setExpandedBraidStyle(Number(style.id))}
+                  onChangeStyle={(id: number, field: string, value: string | string[]) => {
+                    const index = braidBookStyles.findIndex((style) => style.id === id);
+                    if (index >= 0) updateBraidBookStyle(index, field as keyof BraidBookStyle, value);
+                  }}
+                  onImageFile={(id: number, file: File) => void uploadBraidBookImage(id, file)}
+                  onSave={() => void saveBraidBookStyles()}
+                  isSaving={savingBraidBook}
                 />
               </div>
 

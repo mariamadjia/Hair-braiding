@@ -332,7 +332,7 @@ const buildSpreads = (styles = BRAID_BOOK_STYLES) => {
 
 const spreads = buildSpreads();
 
-function RightPageContent({ s, mobile = false }) {
+function RightPageContent({ s, mobile = false, editMode = false, onChange = null }) {
   if (s.rightContent) return s.rightContent;
 
   const care = s.preserveTips && s.bestFor ? s : (styleCare[s.name] || {});
@@ -357,8 +357,23 @@ function RightPageContent({ s, mobile = false }) {
         flexWrap: 'wrap',
         gap: 'clamp(5px, 1.2vw, 8px)'
       }}>
-        {bestFor.map((tag) => (
-          <span key={tag} style={{
+        {bestFor.map((tag, index) => (
+          <span
+            key={`${tag}-${index}`}
+            draggable={editMode}
+            onDragStart={(event) => event.dataTransfer.setData('text/plain', String(index))}
+            onDragOver={(event) => editMode && event.preventDefault()}
+            onDrop={(event) => {
+              if (!editMode) return;
+              event.preventDefault();
+              const from = Number(event.dataTransfer.getData('text/plain'));
+              if (!Number.isInteger(from) || from === index) return;
+              const reordered = [...bestFor];
+              const [moved] = reordered.splice(from, 1);
+              reordered.splice(index, 0, moved);
+              onChange?.('bestFor', reordered);
+            }}
+            style={{
             display: 'inline-flex',
             alignItems: 'center',
             minHeight: 'clamp(20px, 3.5vw, 27px)',
@@ -373,7 +388,18 @@ function RightPageContent({ s, mobile = false }) {
             letterSpacing: '0.02em',
             whiteSpace: 'nowrap'
           }}>
-            {tag}
+            {editMode ? (
+              <input
+                aria-label={`Best for label ${index + 1}`}
+                value={tag}
+                onChange={(event) => {
+                  const next = [...bestFor];
+                  next[index] = event.target.value;
+                  onChange?.('bestFor', next);
+                }}
+                style={{ width: `${Math.max(7, tag.length)}ch`, maxWidth: 100, border: 0, outline: 0, background: 'transparent', color: 'inherit', font: 'inherit' }}
+              />
+            ) : tag}
           </span>
         ))}
       </div>
@@ -388,7 +414,21 @@ function RightPageContent({ s, mobile = false }) {
       gap: 'clamp(6px, 1.7vw, 15px)'
     }}>
       <div>
-        <h3 style={{
+        {editMode ? <input
+          aria-label="Style title"
+          value={s.name}
+          onChange={(event) => onChange?.('name', event.target.value)}
+          style={{
+            width: '100%',
+            border: '1px dashed rgba(200,113,74,0.55)',
+            background: 'rgba(255,255,255,0.65)',
+            fontFamily: 'var(--font-playfair,Georgia,serif)',
+            fontSize: mobile ? '1.8rem' : 'clamp(1rem, 4vw, 2.25rem)',
+            color: T.heading,
+            lineHeight: 1.05,
+            fontWeight: 500,
+          }}
+        /> : <h3 style={{
           fontFamily: 'var(--font-playfair,Georgia,serif)',
           fontSize: mobile ? '1.8rem' : 'clamp(1rem, 4vw, 2.25rem)',
           color: T.heading,
@@ -396,9 +436,7 @@ function RightPageContent({ s, mobile = false }) {
           lineHeight: 1.05,
           fontWeight: 500,
           letterSpacing: '-0.015em'
-        }}>
-          {s.name}
-        </h3>
+        }}>{s.name}</h3>}
       </div>
 
       <div style={{
@@ -418,7 +456,12 @@ function RightPageContent({ s, mobile = false }) {
         }}>
           Wear Time
         </div>
-        <div style={{
+        {editMode ? <input
+          aria-label="Wear time"
+          value={s.wearTime}
+          onChange={(event) => onChange?.('wearTime', event.target.value)}
+          style={{ width: '100%', border: '1px dashed rgba(200,113,74,0.55)', background: 'rgba(255,255,255,0.65)', fontFamily: 'var(--font-playfair,Georgia,serif)', color: T.heading, fontSize: 'clamp(0.75rem, 2vw, 1.05rem)', fontWeight: 600 }}
+        /> : <div style={{
           fontFamily: 'var(--font-playfair,Georgia,serif)',
           color: T.heading,
           fontSize: mobile ? '1rem' : 'clamp(0.75rem, 2vw, 1.05rem)',
@@ -426,7 +469,7 @@ function RightPageContent({ s, mobile = false }) {
           lineHeight: 1
         }}>
           {s.wearTime}
-        </div>
+        </div>}
       </div>
 
       {bestForContent}
@@ -461,14 +504,23 @@ function RightPageContent({ s, mobile = false }) {
               }}>
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <span style={{
+              {editMode ? <input
+                aria-label={`Care tip ${i + 1}`}
+                value={tip}
+                onChange={(event) => {
+                  const next = [...preserveTips];
+                  next[i] = event.target.value;
+                  onChange?.('preserveTips', next);
+                }}
+                style={{ width: '100%', border: '1px dashed rgba(200,113,74,0.4)', background: 'rgba(255,255,255,0.6)', color: T.body, fontSize: 'clamp(0.52rem, 1.55vw, 0.75rem)', lineHeight: 1.3 }}
+              /> : <span style={{
                 color: T.body,
                 fontSize: mobile ? '0.86rem' : 'clamp(0.52rem, 1.55vw, 0.75rem)',
                 lineHeight: 1.3,
                 fontWeight: 300
               }}>
                 {tip}
-              </span>
+              </span>}
             </div>
           ))}
         </div>
@@ -484,9 +536,21 @@ function RightPageContent({ s, mobile = false }) {
  *   editMode?: boolean;
  *   styles?: Array<Record<string, any>> | null;
  *   onEditStyle?: ((style: Record<string, any>) => void) | null;
+ *   onChangeStyle?: ((id: number, field: string, value: any) => void) | null;
+ *   onImageFile?: ((id: number, file: File) => void) | null;
+ *   onSave?: (() => void) | null;
+ *   isSaving?: boolean;
  * }} props
  */
-export default function FlipBook3D({ editMode = false, styles = null, onEditStyle = null } = {}) {
+export default function FlipBook3D({
+  editMode = false,
+  styles = null,
+  onEditStyle = null,
+  onChangeStyle = null,
+  onImageFile = null,
+  onSave = null,
+  isSaving = false,
+} = {}) {
   const [activeSpreads, setActiveSpreads] = useState(() => buildSpreads(styles || BRAID_BOOK_STYLES));
   const [current, setCurrent] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
@@ -504,6 +568,10 @@ export default function FlipBook3D({ editMode = false, styles = null, onEditStyl
   const pagePaddingBottom = 'clamp(10px,2.6vw,32px)';
   const pagePaddingOuter = 'clamp(10px,2.6vw,32px)';
   const pagePaddingGutter = 'clamp(22px,4.5vw,44px)';
+  const editCurrentStyle = (field, value) => {
+    const id = Number(activeSpreads[current]?.id);
+    if (id >= 1 && id <= 8) onChangeStyle?.(id, field, value);
+  };
 
   const clearFlipTimers = useCallback(() => {
     flipTimersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -961,6 +1029,35 @@ export default function FlipBook3D({ editMode = false, styles = null, onEditStyl
                   }
                 }}>
                 {activeSpreads[current].leftEl}
+                {editMode && activeSpreads[current]?.id >= 1 && activeSpreads[current]?.id <= 8 && (
+                  <label
+                    data-no-page-flip
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      zIndex: 40,
+                      display: 'grid',
+                      placeItems: 'center',
+                      background: 'rgba(0,0,0,0.16)',
+                      color: '#fff',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span style={{ padding: '10px 14px', background: 'rgba(45,31,26,0.88)', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                      Replace image
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/avif"
+                      style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) onImageFile?.(Number(activeSpreads[current].id), file);
+                        event.target.value = '';
+                      }}
+                    />
+                  </label>
+                )}
               </div>
 
               {/* Right page */}
@@ -1014,7 +1111,11 @@ export default function FlipBook3D({ editMode = false, styles = null, onEditStyl
                   pointerEvents: 'none'
                 }}/>
 
-                <RightPageContent s={activeSpreads[current]} />
+                <RightPageContent
+                  s={activeSpreads[current]}
+                  editMode={editMode}
+                  onChange={editCurrentStyle}
+                />
                 <div style={{ 
                   position: 'absolute', 
                   bottom: 16, 
@@ -1208,7 +1309,7 @@ export default function FlipBook3D({ editMode = false, styles = null, onEditStyl
             </a>
           )}
 
-          {editMode && activeSpreads[current]?.id >= 1 && activeSpreads[current]?.id <= 8 && !isFlipping && (
+          {editMode && onEditStyle && activeSpreads[current]?.id >= 1 && activeSpreads[current]?.id <= 8 && !isFlipping && (
             <button
               type="button"
               data-no-page-flip
@@ -1252,6 +1353,32 @@ export default function FlipBook3D({ editMode = false, styles = null, onEditStyl
         }}/>
 
         <Nav />
+
+        {editMode && (
+          <div
+            data-no-page-flip
+            style={{
+              position: 'sticky',
+              bottom: 16,
+              zIndex: 1500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              marginTop: 12,
+              padding: '12px 14px',
+              border: '1px solid rgba(45,31,26,0.18)',
+              borderRadius: 6,
+              background: 'rgba(255,253,249,0.96)',
+              boxShadow: '0 12px 34px rgba(45,31,26,0.2)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <span style={{ color: T.body, fontSize: '0.72rem' }}>Editing {activeSpreads[current]?.name || activeSpreads[current]?.title}</span>
+            <button type="button" onClick={() => onSave?.()} disabled={isSaving} style={{ minHeight: 42, border: 0, borderRadius: 3, padding: '0 18px', background: T.btnBg, color: T.btnText, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: isSaving ? 'wait' : 'pointer', opacity: isSaving ? 0.6 : 1 }}>
+              {isSaving ? 'Saving…' : 'Save Braid Book'}
+            </button>
+          </div>
+        )}
       </section>
     </>
   );
