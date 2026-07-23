@@ -760,11 +760,13 @@ export default function FlipBook3D({
   };
 
   const onTouchStart = (e) => { 
+    if (e.target instanceof Element && e.target.closest('[data-no-page-flip], input, textarea, select, button, a')) return;
     touchX.current = e.touches[0].clientX; 
     touchY.current = e.touches[0].clientY; 
   };
   
   const onTouchEnd = (e) => {
+    if (e.target instanceof Element && e.target.closest('[data-no-page-flip], input, textarea, select, button, a')) return;
     const dx = touchX.current - e.changedTouches[0].clientX;
     const dy = Math.abs(touchY.current - e.changedTouches[0].clientY);
     if (Math.abs(dx) > 44 && dy < 80) changePage(dx > 0 ? 1 : -1);
@@ -1118,6 +1120,7 @@ export default function FlipBook3D({
                 tabIndex={current === 0 ? -1 : 0}
                 aria-label={current === 0 ? undefined : 'Previous page'}
                 onKeyDown={(event) => {
+                  if (event.target instanceof Element && event.target.closest('[data-no-page-flip], input, textarea, select, button, a')) return;
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     changePage(-1);
@@ -1161,10 +1164,17 @@ export default function FlipBook3D({
                       />
                     </label>
                     <input
+                      data-no-page-flip
                       aria-label="Photo subtitle"
                       value={activeSpreads[current].subtitle || ''}
                       onChange={(event) => editCurrentStyle('subtitle', event.target.value)}
-                      style={{ position: 'absolute', left: 18, right: 18, bottom: 68, zIndex: 2, width: 'calc(100% - 36px)', border: '1px dashed rgba(255,255,255,0.8)', background: 'rgba(0,0,0,0.62)', color: '#fff', padding: 6, fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onTouchStart={(event) => event.stopPropagation()}
+                      onTouchEnd={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => event.stopPropagation()}
+                      style={{ position: 'absolute', left: 18, right: 18, bottom: 68, zIndex: 3, width: 'calc(100% - 36px)', border: '1px dashed rgba(255,255,255,0.8)', background: 'rgba(0,0,0,0.72)', color: '#fff', padding: 6, fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'text', pointerEvents: 'auto' }}
                     />
                   </div>
                 )}
