@@ -19,6 +19,10 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
   useEffect(() => {
     if (previewCollections) {
       setCollections(previewCollections);
+      // An edited collection can have fewer images than before. Reset the
+      // carousel position so it never points past the new image array.
+      setCurrentImageIndex({});
+      setIsFlipping({});
       setLoading(false);
       setLoadError(false);
       return;

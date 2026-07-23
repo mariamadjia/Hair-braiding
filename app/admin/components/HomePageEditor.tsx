@@ -65,7 +65,6 @@ export function HomePageEditor() {
   const [loadErrors, setLoadErrors] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
-  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [pendingHeroDeleteId, setPendingHeroDeleteId] = useState<number | null>(null);
   const collectionSnapshotRef = useRef<GalleryCollection[] | null>(null);
   const selectionSnapshotRef = useRef<number[] | null>(null);
@@ -425,6 +424,8 @@ export function HomePageEditor() {
         .filter((collection) => collection.images.length > 0);
 
       setAllCollections(collections);
+      setCurrentImageIndex({});
+      setIsFlipping({});
 
       const featuredIndices = collections
         .map((collection, index) =>
@@ -883,24 +884,10 @@ export function HomePageEditor() {
     <>
       <div className="h-full flex flex-col bg-neutral-50 dark:bg-neutral-900">
         {/* Header */}
-        <div className="bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-4 md:px-8 py-4 shrink-0">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">Homepage Preview</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400" aria-live="polite">
-                {statusMessage || (lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleString()}` : 'Review and edit each homepage section')}
-              </p>
-            </div>
-            <div className="inline-flex rounded border border-neutral-300 p-1" aria-label="Preview size">
-              {(['desktop', 'mobile'] as const).map((mode) => (
-                <button key={mode} type="button" aria-pressed={previewMode === mode}
-                  onClick={() => setPreviewMode(mode)}
-                  className={`px-3 py-1 text-xs capitalize ${previewMode === mode ? 'bg-neutral-900 text-white' : 'text-neutral-600'}`}>
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-4 md:px-8 py-3 shrink-0">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400" aria-live="polite">
+            {statusMessage || (lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleString()}` : 'Manage homepage sections')}
+          </p>
           {loadErrors.length > 0 && (
             <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-2 border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
               <span>{loadErrors.join(' ')}</span>
@@ -911,7 +898,6 @@ export function HomePageEditor() {
 
         {/* Hero Preview */}
         <div className="flex-1 overflow-y-auto bg-[#F6F5F1] dark:bg-neutral-900">
-          <div className={`mx-auto overflow-hidden transition-[max-width] ${previewMode === 'mobile' ? 'max-w-[390px] border-x border-neutral-300' : 'max-w-none'}`}>
           <div className="relative">
             <Hero videoSrc={heroVideoSrc} useVideo={useHeroVideo} previewImages={heroImages.map(({ imageUrl }) => imageUrl)} />
             {/* Edit button overlay */}
@@ -1000,7 +986,6 @@ export function HomePageEditor() {
                 <Edit className="h-4 w-4" />
               </button>
             </div>
-          </div>
           </div>
         </div>
       </div>
