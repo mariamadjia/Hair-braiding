@@ -608,7 +608,41 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
         </div>
       </div>
 
-      <div style={{ height: 'clamp(30px, 5vw, 38px)' }} />
+      {editMode ? (
+        <label
+          data-no-page-flip
+          style={{
+            display: 'grid',
+            gap: 4,
+            alignSelf: 'end',
+            width: '100%',
+            color: T.accent,
+            fontSize: '0.5rem',
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Photo label
+          <input
+            data-no-page-flip
+            aria-label="Photo label"
+            value={s.subtitle || ''}
+            onChange={(event) => onChange?.('subtitle', event.target.value)}
+            style={{
+              width: '100%',
+              minHeight: 28,
+              border: '1px dashed rgba(200,113,74,0.55)',
+              background: 'rgba(255,255,255,0.72)',
+              color: T.heading,
+              padding: '4px 7px',
+              fontSize: '0.58rem',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+          />
+        </label>
+      ) : <div style={{ height: 'clamp(30px, 5vw, 38px)' }} />}
     </div>
   );
 }
@@ -1163,19 +1197,6 @@ export default function FlipBook3D({
                         }}
                       />
                     </label>
-                    <input
-                      data-no-page-flip
-                      aria-label="Photo subtitle"
-                      value={activeSpreads[current].subtitle || ''}
-                      onChange={(event) => editCurrentStyle('subtitle', event.target.value)}
-                      onClick={(event) => event.stopPropagation()}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onMouseDown={(event) => event.stopPropagation()}
-                      onTouchStart={(event) => event.stopPropagation()}
-                      onTouchEnd={(event) => event.stopPropagation()}
-                      onKeyDown={(event) => event.stopPropagation()}
-                      style={{ position: 'absolute', left: 18, right: 18, bottom: 68, zIndex: 3, width: 'calc(100% - 36px)', border: '1px dashed rgba(255,255,255,0.8)', background: 'rgba(0,0,0,0.72)', color: '#fff', padding: 6, fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'text', pointerEvents: 'auto' }}
-                    />
                   </div>
                 )}
               </div>
