@@ -162,8 +162,16 @@
   }
 }
 
-.braid-book-mobile {
+.braid-book-mobile-shell {
   display: none;
+}
+
+.braid-book-mobile-heading {
+  display: none;
+}
+
+.braid-book-desktop-heading {
+  display: contents;
 }
 
 @media (max-width: 640px) {
@@ -171,56 +179,397 @@
     display: none !important;
   }
 
+  .braid-book-desktop-nav {
+    display: none !important;
+  }
+
+  .braid-book-desktop-heading {
+    display: none;
+  }
+
+  .braid-book-mobile-heading {
+    display: block;
+    width: min(100%, 430px);
+    margin-bottom: 22px;
+    text-align: center;
+  }
+
+  .braid-book-mobile-heading p {
+    margin: 0 0 10px;
+    color: #b7623f;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+  }
+
+  .braid-book-mobile-heading h2 {
+    margin: 0 0 9px;
+    color: #351b12;
+    font-family: var(--font-playfair, Georgia, serif);
+    font-size: clamp(1.75rem, 8.5vw, 2.45rem);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+  }
+
+  .braid-book-mobile-heading span {
+    color: #8a7a72;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+  }
+
+  .braid-book-mobile-shell {
+    display: flex;
+    width: min(100%, 430px);
+    flex-direction: column;
+    align-items: center;
+    perspective: 1400px;
+  }
+
   .braid-book-mobile {
+    --book-cover: #351b12;
+    --book-cream: #fefbf5;
+    isolation: isolate;
     display: grid;
-    width: min(100%, 420px);
-    overflow: hidden;
-    border: 1px solid rgba(45, 31, 26, 0.22);
-    border-radius: 10px;
-    background: #fefdfb;
-    box-shadow: 0 18px 45px rgba(45, 31, 26, 0.18);
+    grid-template-columns: 42% 58%;
+    position: relative;
+    width: calc(100% - 14px);
+    height: clamp(410px, 119vw, 510px);
+    margin: 8px 7px 28px;
+    transform: rotateX(2.5deg) rotateY(-1deg);
+    transform-style: preserve-3d;
+    filter: drop-shadow(0 25px 22px rgba(53, 27, 18, 0.28));
+    touch-action: pan-y;
+  }
+
+  .braid-book-mobile-cover {
+    position: absolute;
+    z-index: -4;
+    inset: -9px -10px -13px;
+    border-radius: 15px 20px 20px 15px;
+    background:
+      linear-gradient(90deg, #241009 0%, var(--book-cover) 48%, #251009 50%, #46261b 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+      inset -5px 0 10px rgba(0, 0, 0, 0.25),
+      0 8px 8px rgba(53, 27, 18, 0.2);
+  }
+
+  .braid-book-mobile-pages {
+    position: absolute;
+    z-index: -2;
+    top: 2px;
+    right: -7px;
+    bottom: -7px;
+    left: 50%;
+    border-radius: 0 13px 13px 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      #f8f0e5 0,
+      #f8f0e5 2px,
+      #d8cbbc 3px,
+      #f3eade 4px
+    );
+    box-shadow: 6px 4px 10px rgba(53, 27, 18, 0.22);
+    transform: translateZ(-2px);
+  }
+
+  .braid-book-mobile-spine {
+    position: absolute;
+    z-index: 8;
+    top: -1px;
+    bottom: -5px;
+    left: 42%;
+    width: 16px;
+    transform: translateX(-50%) translateZ(3px);
+    background: linear-gradient(90deg, rgba(29, 13, 8, 0.9), #4b2b20 46%, rgba(27, 12, 7, 0.95));
+    border-radius: 50%;
+    box-shadow: inset 0 0 8px #140905, 0 0 7px rgba(0, 0, 0, 0.46);
   }
 
   .braid-book-mobile-image {
-    aspect-ratio: 4 / 5;
+    position: relative;
+    z-index: 1;
     min-height: 0;
+    overflow: hidden;
+    border-radius: 8px 0 0 8px;
     background: #0a0a0a;
+    box-shadow: inset -10px 0 16px rgba(0, 0, 0, 0.55);
+    transform: translateZ(1px);
+  }
+
+  .braid-book-mobile-image > div {
+    border-radius: inherit;
   }
 
   .braid-book-mobile-content {
-    min-height: 390px;
-    padding: 28px 24px 24px;
     position: relative;
+    z-index: 2;
+    min-width: 0;
+    overflow: hidden;
+    padding: 31px 15px 22px 20px;
+    border-radius: 0 10px 10px 0;
+    background:
+      linear-gradient(90deg, rgba(163, 137, 111, 0.18), transparent 10%, transparent 88%, rgba(202, 185, 165, 0.2)),
+      var(--book-cream);
+    box-shadow: inset 10px 0 17px rgba(77, 50, 35, 0.11);
+    transform: translateZ(2px);
+  }
+
+  .braid-book-mobile-details {
+    display: flex;
+    height: 100%;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .braid-book-mobile-details h3 {
+    margin: 0 0 17px;
+    color: #351b12;
+    font-family: var(--font-playfair, Georgia, serif);
+    font-size: clamp(1.35rem, 7vw, 1.9rem);
+    font-weight: 500;
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+  }
+
+  .braid-book-mobile-wear,
+  .braid-book-mobile-best,
+  .braid-book-mobile-care {
+    border-bottom: 1px solid rgba(200, 113, 74, 0.2);
+    padding-bottom: 14px;
+    margin-bottom: 13px;
+  }
+
+  .braid-book-mobile-wear > span,
+  .braid-book-mobile-best > span,
+  .braid-book-mobile-care > span {
+    display: block;
+    margin-bottom: 8px;
+    color: #b7623f;
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .braid-book-mobile-wear strong {
+    color: #351b12;
+    font-family: var(--font-playfair, Georgia, serif);
+    font-size: 0.93rem;
+    font-weight: 600;
+  }
+
+  .braid-book-mobile-best > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .braid-book-mobile-best em {
+    min-width: 0;
+    padding: 5px 7px;
+    overflow: hidden;
+    border: 1px solid rgba(200, 113, 74, 0.2);
+    border-radius: 999px;
+    color: #4f3a31;
+    font-size: clamp(0.46rem, 2.1vw, 0.59rem);
+    font-style: normal;
+    line-height: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .braid-book-mobile-care {
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  .braid-book-mobile-care p {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 5px;
+    margin: 0 0 8px;
+    color: #6a5a52;
+    font-size: clamp(0.55rem, 2.45vw, 0.68rem);
+    font-weight: 350;
+    line-height: 1.35;
+  }
+
+  .braid-book-mobile-care b {
+    color: #c8714a;
+    font-family: var(--font-playfair, Georgia, serif);
+    font-size: 0.67rem;
+    font-weight: 500;
   }
 
   .braid-book-mobile-link {
-    display: block;
-    margin-top: 18px;
-    padding: 13px 16px;
-    background: #2d1f1a;
+    display: flex;
+    min-height: 42px;
+    margin-top: auto;
+    padding: 10px 8px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    background: #351b12;
     color: #fefdfb;
     text-align: center;
     text-decoration: none;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    font-size: clamp(0.52rem, 2.4vw, 0.65rem);
     font-weight: 600;
   }
 
-  .braid-book-nav {
-    width: 100%;
-    gap: 8px !important;
+  .braid-book-mobile-page-number {
+    position: absolute;
+    right: 10px;
+    bottom: 7px;
+    color: rgba(200, 113, 74, 0.55);
+    font-size: 0.45rem;
+    letter-spacing: 0.1em;
+  }
+
+  .braid-book-mobile-curl {
+    position: absolute;
+    z-index: 7;
+    top: 0;
+    right: 0;
+    width: 55px;
+    height: 62px;
+    border-radius: 0 10px 0 80%;
+    background: linear-gradient(225deg, #dfd4c6 0%, #fffaf2 42%, rgba(255, 255, 255, 0) 44%);
+    filter: drop-shadow(-3px 4px 3px rgba(53, 27, 18, 0.12));
+    pointer-events: none;
+  }
+
+  .braid-book-mobile-turning-page {
+    position: absolute;
+    z-index: 9;
+    inset: 0;
+    border-radius: 0 10px 10px 0;
+    background: linear-gradient(100deg, #eee4d7, #fffdf8 58%, #ddcdbb);
+    box-shadow: -12px 8px 24px rgba(53, 27, 18, 0.25);
+    backface-visibility: hidden;
+    transform-origin: left center;
+    animation: braidBookMobileFlipForward 700ms cubic-bezier(0.5, 0, 0.25, 1) both;
+  }
+
+  .braid-book-mobile.is-backward .braid-book-mobile-turning-page {
+    transform-origin: right center;
+    animation-name: braidBookMobileFlipBackward;
+  }
+
+  @keyframes braidBookMobileFlipForward {
+    0% { transform: perspective(900px) rotateY(0deg) translateZ(8px); opacity: 0.96; }
+    50% { transform: perspective(900px) rotateY(-88deg) translateZ(18px); opacity: 0.86; }
+    100% { transform: perspective(900px) rotateY(-180deg) translateZ(3px); opacity: 0; }
+  }
+
+  @keyframes braidBookMobileFlipBackward {
+    0% { transform: perspective(900px) rotateY(0deg) translateZ(8px); opacity: 0.96; }
+    50% { transform: perspective(900px) rotateY(88deg) translateZ(18px); opacity: 0.86; }
+    100% { transform: perspective(900px) rotateY(180deg) translateZ(3px); opacity: 0; }
+  }
+
+  .braid-book-mobile-controls {
+    display: grid;
+    width: min(78%, 300px);
+    grid-template-columns: 52px 1fr 52px;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .braid-book-mobile-controls button {
+    width: 48px;
+    height: 48px;
+    border: 0;
+    border-radius: 50%;
+    background: #351b12;
+    box-shadow: 0 8px 18px rgba(53, 27, 18, 0.16);
+    color: #fffaf2;
+    cursor: pointer;
+    font-size: 1.35rem;
+  }
+
+  .braid-book-mobile-controls button:disabled {
+    background: #d7c9ba;
+    box-shadow: none;
+    cursor: default;
+  }
+
+  .braid-book-mobile-controls > span {
+    color: #351b12;
+    font-family: var(--font-playfair, Georgia, serif);
+    font-size: 1rem;
+    text-align: center;
+  }
+
+  .braid-book-mobile-dots {
+    display: flex;
+    max-width: 100%;
+    margin-top: 10px;
     justify-content: center;
-    margin-top: 20px !important;
   }
 
-  .braid-book-nav-title {
-    min-width: 88px !important;
-    font-size: 0.62rem !important;
+  .braid-book-mobile-dots button {
+    display: grid;
+    width: 30px;
+    height: 34px;
+    place-items: center;
+    border: 0;
+    background: transparent;
   }
 
-  .braid-book-nav-button {
-    min-height: 44px;
-    padding: 11px 12px !important;
+  .braid-book-mobile-dots span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #d0c4b7;
+    transition: transform 180ms ease, background 180ms ease;
+  }
+
+  .braid-book-mobile-dots button[aria-current="page"] span {
+    background: #351b12;
+    transform: scale(1.3);
+  }
+
+  .braid-book-mobile-swipe {
+    margin: 12px 0 0;
+    color: #8a7a72;
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
+  }
+
+  .braid-book-mobile-swipe span {
+    display: inline-block;
+    margin-right: 6px;
+    color: #b7623f;
+    font-size: 1rem;
+  }
+
+  .braid-book-mobile-content > div[style] {
+    padding: 6px !important;
+  }
+
+  .braid-book-mobile-content > div[style] > div:first-child {
+    font-size: 1.2rem !important;
+  }
+
+  @media (max-width: 370px) {
+    .braid-book-mobile {
+      height: 430px;
+    }
+
+    .braid-book-mobile-content {
+      padding: 26px 11px 18px 17px;
+    }
+
+    .braid-book-mobile-best em:nth-child(3),
+    .braid-book-mobile-care p:nth-of-type(2) {
+      display: none;
+    }
   }
 }
