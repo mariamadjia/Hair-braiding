@@ -468,75 +468,19 @@ function RightPageContent({ s, mobile = false }) {
   );
 }
 
-function MobileBookPage({ spread, current, total, isFlipping, flipDirection, changePage, goToPage, onTouchStart, onTouchEnd }) {
-  const care = spread.preserveTips && spread.bestFor ? spread : (styleCare[spread.name] || {});
-  const preserveTips = (care.preserveTips || [spread.wearTip].filter(Boolean)).slice(0, 2);
-  const bestFor = (care.bestFor || []).slice(0, 3);
-
+function MobileBookPage({ spread }) {
   return (
-    <div className="braid-book-mobile-shell">
-      <article
-        className={`braid-book-mobile${isFlipping ? ` is-flipping ${flipDirection > 0 ? 'is-forward' : 'is-backward'}` : ''}`}
-        aria-label={`Page ${current + 1} of ${total}: ${spread.title}`}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        <div className="braid-book-mobile-cover" aria-hidden="true" />
-        <div className="braid-book-mobile-pages" aria-hidden="true" />
-        <div className="braid-book-mobile-spine" aria-hidden="true" />
-
-        <div className="braid-book-mobile-image">{spread.leftEl}</div>
-        <div className="braid-book-mobile-content">
-          {spread.rightContent ? spread.rightContent : (
-            <div className="braid-book-mobile-details">
-              <h3>{spread.name}</h3>
-              <div className="braid-book-mobile-wear">
-                <span>Wear time</span>
-                <strong>{spread.wearTime}</strong>
-              </div>
-              {bestFor.length > 0 && (
-                <div className="braid-book-mobile-best">
-                  <span>Best for</span>
-                  <div>{bestFor.map((tag) => <em key={tag}>{tag}</em>)}</div>
-                </div>
-              )}
-              <div className="braid-book-mobile-care">
-                <span>Care tips</span>
-                {preserveTips.map((tip, index) => (
-                  <p key={tip}><b>{String(index + 1).padStart(2, '0')}</b>{tip}</p>
-                ))}
-              </div>
-              {spread.styleLink && (
-                <a className="braid-book-mobile-link" href={spread.styleLink}>
-                  Select This Style
-                </a>
-              )}
-            </div>
-          )}
-          <span className="braid-book-mobile-page-number" aria-hidden="true">{spread.pageNum}</span>
-          <span className="braid-book-mobile-curl" aria-hidden="true" />
-          {isFlipping && <span className="braid-book-mobile-turning-page" aria-hidden="true" />}
-        </div>
-      </article>
-
-      <nav className="braid-book-mobile-controls" aria-label="Braid Book pages">
-        <button type="button" onClick={() => changePage(-1)} disabled={current === 0 || isFlipping} aria-label="Previous page">←</button>
-        <span>{current + 1} of {total}</span>
-        <button type="button" onClick={() => changePage(1)} disabled={current === total - 1 || isFlipping} aria-label="Next page">→</button>
-      </nav>
-      <div className="braid-book-mobile-dots" aria-label="Choose a Braid Book page">
-        {Array.from({ length: total }, (_, index) => (
-          <button
-            type="button"
-            key={index}
-            onClick={() => goToPage(index)}
-            aria-label={`Go to page ${index + 1}`}
-            aria-current={index === current ? 'page' : undefined}
-          ><span /></button>
-        ))}
+    <article className="braid-book-mobile" aria-label={spread.title}>
+      <div className="braid-book-mobile-image">{spread.leftEl}</div>
+      <div className="braid-book-mobile-content">
+        <RightPageContent s={spread} mobile />
+        {spread.styleLink && (
+          <a className="braid-book-mobile-link" href={spread.styleLink}>
+            Select This Style
+          </a>
+        )}
       </div>
-      <p className="braid-book-mobile-swipe" aria-hidden="true"><span>←</span> ☝ Swipe to turn the page</p>
-    </div>
+    </article>
   );
 }
 
@@ -564,11 +508,6 @@ export default function FlipBook3D() {
   }, []);
 
   useEffect(() => clearFlipTimers, [clearFlipTimers]);
-
-  useEffect(() => {
-    const mobileViewport = window.matchMedia('(max-width: 640px)');
-    if (mobileViewport.matches && current === 0) setCurrent(1);
-  }, [current]);
 
   const goToPage = useCallback((next) => {
     if (isFlipping) return;
@@ -610,15 +549,6 @@ export default function FlipBook3D() {
     goToPage(current + dir);
   }, [current, goToPage]);
 
-  const mobileBookIndex = Math.min(BRAID_BOOK_STYLES.length - 1, Math.max(0, current - 1));
-  const mobileSpread = spreads[mobileBookIndex + 1];
-  const changeMobilePage = useCallback((dir) => {
-    goToPage(mobileBookIndex + 1 + dir);
-  }, [goToPage, mobileBookIndex]);
-  const goToMobilePage = useCallback((index) => {
-    goToPage(index + 1);
-  }, [goToPage]);
-
   useEffect(() => {
     [current - 1, current + 1].forEach((index) => {
       const src = spreads[index]?.image;
@@ -653,7 +583,7 @@ export default function FlipBook3D() {
 
   const Nav = () => (
     <>
-      <div className="braid-book-nav braid-book-desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 24 }}>
+      <div className="braid-book-nav" style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 24 }}>
         <button 
           className="braid-book-nav-button"
           onClick={() => changePage(-1)} 
@@ -730,7 +660,7 @@ export default function FlipBook3D() {
           Next →
         </button>
       </div>
-      <div className="braid-book-dots braid-book-desktop-nav" style={{ display: 'flex', gap: 0, marginTop: 3 }}>
+      <div className="braid-book-dots" style={{ display: 'flex', gap: 0, marginTop: 3 }}>
         {spreads.map((_, i) => (
           <button 
             key={i} 
@@ -765,50 +695,43 @@ export default function FlipBook3D() {
 
   const Header = () => (
     <>
-      <div className="braid-book-desktop-heading">
-        <div style={{ fontSize: '1.2rem', marginBottom: 16, opacity: 0.7 }}>✦</div>
-        <h2 style={{
-          fontFamily: 'var(--font-playfair,Georgia,serif)',
-          fontSize: 'clamp(2.6rem,5.5vw,4.2rem)',
-          color: T.title,
-          textAlign: 'center',
-          marginBottom: 16,
-          letterSpacing: '-0.03em',
-          fontWeight: 300,
-          fontStyle: 'italic',
-          lineHeight: 1
-        }}>
-          The Braid Book
-        </h2>
-          <div style={{ fontSize: '0.72rem', color: T.accent, letterSpacing: '0.22em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 24 }}>Style, Heritage & Care</div>
-        <div style={{ width: 80, height: 2, background: `linear-gradient(to right, transparent, ${T.accent}, transparent)`, margin: '0 auto 28px', opacity: 0.6 }}/>
-        <p style={{
-          color: T.sub,
-          textAlign: 'center',
-          fontSize: '0.78rem',
-          marginBottom: 10,
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-          fontWeight: 500
-        }}>
-          Signature Protective Styles
-        </p>
-        <p style={{
-          color: T.bodyLight,
-          textAlign: 'center',
-          fontSize: '0.7rem',
-          marginBottom: 40,
-          fontWeight: 300,
-          fontStyle: 'italic'
-        }}>
-          Focus the book and use arrow keys, buttons, or a swipe
-        </p>
-      </div>
-      <div className="braid-book-mobile-heading">
-        <p>The Braid Book</p>
-        <h2>Signature Protective Styles</h2>
-        <span>Swipe the page to explore</span>
-      </div>
+      <div style={{ fontSize: '1.2rem', marginBottom: 16, opacity: 0.7 }}>✦</div>
+      <h2 style={{
+        fontFamily: 'var(--font-playfair,Georgia,serif)',
+        fontSize: 'clamp(2.6rem,5.5vw,4.2rem)',
+        color: T.title,
+        textAlign: 'center',
+        marginBottom: 16,
+        letterSpacing: '-0.03em',
+        fontWeight: 300,
+        fontStyle: 'italic',
+        lineHeight: 1
+      }}>
+        The Braid Book
+      </h2>
+        <div style={{ fontSize: '0.72rem', color: T.accent, letterSpacing: '0.22em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 24 }}>Style, Heritage & Care</div>
+      <div style={{ width: 80, height: 2, background: `linear-gradient(to right, transparent, ${T.accent}, transparent)`, margin: '0 auto 28px', opacity: 0.6 }}/>
+      <p style={{
+        color: T.sub,
+        textAlign: 'center',
+        fontSize: '0.78rem',
+        marginBottom: 10,
+        letterSpacing: '0.18em',
+        textTransform: 'uppercase',
+        fontWeight: 500
+      }}>
+        Signature Protective Styles
+      </p>
+      <p style={{
+        color: T.bodyLight,
+        textAlign: 'center',
+        fontSize: '0.7rem',
+        marginBottom: 40,
+        fontWeight: 300,
+        fontStyle: 'italic'
+      }}>
+        Focus the book and use arrow keys, buttons, or a swipe
+      </p>
     </>
   );
 
@@ -885,17 +808,7 @@ export default function FlipBook3D() {
           Page {current + 1} of {total}: {spreads[current].title}
         </p>
 
-        <MobileBookPage
-          spread={mobileSpread}
-          current={mobileBookIndex}
-          total={BRAID_BOOK_STYLES.length}
-          isFlipping={isFlipping}
-          flipDirection={flipDirection}
-          changePage={changeMobilePage}
-          goToPage={goToMobilePage}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-        />
+        <MobileBookPage spread={spreads[current]} />
 
         <div
           className="braid-book-desktop"

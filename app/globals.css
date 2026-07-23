@@ -8,6 +8,103 @@
   0%   { transform: rotateY(0deg); }
   100% { transform: rotateY(-180deg); }
 }
+
+/* Restored original single-page mobile Braid Book layout. */
+.braid-book-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .braid-book-desktop {
+    display: none !important;
+  }
+
+  .braid-book-mobile {
+    display: grid;
+    grid-template-columns: 1fr;
+    isolation: auto;
+    position: static;
+    width: min(100%, 420px);
+    height: auto;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid rgba(45, 31, 26, 0.22);
+    border-radius: 10px;
+    background: #fefdfb;
+    box-shadow: 0 18px 45px rgba(45, 31, 26, 0.18);
+    filter: none;
+    transform: none;
+    transform-style: flat;
+    touch-action: auto;
+  }
+
+  .braid-book-mobile-image {
+    position: static;
+    z-index: auto;
+    aspect-ratio: 4 / 5;
+    min-height: 0;
+    overflow: visible;
+    border-radius: 0;
+    background: #0a0a0a;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .braid-book-mobile-content {
+    position: relative;
+    z-index: auto;
+    min-width: 0;
+    min-height: 390px;
+    overflow: visible;
+    padding: 28px 24px 24px;
+    border-radius: 0;
+    background: #fefdfb;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .braid-book-mobile-content > div[style] {
+    padding: 0 !important;
+  }
+
+  .braid-book-mobile-content > div[style] > div:first-child {
+    font-size: initial !important;
+  }
+
+  .braid-book-mobile-link {
+    display: block;
+    min-height: 0;
+    margin-top: 18px;
+    padding: 13px 16px;
+    border-radius: 0;
+    background: #2d1f1a;
+    color: #fefdfb;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.68rem;
+    font-weight: 600;
+  }
+
+  .braid-book-nav {
+    display: flex !important;
+    width: 100%;
+    gap: 8px !important;
+    justify-content: center;
+    margin-top: 20px !important;
+  }
+
+  .braid-book-nav-title {
+    min-width: 88px !important;
+    font-size: 0.62rem !important;
+  }
+
+  .braid-book-nav-button {
+    min-height: 44px;
+    padding: 11px 12px !important;
+  }
+}
 @keyframes flipBack {
   0%   { transform: rotateY(-180deg); }
   100% { transform: rotateY(0deg); }
@@ -571,5 +668,102 @@
     .braid-book-mobile-care p:nth-of-type(2) {
       display: none;
     }
+  }
+}
+
+/* Original single-page mobile Braid Book overrides. */
+.braid-book-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .braid-book-desktop {
+    display: none !important;
+  }
+
+  .braid-book-mobile {
+    display: grid;
+    grid-template-columns: 1fr;
+    isolation: auto;
+    position: static;
+    width: min(100%, 420px);
+    height: auto;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid rgba(45, 31, 26, 0.22);
+    border-radius: 10px;
+    background: #fefdfb;
+    box-shadow: 0 18px 45px rgba(45, 31, 26, 0.18);
+    filter: none;
+    transform: none;
+    transform-style: flat;
+    touch-action: auto;
+  }
+
+  .braid-book-mobile-image {
+    position: static;
+    z-index: auto;
+    aspect-ratio: 4 / 5;
+    min-height: 0;
+    overflow: visible;
+    border-radius: 0;
+    background: #0a0a0a;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .braid-book-mobile-content {
+    position: relative;
+    z-index: auto;
+    min-width: 0;
+    min-height: 390px;
+    overflow: visible;
+    padding: 28px 24px 24px;
+    border-radius: 0;
+    background: #fefdfb;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .braid-book-mobile-content > div[style] {
+    padding: 0 !important;
+  }
+
+  .braid-book-mobile-content > div[style] > div:first-child {
+    font-size: initial !important;
+  }
+
+  .braid-book-mobile-link {
+    display: block;
+    min-height: 0;
+    margin-top: 18px;
+    padding: 13px 16px;
+    border-radius: 0;
+    background: #2d1f1a;
+    color: #fefdfb;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.68rem;
+    font-weight: 600;
+  }
+
+  .braid-book-nav {
+    display: flex !important;
+    width: 100%;
+    gap: 8px !important;
+    justify-content: center;
+    margin-top: 20px !important;
+  }
+
+  .braid-book-nav-title {
+    min-width: 88px !important;
+    font-size: 0.62rem !important;
+  }
+
+  .braid-book-nav-button {
+    min-height: 44px;
+    padding: 11px 12px !important;
   }
 }
