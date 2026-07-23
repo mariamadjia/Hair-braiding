@@ -6,6 +6,7 @@ import Hero from "@/components/Hero";
 import Welcome from "@/components/Welcome";
 import Gallery from "@/components/Gallery";
 import Footer from "@/components/Footer";
+import FlipBook3D from "@/components/FlipBook3D";
 import { API_BASE_URL } from "@/lib/config/api";
 import { BRAID_BOOK_STYLES } from "@/lib/braid-book-data";
 import {
@@ -1051,52 +1052,29 @@ export function HomePageEditor() {
                 </button>
               </div>
 
-              <div className="space-y-3">
-                {braidBookStyles.map((style, index) => {
-                  const expanded = expandedBraidStyle === style.id;
-                  return (
-                    <article key={style.id} className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-                      <div className="flex items-center gap-3 bg-neutral-50 p-3 dark:bg-neutral-900">
-                        <img src={style.image} alt="" className="h-16 w-12 rounded object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setExpandedBraidStyle(expanded ? null : style.id)}
-                          className="min-w-0 flex-1 text-left"
-                          aria-expanded={expanded}
-                        >
-                          <span className="block truncate font-medium text-neutral-900 dark:text-white">{style.name}</span>
-                          <span className="block truncate text-xs text-neutral-500 dark:text-neutral-400">
-                            {style.wearTime} · {style.styleLink}
-                          </span>
-                        </button>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            disabled={index === 0}
-                            aria-label={`Move ${style.name} up`}
-                            onClick={() => setBraidBookStyles((items) => {
-                              const next = [...items];
-                              [next[index - 1], next[index]] = [next[index], next[index - 1]];
-                              return next;
-                            })}
-                            className="h-10 w-10 rounded border border-neutral-300 disabled:opacity-30 dark:border-neutral-600"
-                          >↑</button>
-                          <button
-                            type="button"
-                            disabled={index === braidBookStyles.length - 1}
-                            aria-label={`Move ${style.name} down`}
-                            onClick={() => setBraidBookStyles((items) => {
-                              const next = [...items];
-                              [next[index], next[index + 1]] = [next[index + 1], next[index]];
-                              return next;
-                            })}
-                            className="h-10 w-10 rounded border border-neutral-300 disabled:opacity-30 dark:border-neutral-600"
-                          >↓</button>
-                        </div>
-                      </div>
+              <div className="overflow-hidden rounded-lg border border-neutral-200 bg-[#F6F5F1] dark:border-neutral-700">
+                {/* @ts-ignore - shared JavaScript component exposes admin-only props */}
+                <FlipBook3D
+                  editMode
+                  styles={braidBookStyles}
+                  onEditStyle={(style: Record<string, unknown>) => setExpandedBraidStyle(Number(style.id))}
+                />
+              </div>
 
-                      {expanded && (
-                        <div className="grid gap-4 p-4 md:grid-cols-2">
+              {expandedBraidStyle !== null && (() => {
+                const index = braidBookStyles.findIndex((style) => style.id === expandedBraidStyle);
+                const style = braidBookStyles[index];
+                if (!style || index < 0) return null;
+                return (
+                  <div className="mt-5 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold text-neutral-900 dark:text-white">Edit {style.name}</h3>
+                        <p className="text-xs text-neutral-500">Changes appear in the book immediately.</p>
+                      </div>
+                      <button type="button" onClick={() => setExpandedBraidStyle(null)} aria-label="Close spread editor" className="h-10 w-10 rounded border border-neutral-300 dark:border-neutral-600">×</button>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
                           {([
                             ['name', 'Style name'],
                             ['subtitle', 'Photo subtitle'],
@@ -1131,12 +1109,37 @@ export function HomePageEditor() {
                               className="w-full rounded border border-neutral-300 bg-white p-3 text-sm dark:border-neutral-600 dark:bg-neutral-900 dark:text-white"
                             />
                           </label>
-                        </div>
-                      )}
-                    </article>
-                  );
-                })}
-              </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap justify-between gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-700">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={() => setBraidBookStyles((items) => {
+                            const next = [...items];
+                            [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                            return next;
+                          })}
+                          className="min-h-11 rounded border border-neutral-300 px-4 text-sm disabled:opacity-30 dark:border-neutral-600"
+                        >Move earlier</button>
+                        <button
+                          type="button"
+                          disabled={index === braidBookStyles.length - 1}
+                          onClick={() => setBraidBookStyles((items) => {
+                            const next = [...items];
+                            [next[index], next[index + 1]] = [next[index + 1], next[index]];
+                            return next;
+                          })}
+                          className="min-h-11 rounded border border-neutral-300 px-4 text-sm disabled:opacity-30 dark:border-neutral-600"
+                        >Move later</button>
+                      </div>
+                      <button type="button" onClick={() => void saveBraidBookStyles()} disabled={savingBraidBook} className="min-h-11 rounded bg-neutral-900 px-5 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900">
+                        {savingBraidBook ? 'Saving…' : 'Save changes'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </section>
 

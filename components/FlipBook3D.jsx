@@ -479,8 +479,15 @@ function RightPageContent({ s, mobile = false }) {
   );
 }
 
-export default function FlipBook3D() {
-  const [activeSpreads, setActiveSpreads] = useState(spreads);
+/**
+ * @param {{
+ *   editMode?: boolean;
+ *   styles?: Array<Record<string, any>> | null;
+ *   onEditStyle?: ((style: Record<string, any>) => void) | null;
+ * }} props
+ */
+export default function FlipBook3D({ editMode = false, styles = null, onEditStyle = null } = {}) {
+  const [activeSpreads, setActiveSpreads] = useState(() => buildSpreads(styles || BRAID_BOOK_STYLES));
   const [current, setCurrent] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
   const [showFlipPage, setShowFlipPage] = useState(false);
@@ -506,6 +513,10 @@ export default function FlipBook3D() {
   useEffect(() => clearFlipTimers, [clearFlipTimers]);
 
   useEffect(() => {
+    if (editMode) {
+      setActiveSpreads(buildSpreads(styles || BRAID_BOOK_STYLES));
+      return;
+    }
     let cancelled = false;
     fetch(`${API_BASE_URL}/api/homepage-settings`)
       .then((response) => response.ok ? response.json() : null)
@@ -522,7 +533,7 @@ export default function FlipBook3D() {
         // The built-in book remains available if homepage settings are offline.
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [editMode, styles]);
 
   const goToPage = useCallback((next) => {
     if (isFlipping) return;
@@ -1157,7 +1168,7 @@ export default function FlipBook3D() {
             ›
           </div>
 
-          {currentStyleLink && !isFlipping && (
+          {currentStyleLink && !isFlipping && !editMode && (
             <a
               href={currentStyleLink}
               aria-label={`Select ${activeSpreads[current].name} for booking`}
@@ -1195,6 +1206,37 @@ export default function FlipBook3D() {
             >
               Select This Style
             </a>
+          )}
+
+          {editMode && activeSpreads[current]?.id >= 1 && activeSpreads[current]?.id <= 8 && !isFlipping && (
+            <button
+              type="button"
+              data-no-page-flip
+              onClick={(event) => {
+                event.stopPropagation();
+                onEditStyle?.(activeSpreads[current]);
+              }}
+              style={{
+                position: 'absolute',
+                top: 18,
+                right: 18,
+                zIndex: 1200,
+                minHeight: 44,
+                padding: '10px 16px',
+                border: '1px solid rgba(45,31,26,0.25)',
+                borderRadius: 3,
+                background: '#fffdf9',
+                color: T.heading,
+                boxShadow: '0 8px 24px rgba(45,31,26,0.18)',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
+            >
+              ✎ Edit spread
+            </button>
           )}
 
         </div>
