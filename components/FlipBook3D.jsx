@@ -893,7 +893,7 @@ export default function FlipBook3D({
             aria-label={`Go to page ${i + 1}`}
             aria-current={i === current ? 'true' : 'false'}
             style={{ 
-              width: 44,
+              width: 24,
               height: 44,
               display: 'flex',
               alignItems: 'center',
