@@ -565,6 +565,11 @@ export default function FlipBook3D() {
 
   useEffect(() => clearFlipTimers, [clearFlipTimers]);
 
+  useEffect(() => {
+    const mobileViewport = window.matchMedia('(max-width: 640px)');
+    if (mobileViewport.matches && current === 0) setCurrent(1);
+  }, [current]);
+
   const goToPage = useCallback((next) => {
     if (isFlipping) return;
     if (next < 0 || next >= total || next === current) return;
@@ -604,6 +609,15 @@ export default function FlipBook3D() {
   const changePage = useCallback((dir) => {
     goToPage(current + dir);
   }, [current, goToPage]);
+
+  const mobileBookIndex = Math.min(BRAID_BOOK_STYLES.length - 1, Math.max(0, current - 1));
+  const mobileSpread = spreads[mobileBookIndex + 1];
+  const changeMobilePage = useCallback((dir) => {
+    goToPage(mobileBookIndex + 1 + dir);
+  }, [goToPage, mobileBookIndex]);
+  const goToMobilePage = useCallback((index) => {
+    goToPage(index + 1);
+  }, [goToPage]);
 
   useEffect(() => {
     [current - 1, current + 1].forEach((index) => {
@@ -872,13 +886,13 @@ export default function FlipBook3D() {
         </p>
 
         <MobileBookPage
-          spread={spreads[current]}
-          current={current}
-          total={total}
+          spread={mobileSpread}
+          current={mobileBookIndex}
+          total={BRAID_BOOK_STYLES.length}
           isFlipping={isFlipping}
           flipDirection={flipDirection}
-          changePage={changePage}
-          goToPage={goToPage}
+          changePage={changeMobilePage}
+          goToPage={goToMobilePage}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         />

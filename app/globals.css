@@ -476,7 +476,7 @@
 
   .braid-book-mobile-controls {
     display: grid;
-    width: min(78%, 300px);
+    width: min(66%, 270px);
     grid-template-columns: 52px 1fr 52px;
     align-items: center;
     gap: 16px;
