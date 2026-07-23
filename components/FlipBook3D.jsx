@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useReducedMotion } from 'framer-motion';
-import { BRAID_BOOK_CARE_RITUALS, BRAID_BOOK_COVER, BRAID_BOOK_STYLES } from '@/lib/braid-book-data';
+import { BRAID_BOOK_CARE_RITUALS, BRAID_BOOK_COVER, BRAID_BOOK_END_PAGE, BRAID_BOOK_STYLES } from '@/lib/braid-book-data';
 import { API_BASE_URL } from '@/lib/config/api';
 
 const T = {
@@ -55,7 +55,7 @@ const CoverContent = ({ cover, editMode = false, onChange = null }) => (
   </div>
 );
 
-const BackCoverSVG = () => (
+const BackCoverSVG = ({ endPage = BRAID_BOOK_END_PAGE }) => (
   <svg width="100%" height="100%" viewBox="0 0 360 480" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <radialGradient id="bgBack" cx="50%" cy="50%">
@@ -67,12 +67,34 @@ const BackCoverSVG = () => (
     <circle cx="180" cy="200" r="100" fill="none" stroke="#C8714A" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.3"/>
     <circle cx="180" cy="200" r="80"  fill="none" stroke="#444"    strokeWidth="0.5" opacity="0.2"/>
     <text x="180" y="160" textAnchor="middle" fill="#C8714A" fontSize="36" fontFamily="serif">✦</text>
-    <text x="180" y="200" textAnchor="middle" fill="rgba(255,255,255,0.7)" fontSize="14" fontFamily="Georgia,serif">Your hair is your crown.</text>
-    <text x="180" y="222" textAnchor="middle" fill="rgba(255,255,255,0.7)" fontSize="14" fontFamily="Georgia,serif">Wear it with pride.</text>
-    <text x="180" y="262" textAnchor="middle" fill="#666" fontSize="10" fontFamily="Georgia,serif" fontStyle="italic">— The Braid Book</text>
+    <foreignObject x="35" y="176" width="290" height="70">
+      <div xmlns="http://www.w3.org/1999/xhtml" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: 'Georgia,serif', textAlign: 'center', lineHeight: 1.5 }}>{endPage.backQuote}</div>
+    </foreignObject>
+    <text x="180" y="262" textAnchor="middle" fill="#666" fontSize="10" fontFamily="Georgia,serif" fontStyle="italic">{endPage.backAttribution}</text>
     <text x="180" y="350" textAnchor="middle" fill="#C8714A" fontSize="10" opacity="0.4">✦  ✦  ✦</text>
   </svg>
 );
+
+const EndPageContent = ({ endPage, editMode = false, onChange = null }) => {
+  const rituals = endPage.rituals || BRAID_BOOK_CARE_RITUALS;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', maxWidth: 320, margin: '0 auto', padding: '0 20px' }}>
+      {editMode ? <input aria-label="Care page title" value={endPage.title} onChange={(event) => onChange?.('title', event.target.value)} style={{ width: '100%', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(1rem,3vw,2.2rem)', color: T.heading }} /> :
+        <div style={{ fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(1.6rem,3.2vw,2.2rem)', color: T.heading, marginBottom: 12, fontWeight: 300, fontStyle: 'italic' }}>{endPage.title}</div>}
+      {editMode ? <input aria-label="Care page subtitle" value={endPage.subtitle} onChange={(event) => onChange?.('subtitle', event.target.value)} style={{ width: '100%', margin: '8px 0 14px', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', color: T.accent, fontSize: '.65rem', letterSpacing: '.16em', textTransform: 'uppercase' }} /> :
+        <div style={{ fontSize: '0.68rem', color: T.accent, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 28 }}>{endPage.subtitle}</div>}
+      {rituals.map(([verb, detail], index) => (
+        editMode ? <div key={`ritual-${index}`} style={{ display: 'grid', gridTemplateColumns: '30% 1fr', gap: 5, width: '100%', marginBottom: 8 }}>
+          <input aria-label={`Ritual ${index + 1} heading`} value={verb} onChange={(event) => { const next = rituals.map((item) => [...item]); next[index][0] = event.target.value; onChange?.('rituals', next); }} style={{ minWidth: 0, border: '1px dashed rgba(200,113,74,.4)', background: 'transparent', color: T.accent, fontSize: '.62rem', fontWeight: 700 }} />
+          <input aria-label={`Ritual ${index + 1} detail`} value={detail} onChange={(event) => { const next = rituals.map((item) => [...item]); next[index][1] = event.target.value; onChange?.('rituals', next); }} style={{ minWidth: 0, border: '1px dashed rgba(200,113,74,.4)', background: 'transparent', color: T.body, fontSize: '.62rem' }} />
+        </div> :
+        <p key={`ritual-${index}`} style={{ fontSize: 'clamp(0.78rem,1.45vw,0.92rem)', color: T.body, lineHeight: 1.8, marginBottom: 14, textAlign: 'left', width: '100%', fontWeight: 300 }}><strong style={{ color: T.accent }}>{verb}</strong> <span style={{ fontStyle: 'italic' }}>{detail}</span></p>
+      ))}
+      {editMode ? <input aria-label="Care page footer" value={endPage.footer} onChange={(event) => onChange?.('footer', event.target.value)} style={{ width: '100%', marginTop: 12, border: '1px dashed rgba(200,113,74,.4)', background: 'transparent', textAlign: 'center', color: T.bodyLight, fontSize: '.65rem' }} /> :
+        <p style={{ marginTop: 24, fontSize: '0.72rem', color: T.bodyLight, fontStyle: 'italic' }}>{endPage.footer}</p>}
+    </div>
+  );
+};
 
 const PhotoPage = ({ src, label, subtitle }) => (
   <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: '#111' }}>
@@ -326,7 +348,7 @@ const styleCare = {
 };
 
 const braidBookStyleById = new Map(BRAID_BOOK_STYLES.map((style) => [style.id, style]));
-const buildSpreads = (styles = BRAID_BOOK_STYLES, cover = BRAID_BOOK_COVER) => {
+const buildSpreads = (styles = BRAID_BOOK_STYLES, cover = BRAID_BOOK_COVER, endPage = BRAID_BOOK_END_PAGE) => {
   const styleSpreads = styles
     .map((configuredStyle) => {
       const id = Number(configuredStyle.id);
@@ -347,7 +369,13 @@ const buildSpreads = (styles = BRAID_BOOK_STYLES, cover = BRAID_BOOK_COVER) => {
     rightContent: <CoverContent cover={cover} />,
     cover,
   };
-  return [coverSpread, ...styleSpreads, layoutSpreads[layoutSpreads.length - 1]];
+  const endSpread = {
+    ...layoutSpreads[layoutSpreads.length - 1],
+    leftEl: <BackCoverSVG endPage={endPage} />,
+    rightContent: <EndPageContent endPage={endPage} />,
+    endPage,
+  };
+  return [coverSpread, ...styleSpreads, endSpread];
 };
 
 const spreads = buildSpreads();
@@ -594,6 +622,8 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
  *   isSaving?: boolean;
  *   cover?: Record<string, any> | null;
  *   onChangeCover?: ((field: string, value: any) => void) | null;
+ *   endPage?: Record<string, any> | null;
+ *   onChangeEndPage?: ((field: string, value: any) => void) | null;
  * }} props
  */
 export default function FlipBook3D({
@@ -606,10 +636,12 @@ export default function FlipBook3D({
   isSaving = false,
   cover = null,
   onChangeCover = null,
+  endPage = null,
+  onChangeEndPage = null,
 } = {}) {
   const [persistedSpreads, setPersistedSpreads] = useState(spreads);
   const activeSpreads = editMode
-    ? buildSpreads(styles || BRAID_BOOK_STYLES, cover || BRAID_BOOK_COVER)
+    ? buildSpreads(styles || BRAID_BOOK_STYLES, cover || BRAID_BOOK_COVER, endPage || BRAID_BOOK_END_PAGE)
     : persistedSpreads;
   const [current, setCurrent] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
@@ -651,11 +683,12 @@ export default function FlipBook3D({
         const parsed = JSON.parse(settings.braidBookStyles);
         const parsedStyles = Array.isArray(parsed) ? parsed : parsed?.styles;
         const parsedCover = !Array.isArray(parsed) && parsed?.cover ? parsed.cover : BRAID_BOOK_COVER;
+        const parsedEndPage = !Array.isArray(parsed) && parsed?.endPage ? parsed.endPage : BRAID_BOOK_END_PAGE;
         if (!Array.isArray(parsedStyles) || parsedStyles.length === 0) return;
         const validStyles = parsedStyles.filter((style) =>
           style && Number.isFinite(Number(style.id)) && style.name && style.image
         );
-        if (validStyles.length > 0) setPersistedSpreads(buildSpreads(validStyles, { ...BRAID_BOOK_COVER, ...parsedCover }));
+        if (validStyles.length > 0) setPersistedSpreads(buildSpreads(validStyles, { ...BRAID_BOOK_COVER, ...parsedCover }, { ...BRAID_BOOK_END_PAGE, ...parsedEndPage }));
       })
       .catch(() => {
         // The built-in book remains available if homepage settings are offline.
@@ -1188,6 +1221,8 @@ export default function FlipBook3D({
 
                 {editMode && activeSpreads[current]?.id === 0
                   ? <CoverContent cover={cover || BRAID_BOOK_COVER} editMode onChange={onChangeCover} />
+                  : editMode && activeSpreads[current]?.id === 9
+                    ? <EndPageContent endPage={endPage || BRAID_BOOK_END_PAGE} editMode onChange={onChangeEndPage} />
                   : <RightPageContent s={activeSpreads[current]} editMode={editMode} onChange={editCurrentStyle} />}
                 <div style={{ 
                   position: 'absolute', 
@@ -1457,6 +1492,12 @@ export default function FlipBook3D({
                   style={{ minHeight: 34, border: '1px solid rgba(45,31,26,0.2)', borderRadius: 3, background: '#fff', color: T.heading, padding: '0 8px', fontSize: '0.68rem' }}
                 />
               </label>
+            )}
+            {activeSpreads[current]?.id === 9 && (
+              <>
+                <input aria-label="Back cover quote" value={(endPage || BRAID_BOOK_END_PAGE).backQuote} onChange={(event) => onChangeEndPage?.('backQuote', event.target.value)} style={{ minHeight: 34, minWidth: 220, border: '1px solid rgba(45,31,26,.2)', borderRadius: 3, padding: '0 8px', fontSize: '.68rem' }} />
+                <input aria-label="Back cover attribution" value={(endPage || BRAID_BOOK_END_PAGE).backAttribution} onChange={(event) => onChangeEndPage?.('backAttribution', event.target.value)} style={{ minHeight: 34, minWidth: 150, border: '1px solid rgba(45,31,26,.2)', borderRadius: 3, padding: '0 8px', fontSize: '.68rem' }} />
+              </>
             )}
             <button type="button" onClick={() => onSave?.()} disabled={isSaving} style={{ minHeight: 42, border: 0, borderRadius: 3, padding: '0 18px', background: T.btnBg, color: T.btnText, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: isSaving ? 'wait' : 'pointer', opacity: isSaving ? 0.6 : 1 }}>
               {isSaving ? 'Saving…' : 'Save Braid Book'}

@@ -8,7 +8,7 @@ import Gallery from "@/components/Gallery";
 import Footer from "@/components/Footer";
 import FlipBook3D from "@/components/FlipBook3D";
 import { API_BASE_URL } from "@/lib/config/api";
-import { BRAID_BOOK_COVER, BRAID_BOOK_STYLES } from "@/lib/braid-book-data";
+import { BRAID_BOOK_COVER, BRAID_BOOK_END_PAGE, BRAID_BOOK_STYLES } from "@/lib/braid-book-data";
 import {
   fetchCategoryDisplayPhotos,
   getDisplayImages,
@@ -66,6 +66,7 @@ export function HomePageEditor() {
     () => structuredClone(BRAID_BOOK_STYLES) as BraidBookStyle[]
   );
   const [braidBookCover, setBraidBookCover] = useState(() => ({ ...BRAID_BOOK_COVER }));
+  const [braidBookEndPage, setBraidBookEndPage] = useState(() => structuredClone(BRAID_BOOK_END_PAGE));
   const [savingBraidBook, setSavingBraidBook] = useState(false);
   const [expandedBraidStyle, setExpandedBraidStyle] = useState<number | null>(null);
   const [welcomeItems, setWelcomeItems] = useState<WelcomeItem[]>([
@@ -369,6 +370,9 @@ export function HomePageEditor() {
         }
         if (!Array.isArray(parsed) && parsed?.cover) {
           setBraidBookCover({ ...BRAID_BOOK_COVER, ...parsed.cover });
+        }
+        if (!Array.isArray(parsed) && parsed?.endPage) {
+          setBraidBookEndPage({ ...BRAID_BOOK_END_PAGE, ...parsed.endPage });
         }
       }
     } catch (error) {
@@ -928,7 +932,7 @@ export function HomePageEditor() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ braidBookStyles: JSON.stringify({ cover: braidBookCover, styles: braidBookStyles }) }),
+        body: JSON.stringify({ braidBookStyles: JSON.stringify({ cover: braidBookCover, styles: braidBookStyles, endPage: braidBookEndPage }) }),
       });
       if (!response.ok) throw new Error(`Braid Book save failed (${response.status})`);
       const saved = await response.json();
@@ -1093,6 +1097,8 @@ export function HomePageEditor() {
                   styles={braidBookStyles}
                   cover={braidBookCover}
                   onChangeCover={(field: string, value: string) => setBraidBookCover((current) => ({ ...current, [field]: value }))}
+                  endPage={braidBookEndPage}
+                  onChangeEndPage={(field: string, value: string | string[][]) => setBraidBookEndPage((current) => ({ ...current, [field]: value }))}
                   onChangeStyle={(id: number, field: string, value: string | string[]) => {
                     const index = braidBookStyles.findIndex((style) => style.id === id);
                     if (index >= 0) updateBraidBookStyle(index, field as keyof BraidBookStyle, value);
