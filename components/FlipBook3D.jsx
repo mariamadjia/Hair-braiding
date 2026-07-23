@@ -359,7 +359,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
       }}>
         {bestFor.map((tag, index) => (
           <span
-            key={`${tag}-${index}`}
+            key={`best-for-${index}`}
             draggable={editMode}
             onDragStart={(event) => event.dataTransfer.setData('text/plain', String(index))}
             onDragOver={(event) => editMode && event.preventDefault()}
@@ -389,19 +389,34 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
             whiteSpace: 'nowrap'
           }}>
             {editMode ? (
-              <input
-                aria-label={`Best for label ${index + 1}`}
-                value={tag}
-                onChange={(event) => {
-                  const next = [...bestFor];
-                  next[index] = event.target.value;
-                  onChange?.('bestFor', next);
-                }}
-                style={{ width: `${Math.max(7, tag.length)}ch`, maxWidth: 100, border: 0, outline: 0, background: 'transparent', color: 'inherit', font: 'inherit' }}
-              />
+              <>
+                <input
+                  aria-label={`Best for label ${index + 1}`}
+                  value={tag}
+                  onChange={(event) => {
+                    const next = [...bestFor];
+                    next[index] = event.target.value;
+                    onChange?.('bestFor', next);
+                  }}
+                  style={{ width: `${Math.max(7, tag.length)}ch`, maxWidth: 100, border: 0, outline: 0, background: 'transparent', color: 'inherit', font: 'inherit' }}
+                />
+                <button
+                  type="button"
+                  aria-label={`Remove ${tag}`}
+                  onClick={() => onChange?.('bestFor', bestFor.filter((_, itemIndex) => itemIndex !== index))}
+                  style={{ border: 0, background: 'transparent', color: T.accent, cursor: 'pointer', padding: '0 0 0 3px' }}
+                >×</button>
+              </>
             ) : tag}
           </span>
         ))}
+        {editMode && (
+          <button
+            type="button"
+            onClick={() => onChange?.('bestFor', [...bestFor, 'New label'])}
+            style={{ minHeight: 24, border: `1px dashed ${T.accent}`, borderRadius: 999, background: 'transparent', color: T.accent, fontSize: '0.55rem', cursor: 'pointer' }}
+          >+ Label</button>
+        )}
       </div>
     </div>
   );
@@ -490,11 +505,13 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
           gap: 'clamp(5px, 1.5vw, 11px)'
         }}>
           {preserveTips.map((tip, i) => (
-            <div key={tip} style={{
+            <div key={`care-tip-${i}`} style={{
               display: 'grid',
               gridTemplateColumns: 'clamp(16px, 3vw, 26px) 1fr',
               gap: 'clamp(6px, 1.6vw, 12px)',
-              alignItems: 'start'
+              alignItems: 'start',
+              position: 'relative',
+              paddingRight: editMode ? 16 : 0
             }}>
               <span style={{
                 color: T.accent,
@@ -521,8 +538,23 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
               }}>
                 {tip}
               </span>}
+              {editMode && (
+                <button
+                  type="button"
+                  aria-label={`Remove care tip ${i + 1}`}
+                  onClick={() => onChange?.('preserveTips', preserveTips.filter((_, tipIndex) => tipIndex !== i))}
+                  style={{ position: 'absolute', right: 0, border: 0, background: 'transparent', color: T.accent, cursor: 'pointer' }}
+                >×</button>
+              )}
             </div>
           ))}
+          {editMode && preserveTips.length < 5 && (
+            <button
+              type="button"
+              onClick={() => onChange?.('preserveTips', [...preserveTips, 'New care tip'])}
+              style={{ justifySelf: 'start', border: `1px dashed ${T.accent}`, background: 'transparent', color: T.accent, fontSize: '0.55rem', cursor: 'pointer' }}
+            >+ Care tip</button>
+          )}
         </div>
       </div>
 
@@ -551,7 +583,10 @@ export default function FlipBook3D({
   onSave = null,
   isSaving = false,
 } = {}) {
-  const [activeSpreads, setActiveSpreads] = useState(() => buildSpreads(styles || BRAID_BOOK_STYLES));
+  const [persistedSpreads, setPersistedSpreads] = useState(spreads);
+  const activeSpreads = editMode
+    ? buildSpreads(styles || BRAID_BOOK_STYLES)
+    : persistedSpreads;
   const [current, setCurrent] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
   const [showFlipPage, setShowFlipPage] = useState(false);
@@ -582,7 +617,6 @@ export default function FlipBook3D({
 
   useEffect(() => {
     if (editMode) {
-      setActiveSpreads(buildSpreads(styles || BRAID_BOOK_STYLES));
       return;
     }
     let cancelled = false;
@@ -595,7 +629,7 @@ export default function FlipBook3D({
         const validStyles = parsed.filter((style) =>
           style && Number.isFinite(Number(style.id)) && style.name && style.image
         );
-        if (validStyles.length > 0) setActiveSpreads(buildSpreads(validStyles));
+        if (validStyles.length > 0) setPersistedSpreads(buildSpreads(validStyles));
       })
       .catch(() => {
         // The built-in book remains available if homepage settings are offline.
@@ -1030,33 +1064,38 @@ export default function FlipBook3D({
                 }}>
                 {activeSpreads[current].leftEl}
                 {editMode && activeSpreads[current]?.id >= 1 && activeSpreads[current]?.id <= 8 && (
-                  <label
+                  <div
                     data-no-page-flip
                     style={{
                       position: 'absolute',
                       inset: 0,
                       zIndex: 40,
-                      display: 'grid',
-                      placeItems: 'center',
                       background: 'rgba(0,0,0,0.16)',
                       color: '#fff',
-                      cursor: 'pointer',
                     }}
                   >
-                    <span style={{ padding: '10px 14px', background: 'rgba(45,31,26,0.88)', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                      Replace image
-                    </span>
+                    <label style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', cursor: 'pointer' }}>
+                      <span style={{ padding: '10px 14px', background: 'rgba(45,31,26,0.88)', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                        Replace image
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/avif"
+                        style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) onImageFile?.(Number(activeSpreads[current].id), file);
+                          event.target.value = '';
+                        }}
+                      />
+                    </label>
                     <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/avif"
-                      style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) onImageFile?.(Number(activeSpreads[current].id), file);
-                        event.target.value = '';
-                      }}
+                      aria-label="Photo subtitle"
+                      value={activeSpreads[current].subtitle || ''}
+                      onChange={(event) => editCurrentStyle('subtitle', event.target.value)}
+                      style={{ position: 'absolute', left: 18, right: 18, bottom: 68, zIndex: 2, width: 'calc(100% - 36px)', border: '1px dashed rgba(255,255,255,0.8)', background: 'rgba(0,0,0,0.62)', color: '#fff', padding: 6, fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}
                     />
-                  </label>
+                  </div>
                 )}
               </div>
 
@@ -1373,7 +1412,18 @@ export default function FlipBook3D({
               backdropFilter: 'blur(10px)',
             }}
           >
-            <span style={{ color: T.body, fontSize: '0.72rem' }}>Editing {activeSpreads[current]?.name || activeSpreads[current]?.title}</span>
+            <span style={{ color: T.body, fontSize: '0.72rem', whiteSpace: 'nowrap' }}>Editing {activeSpreads[current]?.name || activeSpreads[current]?.title}</span>
+            {activeSpreads[current]?.id >= 1 && activeSpreads[current]?.id <= 8 && (
+              <label style={{ display: 'grid', gap: 3, minWidth: 220 }}>
+                <span style={{ color: T.bodyLight, fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Booking link</span>
+                <input
+                  aria-label="Booking link"
+                  value={activeSpreads[current].styleLink || ''}
+                  onChange={(event) => editCurrentStyle('styleLink', event.target.value)}
+                  style={{ minHeight: 34, border: '1px solid rgba(45,31,26,0.2)', borderRadius: 3, background: '#fff', color: T.heading, padding: '0 8px', fontSize: '0.68rem' }}
+                />
+              </label>
+            )}
             <button type="button" onClick={() => onSave?.()} disabled={isSaving} style={{ minHeight: 42, border: 0, borderRadius: 3, padding: '0 18px', background: T.btnBg, color: T.btnText, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: isSaving ? 'wait' : 'pointer', opacity: isSaving ? 0.6 : 1 }}>
               {isSaving ? 'Saving…' : 'Save Braid Book'}
             </button>
