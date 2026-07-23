@@ -7,6 +7,7 @@ import Welcome from "@/components/Welcome";
 import Gallery from "@/components/Gallery";
 import Footer from "@/components/Footer";
 import { API_BASE_URL } from "@/lib/config/api";
+import { BRAID_BOOK_STYLES } from "@/lib/braid-book-data";
 import {
   fetchCategoryDisplayPhotos,
   getDisplayImages,
@@ -33,6 +34,18 @@ interface HeroImage {
   imageUrl: string;
 }
 
+interface BraidBookStyle {
+  id: number;
+  title: string;
+  name: string;
+  image: string;
+  subtitle: string;
+  wearTime: string;
+  styleLink: string;
+  preserveTips: string[];
+  bestFor: string[];
+}
+
 export function HomePageEditor() {
   const [heroImages, setHeroImages] = useState<HeroImage[]>([]);
   const [heroVideoSrc, setHeroVideoSrc] = useState<string>('');
@@ -48,6 +61,11 @@ export function HomePageEditor() {
   const [footerVideoSrc, setFooterVideoSrc] = useState('/Footer/IMG_2004.mov');
   const [isFooterVideoEditOpen, setIsFooterVideoEditOpen] = useState(false);
   const [footerVideoUploading, setFooterVideoUploading] = useState(false);
+  const [braidBookStyles, setBraidBookStyles] = useState<BraidBookStyle[]>(
+    () => structuredClone(BRAID_BOOK_STYLES) as BraidBookStyle[]
+  );
+  const [savingBraidBook, setSavingBraidBook] = useState(false);
+  const [expandedBraidStyle, setExpandedBraidStyle] = useState<number | null>(null);
   const [welcomeItems, setWelcomeItems] = useState<WelcomeItem[]>([
     { type: 'video', src: '/welcome/video1.MOV', label: 'Join us Today', alt: 'In-studio bookings', link: '/join-us' },
     { type: 'video', src: '/welcome/video2.MOV', label: 'Book us now', alt: 'Book us now', link: '/services' },
@@ -338,6 +356,13 @@ export function HomePageEditor() {
               src: resolveMediaUrl(item.src),
             }))
           );
+        }
+      }
+
+      if (data.braidBookStyles) {
+        const styles = JSON.parse(data.braidBookStyles);
+        if (Array.isArray(styles) && styles.length > 0) {
+          setBraidBookStyles(styles);
         }
       }
     } catch (error) {
@@ -872,6 +897,45 @@ export function HomePageEditor() {
     }
   };
 
+  const updateBraidBookStyle = (
+    index: number,
+    field: keyof BraidBookStyle,
+    value: string | string[]
+  ) => {
+    setBraidBookStyles((styles) =>
+      styles.map((style, styleIndex) =>
+        styleIndex === index
+          ? { ...style, [field]: value, ...(field === 'name' ? { title: value as string } : {}) }
+          : style
+      )
+    );
+  };
+
+  const saveBraidBookStyles = async () => {
+    setSavingBraidBook(true);
+    setStatusMessage('');
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/homepage-settings/braid-book`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ braidBookStyles: JSON.stringify(braidBookStyles) }),
+      });
+      if (!response.ok) throw new Error(`Braid Book save failed (${response.status})`);
+      const saved = await response.json();
+      setLastSavedAt(saved.updatedAt || new Date().toISOString());
+      setStatusMessage('Braid Book saved.');
+    } catch (error) {
+      console.error('Failed to save Braid Book:', error);
+      setStatusMessage('The Braid Book could not be saved. Please retry.');
+    } finally {
+      setSavingBraidBook(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-neutral-50 dark:bg-neutral-900">
@@ -961,6 +1025,120 @@ export function HomePageEditor() {
               </div>
             </div>
           </div>
+
+          {/* Braid Book Editor */}
+          <section className="border-y border-neutral-200 bg-white px-4 py-8 dark:border-neutral-700 dark:bg-neutral-800 md:px-8">
+            <div className="mx-auto max-w-5xl">
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700 dark:text-amber-400">
+                    Homepage
+                  </p>
+                  <h2 className="mt-1 text-2xl font-semibold text-neutral-900 dark:text-white">
+                    Braid Book Editor
+                  </h2>
+                  <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                    Edit the eight public book spreads, care tips, images, and booking destinations.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void saveBraidBookStyles()}
+                  disabled={savingBraidBook}
+                  className="min-h-11 rounded-sm bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-wait disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+                >
+                  {savingBraidBook ? 'Saving…' : 'Save Braid Book'}
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {braidBookStyles.map((style, index) => {
+                  const expanded = expandedBraidStyle === style.id;
+                  return (
+                    <article key={style.id} className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
+                      <div className="flex items-center gap-3 bg-neutral-50 p-3 dark:bg-neutral-900">
+                        <img src={style.image} alt="" className="h-16 w-12 rounded object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setExpandedBraidStyle(expanded ? null : style.id)}
+                          className="min-w-0 flex-1 text-left"
+                          aria-expanded={expanded}
+                        >
+                          <span className="block truncate font-medium text-neutral-900 dark:text-white">{style.name}</span>
+                          <span className="block truncate text-xs text-neutral-500 dark:text-neutral-400">
+                            {style.wearTime} · {style.styleLink}
+                          </span>
+                        </button>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            aria-label={`Move ${style.name} up`}
+                            onClick={() => setBraidBookStyles((items) => {
+                              const next = [...items];
+                              [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                              return next;
+                            })}
+                            className="h-10 w-10 rounded border border-neutral-300 disabled:opacity-30 dark:border-neutral-600"
+                          >↑</button>
+                          <button
+                            type="button"
+                            disabled={index === braidBookStyles.length - 1}
+                            aria-label={`Move ${style.name} down`}
+                            onClick={() => setBraidBookStyles((items) => {
+                              const next = [...items];
+                              [next[index], next[index + 1]] = [next[index + 1], next[index]];
+                              return next;
+                            })}
+                            className="h-10 w-10 rounded border border-neutral-300 disabled:opacity-30 dark:border-neutral-600"
+                          >↓</button>
+                        </div>
+                      </div>
+
+                      {expanded && (
+                        <div className="grid gap-4 p-4 md:grid-cols-2">
+                          {([
+                            ['name', 'Style name'],
+                            ['subtitle', 'Photo subtitle'],
+                            ['wearTime', 'Wear time'],
+                            ['image', 'Image URL'],
+                            ['styleLink', 'Booking link'],
+                          ] as const).map(([field, label]) => (
+                            <label key={field} className={field === 'image' || field === 'styleLink' ? 'md:col-span-2' : ''}>
+                              <span className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-300">{label}</span>
+                              <input
+                                value={style[field]}
+                                onChange={(event) => updateBraidBookStyle(index, field, event.target.value)}
+                                className="min-h-11 w-full rounded border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-neutral-900 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white"
+                              />
+                            </label>
+                          ))}
+                          <label>
+                            <span className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-300">Best for — one per line</span>
+                            <textarea
+                              rows={4}
+                              value={style.bestFor.join('\n')}
+                              onChange={(event) => updateBraidBookStyle(index, 'bestFor', event.target.value.split('\n').filter(Boolean))}
+                              className="w-full rounded border border-neutral-300 bg-white p-3 text-sm dark:border-neutral-600 dark:bg-neutral-900 dark:text-white"
+                            />
+                          </label>
+                          <label>
+                            <span className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-300">Care tips — one per line</span>
+                            <textarea
+                              rows={4}
+                              value={style.preserveTips.join('\n')}
+                              onChange={(event) => updateBraidBookStyle(index, 'preserveTips', event.target.value.split('\n').filter(Boolean))}
+                              className="w-full rounded border border-neutral-300 bg-white p-3 text-sm dark:border-neutral-600 dark:bg-neutral-900 dark:text-white"
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
 
           {/* Footer Section */}
           <div className="relative">

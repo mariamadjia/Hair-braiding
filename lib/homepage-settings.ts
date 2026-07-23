@@ -4,6 +4,7 @@ export type HomepageSettings = {
   heroVideoSrc?: string;
   useHeroVideo?: boolean;
   footerVideoSrc?: string;
+  braidBookStyles?: string;
 };
 
 let settingsRequest: Promise<HomepageSettings> | null = null;

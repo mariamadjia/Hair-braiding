@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useReducedMotion } from 'framer-motion';
 import { BRAID_BOOK_CARE_RITUALS, BRAID_BOOK_STYLES } from '@/lib/braid-book-data';
+import { API_BASE_URL } from '@/lib/config/api';
 
 const T = {
   bg:        '#F6F5F1',
@@ -311,15 +312,25 @@ const styleCare = {
 };
 
 const braidBookStyleById = new Map(BRAID_BOOK_STYLES.map((style) => [style.id, style]));
-const spreads = layoutSpreads.map((spread) => {
-  const style = braidBookStyleById.get(spread.id);
-  if (!style) return spread;
-  return {
-    ...spread,
-    ...style,
-    leftEl: <PhotoPage src={style.image} label={style.name} subtitle={style.subtitle} />,
-  };
-});
+const buildSpreads = (styles = BRAID_BOOK_STYLES) => {
+  const styleSpreads = styles
+    .map((configuredStyle) => {
+      const id = Number(configuredStyle.id);
+      const spread = layoutSpreads.find((candidate) => candidate.id === id);
+      const fallback = braidBookStyleById.get(id);
+      const style = { ...fallback, ...configuredStyle, id };
+      if (!spread || !style.name || !style.image) return null;
+      return {
+        ...spread,
+        ...style,
+        leftEl: <PhotoPage src={style.image} label={style.name} subtitle={style.subtitle} />,
+      };
+    })
+    .filter(Boolean);
+  return [layoutSpreads[0], ...styleSpreads, layoutSpreads[layoutSpreads.length - 1]];
+};
+
+const spreads = buildSpreads();
 
 function RightPageContent({ s, mobile = false }) {
   if (s.rightContent) return s.rightContent;
@@ -469,6 +480,7 @@ function RightPageContent({ s, mobile = false }) {
 }
 
 export default function FlipBook3D() {
+  const [activeSpreads, setActiveSpreads] = useState(spreads);
   const [current, setCurrent] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
   const [showFlipPage, setShowFlipPage] = useState(false);
@@ -479,8 +491,8 @@ export default function FlipBook3D() {
   const nextCurrentRef = useRef(0);
   const flipTimersRef = useRef([]);
   const reduceMotion = useReducedMotion();
-  const total = spreads.length;
-  const currentStyleLink = spreads[current].styleLink;
+  const total = activeSpreads.length;
+  const currentStyleLink = activeSpreads[current].styleLink;
   const pagePaddingTop = 'clamp(24px,5.5vw,32px)';
   const pagePaddingBottom = 'clamp(10px,2.6vw,32px)';
   const pagePaddingOuter = 'clamp(10px,2.6vw,32px)';
@@ -493,15 +505,34 @@ export default function FlipBook3D() {
 
   useEffect(() => clearFlipTimers, [clearFlipTimers]);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE_URL}/api/homepage-settings`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((settings) => {
+        if (cancelled || !settings?.braidBookStyles) return;
+        const parsed = JSON.parse(settings.braidBookStyles);
+        if (!Array.isArray(parsed) || parsed.length === 0) return;
+        const validStyles = parsed.filter((style) =>
+          style && Number.isFinite(Number(style.id)) && style.name && style.image
+        );
+        if (validStyles.length > 0) setActiveSpreads(buildSpreads(validStyles));
+      })
+      .catch(() => {
+        // The built-in book remains available if homepage settings are offline.
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   const goToPage = useCallback((next) => {
     if (isFlipping) return;
     if (next < 0 || next >= total || next === current) return;
 
     prevCurrentRef.current = current;
     nextCurrentRef.current = next;
-    if (spreads[next]?.image) {
+    if (activeSpreads[next]?.image) {
       const preload = new window.Image();
-      preload.src = spreads[next].image;
+      preload.src = activeSpreads[next].image;
     }
     setFlipDirection(next > current ? 1 : -1);
 
@@ -527,7 +558,7 @@ export default function FlipBook3D() {
       flipTimersRef.current = [];
     }, 700);
     flipTimersRef.current = [changeTimer, finishTimer];
-  }, [clearFlipTimers, current, isFlipping, reduceMotion, total]);
+  }, [activeSpreads, clearFlipTimers, current, isFlipping, reduceMotion, total]);
 
   const changePage = useCallback((dir) => {
     goToPage(current + dir);
@@ -535,12 +566,12 @@ export default function FlipBook3D() {
 
   useEffect(() => {
     [current - 1, current + 1].forEach((index) => {
-      const src = spreads[index]?.image;
+      const src = activeSpreads[index]?.image;
       if (!src) return;
       const preload = new window.Image();
       preload.src = src;
     });
-  }, [current]);
+  }, [activeSpreads, current]);
 
   const handleBookKeyDown = (event) => {
     if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select')) return;
@@ -609,7 +640,7 @@ export default function FlipBook3D() {
           textTransform: 'uppercase',
           fontWeight: 500
         }}>
-          {spreads[current].title}
+          {activeSpreads[current].title}
         </div>
         <button 
           className="braid-book-nav-button"
@@ -645,7 +676,7 @@ export default function FlipBook3D() {
         </button>
       </div>
       <div className="braid-book-dots" style={{ display: 'flex', gap: 0, marginTop: 3 }}>
-        {spreads.map((_, i) => (
+        {activeSpreads.map((_, i) => (
           <button 
             key={i} 
             onClick={() => goToPage(i)}
@@ -789,7 +820,7 @@ export default function FlipBook3D() {
         <Header />
 
         <p className="sr-only" aria-live="polite" aria-atomic="true">
-          Page {current + 1} of {total}: {spreads[current].title}
+          Page {current + 1} of {total}: {activeSpreads[current].title}
         </p>
 
         <div
@@ -808,7 +839,7 @@ export default function FlipBook3D() {
             justifyContent: 'center'
           }}
           role="region"
-          aria-label={`Page ${current + 1} of ${total}: ${spreads[current].title}`}
+          aria-label={`Page ${current + 1} of ${total}: ${activeSpreads[current].title}`}
           tabIndex="0"
         >
           {/* Book container with 3D transform */}
@@ -918,7 +949,7 @@ export default function FlipBook3D() {
                     changePage(-1);
                   }
                 }}>
-                {spreads[current].leftEl}
+                {activeSpreads[current].leftEl}
               </div>
 
               {/* Right page */}
@@ -972,7 +1003,7 @@ export default function FlipBook3D() {
                   pointerEvents: 'none'
                 }}/>
 
-                <RightPageContent s={spreads[current]} />
+                <RightPageContent s={activeSpreads[current]} />
                 <div style={{ 
                   position: 'absolute', 
                   bottom: 16, 
@@ -982,7 +1013,7 @@ export default function FlipBook3D() {
                   letterSpacing: 1,
                   fontFamily: 'Georgia, serif'
                 }}>
-                  {spreads[current].pageNum}
+                  {activeSpreads[current].pageNum}
                 </div>
               </div>
             </div>
@@ -1010,8 +1041,8 @@ export default function FlipBook3D() {
             {showFlipPage && (() => {
               const fromIdx = prevCurrentRef.current;
               const toIdx   = Math.max(0, Math.min(total - 1, nextCurrentRef.current));
-              const from    = spreads[fromIdx];
-              const to      = spreads[toIdx];
+              const from    = activeSpreads[fromIdx];
+              const to      = activeSpreads[toIdx];
               // forward: right page turns; backward: left page turns
               const isForward = flipDirection > 0;
               return (
@@ -1129,7 +1160,7 @@ export default function FlipBook3D() {
           {currentStyleLink && !isFlipping && (
             <a
               href={currentStyleLink}
-              aria-label={`Select ${spreads[current].name} for booking`}
+              aria-label={`Select ${activeSpreads[current].name} for booking`}
               data-no-page-flip
               style={{
                 position: 'absolute',
