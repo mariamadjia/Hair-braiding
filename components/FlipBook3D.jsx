@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
+import { useReducedMotion } from 'framer-motion';
+import { BRAID_BOOK_CARE_RITUALS, BRAID_BOOK_STYLES } from '@/lib/braid-book-data';
 
 const T = {
   bg:        '#F6F5F1',
@@ -27,40 +29,15 @@ const T = {
 };
 
 const CoverSVG = () => (
-  <svg width="100%" height="100%" viewBox="0 0 360 480" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <radialGradient id="bgCover" cx="50%" cy="40%">
-        <stop offset="0%" stopColor="#1a1a1a"/>
-        <stop offset="100%" stopColor="#0a0a0a"/>
-      </radialGradient>
-      <radialGradient id="glowCover" cx="50%" cy="50%">
-        <stop offset="0%" stopColor="#C8714A" stopOpacity="0.25"/>
-        <stop offset="100%" stopColor="transparent"/>
-      </radialGradient>
-      <clipPath id="coverPhotoClip">
-        <circle cx="180" cy="190" r="82"/>
-      </clipPath>
-    </defs>
-    <rect width="360" height="480" fill="url(#bgCover)"/>
-    <circle cx="180" cy="190" r="120" fill="url(#glowCover)"/>
-    <circle cx="180" cy="190" r="110" fill="none" stroke="#C8714A" strokeWidth="0.8" strokeDasharray="4 6" opacity="0.35"/>
-    <circle cx="180" cy="190" r="90"  fill="none" stroke="#888"    strokeWidth="0.5" opacity="0.2"/>
-    <circle cx="180" cy="190" r="84" fill="#111" stroke="rgba(200,113,74,0.65)" strokeWidth="1.2"/>
-    <image
-      href="/Gallery/Box-Braids%20/Bohemian%20french%20curl/IMG_9190.jpg"
-      x="86"
-      y="96"
-      width="188"
-      height="188"
-      preserveAspectRatio="xMidYMid meet"
-      clipPath="url(#coverPhotoClip)"
-    />
-    <circle cx="180" cy="190" r="84" fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="0.8"/>
-    <text x="180" y="440" textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="12" fontFamily="Georgia,serif" fontStyle="italic">Open to begin your journey</text>
-    <text x="60"  y="80"  fill="#C8714A" fontSize="12" opacity="0.5">✦</text>
-    <text x="295" y="65"  fill="#888"    fontSize="9"  opacity="0.35">✦</text>
-    <text x="310" y="110" fill="#C8714A" fontSize="7"  opacity="0.3">✦</text>
-  </svg>
+  <div aria-hidden="true" style={{ width: '100%', height: '100%', position: 'relative', display: 'grid', placeItems: 'center', background: 'radial-gradient(circle at 50% 40%,#1a1a1a,#0a0a0a 72%)', overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', width: '68%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle,rgba(200,113,74,0.25),transparent 68%)' }} />
+    <div style={{ position: 'relative', width: '47%', aspectRatio: '1', borderRadius: '50%', border: '1px solid rgba(200,113,74,0.65)', padding: 3, boxShadow: '0 0 0 10px rgba(200,113,74,0.06), 0 0 0 26px rgba(200,113,74,0.04)', overflow: 'hidden' }}>
+      <Image src="/Gallery/Box-Braids /Bohemian french curl/IMG_9190.jpg" alt="" fill sizes="(max-width: 640px) 45vw, 210px" style={{ objectFit: 'cover' }} />
+    </div>
+    <span style={{ position: 'absolute', left: '16%', top: '15%', color: '#C8714A', opacity: 0.5 }}>✦</span>
+    <span style={{ position: 'absolute', right: '16%', top: '12%', color: '#888', opacity: 0.35 }}>✦</span>
+    <span style={{ position: 'absolute', bottom: '8%', color: 'rgba(255,255,255,0.5)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: 'clamp(0.62rem,1.5vw,0.78rem)' }}>Open to begin your journey</span>
+  </div>
 );
 
 const BackCoverSVG = () => (
@@ -100,7 +77,7 @@ const PhotoPage = ({ src, label, subtitle }) => (
   </div>
 );
 
-const spreads = [
+const layoutSpreads = [
   {
     id: 0, title: 'Cover',
     leftEl: <CoverSVG />,
@@ -124,13 +101,13 @@ const spreads = [
     originTag: 'West African Origin',
     name: 'Box Braids',
     story: [
-      'Box braids are one of the most iconic protective styles in Black hair culture, with roots stretching back over 3,000 years to ancient Egypt and Sub-Saharan Africa.',
+      'Box braids are an iconic protective style in Black hair culture, connected to longstanding braiding traditions across African communities and the diaspora.',
       'Named for the square "box" sections created during parting, this style became a symbol of cultural pride in the 1990s. Today they are a declaration of heritage, identity, and versatility.',
     ],
     wearTime: '4 – 8 Weeks',
     wearTip: 'Moisturize scalp weekly with a light oil. Remove by 8 weeks to prevent breakage.',
     pageNum: '01',
-    styleLink: '/box-braids?style=classic-box-braids',
+    styleLink: '/booking/box-braids/classic-box-braids',
   },
   {
     id: 2, title: 'Cornrows',
@@ -139,13 +116,13 @@ const spreads = [
     originTag: 'Sub-Saharan Africa',
     name: 'Cornrows',
     story: [
-      'Among the oldest recorded hairstyles in the world, cornrows date back at least 3,000 years. Cave paintings in the Sahara depict styles remarkably similar to modern cornrows.',
-      'During the transatlantic slave trade, enslaved Africans used cornrow patterns to map escape routes — a powerful act of resistance braided into hair.',
+      'Cornrows belong to longstanding African braiding traditions and have carried cultural, artistic, and practical meaning across generations.',
+      'Oral traditions describe braiding patterns as forms of communication and resistance during slavery; these accounts should be presented as oral history rather than settled documentary fact.',
     ],
     wearTime: '2 – 4 Weeks',
     wearTip: 'Re-moisturize your edges every few days. Wrap at night with a satin scarf.',
     pageNum: '02',
-    styleLink: '/conrows?style=feedin-conrows',
+    styleLink: '/booking/conrows/feedin-conrows',
   },
   {
     id: 3, title: 'Senegalese Twists',
@@ -160,7 +137,7 @@ const spreads = [
     wearTime: '4 – 8 Weeks',
     wearTip: 'Spray scalp with diluted tea tree oil to prevent buildup. Unravel gently.',
     pageNum: '03',
-    styleLink: '/twists/senegalese-twists',
+    styleLink: '/booking/twists/senegalese-twists',
   },
   {
     id: 4, title: 'Passion Twists',
@@ -169,13 +146,13 @@ const spreads = [
     originTag: 'Modern Classic',
     name: 'Passion Twists',
     story: [
-      'Created by Miami stylist Keya Neal in 2018, passion twists combine the look of Senegalese twists with springy, curly extensions — giving a soft, bohemian finish that moves naturally.',
+      'Popularized in 2018, passion twists combine a two-strand twist technique with springy, curly extensions for a soft, bohemian finish.',
       'They remain one of the most requested styles today, loved for their effortless beauty and the freedom they give the wearer.',
     ],
     wearTime: '4 – 6 Weeks',
     wearTip: 'Protect with a satin bonnet each night. Avoid heavy products that weigh down the curls.',
     pageNum: '04',
-    styleLink: '/twists/passion-twists',
+    styleLink: '/booking/twists/passion-twists',
   },
   {
     id: 5, title: 'Knotless Braids',
@@ -185,12 +162,12 @@ const spreads = [
     name: 'Knotless Braids',
     story: [
       'Knotless braids start with your natural hair and gradually feed in extensions — resulting in a flat, seamless root with significantly less tension than traditional box braids.',
-      'Widely praised by trichologists for being gentler on the hairline and causing less traction alopecia.',
+      'The feed-in method can create a flatter foundation, but every braided style should be installed without pain or excessive tension.',
     ],
-    wearTime: '6 – 10 Weeks',
-    wearTip: 'Scalp-friendly! Still moisturize weekly. Looser tension means you can go longer.',
+    wearTime: '4 – 8 Weeks',
+    wearTip: 'Moisturize weekly, avoid painful tension, and remove the style by eight weeks.',
     pageNum: '05',
-    styleLink: '/box-braids?style=knotless',
+    styleLink: '/booking/box-braids/knotless',
   },
   {
     id: 6, title: 'Goddess Braids',
@@ -199,13 +176,13 @@ const spreads = [
     originTag: 'African Diaspora',
     name: 'Goddess Braids',
     story: [
-      'Extra-thick, chunky cornrows raised slightly off the scalp, styled into dramatic sweeping patterns. Their bold scale and sculptural quality give them a regal quality — hence the name.',
-      'Crowned with gold rings, shells, flowers, and beads, they transform hair into an art form. No two goddess braid styles are alike.',
+      'This Goddess Braids service combines individual braids with loose curls for a soft, dimensional finish.',
+      'Customers can choose a Regular or Knotless foundation when that option is enabled for the selected size.',
     ],
-    wearTime: '2 – 4 Weeks',
-    wearTip: 'Re-braid the perimeter at week 2. Larger braids unravel faster at the edges.',
+    wearTime: '4 – 8 Weeks',
+    wearTip: 'Protect curls with satin, refresh lightly, and avoid pulling on the perimeter.',
     pageNum: '06',
-    styleLink: '/box-braids?style=goddess-braids',
+    styleLink: '/booking/box-braids/goddess-braids',
   },
   {
     id: 7, title: 'Bohemian Twists',
@@ -220,7 +197,7 @@ const spreads = [
     wearTime: '4 – 6 Weeks',
     wearTip: 'Refresh curly ends with water and leave-in conditioner spray. Style into a bun for variety.',
     pageNum: '07',
-    styleLink: '/twists/bohemian-marley-twists',
+    styleLink: '/booking/twists/bohemian-marley-twists',
   },
   {
     id: 8, title: 'Crochet Braids',
@@ -235,7 +212,7 @@ const spreads = [
     wearTime: '4 – 6 Weeks',
     wearTip: 'Reinstall loose extensions near the perimeter at week 3. Co-wash every 1–2 weeks.',
     pageNum: '08',
-    styleLink: '/crochets?style=single',
+    styleLink: '/booking/crochets/single',
   },
   {
     id: 9, title: 'Care Guide',
@@ -245,7 +222,7 @@ const spreads = [
         <div style={{ fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(1.6rem,3.2vw,2.2rem)', color: T.heading, marginBottom: 12, fontWeight: 300, letterSpacing: '-0.02em', fontStyle: 'italic' }}>Care for Your Braids</div>
         <div style={{ fontSize: '0.68rem', color: T.accent, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 28 }}>Essential Rituals</div>
         <div style={{ width: 60, height: 2, background: `linear-gradient(to right, transparent, ${T.accent}, transparent)`, marginBottom: 26, opacity: 0.6 }}/>
-        {[['Moisturize','scalp weekly — jojoba, argan, or castor oil.'],['Protect','with a satin or silk bonnet each night.'],['Refresh','edges every few days with edge control.'],['Remove','gently — detangle from ends to roots.'],['Rest','between installs with a deep conditioning treatment.']].map(([b, r], i) => (
+        {BRAID_BOOK_CARE_RITUALS.map(([b, r], i) => (
           <p key={i} style={{ fontSize: 'clamp(0.78rem,1.45vw,0.92rem)', color: T.body, lineHeight: 1.8, marginBottom: 14, textAlign: 'left', width: '100%', fontWeight: 300 }}>
             <strong style={{ color: T.accent, fontWeight: 600, letterSpacing: '0.02em' }}>{b}</strong> <span style={{ fontStyle: 'italic' }}>{r}</span>
           </p>
@@ -333,10 +310,21 @@ const styleCare = {
   },
 };
 
-function RightPageContent({ s }) {
+const braidBookStyleById = new Map(BRAID_BOOK_STYLES.map((style) => [style.id, style]));
+const spreads = layoutSpreads.map((spread) => {
+  const style = braidBookStyleById.get(spread.id);
+  if (!style) return spread;
+  return {
+    ...spread,
+    ...style,
+    leftEl: <PhotoPage src={style.image} label={style.name} subtitle={style.subtitle} />,
+  };
+});
+
+function RightPageContent({ s, mobile = false }) {
   if (s.rightContent) return s.rightContent;
 
-  const care = styleCare[s.name] || {};
+  const care = s.preserveTips && s.bestFor ? s : (styleCare[s.name] || {});
   const preserveTips = care.preserveTips || [s.wearTip].filter(Boolean);
   const bestFor = care.bestFor || (s.quote ? [s.quote] : []);
   const bestForContent = bestFor.length > 0 && (
@@ -344,7 +332,7 @@ function RightPageContent({ s }) {
       paddingTop: 'clamp(1px, 0.5vw, 4px)'
     }}>
       <div style={{
-        fontSize: 'clamp(0.44rem, 1vw, 0.55rem)',
+        fontSize: mobile ? '0.72rem' : 'clamp(0.44rem, 1vw, 0.55rem)',
         letterSpacing: '0.12em',
         textTransform: 'uppercase',
         color: T.accent,
@@ -368,7 +356,7 @@ function RightPageContent({ s }) {
             borderRadius: 999,
             background: T.rightPage,
             color: T.heading,
-            fontSize: 'clamp(0.48rem, 1.2vw, 0.62rem)',
+            fontSize: mobile ? '0.72rem' : 'clamp(0.48rem, 1.2vw, 0.62rem)',
             lineHeight: 1,
             fontWeight: 500,
             letterSpacing: '0.02em',
@@ -391,7 +379,7 @@ function RightPageContent({ s }) {
       <div>
         <h3 style={{
           fontFamily: 'var(--font-playfair,Georgia,serif)',
-          fontSize: 'clamp(1rem, 4vw, 2.25rem)',
+          fontSize: mobile ? '1.8rem' : 'clamp(1rem, 4vw, 2.25rem)',
           color: T.heading,
           margin: 0,
           lineHeight: 1.05,
@@ -411,7 +399,7 @@ function RightPageContent({ s }) {
         borderBottom: `1px solid ${T.accentDim}`
       }}>
         <div style={{
-          fontSize: 'clamp(0.44rem, 1vw, 0.55rem)',
+          fontSize: mobile ? '0.72rem' : 'clamp(0.44rem, 1vw, 0.55rem)',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           color: T.accent,
@@ -422,7 +410,7 @@ function RightPageContent({ s }) {
         <div style={{
           fontFamily: 'var(--font-playfair,Georgia,serif)',
           color: T.heading,
-          fontSize: 'clamp(0.75rem, 2vw, 1.05rem)',
+          fontSize: mobile ? '1rem' : 'clamp(0.75rem, 2vw, 1.05rem)',
           fontWeight: 600,
           lineHeight: 1
         }}>
@@ -434,7 +422,7 @@ function RightPageContent({ s }) {
 
       <div>
         <div style={{
-          fontSize: 'clamp(0.48rem, 1.1vw, 0.6rem)',
+          fontSize: mobile ? '0.72rem' : 'clamp(0.48rem, 1.1vw, 0.6rem)',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           color: T.accent,
@@ -457,14 +445,14 @@ function RightPageContent({ s }) {
               <span style={{
                 color: T.accent,
                 fontFamily: 'var(--font-playfair,Georgia,serif)',
-                fontSize: 'clamp(0.62rem, 1.7vw, 0.92rem)',
+                fontSize: mobile ? '0.9rem' : 'clamp(0.62rem, 1.7vw, 0.92rem)',
                 lineHeight: 1.15
               }}>
                 {String(i + 1).padStart(2, '0')}
               </span>
               <span style={{
                 color: T.body,
-                fontSize: 'clamp(0.52rem, 1.55vw, 0.75rem)',
+                fontSize: mobile ? '0.86rem' : 'clamp(0.52rem, 1.55vw, 0.75rem)',
                 lineHeight: 1.3,
                 fontWeight: 300
               }}>
@@ -480,6 +468,22 @@ function RightPageContent({ s }) {
   );
 }
 
+function MobileBookPage({ spread }) {
+  return (
+    <article className="braid-book-mobile" aria-label={spread.title}>
+      <div className="braid-book-mobile-image">{spread.leftEl}</div>
+      <div className="braid-book-mobile-content">
+        <RightPageContent s={spread} mobile />
+        {spread.styleLink && (
+          <a className="braid-book-mobile-link" href={spread.styleLink}>
+            Select This Style
+          </a>
+        )}
+      </div>
+    </article>
+  );
+}
+
 export default function FlipBook3D() {
   const [current, setCurrent] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
@@ -488,6 +492,9 @@ export default function FlipBook3D() {
   const touchX = useRef(0);
   const touchY = useRef(0);
   const prevCurrentRef = useRef(0);
+  const nextCurrentRef = useRef(0);
+  const flipTimersRef = useRef([]);
+  const reduceMotion = useReducedMotion();
   const total = spreads.length;
   const currentStyleLink = spreads[current].styleLink;
   const pagePaddingTop = 'clamp(24px,5.5vw,32px)';
@@ -495,34 +502,73 @@ export default function FlipBook3D() {
   const pagePaddingOuter = 'clamp(10px,2.6vw,32px)';
   const pagePaddingGutter = 'clamp(22px,4.5vw,44px)';
 
-  const changePage = useCallback((dir) => {
+  const clearFlipTimers = useCallback(() => {
+    flipTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    flipTimersRef.current = [];
+  }, []);
+
+  useEffect(() => clearFlipTimers, [clearFlipTimers]);
+
+  const goToPage = useCallback((next) => {
     if (isFlipping) return;
-    const next = current + dir;
-    if (next < 0 || next >= total) return;
+    if (next < 0 || next >= total || next === current) return;
 
     prevCurrentRef.current = current;
-    setFlipDirection(dir);
-    setIsFlipping(true);
-    setShowFlipPage(true);
-    
-    setTimeout(() => {
+    nextCurrentRef.current = next;
+    if (spreads[next]?.image) {
+      const preload = new window.Image();
+      preload.src = spreads[next].image;
+    }
+    setFlipDirection(next > current ? 1 : -1);
+
+    if (reduceMotion) {
+      clearFlipTimers();
       setCurrent(next);
-    }, 350);
-    
-    setTimeout(() => {
       setShowFlipPage(false);
       setIsFlipping(false);
+      return;
+    }
+
+    setIsFlipping(true);
+    setShowFlipPage(true);
+
+    clearFlipTimers();
+    const changeTimer = window.setTimeout(() => {
+      setCurrent(next);
+    }, 350);
+
+    const finishTimer = window.setTimeout(() => {
+      setShowFlipPage(false);
+      setIsFlipping(false);
+      flipTimersRef.current = [];
     }, 700);
-  }, [isFlipping, current, total]);
+    flipTimersRef.current = [changeTimer, finishTimer];
+  }, [clearFlipTimers, current, isFlipping, reduceMotion, total]);
+
+  const changePage = useCallback((dir) => {
+    goToPage(current + dir);
+  }, [current, goToPage]);
 
   useEffect(() => {
-    const h = (e) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changePage(1);
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') changePage(-1);
-    };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [changePage]);
+    [current - 1, current + 1].forEach((index) => {
+      const src = spreads[index]?.image;
+      if (!src) return;
+      const preload = new window.Image();
+      preload.src = src;
+    });
+  }, [current]);
+
+  const handleBookKeyDown = (event) => {
+    if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select')) return;
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      changePage(1);
+    }
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      changePage(-1);
+    }
+  };
 
   const onTouchStart = (e) => { 
     touchX.current = e.touches[0].clientX; 
@@ -537,8 +583,9 @@ export default function FlipBook3D() {
 
   const Nav = () => (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 24 }}>
+      <div className="braid-book-nav" style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 24 }}>
         <button 
+          className="braid-book-nav-button"
           onClick={() => changePage(-1)} 
           disabled={current === 0 || isFlipping}
           aria-label="Previous page"
@@ -569,7 +616,7 @@ export default function FlipBook3D() {
           }}>
           ← Prev
         </button>
-        <div style={{ 
+        <div className="braid-book-nav-title" style={{
           color: 'rgba(255,255,255,0.75)', 
           fontSize: '0.7rem', 
           letterSpacing: '0.12em', 
@@ -581,6 +628,7 @@ export default function FlipBook3D() {
           {spreads[current].title}
         </div>
         <button 
+          className="braid-book-nav-button"
           onClick={() => changePage(1)} 
           disabled={current === total - 1 || isFlipping}
           aria-label="Next page"
@@ -612,16 +660,16 @@ export default function FlipBook3D() {
           Next →
         </button>
       </div>
-      <div style={{ display: 'flex', gap: 0, marginTop: 3 }}>
+      <div className="braid-book-dots" style={{ display: 'flex', gap: 0, marginTop: 3 }}>
         {spreads.map((_, i) => (
           <button 
             key={i} 
-            onClick={() => { if (i !== current && !isFlipping) changePage(i > current ? 1 : -1); }}
+            onClick={() => goToPage(i)}
             aria-label={`Go to page ${i + 1}`}
             aria-current={i === current ? 'true' : 'false'}
             style={{ 
-              width: 24,
-              height: 24,
+              width: 44,
+              height: 44,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -682,7 +730,7 @@ export default function FlipBook3D() {
         fontWeight: 300,
         fontStyle: 'italic'
       }}>
-        Open the book with arrow keys or a swipe
+        Focus the book and use arrow keys, buttons, or a swipe
       </p>
     </>
   );
@@ -690,6 +738,8 @@ export default function FlipBook3D() {
   return (
     <>
       <style jsx>{`
+        .braid-book-nav { display: flex; align-items: center; gap: 20px; margin-top: 24px; }
+        .braid-book-dots { display: flex; flex-wrap: wrap; justify-content: center; margin-top: 3px; }
         @keyframes pageFlipForward {
           0%   { transform: perspective(1400px) rotateY(0deg)    translateZ(0px);  transform-origin: left center; filter: drop-shadow(-3px 4px 10px rgba(0,0,0,0.2)); }
           18%  { transform: perspective(1400px) rotateY(-35deg)  translateZ(10px); transform-origin: left center; filter: drop-shadow(-14px 8px 22px rgba(0,0,0,0.55)); }
@@ -736,6 +786,7 @@ export default function FlipBook3D() {
           100% { transform: translateX(220%);  }
         }
         .page-sheen { animation: sheenMove 0.75s cubic-bezier(0.5, 0, 0.3, 1) forwards; }
+
       `}</style>
 
       <section 
@@ -749,10 +800,18 @@ export default function FlipBook3D() {
           overflowX: 'clip'
         }}
         aria-label="The Braid Book - Interactive guide to protective hairstyles"
+        onKeyDown={handleBookKeyDown}
       >
         <Header />
 
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          Page {current + 1} of {total}: {spreads[current].title}
+        </p>
+
+        <MobileBookPage spread={spreads[current]} />
+
         <div
+          className="braid-book-desktop"
           onTouchStart={onTouchStart} 
           onTouchEnd={onTouchEnd}
           style={{ 
@@ -867,6 +926,15 @@ export default function FlipBook3D() {
                   borderRight: '1px solid #000',
                   boxShadow: 'inset -20px 0 40px rgba(0,0,0,0.5)',
                   cursor: current === 0 ? 'default' : 'pointer'
+                }}
+                role={current === 0 ? undefined : 'button'}
+                tabIndex={current === 0 ? -1 : 0}
+                aria-label={current === 0 ? undefined : 'Previous page'}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    changePage(-1);
+                  }
                 }}>
                 {spreads[current].leftEl}
               </div>
@@ -959,7 +1027,7 @@ export default function FlipBook3D() {
             {/* Flipping page overlay */}
             {showFlipPage && (() => {
               const fromIdx = prevCurrentRef.current;
-              const toIdx   = Math.max(0, Math.min(total - 1, fromIdx + flipDirection));
+              const toIdx   = Math.max(0, Math.min(total - 1, nextCurrentRef.current));
               const from    = spreads[fromIdx];
               const to      = spreads[toIdx];
               // forward: right page turns; backward: left page turns
@@ -1046,14 +1114,12 @@ export default function FlipBook3D() {
             })()}
           </div>
 
-          <button
-            type="button"
-            aria-label="Next page"
+          <div
+            aria-hidden="true"
             onClick={(e) => {
               e.stopPropagation();
               changePage(1);
             }}
-            disabled={current === total - 1 || isFlipping}
             style={{
               position: 'absolute',
               top: '6%',
@@ -1076,12 +1142,12 @@ export default function FlipBook3D() {
             }}
           >
             ›
-          </button>
+          </div>
 
           {currentStyleLink && !isFlipping && (
             <a
               href={currentStyleLink}
-              aria-label={`View gallery images for ${spreads[current].name}`}
+              aria-label={`Select ${spreads[current].name} for booking`}
               data-no-page-flip
               style={{
                 position: 'absolute',
@@ -1114,7 +1180,7 @@ export default function FlipBook3D() {
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              View This Style
+              Select This Style
             </a>
           )}
 
