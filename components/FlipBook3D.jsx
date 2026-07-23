@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useReducedMotion } from 'framer-motion';
-import { BRAID_BOOK_CARE_RITUALS, BRAID_BOOK_STYLES } from '@/lib/braid-book-data';
+import { BRAID_BOOK_CARE_RITUALS, BRAID_BOOK_COVER, BRAID_BOOK_STYLES } from '@/lib/braid-book-data';
 import { API_BASE_URL } from '@/lib/config/api';
 
 const T = {
@@ -29,15 +29,29 @@ const T = {
   pageNum:   '#b8a89d',
 };
 
-const CoverSVG = () => (
+const CoverSVG = ({ image = BRAID_BOOK_COVER.image }) => (
   <div aria-hidden="true" style={{ width: '100%', height: '100%', position: 'relative', display: 'grid', placeItems: 'center', background: 'radial-gradient(circle at 50% 40%,#1a1a1a,#0a0a0a 72%)', overflow: 'hidden' }}>
     <div style={{ position: 'absolute', width: '68%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle,rgba(200,113,74,0.25),transparent 68%)' }} />
     <div style={{ position: 'relative', width: '47%', aspectRatio: '1', borderRadius: '50%', border: '1px solid rgba(200,113,74,0.65)', padding: 3, boxShadow: '0 0 0 10px rgba(200,113,74,0.06), 0 0 0 26px rgba(200,113,74,0.04)', overflow: 'hidden' }}>
-      <Image src="/Gallery/Box-Braids /Bohemian french curl/IMG_9190.jpg" alt="" fill sizes="(max-width: 640px) 45vw, 210px" style={{ objectFit: 'cover' }} />
+      <Image src={image} alt="" fill sizes="(max-width: 640px) 45vw, 210px" style={{ objectFit: 'cover' }} />
     </div>
     <span style={{ position: 'absolute', left: '16%', top: '15%', color: '#C8714A', opacity: 0.5 }}>✦</span>
     <span style={{ position: 'absolute', right: '16%', top: '12%', color: '#888', opacity: 0.35 }}>✦</span>
     <span style={{ position: 'absolute', bottom: '8%', color: 'rgba(255,255,255,0.5)', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: 'clamp(0.62rem,1.5vw,0.78rem)' }}>Open to begin your journey</span>
+  </div>
+);
+
+const CoverContent = ({ cover, editMode = false, onChange = null }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', maxWidth: 320, margin: '0 auto', padding: '0 20px' }}>
+    {editMode ? <input aria-label="Cover title" value={cover.title} onChange={(event) => onChange?.('title', event.target.value)} style={{ width: '100%', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(1.5rem,4vw,3.2rem)', color: T.heading, fontStyle: 'italic' }} /> :
+      <div style={{ fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(2.2rem,4.5vw,3.2rem)', color: T.heading, marginBottom: 20, lineHeight: 1, fontWeight: 300, letterSpacing: '-0.03em', fontStyle: 'italic' }}>{cover.title}</div>}
+    {editMode ? <input aria-label="Cover subtitle" value={cover.subtitle} onChange={(event) => onChange?.('subtitle', event.target.value)} style={{ width: '100%', margin: '12px 0', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', color: T.accent, fontSize: '0.68rem', letterSpacing: '0.16em', textTransform: 'uppercase' }} /> :
+      <div style={{ fontSize: '0.68rem', color: T.accent, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 24 }}>{cover.subtitle}</div>}
+    <div style={{ width: 60, height: 1, background: `linear-gradient(to right, transparent, ${T.accent}, transparent)`, marginBottom: 20 }}/>
+    {editMode ? <textarea aria-label="Cover description" value={cover.description} onChange={(event) => onChange?.('description', event.target.value)} rows={5} style={{ width: '100%', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', color: T.body, textAlign: 'center', fontSize: 'clamp(.65rem,1.4vw,.95rem)', lineHeight: 1.5 }} /> :
+      <p style={{ fontSize: 'clamp(0.88rem,1.6vw,1.05rem)', color: T.body, lineHeight: 1.8, marginBottom: 8, fontWeight: 300, fontStyle: 'italic' }}>{cover.description}</p>}
+    {editMode ? <input aria-label="Cover footer" value={cover.footer} onChange={(event) => onChange?.('footer', event.target.value)} style={{ width: '100%', marginTop: 14, border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', color: T.bodyLight, fontSize: '0.62rem', letterSpacing: '0.13em', textTransform: 'uppercase' }} /> :
+      <p style={{ fontSize: '0.72rem', color: T.bodyLight, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 500, marginTop: 20, opacity: 0.8 }}>{cover.footer}</p>}
   </div>
 );
 
@@ -312,7 +326,7 @@ const styleCare = {
 };
 
 const braidBookStyleById = new Map(BRAID_BOOK_STYLES.map((style) => [style.id, style]));
-const buildSpreads = (styles = BRAID_BOOK_STYLES) => {
+const buildSpreads = (styles = BRAID_BOOK_STYLES, cover = BRAID_BOOK_COVER) => {
   const styleSpreads = styles
     .map((configuredStyle) => {
       const id = Number(configuredStyle.id);
@@ -327,7 +341,13 @@ const buildSpreads = (styles = BRAID_BOOK_STYLES) => {
       };
     })
     .filter(Boolean);
-  return [layoutSpreads[0], ...styleSpreads, layoutSpreads[layoutSpreads.length - 1]];
+  const coverSpread = {
+    ...layoutSpreads[0],
+    leftEl: <CoverSVG image={cover.image} />,
+    rightContent: <CoverContent cover={cover} />,
+    cover,
+  };
+  return [coverSpread, ...styleSpreads, layoutSpreads[layoutSpreads.length - 1]];
 };
 
 const spreads = buildSpreads();
@@ -572,6 +592,8 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
  *   onImageFile?: ((id: number, file: File) => void) | null;
  *   onSave?: (() => void) | null;
  *   isSaving?: boolean;
+ *   cover?: Record<string, any> | null;
+ *   onChangeCover?: ((field: string, value: any) => void) | null;
  * }} props
  */
 export default function FlipBook3D({
@@ -582,10 +604,12 @@ export default function FlipBook3D({
   onImageFile = null,
   onSave = null,
   isSaving = false,
+  cover = null,
+  onChangeCover = null,
 } = {}) {
   const [persistedSpreads, setPersistedSpreads] = useState(spreads);
   const activeSpreads = editMode
-    ? buildSpreads(styles || BRAID_BOOK_STYLES)
+    ? buildSpreads(styles || BRAID_BOOK_STYLES, cover || BRAID_BOOK_COVER)
     : persistedSpreads;
   const [current, setCurrent] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
@@ -625,11 +649,13 @@ export default function FlipBook3D({
       .then((settings) => {
         if (cancelled || !settings?.braidBookStyles) return;
         const parsed = JSON.parse(settings.braidBookStyles);
-        if (!Array.isArray(parsed) || parsed.length === 0) return;
-        const validStyles = parsed.filter((style) =>
+        const parsedStyles = Array.isArray(parsed) ? parsed : parsed?.styles;
+        const parsedCover = !Array.isArray(parsed) && parsed?.cover ? parsed.cover : BRAID_BOOK_COVER;
+        if (!Array.isArray(parsedStyles) || parsedStyles.length === 0) return;
+        const validStyles = parsedStyles.filter((style) =>
           style && Number.isFinite(Number(style.id)) && style.name && style.image
         );
-        if (validStyles.length > 0) setPersistedSpreads(buildSpreads(validStyles));
+        if (validStyles.length > 0) setPersistedSpreads(buildSpreads(validStyles, { ...BRAID_BOOK_COVER, ...parsedCover }));
       })
       .catch(() => {
         // The built-in book remains available if homepage settings are offline.
@@ -1063,6 +1089,16 @@ export default function FlipBook3D({
                   }
                 }}>
                 {activeSpreads[current].leftEl}
+                {editMode && activeSpreads[current]?.id === 0 && (
+                  <label data-no-page-flip style={{ position: 'absolute', inset: 0, zIndex: 45, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,.14)', color: '#fff', cursor: 'pointer' }}>
+                    <span style={{ padding: '10px 14px', background: 'rgba(45,31,26,.88)', fontSize: '.65rem', letterSpacing: '.1em', textTransform: 'uppercase' }}>Replace cover image</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) onImageFile?.(0, file);
+                      event.target.value = '';
+                    }} />
+                  </label>
+                )}
                 {editMode && activeSpreads[current]?.id >= 1 && activeSpreads[current]?.id <= 8 && (
                   <div
                     data-no-page-flip
@@ -1150,11 +1186,9 @@ export default function FlipBook3D({
                   pointerEvents: 'none'
                 }}/>
 
-                <RightPageContent
-                  s={activeSpreads[current]}
-                  editMode={editMode}
-                  onChange={editCurrentStyle}
-                />
+                {editMode && activeSpreads[current]?.id === 0
+                  ? <CoverContent cover={cover || BRAID_BOOK_COVER} editMode onChange={onChangeCover} />
+                  : <RightPageContent s={activeSpreads[current]} editMode={editMode} onChange={editCurrentStyle} />}
                 <div style={{ 
                   position: 'absolute', 
                   bottom: 16, 

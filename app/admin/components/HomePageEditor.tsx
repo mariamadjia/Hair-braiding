@@ -8,7 +8,7 @@ import Gallery from "@/components/Gallery";
 import Footer from "@/components/Footer";
 import FlipBook3D from "@/components/FlipBook3D";
 import { API_BASE_URL } from "@/lib/config/api";
-import { BRAID_BOOK_STYLES } from "@/lib/braid-book-data";
+import { BRAID_BOOK_COVER, BRAID_BOOK_STYLES } from "@/lib/braid-book-data";
 import {
   fetchCategoryDisplayPhotos,
   getDisplayImages,
@@ -65,6 +65,7 @@ export function HomePageEditor() {
   const [braidBookStyles, setBraidBookStyles] = useState<BraidBookStyle[]>(
     () => structuredClone(BRAID_BOOK_STYLES) as BraidBookStyle[]
   );
+  const [braidBookCover, setBraidBookCover] = useState(() => ({ ...BRAID_BOOK_COVER }));
   const [savingBraidBook, setSavingBraidBook] = useState(false);
   const [expandedBraidStyle, setExpandedBraidStyle] = useState<number | null>(null);
   const [welcomeItems, setWelcomeItems] = useState<WelcomeItem[]>([
@@ -361,9 +362,13 @@ export function HomePageEditor() {
       }
 
       if (data.braidBookStyles) {
-        const styles = JSON.parse(data.braidBookStyles);
+        const parsed = JSON.parse(data.braidBookStyles);
+        const styles = Array.isArray(parsed) ? parsed : parsed?.styles;
         if (Array.isArray(styles) && styles.length > 0) {
           setBraidBookStyles(styles);
+        }
+        if (!Array.isArray(parsed) && parsed?.cover) {
+          setBraidBookCover({ ...BRAID_BOOK_COVER, ...parsed.cover });
         }
       }
     } catch (error) {
@@ -923,7 +928,7 @@ export function HomePageEditor() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ braidBookStyles: JSON.stringify(braidBookStyles) }),
+        body: JSON.stringify({ braidBookStyles: JSON.stringify({ cover: braidBookCover, styles: braidBookStyles }) }),
       });
       if (!response.ok) throw new Error(`Braid Book save failed (${response.status})`);
       const saved = await response.json();
@@ -952,8 +957,13 @@ export function HomePageEditor() {
       });
       if (!response.ok) throw new Error(`Image upload failed (${response.status})`);
       const uploaded = await response.json();
-      const index = braidBookStyles.findIndex((style) => style.id === styleId);
-      if (index >= 0) updateBraidBookStyle(index, 'image', uploaded.imageUrl || uploaded.url);
+      const imageUrl = uploaded.imageUrl || uploaded.url;
+      if (styleId === 0) {
+        setBraidBookCover((current) => ({ ...current, image: imageUrl }));
+      } else {
+        const index = braidBookStyles.findIndex((style) => style.id === styleId);
+        if (index >= 0) updateBraidBookStyle(index, 'image', imageUrl);
+      }
       setStatusMessage('Image uploaded. Save the Braid Book to publish it.');
     } catch (error) {
       console.error('Failed to upload Braid Book image:', error);
@@ -1081,6 +1091,8 @@ export function HomePageEditor() {
                 <FlipBook3D
                   editMode
                   styles={braidBookStyles}
+                  cover={braidBookCover}
+                  onChangeCover={(field: string, value: string) => setBraidBookCover((current) => ({ ...current, [field]: value }))}
                   onChangeStyle={(id: number, field: string, value: string | string[]) => {
                     const index = braidBookStyles.findIndex((style) => style.id === id);
                     if (index >= 0) updateBraidBookStyle(index, field as keyof BraidBookStyle, value);
