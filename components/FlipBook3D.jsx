@@ -468,22 +468,6 @@ function RightPageContent({ s, mobile = false }) {
   );
 }
 
-function MobileBookPage({ spread }) {
-  return (
-    <article className="braid-book-mobile" aria-label={spread.title}>
-      <div className="braid-book-mobile-image">{spread.leftEl}</div>
-      <div className="braid-book-mobile-content">
-        <RightPageContent s={spread} mobile />
-        {spread.styleLink && (
-          <a className="braid-book-mobile-link" href={spread.styleLink}>
-            Select This Style
-          </a>
-        )}
-      </div>
-    </article>
-  );
-}
-
 export default function FlipBook3D() {
   const [current, setCurrent] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
@@ -808,10 +792,8 @@ export default function FlipBook3D() {
           Page {current + 1} of {total}: {spreads[current].title}
         </p>
 
-        <MobileBookPage spread={spreads[current]} />
-
         <div
-          className="braid-book-desktop"
+          className="braid-book-stage"
           onTouchStart={onTouchStart} 
           onTouchEnd={onTouchEnd}
           style={{ 
