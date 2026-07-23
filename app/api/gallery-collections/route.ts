@@ -18,19 +18,26 @@ export async function GET() {
     }
 
     const categories = await response.json();
-    console.log('Gallery categories response:', JSON.stringify(categories, null, 2));
-
+    let featuredIds: number[] = [];
+    try {
+      const settingsResponse = await fetch(`${API_URL}/api/homepage-settings`, { cache: 'no-store' });
+      if (settingsResponse.ok) {
+        const settings = await settingsResponse.json();
+        const parsed = JSON.parse(settings.galleryCollections || '[]');
+        if (Array.isArray(parsed)) {
+          featuredIds = parsed.map(Number).filter(Number.isFinite);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load featured gallery selection:', error);
+    }
     // Transform categories to collections format
-    const collections = categories
+    const mappedCollections = categories
       .map((category: any) => {
-        console.log(`Processing category: ${category.name}, id: ${category.id}, flippingImages:`, category.flippingImages);
-
         const imageUrls =
           category.flippingImages?.length > 0
             ? category.flippingImages
             : category.fallbackImages ?? [];
-
-        console.log(`Images for ${category.name}:`, imageUrls);
 
         return {
           id: category.id,
@@ -39,10 +46,14 @@ export async function GET() {
           images: [...new Set(imageUrls)], // Remove duplicates
         };
       })
-      .filter((collection: any) => collection.images.length > 0)
-      .slice(0, 4);
+      .filter((collection: any) => collection.images.length > 0);
 
-    console.log('Final collections:', JSON.stringify(collections, null, 2));
+    const collections = featuredIds.length > 0
+      ? featuredIds
+          .map((id) => mappedCollections.find((collection: any) => collection.id === id))
+          .filter(Boolean)
+          .slice(0, 4)
+      : mappedCollections.slice(0, 4);
 
     return NextResponse.json({ collections });
   } catch (error) {

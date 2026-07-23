@@ -62,6 +62,15 @@ export function HomePageEditor() {
   const [isFlipping, setIsFlipping] = useState<Record<number, boolean>>({});
   const [loadingCollections, setLoadingCollections] = useState(false);
   const [savingGalleryCollections, setSavingGalleryCollections] = useState(false);
+  const [loadErrors, setLoadErrors] = useState<string[]>([]);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [pendingHeroDeleteId, setPendingHeroDeleteId] = useState<number | null>(null);
+  const collectionSnapshotRef = useRef<GalleryCollection[] | null>(null);
+  const selectionSnapshotRef = useRef<number[] | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const tempWelcomeItemSrcRef = useRef('');
 
   // Helper function to get auth token
   const getAuthToken = () => {
@@ -69,6 +78,34 @@ export function HomePageEditor() {
       return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
     }
     return null;
+  };
+
+  const validateVideo = (file: File) => {
+    const allowed = ['video/mp4', 'video/quicktime', 'video/webm'];
+    if (!allowed.includes(file.type)) return 'Only MP4, MOV, and WebM videos are supported.';
+    if (file.size > 50 * 1024 * 1024) return 'Video must be 50MB or smaller.';
+    return '';
+  };
+
+  const validateImage = (file: File) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) return 'Only JPEG, PNG, and WebP images are supported.';
+    if (file.size > 10 * 1024 * 1024) return 'Image must be 10MB or smaller.';
+    return '';
+  };
+
+  const deleteUnusedVideo = async (url: string) => {
+    if (!url) return;
+    const token = getAuthToken();
+    if (!token) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/upload/welcome-video?path=${encodeURIComponent(url)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (error) {
+      console.error('Failed to clean up unused video:', error);
+    }
   };
 
   // Helper function to convert media URLs to backend URLs
@@ -140,24 +177,91 @@ export function HomePageEditor() {
   };
 
   useEffect(() => {
-    loadHeroImages();
-    loadGalleryCollections();
-    loadWelcomeItems();
+    const load = async () => {
+      setLoading(true);
+      setLoadErrors([]);
+      const results = await Promise.allSettled([
+        loadHeroImages(),
+        loadGalleryCollections(),
+        loadWelcomeItems(),
+      ]);
+      const labels = ['Hero media', 'Gallery', 'Homepage settings'];
+      setLoadErrors(results.flatMap((result, index) =>
+        result.status === 'rejected' ? [`${labels[index]} could not be loaded.`] : []
+      ));
+      setLoading(false);
+    };
+    void load();
   }, []);
+
+  const modalOpen = isEditModalOpen || editingWelcomeItemIndex !== null ||
+    isGalleryEditOpen || editingCollectionIndex !== null || isFooterVideoEditOpen;
+
+  useEffect(() => {
+    tempWelcomeItemSrcRef.current = tempWelcomeItemSrc;
+  }, [tempWelcomeItemSrc]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleModalKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        void deleteUnusedVideo(tempWelcomeItemSrcRef.current);
+        setTempWelcomeItemSrc('');
+        if (collectionSnapshotRef.current) setGalleryCollections(collectionSnapshotRef.current);
+        if (selectionSnapshotRef.current) setSelectedCollectionIndices(selectionSnapshotRef.current);
+        collectionSnapshotRef.current = null;
+        selectionSnapshotRef.current = null;
+        setIsEditModalOpen(false);
+        setEditingWelcomeItemIndex(null);
+        setIsGalleryEditOpen(false);
+        setEditingCollectionIndex(null);
+        setIsFooterVideoEditOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+      const focusable = dialog?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleModalKeyDown);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('[role="dialog"] button')?.focus());
+    return () => {
+      document.removeEventListener('keydown', handleModalKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocusRef.current?.focus();
+    };
+  }, [modalOpen]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!tempWelcomeItemSrc && !collectionSnapshotRef.current && !selectionSnapshotRef.current) return;
+      event.preventDefault();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [tempWelcomeItemSrc, editingCollectionIndex, isGalleryEditOpen]);
 
   const loadHeroImages = async () => {
     try {
-      console.log("Admin API_BASE_URL:", API_BASE_URL);
-
       const res = await fetch(`${API_BASE_URL}/api/gallery?isHero=true`);
-
-      console.log("Admin hero response status:", res.status);
+      if (!res.ok) throw new Error(`Hero request failed (${res.status})`);
 
       if (res.ok) {
         const data = await res.json();
-
-        console.log("Admin hero API data:", data);
-        console.log("Admin hero API count:", Array.isArray(data) ? data.length : 0);
 
         if (Array.isArray(data) && data.length > 0) {
           const convertedImages: HeroImage[] = data
@@ -193,9 +297,6 @@ export function HomePageEditor() {
             })
             .filter((image): image is HeroImage => image !== null);
 
-          console.log("Converted Hero images:", convertedImages);
-          console.log("Converted Hero image count:", convertedImages.length);
-
           setHeroImages(convertedImages);
         } else {
           setHeroImages([]);
@@ -203,8 +304,7 @@ export function HomePageEditor() {
       }
     } catch (error) {
       console.error("Failed to load hero images:", error);
-    } finally {
-      setLoading(false);
+      throw error;
     }
   };
 
@@ -213,10 +313,11 @@ export function HomePageEditor() {
       const res = await fetch(`${API_BASE_URL}/api/homepage-settings`);
 
       if (!res.ok) {
-        return;
+        throw new Error(`Homepage settings request failed (${res.status})`);
       }
 
       const data = await res.json();
+      setLastSavedAt(data.updatedAt || null);
 
       // Load video settings from the database, not old browser storage.
       setHeroVideoSrc(resolveMediaUrl(data.heroVideoSrc));
@@ -242,26 +343,48 @@ export function HomePageEditor() {
       }
     } catch (error) {
       console.error("Failed to load homepage settings:", error);
+      throw error;
     }
   };
 
   const loadGalleryCollections = async () => {
     try {
-      const categories = await fetchCategoryDisplayPhotos();
+      const [categories, settingsRes] = await Promise.all([
+        fetchCategoryDisplayPhotos(),
+        fetch(`${API_BASE_URL}/api/homepage-settings`),
+      ]);
 
-      const collections: GalleryCollection[] = categories
+      let featuredIds: number[] = [];
+      if (settingsRes.ok) {
+        const settings = await settingsRes.json();
+        try {
+          const parsed = JSON.parse(settings.galleryCollections || '[]');
+          if (Array.isArray(parsed)) featuredIds = parsed.map(Number).filter(Number.isFinite);
+        } catch {
+          featuredIds = [];
+        }
+      }
+
+      const availableCollections: GalleryCollection[] = categories
         .map((category) => ({
           id: category.id,
           title: category.name,
           slug: category.slug,
           images: getDisplayImages(category),
         }))
-        .filter((collection) => collection.images.length > 0)
-        .slice(0, 4);
+        .filter((collection) => collection.images.length > 0);
+
+      const collections = featuredIds.length > 0
+        ? featuredIds
+            .map((id) => availableCollections.find((collection) => collection.id === id))
+            .filter((collection): collection is GalleryCollection => Boolean(collection))
+            .slice(0, 4)
+        : availableCollections.slice(0, 4);
 
       setGalleryCollections(collections);
     } catch (error) {
       console.error('Failed to load gallery collections:', error);
+      throw error;
     }
   };
 
@@ -292,20 +415,20 @@ export function HomePageEditor() {
     try {
       const categories = await fetchCategoryDisplayPhotos();
 
-      const collections: GalleryCollection[] = categories.map((category) => ({
-        id: category.id,
-        title: category.name,
-        slug: category.slug,
-        images: getDisplayImages(category),
-      }));
+      const collections: GalleryCollection[] = categories
+        .map((category) => ({
+          id: category.id,
+          title: category.name,
+          slug: category.slug,
+          images: getDisplayImages(category),
+        }))
+        .filter((collection) => collection.images.length > 0);
 
       setAllCollections(collections);
 
       const featuredIndices = collections
         .map((collection, index) =>
-          galleryCollections.some(
-            (featured) => featured.title === collection.title
-          )
+          galleryCollections.some((featured) => featured.id === collection.id)
             ? index
             : -1
         )
@@ -315,6 +438,7 @@ export function HomePageEditor() {
     } catch (error) {
       console.error("Failed to load all collections:", error);
       setAllCollections([]);
+      setStatusMessage('Gallery collections could not be loaded. Please retry.');
     } finally {
       setLoadingCollections(false);
     }
@@ -343,10 +467,31 @@ export function HomePageEditor() {
       if (!res.ok) {
         throw new Error(`Failed to save homepage settings: ${res.status}`);
       }
+      const saved = await res.json();
+      setLastSavedAt(saved.updatedAt || new Date().toISOString());
+      setStatusMessage('Hero settings saved.');
+      return true;
     } catch (error) {
       console.error('Failed to save homepage settings:', error);
-      alert('Hero video uploaded, but the homepage setting was not saved.');
+      setStatusMessage('Hero settings could not be saved. Please retry.');
+      return false;
     }
+  };
+
+  const saveFeaturedCollections = async (collections: GalleryCollection[]) => {
+    const token = getAuthToken();
+    if (!token) throw new Error('Admin session expired. Please sign in again.');
+    const res = await fetch(`${API_BASE_URL}/api/homepage-settings/gallery-collections`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ galleryCollections: JSON.stringify(collections.map(({ id }) => id)) }),
+    });
+    if (!res.ok) throw new Error(`Featured gallery save failed (${res.status})`);
+    const saved = await res.json();
+    setLastSavedAt(saved.updatedAt || new Date().toISOString());
   };
 
   const saveGalleryCollections = async (collections: GalleryCollection[]) => {
@@ -355,14 +500,16 @@ export function HomePageEditor() {
     setSavingGalleryCollections(true);
 
     try {
-      for (const collection of collections) {
-        await saveCategoryFlippingImages(collection.id, collection.images);
-      }
+      await Promise.all(collections.map((collection) =>
+        saveCategoryFlippingImages(collection.id, collection.images)
+      ));
 
+      setLastSavedAt(new Date().toISOString());
+      setStatusMessage('Gallery changes saved.');
       return true;
     } catch (error) {
       console.error('Failed to save gallery collections:', error);
-      alert('Failed to save gallery collection changes.');
+      setStatusMessage('Gallery changes could not be saved. Please retry.');
       return false;
     } finally {
       setSavingGalleryCollections(false);
@@ -375,21 +522,21 @@ export function HomePageEditor() {
 
     // Check if maximum limit of 5 images is reached
     if (heroImages.length >= 5) {
-      alert('Maximum of 5 hero images allowed. Please delete some images before uploading more.');
+      setStatusMessage('Maximum of 5 Hero images allowed. Delete an image before uploading another.');
       return;
     }
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Invalid file type. Please upload a JPEG, PNG, or WebP image.');
+      setStatusMessage('Invalid file type. Upload a JPEG, PNG, or WebP image.');
       return;
     }
 
     // Validate file size (10MB max)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      alert('File is too large. Maximum size is 10MB.');
+      setStatusMessage('Image must be 10MB or smaller.');
       return;
     }
 
@@ -415,25 +562,32 @@ export function HomePageEditor() {
       
       if (res.ok) {
         await loadHeroImages();
-        alert("Hero image uploaded successfully!");
+        setStatusMessage('Hero image uploaded successfully.');
       } else {
         const error = await res.json().catch(() => ({
           error: "Upload failed",
         }));
 
-        alert(error.error || "Failed to upload image");
+        setStatusMessage(error.error || 'Hero image could not be uploaded.');
       }
     } catch (error) {
       console.error('Failed to upload image:', error);
-      alert('Failed to upload image');
+      setStatusMessage('Hero image could not be uploaded.');
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   };
 
   const handleGalleryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, collectionIndex: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const validationError = validateImage(file);
+    if (validationError) {
+      setStatusMessage(validationError);
+      e.target.value = '';
+      return;
+    }
 
     const formData = new FormData();
     formData.append('file', file);
@@ -456,19 +610,21 @@ export function HomePageEditor() {
         const imageUrl = data.url || data.path || data.imageUrl;
 
         // Add the new image to the collection
-        const newCollections = [...galleryCollections];
-        newCollections[collectionIndex].images.push(imageUrl);
-        setGalleryCollections(newCollections);
-
-        // Save to API
-        await saveGalleryCollections(newCollections);
+        setGalleryCollections((collections) => collections.map((collection, index) =>
+          index === collectionIndex
+            ? { ...collection, images: [...collection.images, imageUrl] }
+            : collection
+        ));
+        setStatusMessage('Image uploaded. Select Save Changes to publish it.');
       } else {
         const error = await res.json().catch(() => ({ error: 'Upload failed' }));
-        alert(error.error || 'Failed to upload image');
+        setStatusMessage(error.error || 'Gallery image could not be uploaded.');
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('Failed to upload image');
+      setStatusMessage('Gallery image could not be uploaded.');
+    } finally {
+      e.target.value = '';
     }
   };
 
@@ -478,12 +634,19 @@ export function HomePageEditor() {
     const file = e.target.files?.[0];
 
     if (!file) return;
+    const validationError = validateVideo(file);
+    if (validationError) {
+      setStatusMessage(validationError);
+      e.target.value = '';
+      return;
+    }
 
     setFooterVideoUploading(true);
 
     const formData = new FormData();
     formData.append("file", file);
 
+    let uploadedVideoPath = '';
     try {
       const token = getAuthToken();
 
@@ -516,6 +679,7 @@ export function HomePageEditor() {
       if (!savedVideoPath) {
         throw new Error("No video URL was returned from the upload.");
       }
+      uploadedVideoPath = savedVideoPath;
 
       const resolvedVideoUrl = resolveMediaUrl(savedVideoPath);
 
@@ -542,23 +706,32 @@ export function HomePageEditor() {
 
       setFooterVideoSrc(resolvedVideoUrl);
 
-      alert("Footer video uploaded and saved successfully.");
+      setStatusMessage('Footer video uploaded and saved successfully.');
     } catch (error) {
       console.error("Footer video upload failed:", error);
 
-      alert(
+      if (uploadedVideoPath) await deleteUnusedVideo(uploadedVideoPath);
+
+      setStatusMessage(
         error instanceof Error
           ? error.message
           : "Footer video upload failed."
       );
     } finally {
       setFooterVideoUploading(false);
+      e.target.value = '';
     }
   };
 
   const handleWelcomeItemUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const validationError = validateVideo(file);
+    if (validationError) {
+      setStatusMessage(validationError);
+      e.target.value = '';
+      return;
+    }
 
     setWelcomeItemUploading(true);
     const formData = new FormData();
@@ -596,15 +769,22 @@ export function HomePageEditor() {
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('Failed to upload video');
+      setStatusMessage('Welcome video could not be uploaded.');
     } finally {
       setWelcomeItemUploading(false);
+      e.target.value = '';
     }
   };
 
   const handleHeroVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const validationError = validateVideo(file);
+    if (validationError) {
+      setStatusMessage(validationError);
+      e.target.value = '';
+      return;
+    }
 
     setHeroVideoUploading(true);
     const formData = new FormData();
@@ -637,24 +817,28 @@ export function HomePageEditor() {
         setHeroVideoSrc(resolvedVideoUrl);
         setUseHeroVideo(true);
 
-        await saveHomepageSettings(resolvedVideoUrl, true);
+        const saved = await saveHomepageSettings(resolvedVideoUrl, true);
+        if (!saved) {
+          await deleteUnusedVideo(videoUrl);
+          setHeroVideoSrc('');
+          setUseHeroVideo(false);
+        }
       } else {
         throw new Error(`Upload failed: ${res.status}`);
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('Failed to upload hero video');
+      setStatusMessage('Hero video could not be uploaded.');
     } finally {
       setHeroVideoUploading(false);
+      e.target.value = '';
     }
   };
 
   const handleDeleteImage = async (image: HeroImage) => {
-    const confirmed = window.confirm(
-      "Delete this Hero image permanently? It will be removed from the carousel, database, and server uploads."
-    );
-
-    if (!confirmed) {
+    if (pendingHeroDeleteId !== image.id) {
+      setPendingHeroDeleteId(image.id);
+      setStatusMessage('Select the highlighted delete button again to permanently remove this Hero image.');
       return;
     }
 
@@ -679,10 +863,11 @@ export function HomePageEditor() {
 
       await loadHeroImages();
 
-      alert("Hero image permanently deleted.");
+      setPendingHeroDeleteId(null);
+      setStatusMessage('Hero image permanently deleted.');
     } catch (error) {
       console.error("Failed to delete Hero image:", error);
-      alert("The Hero image could not be deleted.");
+      setStatusMessage('The Hero image could not be deleted.');
     }
   };
 
@@ -698,18 +883,37 @@ export function HomePageEditor() {
     <>
       <div className="h-full flex flex-col bg-neutral-50 dark:bg-neutral-900">
         {/* Header */}
-        <div className="bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-8 py-6 shrink-0">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Hero Section Preview
-            </p>
+        <div className="bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-4 md:px-8 py-4 shrink-0">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">Homepage Preview</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400" aria-live="polite">
+                {statusMessage || (lastSavedAt ? `Last saved ${new Date(lastSavedAt).toLocaleString()}` : 'Review and edit each homepage section')}
+              </p>
+            </div>
+            <div className="inline-flex rounded border border-neutral-300 p-1" aria-label="Preview size">
+              {(['desktop', 'mobile'] as const).map((mode) => (
+                <button key={mode} type="button" aria-pressed={previewMode === mode}
+                  onClick={() => setPreviewMode(mode)}
+                  className={`px-3 py-1 text-xs capitalize ${previewMode === mode ? 'bg-neutral-900 text-white' : 'text-neutral-600'}`}>
+                  {mode}
+                </button>
+              ))}
+            </div>
           </div>
+          {loadErrors.length > 0 && (
+            <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-2 border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+              <span>{loadErrors.join(' ')}</span>
+              <button type="button" className="underline" onClick={() => window.location.reload()}>Retry</button>
+            </div>
+          )}
         </div>
 
         {/* Hero Preview */}
         <div className="flex-1 overflow-y-auto bg-[#F6F5F1] dark:bg-neutral-900">
+          <div className={`mx-auto overflow-hidden transition-[max-width] ${previewMode === 'mobile' ? 'max-w-[390px] border-x border-neutral-300' : 'max-w-none'}`}>
           <div className="relative">
-            <Hero videoSrc={heroVideoSrc} useVideo={useHeroVideo} />
+            <Hero videoSrc={heroVideoSrc} useVideo={useHeroVideo} previewImages={heroImages.map(({ imageUrl }) => imageUrl)} />
             {/* Edit button overlay */}
             <button
               onClick={() => setIsEditModalOpen(true)}
@@ -732,7 +936,7 @@ export function HomePageEditor() {
 
           {/* Gallery Collection Section */}
           <div className="relative">
-            <Gallery />
+            <Gallery previewCollections={galleryCollections} interactive={false} />
             {/* Edit button overlays */}
             <div className="absolute inset-0 pointer-events-none">
               <div className="container mx-auto px-6 md:px-8 lg:px-12 h-full flex flex-col justify-center">
@@ -741,6 +945,7 @@ export function HomePageEditor() {
                   <button
                     onClick={async () => {
                       await loadAllCollections();
+                      selectionSnapshotRef.current = [...selectedCollectionIndices];
                       setIsGalleryEditOpen(true);
                     }}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-neutral-700 text-white text-sm rounded-sm hover:bg-neutral-800 dark:hover:bg-neutral-600 transition-colors shadow-lg"
@@ -755,7 +960,10 @@ export function HomePageEditor() {
                   {galleryCollections.map((collection, index) => (
                     <div key={index} className="aspect-[4/5] relative">
                       <button
-                        onClick={() => setEditingCollectionIndex(index)}
+                        onClick={() => {
+                          collectionSnapshotRef.current = structuredClone(galleryCollections);
+                          setEditingCollectionIndex(index);
+                        }}
                         className="absolute top-6 right-6 z-10 p-2 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm rounded-full shadow-lg transition-colors"
                         title={`Edit ${collection.title}`}
                       >
@@ -774,6 +982,8 @@ export function HomePageEditor() {
             {/* Edit button overlay for footer video - positioned over video area */}
             <div className="lg:hidden absolute top-32 left-1/2 -translate-x-1/2 z-20">
               <button
+                type="button"
+                aria-label="Edit Footer video"
                 onClick={() => setIsFooterVideoEditOpen(true)}
                 className="inline-flex items-center justify-center w-10 h-10 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm text-neutral-900 dark:text-white rounded-full hover:bg-white dark:hover:bg-neutral-700 transition-colors shadow-lg"
               >
@@ -782,6 +992,8 @@ export function HomePageEditor() {
             </div>
             <div className="hidden lg:block absolute top-14 right-12 md:right-16 lg:right-24 z-20">
               <button
+                type="button"
+                aria-label="Edit Footer video"
                 onClick={() => setIsFooterVideoEditOpen(true)}
                 className="inline-flex items-center justify-center w-10 h-10 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm text-neutral-900 dark:text-white rounded-full hover:bg-white dark:hover:bg-neutral-700 transition-colors shadow-lg"
               >
@@ -789,12 +1001,13 @@ export function HomePageEditor() {
               </button>
             </div>
           </div>
+          </div>
         </div>
       </div>
 
       {/* Hero Edit Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div role="dialog" aria-modal="true" aria-label="Manage Hero Section" className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-neutral-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
@@ -805,6 +1018,8 @@ export function HomePageEditor() {
                 </p>
               </div>
               <button
+                type="button"
+                aria-label="Close Hero editor"
                 onClick={() => setIsEditModalOpen(false)}
                 className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-full transition-colors"
               >
@@ -825,10 +1040,15 @@ export function HomePageEditor() {
                       </p>
                     </div>
                     <button
+                      type="button"
+                      role="switch"
+                      aria-checked={useHeroVideo}
+                      aria-label="Use a background video"
                       onClick={async () => {
                         const nextUseHeroVideo = !useHeroVideo;
                         setUseHeroVideo(nextUseHeroVideo);
-                        await saveHomepageSettings(heroVideoSrc, nextUseHeroVideo);
+                        const saved = await saveHomepageSettings(heroVideoSrc, nextUseHeroVideo);
+                        if (!saved) setUseHeroVideo(!nextUseHeroVideo);
                       }}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         useHeroVideo ? 'bg-blue-600' : 'bg-neutral-200 dark:bg-neutral-700'
@@ -876,9 +1096,14 @@ export function HomePageEditor() {
                         />
                         <button
                           onClick={async () => {
+                            const previousVideoSrc = heroVideoSrc;
                             setHeroVideoSrc('');
                             setUseHeroVideo(false);
-                            await saveHomepageSettings('', false);
+                            const saved = await saveHomepageSettings('', false);
+                            if (!saved) {
+                              setHeroVideoSrc(previousVideoSrc);
+                              setUseHeroVideo(true);
+                            }
                           }}
                           className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
                         >
@@ -937,8 +1162,10 @@ export function HomePageEditor() {
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <button
                                 onClick={() => handleDeleteImage(image)}
-                                className="p-3 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors"
-                                aria-label={`Permanently delete Hero image ${index + 1}`}
+                                className={`p-3 text-white rounded-full transition-colors ${pendingHeroDeleteId === image.id ? 'bg-red-800 ring-4 ring-red-300' : 'bg-red-600 hover:bg-red-700'}`}
+                                aria-label={pendingHeroDeleteId === image.id
+                                  ? `Confirm permanent deletion of Hero image ${index + 1}`
+                                  : `Permanently delete Hero image ${index + 1}`}
                               >
                                 <Trash2 className="h-5 w-5" />
                               </button>
@@ -961,7 +1188,7 @@ export function HomePageEditor() {
 
       {/* Welcome Item Edit Modal */}
       {editingWelcomeItemIndex !== null && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div role="dialog" aria-modal="true" aria-label="Edit Welcome Item" className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-neutral-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
@@ -974,7 +1201,10 @@ export function HomePageEditor() {
                 </p>
               </div>
               <button
+                type="button"
+                aria-label="Close Welcome item editor"
                 onClick={() => {
+                  void deleteUnusedVideo(tempWelcomeItemSrc);
                   setEditingWelcomeItemIndex(null);
                   setTempWelcomeItemSrc('');
                 }}
@@ -1055,7 +1285,10 @@ export function HomePageEditor() {
             {/* Modal Footer */}
             <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 shrink-0 flex gap-3">
               <button
+                type="button"
+                aria-label="Cancel Welcome item changes"
                 onClick={() => {
+                  void deleteUnusedVideo(tempWelcomeItemSrc);
                   setEditingWelcomeItemIndex(null);
                   setTempWelcomeItemSrc('');
                 }}
@@ -1069,7 +1302,6 @@ export function HomePageEditor() {
                   if (tempWelcomeItemSrc) {
                     const newItems = [...welcomeItems];
                     newItems[editingWelcomeItemIndex!].src = tempWelcomeItemSrc;
-                    setWelcomeItems(newItems);
                     // Save to backend
                     try {
                       const token = getAuthToken();
@@ -1078,14 +1310,22 @@ export function HomePageEditor() {
                         headers['Authorization'] = `Bearer ${token}`;
                       }
 
-                      await fetch(`${API_BASE_URL}/api/homepage-settings/welcome-items`, {
+                      const response = await fetch(`${API_BASE_URL}/api/homepage-settings/welcome-items`, {
                         method: 'POST',
                         headers,
                         body: JSON.stringify({ welcomeItems: JSON.stringify(newItems) }),
                       });
+                      if (!response.ok) {
+                        throw new Error(`Welcome items save failed (${response.status})`);
+                      }
+                      const saved = await response.json();
+                      setWelcomeItems(newItems);
+                      setLastSavedAt(saved.updatedAt || new Date().toISOString());
+                      setStatusMessage('Welcome item saved.');
                     } catch (error) {
                       console.error('Failed to save welcome items:', error);
-                      alert('Failed to save welcome items');
+                      setStatusMessage('Welcome item could not be saved. Please retry.');
+                      return;
                     }
                   }
                   setEditingWelcomeItemIndex(null);
@@ -1102,7 +1342,7 @@ export function HomePageEditor() {
 
       {/* Gallery Collection Edit Modal */}
       {editingCollectionIndex !== null && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div role="dialog" aria-modal="true" aria-label="Edit Gallery Collection" className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-neutral-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
@@ -1115,7 +1355,13 @@ export function HomePageEditor() {
                 </p>
               </div>
               <button
-                onClick={() => setEditingCollectionIndex(null)}
+                type="button"
+                aria-label="Close Gallery collection editor"
+                onClick={() => {
+                  if (collectionSnapshotRef.current) setGalleryCollections(collectionSnapshotRef.current);
+                  collectionSnapshotRef.current = null;
+                  setEditingCollectionIndex(null);
+                }}
                 className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-full transition-colors"
               >
                 <X className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
@@ -1125,23 +1371,6 @@ export function HomePageEditor() {
             {/* Modal Content */}
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-6">
-                {/* Collection Title */}
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    Collection Title
-                  </label>
-                  <input
-                    type="text"
-                    value={galleryCollections[editingCollectionIndex].title}
-                    onChange={(e) => {
-                      const newCollections = [...galleryCollections];
-                      newCollections[editingCollectionIndex].title = e.target.value;
-                      setGalleryCollections(newCollections);
-                    }}
-                    className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-400"
-                  />
-                </div>
-
                 {/* Collection Slug */}
                 {/*<div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
@@ -1190,7 +1419,8 @@ export function HomePageEditor() {
                               )
                             );
                           }}
-                          className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+                          aria-label={`Remove image ${imgIndex + 1}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -1223,7 +1453,11 @@ export function HomePageEditor() {
               <button
                 type="button"
                 disabled={savingGalleryCollections}
-                onClick={() => setEditingCollectionIndex(null)}
+                onClick={() => {
+                  if (collectionSnapshotRef.current) setGalleryCollections(collectionSnapshotRef.current);
+                  collectionSnapshotRef.current = null;
+                  setEditingCollectionIndex(null);
+                }}
                 className="flex-1 px-4 py-2 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 text-sm rounded-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
@@ -1239,6 +1473,7 @@ export function HomePageEditor() {
                   if (!saved) return;
 
                   setEditingCollectionIndex(null);
+                  collectionSnapshotRef.current = null;
 
                   void loadGalleryCollections();
                   void loadAllCollections();
@@ -1254,7 +1489,7 @@ export function HomePageEditor() {
 
       {/* Gallery Selection Modal */}
       {isGalleryEditOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div role="dialog" aria-modal="true" aria-label="Manage Featured Gallery Collections" className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-neutral-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
@@ -1270,7 +1505,13 @@ export function HomePageEditor() {
                 </p>
               </div>
               <button
-                onClick={() => setIsGalleryEditOpen(false)}
+                type="button"
+                aria-label="Close featured Gallery editor"
+                onClick={() => {
+                  if (selectionSnapshotRef.current) setSelectedCollectionIndices(selectionSnapshotRef.current);
+                  selectionSnapshotRef.current = null;
+                  setIsGalleryEditOpen(false);
+                }}
                 className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-full transition-colors"
               >
                 <X className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
@@ -1423,7 +1664,11 @@ export function HomePageEditor() {
               <button
                 type="button"
                 disabled={savingGalleryCollections}
-                onClick={() => setIsGalleryEditOpen(false)}
+                onClick={() => {
+                  if (selectionSnapshotRef.current) setSelectedCollectionIndices(selectionSnapshotRef.current);
+                  selectionSnapshotRef.current = null;
+                  setIsGalleryEditOpen(false);
+                }}
                 className="flex-1 px-4 py-2 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 text-sm rounded-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
@@ -1442,7 +1687,16 @@ export function HomePageEditor() {
 
                   if (!saved) return;
 
+                  try {
+                    await saveFeaturedCollections(selectedCollections);
+                  } catch (error) {
+                    console.error('Failed to save featured gallery selection:', error);
+                    setStatusMessage('Gallery images saved, but the featured selection was not saved. Please retry.');
+                    return;
+                  }
+
                   setIsGalleryEditOpen(false);
+                  selectionSnapshotRef.current = null;
 
                   void loadGalleryCollections();
                   void loadAllCollections();
@@ -1462,7 +1716,7 @@ export function HomePageEditor() {
 
       {/* Footer Video Edit Modal */}
       {isFooterVideoEditOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div role="dialog" aria-modal="true" aria-label="Edit Footer Video" className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-neutral-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
@@ -1473,6 +1727,8 @@ export function HomePageEditor() {
                 </p>
               </div>
               <button
+                type="button"
+                aria-label="Close Footer video editor"
                 onClick={() => setIsFooterVideoEditOpen(false)}
                 className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-full transition-colors"
               >

@@ -12,29 +12,31 @@ const DEFAULT_HERO_IMAGES = [
   '/hero/ISIMG-680068.JPG'
 ];
 
-export default function Hero({ videoSrc, useVideo }) {
-  const [images, setImages] = useState(DEFAULT_HERO_IMAGES);
+export default function Hero({ videoSrc, useVideo, previewImages = /** @type {any} */ (null) }) {
+  const [images, setImages] = useState(previewImages || DEFAULT_HERO_IMAGES);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (previewImages) {
+      setImages(previewImages.length > 0 ? previewImages : DEFAULT_HERO_IMAGES);
+      setCurrentImageIndex(0);
+      return;
+    }
     // Try to fetch images from API, but keep defaults if it fails
     fetch('/api/hero-images')
       .then(res => res.json())
       .then(data => {
-        console.log('Hero images API response:', data);
-        console.log('Source:', data.source);
-        console.log('Number of images:', data.images?.length);
         if (data.images && data.images.length > 0) {
           setImages(data.images);
           setCurrentImageIndex(0);
         }
       })
       .catch(err => {
-        console.log('Using default hero images (API unavailable)', err);
+        console.error('Using default hero images because the API is unavailable.', err);
         // Keep default images on error
       });
-  }, []);
+  }, [previewImages]);
 
   useEffect(() => {
     if (images.length === 0 || reduceMotion) return;

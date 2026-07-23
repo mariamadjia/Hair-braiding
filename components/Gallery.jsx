@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useReducedMotion } from 'framer-motion';
 
-export default function Gallery() {
+export default function Gallery({ previewCollections = /** @type {any} */ (null), interactive = true }) {
   const router = useRouter();
   const [currentImageIndex, setCurrentImageIndex] = useState({});
   const [isFlipping, setIsFlipping] = useState({});
@@ -17,6 +17,12 @@ export default function Gallery() {
 
   // Load collections from API
   useEffect(() => {
+    if (previewCollections) {
+      setCollections(previewCollections);
+      setLoading(false);
+      setLoadError(false);
+      return;
+    }
     const loadCollections = async () => {
       setLoadError(false);
       setLoading(true);
@@ -40,7 +46,7 @@ export default function Gallery() {
     };
 
     loadCollections();
-  }, [retryCount]);
+  }, [retryCount, previewCollections]);
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -153,16 +159,16 @@ export default function Gallery() {
               <div 
                 key={index} 
                 className="group cursor-pointer"
-                role="link"
-                tabIndex={0}
-                aria-label={`View ${item.title} styles`}
+                role={interactive ? 'link' : undefined}
+                tabIndex={interactive ? 0 : -1}
+                aria-label={interactive ? `View ${item.title} styles` : `${item.title} preview`}
                 onClick={() => {
-                  if (item.slug) {
+                  if (interactive && item.slug) {
                     router.push(`/${item.slug}`);
                   }
                 }}
                 onKeyDown={(event) => {
-                  if ((event.key === 'Enter' || event.key === ' ') && item.slug) {
+                  if (interactive && (event.key === 'Enter' || event.key === ' ') && item.slug) {
                     event.preventDefault();
                     router.push(`/${item.slug}`);
                   }
