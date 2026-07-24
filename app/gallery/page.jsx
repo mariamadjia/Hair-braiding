@@ -34,7 +34,6 @@ export default function GalleryPage({
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [expandedCategories, setExpandedCategories] = useState({});
   const [selectedSubcategories, setSelectedSubcategories] = useState([]);
-  const [selectedAudience, setSelectedAudience] = useState('All');
   const [sortOrder, setSortOrder] = useState('featured');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,7 +58,6 @@ export default function GalleryPage({
     setSearchQuery(params.get('q') || '');
     setSelectedFilter(params.get('category') || 'All');
     setSelectedSubcategories(params.getAll('style'));
-    setSelectedAudience(params.get('audience') || 'All');
     setSortOrder(params.get('sort') || 'featured');
     setFiltersReady(true);
   }, []);
@@ -133,11 +131,6 @@ export default function GalleryPage({
       images: rawCardImages.map(toProxyUrl),
       link: `/${cat.slug}`,
       tags: [cat.name],
-      audience: /(^|[-\s])men('?s)?($|[-\s])/i.test(`${cat.slug} ${cat.name}`)
-        ? 'Men'
-        : /(kid|child|youth)/i.test(`${cat.slug} ${cat.name}`)
-          ? 'Kids'
-          : 'Women',
       subcategoryData,
     };
   }).filter((category) =>
@@ -162,7 +155,6 @@ export default function GalleryPage({
         // Find the category
         const category = galleryCategories.find(cat => cat.link === categoryLink);
         if (!category) return null;
-        if (selectedAudience !== 'All' && category.audience !== selectedAudience) return null;
         
         // Find the subcategory
         const subcategory = category.subcategoryData.find(sub => sub.slug === subcategorySlug);
@@ -183,14 +175,12 @@ export default function GalleryPage({
           bookingLink: `/booking/${categorySlug}/${subcategorySlug}`,
           description: `${category.title} - ${subcategory.name}`,
           tags: category.tags,
-          audience: category.audience,
         };
       }).filter(Boolean));
     }
 
     const matchesFilter = (cat) =>
-      (selectedFilter === 'All' || cat.tags.includes(selectedFilter)) &&
-      (selectedAudience === 'All' || cat.audience === selectedAudience);
+      selectedFilter === 'All' || cat.tags.includes(selectedFilter);
 
     if (!searchQuery) {
       return sortItems(galleryCategories
@@ -235,14 +225,13 @@ export default function GalleryPage({
           bookingLink: `/booking/${categorySlug}/${sub.slug}`,
           description: `${category.title} - ${sub.name}`,
           tags: category.tags,
-          audience: category.audience,
           displayOrder: category.displayOrder,
         });
       });
     });
 
     return sortItems(items);
-  }, [galleryCategories, selectedSubcategories, selectedFilter, selectedAudience, sortOrder, searchQuery]);
+  }, [galleryCategories, selectedSubcategories, selectedFilter, sortOrder, searchQuery]);
 
   // Auto-rotate images for main category cards only
   useEffect(() => {
@@ -283,12 +272,11 @@ export default function GalleryPage({
     const params = new URLSearchParams();
     if (searchQuery) params.set('q', searchQuery);
     if (selectedFilter !== 'All') params.set('category', selectedFilter);
-    if (selectedAudience !== 'All') params.set('audience', selectedAudience);
     if (sortOrder !== 'featured') params.set('sort', sortOrder);
     selectedSubcategories.forEach((subcategory) => params.append('style', subcategory));
     const query = params.toString();
     window.history.replaceState(null, '', query ? `/gallery?${query}` : '/gallery');
-  }, [filtersReady, searchQuery, selectedFilter, selectedAudience, sortOrder, selectedSubcategories]);
+  }, [filtersReady, searchQuery, selectedFilter, sortOrder, selectedSubcategories]);
 
   useEffect(() => {
     if (!isModalOpen) return;
@@ -342,7 +330,6 @@ export default function GalleryPage({
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedFilter('All');
-    setSelectedAudience('All');
     setSelectedSubcategories([]);
     setSortOrder('featured');
   };
@@ -350,15 +337,8 @@ export default function GalleryPage({
   const hasActiveFilters =
     Boolean(searchQuery) ||
     selectedFilter !== 'All' ||
-    selectedAudience !== 'All' ||
     selectedSubcategories.length > 0 ||
     sortOrder !== 'featured';
-
-  const audienceOptions = ['All', 'Women', 'Men', 'Kids'].filter(
-    (audience) =>
-      audience === 'All' ||
-      galleryCategories.some((category) => category.audience === audience)
-  );
 
   const renderFilters = () => (
     <>
@@ -506,34 +486,6 @@ export default function GalleryPage({
                   </div>
                 </div>
 
-                <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filter gallery by audience">
-                  {audienceOptions.map((audience) => (
-                    <button
-                      key={audience}
-                      type="button"
-                      onClick={() => setSelectedAudience(audience)}
-                      className={`min-h-10 whitespace-nowrap rounded-full border px-5 text-[11px] font-semibold uppercase tracking-wider transition ${
-                        selectedAudience === audience
-                          ? 'border-[#2C1810] bg-[#2C1810] text-white'
-                          : 'border-[#D8CEC5] bg-white text-neutral-600 hover:border-[#2C1810]'
-                      }`}
-                    >
-                      {audience === 'All' ? 'All audiences' : audience}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex min-h-7 flex-wrap items-center gap-2 text-xs text-neutral-600">
-                  <span className="font-medium text-[#2C1810]">
-                    {[
-                      selectedAudience !== 'All' ? selectedAudience : null,
-                      selectedFilter !== 'All' ? selectedFilter : null,
-                      selectedSubcategories.length > 0 ? `${selectedSubcategories.length} selected styles` : null,
-                    ].filter(Boolean).join(' · ') || 'All gallery styles'}
-                  </span>
-                  <span>· {displayItems.length} results</span>
-                  {hasActiveFilters && <button type="button" onClick={clearFilters} className="font-semibold text-[#7A4935] underline underline-offset-4">Clear filters</button>}
-                </div>
               </div>
 
               {/* Gallery Grid */}
