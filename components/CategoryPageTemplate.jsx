@@ -144,7 +144,7 @@ export default function CategoryPageTemplate({
 
         {/* Modal for Image Viewing */}
         {isModalOpen && selectedCategory && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#1B0F0A]/95 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="category-gallery-title" onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#1B0F0A]/95 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label={`${selectedCategory.name} photo viewer`} onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
             <div className="relative my-auto grid w-full max-w-7xl overflow-hidden rounded-[5px] border border-[#D4BDAA] bg-[#F8F1E8] shadow-[0_30px_90px_rgba(0,0,0,0.45)] lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
               <button onClick={closeModal} className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-[#B8754E] bg-[#FBF6EF]/95 text-[#2C1810] transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#B8754E] focus:ring-offset-2 sm:right-6 sm:top-6" aria-label="Close gallery viewer">
                 <X size={20} />
@@ -166,30 +166,46 @@ export default function CategoryPageTemplate({
                   )}
                 </div>
 
-                {selectedCategory.images.length > 1 && (
-                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1 sm:justify-center">
-                    {selectedCategory.images.map((image, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentImageIndex(index)}
-                        className={`relative h-16 w-14 flex-shrink-0 overflow-hidden rounded-[3px] transition sm:h-20 sm:w-[72px] ${
-                          index === currentImageIndex
-                            ? 'ring-2 ring-[#B8754E] ring-offset-2 ring-offset-[#F8F1E8]'
-                            : 'opacity-65 hover:opacity-100'
-                        }`}
-                        aria-label={`View image ${index + 1} of ${selectedCategory.images.length}`}
-                        aria-current={index === currentImageIndex ? 'true' : undefined}
-                      >
-                        <img src={image} alt={`${selectedCategory.name} thumbnail ${index + 1}`} className="h-full w-full object-cover" />
-                      </button>
+                <div className="mt-4 flex min-h-16 items-center justify-between gap-4">
+                  <div className="flex gap-2 overflow-x-auto px-1 py-1 sm:justify-center lg:flex-1">
+                    {selectedCategory.images.length > 1 && selectedCategory.images.map((image, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`relative h-16 w-14 flex-shrink-0 overflow-hidden rounded-[3px] transition sm:h-20 sm:w-[72px] ${
+                            index === currentImageIndex
+                              ? 'ring-2 ring-[#B8754E] ring-offset-2 ring-offset-[#F8F1E8]'
+                              : 'opacity-65 hover:opacity-100'
+                          }`}
+                          aria-label={`View image ${index + 1} of ${selectedCategory.images.length}`}
+                          aria-current={index === currentImageIndex ? 'true' : undefined}
+                        >
+                          <img src={image} alt={`${selectedCategory.name} thumbnail ${index + 1}`} className="h-full w-full object-cover" />
+                        </button>
                     ))}
                   </div>
-                )}
+                  <p className="flex-shrink-0 pr-1 text-sm tracking-[0.08em] text-[#5E4D44] lg:hidden">
+                    <span className="font-semibold text-[#B0633E]">{String(currentImageIndex + 1).padStart(2, '0')}</span>
+                    {' / '}
+                    {String(selectedCategory.images.length).padStart(2, '0')}
+                  </p>
+                </div>
               </div>
 
-              <div className="flex min-h-[360px] flex-col justify-center px-6 py-12 sm:px-10 lg:min-h-0 lg:px-12 lg:py-16">
+              <div className="flex flex-col px-6 py-7 sm:px-10 lg:hidden">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#B0633E]">{categoryName} Styles</p>
-                <h2 id="category-gallery-title" className="mt-6 max-w-md font-serif text-4xl leading-[0.98] tracking-[-0.03em] text-[#2C1810] sm:text-5xl lg:text-6xl">
+                <h2 className="mt-4 font-serif text-4xl leading-none tracking-[-0.03em] text-[#2C1810] sm:text-5xl">
+                  {selectedCategory.name}
+                </h2>
+                <span aria-hidden="true" className="mt-5 h-0.5 w-14 bg-[#B8754E]" />
+                <button onClick={() => router.push(`/booking/${categorySlug}/${selectedCategory.slug}`)} className="mt-7 min-h-14 w-full bg-[#2C1810] px-8 text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#45271B] focus:outline-none focus:ring-2 focus:ring-[#B8754E] focus:ring-offset-2">
+                  Book This Style
+                </button>
+              </div>
+
+              <div className="hidden min-h-0 flex-col justify-center px-12 py-16 lg:flex">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#B0633E]">{categoryName} Styles</p>
+                <h2 className="mt-6 max-w-md font-serif text-6xl leading-[0.98] tracking-[-0.03em] text-[#2C1810]">
                   {selectedCategory.name}
                 </h2>
                 <span aria-hidden="true" className="mt-8 h-0.5 w-14 bg-[#B8754E]" />
