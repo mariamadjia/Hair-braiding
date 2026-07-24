@@ -609,17 +609,10 @@ export default function BookingCalendar({
             {step === "time" && (
                 <div className="h-[430px] space-y-7 overflow-y-auto p-8 sm:h-[580px]">
                     {selectedDate && (
-                        <div className="flex items-center justify-between gap-4 rounded-[5px] border border-[#D9C4B3] bg-[#FCF6F0] px-4 py-3.5">
-                            <div>
-                                <p className="font-serif text-lg text-[#2C1810]">
-                                    {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                                </p>
-                                <p className="mt-1 text-[11px] text-[#76675E]">Your selected appointment date</p>
-                            </div>
-                            <span className="flex shrink-0 items-center gap-1.5 text-[10px] font-medium text-[#8B735F]">
-                                <Clock className="h-3.5 w-3.5" />
-                                Central Time
-                            </span>
+                        <div className="rounded-[5px] border border-[#D9C4B3] bg-[#FCF6F0] px-4 py-3.5">
+                            <p className="font-serif text-lg text-[#2C1810]">
+                                {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                            </p>
                         </div>
                     )}
                     {loading ? (
