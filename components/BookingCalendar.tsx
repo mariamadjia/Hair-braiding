@@ -50,6 +50,8 @@ const MONTHS = [
     "July", "August", "September", "October", "November", "December"
 ];
 
+const PENDING_PAYMENT_STORAGE_KEY = "ah-braiding-pending-payment";
+
 const POLICY_SECTIONS = [
     {
         title: "Deposits & Approval",
@@ -123,6 +125,61 @@ export default function BookingCalendar({
     useEffect(() => {
         onStepChange?.(step);
     }, [onStepChange, step]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const clientSecret = params.get("payment_intent_client_secret");
+        const returnedPaymentIntentId = params.get("payment_intent");
+        if (!clientSecret || !returnedPaymentIntentId || !stripePromise) return;
+
+        let cancelled = false;
+        void stripePromise.then(async (stripe) => {
+            if (!stripe || cancelled) return;
+
+            const { paymentIntent, error: paymentError } = await stripe.retrievePaymentIntent(clientSecret);
+            if (cancelled) return;
+
+            if (paymentError || !paymentIntent) {
+                setError(paymentError?.message || "We could not verify your payment authorization.");
+                return;
+            }
+
+            if (paymentIntent.status !== "requires_capture" && paymentIntent.status !== "succeeded") {
+                setError(`Payment authorization was not completed. Status: ${paymentIntent.status}`);
+                return;
+            }
+
+            const storedBooking = sessionStorage.getItem(PENDING_PAYMENT_STORAGE_KEY);
+            if (storedBooking) {
+                try {
+                    const restored = JSON.parse(storedBooking);
+                    const restoredDate = new Date(restored.date);
+                    setSelectedDate(restoredDate);
+                    setSelectedTime(restored.time);
+                    setFormData(restored.formData);
+                    setCreatedAppointmentId(restored.appointmentId);
+                    setConfirmationNumber(`APT-${restored.appointmentId}`);
+                    onDateSelected?.(restoredDate);
+                    onTimeSelected?.(restored.time);
+                } catch {
+                    // The authorization is still valid even if local display state cannot be restored.
+                }
+            }
+
+            sessionStorage.removeItem(PENDING_PAYMENT_STORAGE_KEY);
+            setStep("success");
+
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete("payment_intent");
+            cleanUrl.searchParams.delete("payment_intent_client_secret");
+            cleanUrl.searchParams.delete("redirect_status");
+            window.history.replaceState({}, "", cleanUrl.toString());
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [onDateSelected, onTimeSelected, stripePromise]);
 
     useEffect(() => {
         if (!policyModalOpen) return;
@@ -436,6 +493,12 @@ export default function BookingCalendar({
             setCreatedAppointmentId(result.id);
             setPaymentToken(result.paymentToken);
             setConfirmationNumber(`APT-${result.id}`);
+            sessionStorage.setItem(PENDING_PAYMENT_STORAGE_KEY, JSON.stringify({
+                appointmentId: result.id,
+                date: selectedDate.toISOString(),
+                time: selectedTime,
+                formData,
+            }));
             setStep("payment");
         } catch (error) {
             console.error('Booking error:', error);
@@ -952,7 +1015,6 @@ export default function BookingCalendar({
                             amount: depositAmountCents,
                             currency: "usd",
                             capture_method: "manual",
-                            paymentMethodTypes: ["card"],
                             appearance: {
                                 theme: "stripe",
                                 variables: {

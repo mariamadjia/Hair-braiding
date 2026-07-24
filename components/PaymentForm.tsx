@@ -77,12 +77,17 @@ export default function PaymentForm({
       const result = await response.json();
       console.log("Payment intent created:", result);
 
+      const returnUrl = new URL(window.location.href);
+      returnUrl.searchParams.delete("payment_intent");
+      returnUrl.searchParams.delete("payment_intent_client_secret");
+      returnUrl.searchParams.delete("redirect_status");
+
       // Confirm payment using the client secret
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
         clientSecret: result.clientSecret,
         confirmParams: {
-          return_url: window.location.href,
+          return_url: returnUrl.toString(),
           payment_method_data: {
             billing_details: {
               name: customerName,
@@ -135,7 +140,6 @@ export default function PaymentForm({
                 radios: true,
                 spacedAccordionItems: false,
               },
-              paymentMethodOrder: ["card", "apple_pay"],
               defaultValues: {
                 billingDetails: {
                   name: customerName,
@@ -150,7 +154,7 @@ export default function PaymentForm({
               },
               wallets: {
                 applePay: "auto",
-                googlePay: "never",
+                googlePay: "auto",
               },
               terms: {
                 card: "never",
