@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.BACKEND_API_URL || 'http://localhost:8080';
+const API_BASE_URL =
+  process.env.BACKEND_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:8080';
+const NORMALIZED_API_BASE_URL = API_BASE_URL.replace(/\/+$/, '');
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,15 +16,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Security: Only allow requests to the configured backend
-    const allowedBase = API_BASE_URL;
+    const allowedBase = NORMALIZED_API_BASE_URL;
     let targetUrl = imageUrl;
 
     // Convert Gallery path to new image serving endpoint
     if (imageUrl.startsWith('/Gallery/uploads/')) {
       const filename = imageUrl.split('/').pop();
-      targetUrl = `${API_BASE_URL}/api/gallery/image/${filename}`;
+      targetUrl = `${NORMALIZED_API_BASE_URL}/api/gallery/image/${filename}`;
     } else if (!imageUrl.startsWith('http')) {
-      targetUrl = `${API_BASE_URL}${imageUrl}`;
+      targetUrl = `${NORMALIZED_API_BASE_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
     }
 
     const allowedUrl = new URL(allowedBase);
