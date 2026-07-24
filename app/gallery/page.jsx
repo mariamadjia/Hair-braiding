@@ -453,7 +453,7 @@ export default function GalleryPage({
       {!editMode && <Navbar />}
       <div className="min-h-screen bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.8),transparent_36%),linear-gradient(135deg,#FBF7F0_0%,#F5EDE3_58%,#F8F2EA_100%)]">
         {/* Main Content with Sidebar and Gallery */}
-        <div className="mx-auto max-w-[1720px] px-5 py-10 md:px-8 lg:px-12 lg:py-12">
+        <div className="container mx-auto px-5 py-10 md:px-8 lg:px-12 lg:py-12">
           <div className="flex flex-col gap-8 lg:flex-row lg:gap-10">
             {/* Left Sidebar - Filters */}
             <aside className="hidden w-72 flex-shrink-0 lg:block">
