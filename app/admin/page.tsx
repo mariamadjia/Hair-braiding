@@ -18,6 +18,7 @@ const AppointmentManagement = lazy(() => import("@/components/AppointmentManagem
 const AvailabilitySettings = lazy(() => import("@/components/AvailabilitySettings").then(m => ({ default: m.default })));
 const CustomerTable = lazy(() => import("@/components/CustomerTable").then(m => ({ default: m.default })));
 const CustomerDetails = lazy(() => import("@/components/CustomerDetails").then(m => ({ default: m.default })));
+const PricingManagement = lazy(() => import("./components/PricingManagement").then(m => ({ default: m.PricingManagement })));
 
 type Selection =
     | { type: "root" }
@@ -820,8 +821,16 @@ export default function AdminPage() {
                     </div>
                 )}
 
+                {currentSection === "pricing" && (
+                    <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
+                        <Suspense fallback={<div className="p-12 text-neutral-500">Loading pricing…</div>}>
+                            <PricingManagement token={token} />
+                        </Suspense>
+                    </div>
+                )}
+
                 {/* Placeholder for other sections */}
-                {currentSection !== "categories" && currentSection !== "dashboard" && currentSection !== "gallery" && currentSection !== "profile" && currentSection !== "homepage" && currentSection !== "bookings" && currentSection !== "availability" && currentSection !== "customers" && (
+                {currentSection !== "categories" && currentSection !== "dashboard" && currentSection !== "gallery" && currentSection !== "profile" && currentSection !== "homepage" && currentSection !== "bookings" && currentSection !== "availability" && currentSection !== "customers" && currentSection !== "pricing" && (
                     <div className="flex-1 overflow-y-auto p-8 bg-neutral-50 dark:bg-neutral-900">
                         <div className="max-w-4xl mx-auto">
                             <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-12 text-center">

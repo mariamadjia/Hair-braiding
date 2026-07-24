@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePublicServices } from "@/lib/utils/admin-route";
 
 export const runtime = "nodejs";
 
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             return NextResponse.json(await response.json().catch(() => ({ error: "Unable to load service" })), { status: response.status });
         }
         const data = await response.json();
+        revalidatePublicServices();
         return NextResponse.json(data);
     } catch (error) {
         console.error('Failed to get service:', error);
@@ -53,6 +55,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         }
         
         const data = await response.json();
+        revalidatePublicServices();
         return NextResponse.json(data);
     } catch (error) {
         console.error('Failed to update service:', error);
