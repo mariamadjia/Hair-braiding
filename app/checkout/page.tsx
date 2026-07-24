@@ -122,7 +122,7 @@ function CheckoutContent() {
     return (
         <>
             <Navbar />
-            <section className="relative isolate overflow-hidden border-b border-[#E8D9CC] bg-[#FBF7F1] pb-20 pt-8 text-neutral-900 md:pb-24 md:pt-10">
+            <section className="relative isolate overflow-hidden bg-[#FBF7F1] pb-28 pt-8 text-neutral-900 md:pb-32 md:pt-10">
                 <img
                     src="/Gallery/Salon.JPG"
                     alt=""
@@ -136,7 +136,7 @@ function CheckoutContent() {
                 />
 
                 <div className="container relative z-10 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-                    <ol className="mx-auto mb-10 grid max-w-3xl grid-cols-4" aria-label="Booking progress">
+                    <ol className="mx-auto mb-11 grid max-w-3xl grid-cols-4" aria-label="Booking progress">
                         {["Style", "Date & Time", "Details", "Payment"].map((label, index) => {
                             const stepNumber = index + 1;
                             const isActive = activeProgressStep === stepNumber;
@@ -173,24 +173,32 @@ function CheckoutContent() {
                         <h1 className="text-4xl font-light leading-tight tracking-wide text-[#2C1810] md:text-6xl">
                             <span className="font-serif">Complete Your Appointment</span>
                         </h1>
+                        <div className="mx-auto mt-6 flex max-w-[360px] items-center gap-2.5 text-[#B8754E]" aria-hidden="true">
+                            <span className="h-px flex-1 bg-[#CDB5A2]" />
+                            <svg className="h-7 w-24" viewBox="0 0 96 28" fill="none">
+                                <path d="M4 18c13 0 15-9 26-9 7 0 10 4 10 8 0 3-2 5-5 5-2 0-4-2-4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                                <path d="M92 18c-13 0-15-9-26-9-7 0-10 4-10 8 0 3 2 5 5 5 2 0 4-2 4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                                <path d="M48 1l3.2 7.8L59 12l-7.8 3.2L48 23l-3.2-7.8L37 12l7.8-3.2L48 1Z" fill="currentColor" />
+                            </svg>
+                            <span className="h-px flex-1 bg-[#CDB5A2]" />
+                        </div>
                         <p className="mx-auto mt-3 max-w-3xl text-sm font-light leading-relaxed tracking-[0.04em] text-[#665850] md:text-[16px]">
                           Review your selection, choose a date, and continue to payment.
                         </p>
-                        <div className="mx-auto mt-7 flex max-w-[220px] items-center gap-3" aria-hidden="true">
-                            <span className="h-px flex-1 bg-[#CDB5A2]" />
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#B8754E]" />
-                            <span className="h-px flex-1 bg-[#CDB5A2]" />
-                        </div>
                     </div>
                 </div>
 
                 <div
-                    className="absolute -bottom-16 left-1/2 h-24 w-[115%] -translate-x-1/2 rounded-[50%] bg-[#FBF7F1]"
+                    className="absolute -bottom-[74px] left-1/2 h-28 w-[118%] -translate-x-1/2 rounded-[50%] border-t border-[#D4B49C] bg-[#FBF7F1]"
+                    aria-hidden="true"
+                />
+                <div
+                    className="absolute -bottom-[82px] left-1/2 h-28 w-[118%] -translate-x-1/2 rounded-[50%] border-t border-[#E7D4C5]"
                     aria-hidden="true"
                 />
             </section>
 
-            <section className="min-h-[70vh] bg-[#FBF7F1] pb-24 md:pb-32">
+            <section className="relative z-20 -mt-10 min-h-[70vh] bg-transparent pb-24 md:-mt-12 md:pb-32">
                 <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                         {/* Left Column - Appointment Summary */}
