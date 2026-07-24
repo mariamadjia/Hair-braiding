@@ -520,17 +520,23 @@ export default function BookingCalendar({
             {/* Header */}
             <div className="bg-[#FFFDF9] border-b border-[#E9DDD3] px-8 py-6">
                 <div className="flex items-center justify-between">
-                    {step === "date" || step === "time" ? (
+                    {step === "date" || step === "time" || step === "details" ? (
                         <>
                             <div>
                                 <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#B0633E]">
-                                    {step === "date" ? "Choose Your Visit" : "Choose Your Time"}
+                                    {step === "date" && "Choose Your Visit"}
+                                    {step === "time" && "Choose Your Time"}
+                                    {step === "details" && "Complete Your Request"}
                                 </p>
                                 <h3 className="mt-2 font-serif text-3xl font-normal tracking-[-0.02em] text-[#2C1810] sm:text-4xl">
-                                    {step === "date" ? "Select a Date" : "Select a Time"}
+                                    {step === "date" && "Select a Date"}
+                                    {step === "time" && "Select a Time"}
+                                    {step === "details" && "Your Details"}
                                 </h3>
                                 <p className="mt-3 text-xs tracking-wide text-[#76675E]">
-                                    {step === "date" ? "Select a date to view available times" : "Choose an available appointment start"}
+                                    {step === "date" && "Select a date to view available times"}
+                                    {step === "time" && "Choose an available appointment start"}
+                                    {step === "details" && "Tell us how to contact you about your appointment"}
                                 </p>
                             </div>
                             {step === "date" && (
@@ -546,8 +552,7 @@ export default function BookingCalendar({
                                 <Calendar className="h-5 w-5 text-neutral-700" />
                             </div>
                             <h3 className="text-xl font-light tracking-tight text-neutral-900">
-                            {step === "details" && "Your Details"}
-                            {step === "payment" && "Payment"}
+                                {step === "payment" && "Payment"}
                             </h3>
                         </div>
                     )}
@@ -564,7 +569,7 @@ export default function BookingCalendar({
                     )}
                 </div>
                 
-                {selectedDate && (
+                {selectedDate && step === "payment" && (
                     <div className="mt-4 pt-4 border-t border-neutral-200/50">
                         <p className="text-sm text-neutral-600 font-light">
                             {selectedDate.toLocaleDateString('en-US', { 
@@ -812,11 +817,11 @@ export default function BookingCalendar({
 
             {/* Details Form */}
             {step === "details" && (
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="h-[430px] space-y-5 overflow-y-auto p-8 sm:h-[580px]">
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                         <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2 flex items-center gap-2">
-                                <User className="h-4 w-4" />
+                            <label className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#665850]">
+                                <User className="h-4 w-4 text-[#B0633E]" />
                                 First Name
                             </label>
                             <Input
@@ -825,11 +830,11 @@ export default function BookingCalendar({
                                 value={formData.firstName}
                                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                                 placeholder="First name"
-                                className="rounded-none border-neutral-300 focus:border-neutral-900"
+                                className="h-12 rounded-[4px] border-[#D9C4B3] bg-[#FFFDF9] text-[#2C1810] focus:border-[#B8754E] focus:ring-[#B8754E]"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2">
+                            <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#665850]">
                                 Last Name
                             </label>
                             <Input
@@ -838,14 +843,14 @@ export default function BookingCalendar({
                                 value={formData.lastName}
                                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                                 placeholder="Last name"
-                                className="rounded-none border-neutral-300 focus:border-neutral-900"
+                                className="h-12 rounded-[4px] border-[#D9C4B3] bg-[#FFFDF9] text-[#2C1810] focus:border-[#B8754E] focus:ring-[#B8754E]"
                             />
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2 flex items-center gap-2">
-                            <Mail className="h-4 w-4" />
+                        <label className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#665850]">
+                            <Mail className="h-4 w-4 text-[#B0633E]" />
                             Email Address
                         </label>
                         <Input
@@ -854,13 +859,13 @@ export default function BookingCalendar({
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             placeholder="your@email.com"
-                            className="rounded-none border-neutral-300 focus:border-neutral-900"
+                            className="h-12 rounded-[4px] border-[#D9C4B3] bg-[#FFFDF9] text-[#2C1810] focus:border-[#B8754E] focus:ring-[#B8754E]"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2 flex items-center gap-2">
-                            <Phone className="h-4 w-4" />
+                        <label className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#665850]">
+                            <Phone className="h-4 w-4 text-[#B0633E]" />
                             Phone Number
                         </label>
                         <Input
@@ -869,13 +874,13 @@ export default function BookingCalendar({
                             value={formData.phoneNumber}
                             onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                             placeholder="+1 (555) 123-4567"
-                            className="rounded-none border-neutral-300 focus:border-neutral-900"
+                            className="h-12 rounded-[4px] border-[#D9C4B3] bg-[#FFFDF9] text-[#2C1810] focus:border-[#B8754E] focus:ring-[#B8754E]"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2 flex items-center gap-2">
-                            <MessageSquare className="h-4 w-4" />
+                        <label className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#665850]">
+                            <MessageSquare className="h-4 w-4 text-[#B0633E]" />
                             Additional Notes (Optional)
                         </label>
                         <textarea
@@ -883,7 +888,7 @@ export default function BookingCalendar({
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                             placeholder="Any special requests or information..."
                             rows={4}
-                            className="w-full px-3 py-2 border border-neutral-300 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900 text-sm"
+                            className="w-full rounded-[4px] border border-[#D9C4B3] bg-[#FFFDF9] px-3 py-3 text-sm text-[#2C1810] focus:border-[#B8754E] focus:outline-none focus:ring-1 focus:ring-[#B8754E]"
                         />
                     </div>
 
