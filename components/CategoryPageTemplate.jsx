@@ -152,7 +152,7 @@ export default function CategoryPageTemplate({
 
               <div className="border-b border-[#E3D4C8] p-4 pb-3 sm:p-6 sm:pb-4 lg:border-b-0 lg:border-r lg:p-8">
                 <div className="relative aspect-[4/5] overflow-hidden rounded-[3px] bg-[#E8DED4] sm:aspect-[4/3] lg:aspect-[5/4]">
-                  <img src={selectedCategory.images[currentImageIndex]} alt={`${selectedCategory.name} ${currentImageIndex + 1}`} className="h-full w-full object-cover" />
+                  <img src={selectedCategory.images[currentImageIndex]} alt={`${selectedCategory.name} ${currentImageIndex + 1}`} className="h-full w-full object-contain" />
 
                   {selectedCategory.images.length > 1 && (
                     <>
