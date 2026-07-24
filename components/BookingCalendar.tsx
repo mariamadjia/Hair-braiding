@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Calendar, Clock, User, Mail, MessageSquare, Loader2, Phone, X, ShieldCheck, LockKeyhole } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Calendar, Clock, User, Mail, Loader2, Phone, X, ShieldCheck, LockKeyhole } from "lucide-react";
 import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -875,20 +875,6 @@ export default function BookingCalendar({
                             onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                             placeholder="+1 (555) 123-4567"
                             className="h-12 rounded-[4px] border-[#D9C4B3] bg-[#FFFDF9] text-[#2C1810] focus:border-[#B8754E] focus:ring-[#B8754E]"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#665850]">
-                            <MessageSquare className="h-4 w-4 text-[#B0633E]" />
-                            Additional Notes (Optional)
-                        </label>
-                        <textarea
-                            value={formData.notes}
-                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                            placeholder="Any special requests or information..."
-                            rows={4}
-                            className="w-full rounded-[4px] border border-[#D9C4B3] bg-[#FFFDF9] px-3 py-3 text-sm text-[#2C1810] focus:border-[#B8754E] focus:outline-none focus:ring-1 focus:ring-[#B8754E]"
                         />
                     </div>
 
