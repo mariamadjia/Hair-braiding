@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { AlertCircle, CalendarDays, ChevronLeft, Clock, DollarSign, Info, Lock } from "lucide-react";
+import { AlertCircle, CalendarDays, ChevronLeft, Clock, DollarSign, Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import BookingCalendar from "@/components/BookingCalendar";
@@ -225,69 +225,6 @@ function CheckoutContent() {
                                 </div>
                             </div>
 
-    {/* Deposit Policy Card */}
-    <div className="bg-[#F6F5F1] rounded-2xl p-6 md:p-8 border border-neutral-200/70 shadow-[0_10px_35px_rgba(0,0,0,0.06)]">
-        <div className="flex items-center gap-3 mb-5">
-            <svg
-                className="w-10 h-10 text-amber-600 flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-            >
-                <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-            </svg>
-
-            <h3 className="text-sm md:text-base font-semibold text-neutral-900 uppercase tracking-[0.18em]">
-                Deposit Policy
-            </h3>
-        </div>
-
-        <div className="space-y-4">
-            {[
-                "Your card will be authorized today, but not charged.",
-                "Payment is processed only after admin approval.",
-                "If denied, the hold is released immediately.",
-                "Fully refunded if your appointment is denied.",
-            ].map((item, index) => (
-                <div key={index} className="flex items-start gap-3">
-                    <svg
-                        className="w-6 h-6 text-amber-600 flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 12l2 2 4-4"
-                        />
-                    </svg>
-
-                    <span className="text-neutral-700 leading-relaxed">
-                        {item}
-                    </span>
-                </div>
-            ))}
-        </div>
-
-        {/* Secure Note */}
-        <div className="flex items-center gap-3 mt-6 pt-5 border-t border-neutral-200">
-            <div className="w-9 h-9 bg-neutral-100 rounded-full flex items-center justify-center">
-                <Lock className="h-4 w-4 text-neutral-600" />
-            </div>
-
-            <span className="text-sm text-neutral-600 leading-relaxed">
-                Your payment information is secure and encrypted.
-            </span>
-        </div>
-    </div>
 </div>
                         {/* Right Column - Embedded Calendar */}
                         <div className="flex flex-col">
