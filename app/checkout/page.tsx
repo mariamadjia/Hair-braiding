@@ -188,14 +188,29 @@ function CheckoutContent() {
                     </div>
                 </div>
 
-                <div
-                    className="absolute -bottom-[74px] left-1/2 h-28 w-[118%] -translate-x-1/2 rounded-[50%] border-t border-[#D4B49C] bg-[#FBF7F1]"
+                <svg
+                    className="pointer-events-none absolute -bottom-[72px] left-0 h-24 w-full"
+                    viewBox="0 0 1440 96"
+                    preserveAspectRatio="none"
                     aria-hidden="true"
-                />
-                <div
-                    className="absolute -bottom-[82px] left-1/2 h-28 w-[118%] -translate-x-1/2 rounded-[50%] border-t border-[#E7D4C5]"
-                    aria-hidden="true"
-                />
+                >
+                    <path
+                        d="M0 5 Q720 108 1440 5 L1440 96 L0 96 Z"
+                        fill="#FBF7F1"
+                    />
+                    <path
+                        d="M0 5 Q720 108 1440 5"
+                        fill="none"
+                        stroke="#D4B49C"
+                        strokeWidth="1"
+                    />
+                    <path
+                        d="M0 13 Q720 116 1440 13"
+                        fill="none"
+                        stroke="#E7D4C5"
+                        strokeWidth="1"
+                    />
+                </svg>
             </section>
 
             <section className="relative z-20 -mt-10 min-h-[70vh] bg-transparent pb-24 md:-mt-12 md:pb-32">
