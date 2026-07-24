@@ -124,7 +124,7 @@ export default function Chatbot() {
     return (
       <>
         {/* Prompt Bubble */}
-        {showPrompt && (
+        {showPrompt && pathname !== '/checkout' && (
           <div className="fixed bottom-6 right-24 z-50 hidden animate-bounce motion-reduce:animate-none sm:block">
             <div className="bg-white dark:bg-neutral-800 rounded-2xl rounded-br-sm shadow-2xl p-4 max-w-sm border border-neutral-200 dark:border-neutral-700 relative">
               <button
