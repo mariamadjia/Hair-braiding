@@ -20,7 +20,6 @@ export default function Chatbot() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [isMounted, setIsMounted] = useState(false);
-  const [imageError, setImageError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Ensure component only renders on client
@@ -138,18 +137,12 @@ export default function Chatbot() {
               <div className="flex items-start gap-3">
                 {/* Assistant Character */}
                 <div className="w-16 h-16 flex-shrink-0">
-                  {imageError ? (
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#2C1810] to-[#4a3828] rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-md">
-                      AH
-                    </div>
-                  ) : (
-                    <img
-                      src="/chatbot-assistant.png"
-                      alt="Customer Service Assistant"
-                      className="w-full h-full object-cover rounded-full border-2 border-[#2C1810] shadow-md"
-                      onError={() => setImageError(true)}
-                    />
-                  )}
+                  <div
+                    className="w-16 h-16 bg-gradient-to-br from-[#2C1810] to-[#4a3828] rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-md"
+                    aria-hidden="true"
+                  >
+                    AH
+                  </div>
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-1">

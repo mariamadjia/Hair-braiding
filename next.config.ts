@@ -12,6 +12,34 @@ const nextConfig: NextConfig = {
       {
         pathname: '/api/proxy-image',
       },
+      {
+        pathname: '/hero/**',
+        search: '',
+      },
+      {
+        pathname: '/Gallery/**',
+        search: '',
+      },
+      {
+        pathname: '/uploads/**',
+        search: '',
+      },
+      {
+        pathname: '/images/**',
+        search: '',
+      },
+      {
+        pathname: '/contact/**',
+        search: '',
+      },
+      {
+        pathname: '/services/**',
+        search: '',
+      },
+      {
+        pathname: '/logo/**',
+        search: '',
+      },
     ],
     remotePatterns: [
       {
