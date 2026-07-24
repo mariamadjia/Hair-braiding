@@ -608,13 +608,6 @@ export default function BookingCalendar({
             {/* Time Selection */}
             {step === "time" && (
                 <div className="h-[430px] space-y-7 overflow-y-auto p-8 sm:h-[580px]">
-                    {selectedDate && (
-                        <div className="rounded-[5px] border border-[#D9C4B3] bg-[#FCF6F0] px-4 py-3.5">
-                            <p className="font-serif text-lg text-[#2C1810]">
-                                {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                            </p>
-                        </div>
-                    )}
                     {loading ? (
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 text-[#8B735F]">
