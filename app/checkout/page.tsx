@@ -127,11 +127,11 @@ function CheckoutContent() {
                     src="/checkout/checkout-hero.png"
                     alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 -z-30 h-full w-full scale-[1.02] object-cover object-center opacity-55 blur-[1.5px]"
+                    className="absolute inset-0 -z-30 h-full w-full scale-[1.01] object-cover object-center opacity-90"
                 />
-                <div className="absolute inset-0 -z-20 bg-[#FBF7F1]/55" aria-hidden="true" />
+                <div className="absolute inset-0 -z-20 bg-[#FBF7F1]/25" aria-hidden="true" />
                 <div
-                    className="absolute inset-0 -z-10 bg-gradient-to-b from-[#FFFDF9]/30 via-[#FBF7F1]/45 to-[#FBF7F1]/85"
+                    className="absolute inset-0 -z-10 bg-gradient-to-b from-[#FFFDF9]/15 via-[#FBF7F1]/25 to-[#FBF7F1]/65"
                     aria-hidden="true"
                 />
 
