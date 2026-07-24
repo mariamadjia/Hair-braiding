@@ -99,22 +99,22 @@ export default function JoinUs() {
     <>
       <Navbar />
       <main className="min-h-screen bg-[radial-gradient(circle_at_15%_10%,rgba(255,255,255,0.75),transparent_28%),radial-gradient(circle_at_85%_18%,rgba(226,207,190,0.24),transparent_30%),#F7F1E9] text-[#2C1810]">
-        <section className="mx-auto max-w-[1320px] px-5 py-12 sm:px-8 md:py-16 lg:px-16 lg:py-20 xl:px-20">
-          <header className="mx-auto mb-12 max-w-3xl text-center lg:mb-16">
-            <h1 className="font-serif text-5xl font-normal tracking-[-0.035em] sm:text-[3.5rem] lg:text-6xl">Join Our Team</h1>
+        <section className="mx-auto max-w-[1480px] px-5 py-12 sm:px-8 md:py-16 lg:px-12 lg:py-20">
+          <header className="mx-auto mb-10 max-w-3xl text-center lg:mb-12">
+            <h1 className="font-serif text-5xl font-normal tracking-[-0.035em] sm:text-6xl lg:text-7xl">Join Our Team</h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-[#4E4A47] sm:text-base">
               We’re looking for talented braiders who value beautiful work,<br className="hidden sm:block" />
               thoughtful service, and an elevated client experience.
             </p>
           </header>
 
-          <div className="grid items-stretch gap-10 lg:grid-cols-2 lg:gap-14">
+          <div className="grid items-stretch gap-7 lg:grid-cols-2 lg:gap-8">
             <article className="overflow-hidden rounded-[24px] border border-[#DDCFC4] bg-white/28 shadow-[0_18px_50px_rgba(73,42,28,0.06)]">
               <div className="relative aspect-[16/9] overflow-hidden bg-[#E9E0D6]">
                 <Image src="/Gallery/Salon.JPG" alt="The bright, professional AH Braiding studio" fill priority sizes="(max-width: 1023px) 100vw, 48vw" className="object-cover" />
               </div>
               <div className="px-6 pb-7 pt-6 sm:px-9 sm:pb-9">
-                <h2 className="font-serif text-3xl tracking-[-0.02em] sm:text-[2rem]">Build Your Career With Us</h2>
+                <h2 className="font-serif text-3xl tracking-[-0.02em] sm:text-4xl">Build Your Career With Us</h2>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-[#55504C] sm:text-base">
                   Join a polished, supportive studio where your talent is valued and your growth is encouraged.
                 </p>
@@ -130,8 +130,8 @@ export default function JoinUs() {
               </div>
             </article>
 
-            <div className="rounded-[24px] border border-[#DDCFC4] bg-white/28 p-5 shadow-[0_18px_50px_rgba(73,42,28,0.06)] sm:p-8 lg:p-9">
-              <h2 className="font-serif text-3xl tracking-[-0.02em] sm:text-[2rem]">Application Form</h2>
+            <div className="rounded-[24px] border border-[#DDCFC4] bg-white/28 p-5 shadow-[0_18px_50px_rgba(73,42,28,0.06)] sm:p-8 lg:p-10">
+              <h2 className="font-serif text-3xl tracking-[-0.02em] sm:text-4xl">Application Form</h2>
 
               {result && (
                 <div role={result.type === 'error' ? 'alert' : 'status'} aria-live="polite" className={`mb-5 mt-5 rounded-md border p-3 text-sm ${result.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}>
