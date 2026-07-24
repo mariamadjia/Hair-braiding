@@ -342,43 +342,48 @@ export default function GalleryPage({
 
   const renderFilters = () => (
     <>
-      <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.15em] text-[#2C1810]">
+      <div className="relative border-b border-[#E4D3C4] pb-6 text-center">
+        <h2 className="font-serif text-[1.7rem] font-normal tracking-[-0.02em] text-[#2C1810]">
           Browse Styles
         </h2>
+        <div aria-hidden="true" className="mt-2 flex items-center justify-center gap-2 text-[#B8754E]">
+          <span className="h-px w-7 bg-[#C99473]" />
+          <span className="text-[9px]">✦</span>
+          <span className="h-px w-7 bg-[#C99473]" />
+        </div>
         {hasActiveFilters && (
-          <button type="button" onClick={clearFilters} className="text-[10px] font-semibold uppercase tracking-wider text-[#7A4935] underline underline-offset-4">
+          <button type="button" onClick={clearFilters} className="absolute right-0 top-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8A543C] underline decoration-[#C99473] underline-offset-4">
             Clear
           </button>
         )}
       </div>
 
-      <div className="mt-5 space-y-2">
+      <div className="mt-5">
         <button
           onClick={() => { setSelectedFilter('All'); setSelectedSubcategories([]); }}
-          className={`w-full rounded-lg px-4 py-2.5 text-left text-xs uppercase tracking-[0.12em] transition-all ${
+          className={`mb-1 min-h-12 w-full rounded-[2px] px-4 py-3 text-left text-[11px] uppercase tracking-[0.16em] transition-all ${
             selectedFilter === 'All' && selectedSubcategories.length === 0
-              ? 'bg-[#2C1810] font-semibold text-white shadow-sm'
-              : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+              ? 'bg-[#321A11] font-semibold text-[#FFF9F1] shadow-[0_8px_18px_rgba(50,26,17,0.12)]'
+              : 'text-[#5F5149] hover:bg-[#F2E8DE] hover:text-[#2C1810]'
           }`}
         >
           <span className="flex items-center justify-between"><span>All styles</span><span>{galleryCategories.length}</span></span>
         </button>
 
         {galleryCategories.map((category) => (
-          <div key={category.title} className="space-y-1">
-            <div className={`flex items-center rounded-lg ${selectedFilter === category.title ? 'bg-[#2C1810] text-white' : 'hover:bg-neutral-50'}`}>
+          <div key={category.title} className="border-b border-[#E4D3C4]">
+            <div className={`my-1 flex items-center rounded-[2px] transition-colors ${selectedFilter === category.title ? 'bg-[#321A11] text-[#FFF9F1]' : 'text-[#423832] hover:bg-[#F2E8DE]'}`}>
               <button
                 onClick={() => { setSelectedFilter(category.title); setSelectedSubcategories([]); }}
-                className="flex min-h-11 flex-1 items-center justify-between px-4 text-left text-xs uppercase tracking-[0.12em]"
+                className="flex min-h-12 flex-1 items-center justify-between px-4 text-left text-[11px] uppercase tracking-[0.16em]"
               >
                 <span>{category.title}</span>
-                <span className={selectedFilter === category.title ? 'text-white/70' : 'text-neutral-400'}>{category.subcategoryData.length}</span>
+                <span className={selectedFilter === category.title ? 'text-white/65' : 'text-[#A79385]'}>{category.subcategoryData.length}</span>
               </button>
               {category.subcategoryData.length > 0 && (
                 <button
                   onClick={() => toggleCategory(category.title)}
-                  className="mr-1 flex h-10 w-10 items-center justify-center rounded-lg"
+                  className="mr-1 flex h-10 w-10 items-center justify-center rounded-sm transition-colors hover:bg-black/5"
                   aria-expanded={Boolean(expandedCategories[category.title])}
                   aria-label={`${expandedCategories[category.title] ? 'Collapse' : 'Expand'} ${category.title}`}
                 >
@@ -388,12 +393,12 @@ export default function GalleryPage({
             </div>
 
             {expandedCategories[category.title] && (
-              <div className="ml-3 space-y-1 border-l border-[#E4D8CE] pl-3">
+              <div className="mb-3 ml-3 space-y-1 border-l border-[#DABDA8] pl-3">
                 {category.subcategoryData.filter((sub) => sub.images.length > 0).map((sub) => {
                   const subcategoryId = `${category.link}?style=${sub.slug}`;
                   const isChecked = selectedSubcategories.includes(subcategoryId);
                   return (
-                    <label key={sub.slug} className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-3 text-[10px] uppercase tracking-wider transition ${isChecked ? 'bg-[#EFE5DC] text-[#2C1810]' : 'text-neutral-600 hover:bg-neutral-50'}`}>
+                    <label key={sub.slug} className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-[2px] px-3 text-[10px] uppercase tracking-wider transition ${isChecked ? 'bg-[#EBD9CB] text-[#2C1810]' : 'text-[#65574F] hover:bg-[#F2E8DE]'}`}>
                       <input type="checkbox" checked={isChecked} onChange={() => toggleSubcategory(category.link, sub.slug)} className="h-4 w-4 rounded border-neutral-300 text-[#2C1810] focus:ring-[#2C1810]" />
                       <span className="flex-1">{sub.name}</span>
                       <span className="text-neutral-400">{sub.images.length}</span>
@@ -406,8 +411,9 @@ export default function GalleryPage({
         ))}
       </div>
 
-      <div className="mt-6 border-t border-neutral-100 pt-5">
-        <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-neutral-500">
+      <div className="mt-6 text-center">
+        <span aria-hidden="true" className="mb-2 block text-[8px] text-[#B8754E]">✦</span>
+        <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-[#8A786D]">
           {displayItems.length} {displayItems.length === 1 ? 'style' : 'styles'} found
         </p>
       </div>
@@ -445,40 +451,42 @@ export default function GalleryPage({
   return (
     <>
       {!editMode && <Navbar />}
-      <div className="min-h-screen bg-[#F6F5F1]">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.8),transparent_36%),linear-gradient(135deg,#FBF7F0_0%,#F5EDE3_58%,#F8F2EA_100%)]">
         {/* Main Content with Sidebar and Gallery */}
-        <div className="container mx-auto px-6 md:px-8 lg:px-12 py-8">
-          <div className="flex flex-col lg:flex-row gap-8">
+        <div className="mx-auto max-w-[1720px] px-5 py-10 md:px-8 lg:px-12 lg:py-12">
+          <div className="flex flex-col gap-8 lg:flex-row lg:gap-10">
             {/* Left Sidebar - Filters */}
             <aside className="hidden w-72 flex-shrink-0 lg:block">
-              <div className="sticky top-6 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-                {renderFilters()}
+              <div className="sticky top-6 rounded-[4px] border border-[#D8BEAA] bg-[#FBF6EF]/90 p-2 shadow-[0_18px_45px_rgba(70,39,24,0.08)]">
+                <div className="border border-[#EADBCD] px-5 py-6">
+                  {renderFilters()}
+                </div>
               </div>
             </aside>
 
             {/* Right Content - Search and Gallery */}
             <div className="min-w-0 flex-1">
-              <div className="mb-5 flex flex-col gap-4">
+              <div className="mb-8 flex flex-col gap-4">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="relative w-full xl:max-w-md">
+                  <div className="relative w-full xl:max-w-3xl">
                   <label htmlFor="gallery-search" className="sr-only">Search gallery styles</label>
-                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#9B8171]" size={19} />
                   <input
                     id="gallery-search"
                     type="text"
                     placeholder="Search for a style..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-14 pr-6 py-3.5 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none border border-neutral-200 focus:border-[#2C1810] transition-all shadow-sm focus:shadow-md rounded-xl text-sm"
+                    className="min-h-12 w-full rounded-[3px] border border-[#D8C2B1] bg-[#FFFDFC]/70 py-3.5 pl-14 pr-6 text-sm text-[#2C1810] shadow-[0_7px_22px_rgba(78,44,27,0.04)] outline-none transition-all placeholder:text-[#A9988C] focus:border-[#A86544] focus:bg-white focus:shadow-[0_8px_24px_rgba(78,44,27,0.08)]"
                   />
                   </div>
                   <div className="flex gap-3">
-                    <button type="button" onClick={() => setMobileFiltersOpen(true)} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-xs font-semibold uppercase tracking-wider lg:hidden">
+                    <button type="button" onClick={() => setMobileFiltersOpen(true)} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[3px] border border-[#D8C2B1] bg-[#FFFDFC]/80 px-4 text-xs font-semibold uppercase tracking-wider text-[#2C1810] lg:hidden">
                       <SlidersHorizontal className="h-4 w-4" /> Filter & Sort
                     </button>
-                    <label className="flex min-h-12 items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 text-xs text-neutral-600 shadow-sm">
-                      <span className="whitespace-nowrap font-semibold uppercase tracking-wider">Sort by</span>
-                      <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} className="bg-transparent text-[#2C1810] outline-none">
+                    <label className="flex min-h-12 items-center gap-4 border-b border-[#B8754E] px-2 text-[10px] text-[#7C685C]">
+                      <span className="whitespace-nowrap font-semibold uppercase tracking-[0.18em]">Sort by</span>
+                      <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} className="bg-transparent pr-1 text-xs font-medium uppercase tracking-[0.1em] text-[#2C1810] outline-none">
                         <option value="featured">Featured</option>
                         <option value="newest">Newest</option>
                       </select>
