@@ -195,17 +195,17 @@ function CheckoutContent() {
                     aria-hidden="true"
                 >
                     <path
-                        d="M0 5 Q720 108 1440 5 L1440 96 L0 96 Z"
+                        d="M0 5 Q720 82 1440 5 L1440 96 L0 96 Z"
                         fill="#FBF7F1"
                     />
                     <path
-                        d="M0 5 Q720 108 1440 5"
+                        d="M0 5 Q720 82 1440 5"
                         fill="none"
                         stroke="#D4B49C"
                         strokeWidth="1"
                     />
                     <path
-                        d="M0 13 Q720 116 1440 13"
+                        d="M0 13 Q720 90 1440 13"
                         fill="none"
                         stroke="#E7D4C5"
                         strokeWidth="1"
@@ -213,7 +213,7 @@ function CheckoutContent() {
                 </svg>
             </section>
 
-            <section className="relative z-20 -mt-10 min-h-[70vh] bg-transparent pb-24 md:-mt-12 md:pb-32">
+            <section className="relative z-20 min-h-[70vh] bg-transparent pb-24 pt-20 md:pb-32">
                 <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                         {/* Left Column - Appointment Summary */}
