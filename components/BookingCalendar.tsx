@@ -22,6 +22,7 @@ type BookingCalendarProps = {
     onBookingComplete?: (bookingData: BookingData) => void;
     onDateSelected?: (date: Date | null) => void;
     onTimeSelected?: (time: string | null) => void;
+    onStepChange?: (step: "date" | "time" | "details" | "payment" | "success") => void;
     serviceName?: string;
     serviceSize?: string;
     serviceLength?: string;
@@ -30,6 +31,7 @@ type BookingCalendarProps = {
     lengthOptionId?: number;
     selectedTexture?: string;
     selectedFoundation?: string;
+    depositAmountCents?: number;
 };
 
 type BookingData = {
@@ -52,7 +54,7 @@ const POLICY_SECTIONS = [
     {
         title: "Deposits & Approval",
         points: [
-            "A $50 card authorization is required with your appointment request.",
+            "A card authorization of up to $50 is required with your appointment request.",
             "Your card is not charged unless the salon approves your appointment.",
             "If your request is denied, the authorization hold is released.",
         ],
@@ -86,6 +88,7 @@ export default function BookingCalendar({
     onBookingComplete,
     onDateSelected,
     onTimeSelected,
+    onStepChange,
     serviceName,
     serviceSize,
     serviceLength,
@@ -93,7 +96,8 @@ export default function BookingCalendar({
     serviceId,
     lengthOptionId,
     selectedTexture,
-    selectedFoundation
+    selectedFoundation,
+    depositAmountCents = 5000
 }: BookingCalendarProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -115,6 +119,10 @@ export default function BookingCalendar({
     const [expandedPolicy, setExpandedPolicy] = useState(0);
 
     useEffect(() => () => availabilityRequest.current?.abort(), []);
+
+    useEffect(() => {
+        onStepChange?.(step);
+    }, [onStepChange, step]);
 
     useEffect(() => {
         if (!policyModalOpen) return;
@@ -938,7 +946,7 @@ export default function BookingCalendar({
                         stripe={stripePromise}
                         options={{
                             mode: "payment",
-                            amount: 5000,
+                            amount: depositAmountCents,
                             currency: "usd",
                             capture_method: "manual",
                             appearance: {
@@ -955,7 +963,7 @@ export default function BookingCalendar({
                         }}
                     >
                         <PaymentForm
-                            amount={5000}
+                            amount={depositAmountCents}
                             onSuccess={handlePaymentSuccess}
                             onBack={() => setStep("details")}
                             appointmentId={createdAppointmentId || undefined}
@@ -982,7 +990,9 @@ export default function BookingCalendar({
                         </svg>
                     </div>
                     <h3 className="text-2xl font-light text-neutral-900 mb-4">Appointment Request Submitted</h3>
-                    <p className="text-neutral-600 mb-6">Your card has been authorized for $50. The salon will review your request before the hold is captured.</p>
+                    <p className="text-neutral-600 mb-6">
+                        Your card has been authorized for ${(depositAmountCents / 100).toFixed(2)}. The salon will review your request before the hold is captured.
+                    </p>
                     
                     {confirmationNumber && (
                         <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-6">

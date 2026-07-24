@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { AlertCircle, CalendarDays, ChevronLeft, Clock, DollarSign, Info } from "lucide-react";
+import { AlertCircle, CalendarDays } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import BookingCalendar from "@/components/BookingCalendar";
@@ -34,6 +34,7 @@ function CheckoutContent() {
     const [authoritativeService, setAuthoritativeService] = useState<AuthoritativeService | null>(null);
     const [serviceLoading, setServiceLoading] = useState(true);
     const [serviceError, setServiceError] = useState<string | null>(null);
+    const [bookingStep, setBookingStep] = useState<"date" | "time" | "details" | "payment" | "success">("date");
 
     const categorySlug = searchParams.get("categorySlug") || "";
     const subcategorySlug = searchParams.get("subcategorySlug") || "";
@@ -59,6 +60,24 @@ function CheckoutContent() {
         || searchParams.get("image")
         || ""
     );
+    const numericPrice = Number(price.replace(/[^0-9.]/g, "")) || 0;
+    const depositAmount = Math.min(50, numericPrice);
+    const depositAmountCents = Math.round(depositAmount * 100);
+    const remainingBalance = Math.max(0, numericPrice - depositAmount);
+    const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
+    const activeProgressStep = bookingStep === "date" || bookingStep === "time"
+        ? 2
+        : bookingStep === "details"
+            ? 3
+            : 4;
+
+    const changeService = () => {
+        if (categorySlug && subcategorySlug) {
+            router.push(`/booking/${categorySlug}/${subcategorySlug}`);
+        } else {
+            router.back();
+        }
+    };
 
     useEffect(() => {
         if (!serviceId) {
@@ -103,54 +122,69 @@ function CheckoutContent() {
     return (
         <>
             <Navbar />
-            <section className="bg-[#F6F5F1] pt-8 pb-12 md:pt-12 md:pb-16 text-neutral-900">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                            if (categorySlug && subcategorySlug) {
-                                router.push(`/booking/${categorySlug}/${subcategorySlug}`);
-                            } else {
-                                router.back();
-                            }
-                        }}
-                        className="mb-12 rounded-none border border-neutral-300 bg-transparent px-6 py-2.5 text-xs font-medium uppercase tracking-[0.25em] text-neutral-700 transition hover:border-neutral-900 hover:text-neutral-900"
-                    >
-                        <ChevronLeft className="h-3 w-3 mr-2" />
-                        Change Service
-                    </Button>
+            <section className="bg-[#FBF7F1] pb-10 pt-8 text-neutral-900 md:pb-12 md:pt-10">
+                <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+                    <ol className="mx-auto mb-9 grid max-w-3xl grid-cols-4" aria-label="Booking progress">
+                        {["Style", "Date & Time", "Details", "Payment"].map((label, index) => {
+                            const stepNumber = index + 1;
+                            const isActive = activeProgressStep === stepNumber;
+                            const isComplete = activeProgressStep > stepNumber;
+                            return (
+                                <li key={label} className="relative flex flex-col items-center text-center">
+                                    {index > 0 && (
+                                        <span className="absolute right-1/2 top-4 h-px w-full bg-[#D8C3B1]" aria-hidden="true" />
+                                    )}
+                                    <span
+                                        className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold ${
+                                            isActive
+                                                ? "border-[#B8754E] bg-[#B8754E] text-white ring-2 ring-[#E8D5C5]"
+                                                : isComplete
+                                                    ? "border-[#A58D7C] bg-[#FBF7F1] text-[#2C1810]"
+                                                    : "border-[#CDB9A9] bg-[#FBF7F1] text-[#76675E]"
+                                        }`}
+                                    >
+                                        {stepNumber}
+                                    </span>
+                                    <span className={`mt-2 text-[9px] font-semibold uppercase tracking-[0.16em] sm:text-[10px] ${
+                                        isActive ? "text-[#A25735]" : "text-[#665850]"
+                                    }`}>
+                                        {label}
+                                    </span>
+                                </li>
+                            );
+                        })}
+                    </ol>
                     <div className="text-center">
-                        <h1 className="text-4xl md:text-6xl font-light tracking-wide text-neutral-900 leading-tight">
+                        <h1 className="text-4xl font-light leading-tight tracking-wide text-[#2C1810] md:text-6xl">
                             <span className="font-serif">Complete Your Appointment</span>
                         </h1>
-                        <p className="mt-4 text-[16px] text-neutral-700 max-w-3xl mx-auto leading-relaxed tracking-[0.04em] font-light">
+                        <p className="mx-auto mt-3 max-w-3xl text-sm font-light leading-relaxed tracking-[0.04em] text-[#665850] md:text-[16px]">
                           Review your selection, choose a date, and continue to payment.
                         </p>
                     </div>
                 </div>
             </section>
 
-            <section className="bg-[#F6F5F1] pb-24 md:pb-32 min-h-[70vh]">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <section className="min-h-[70vh] bg-[#FBF7F1] pb-24 md:pb-32">
+                <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
                         {/* Left Column - Appointment Summary */}
                         <div className="space-y-6 lg:sticky lg:top-24">
                             {/* Appointment Summary Card */}
-                            <div className="bg-white rounded-2xl p-5 border border-neutral-100 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+                            <div className="min-h-[650px] border border-[#D9C4B3] bg-[#FFFDF9] p-6 shadow-[0_10px_30px_rgba(44,24,16,0.06)] sm:p-7">
                                 {/* Header */}
-                                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-neutral-100">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/50 rounded-xl flex items-center justify-center shadow-sm">
-                                        <CalendarDays className="h-5 w-5 text-amber-700" />
+                                <div className="mb-6 flex items-center gap-3 border-b border-[#E9DDD3] pb-5">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#D9C4B3] bg-[#F8EFE7]">
+                                        <CalendarDays className="h-5 w-5 text-[#B0633E]" />
                                     </div>
-                                    <h2 className="text-xs font-semibold tracking-[0.2em] text-neutral-800 uppercase">
+                                    <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-[#2C1810]">
                                         Appointment Summary
                                     </h2>
                                 </div>
 
                                 {/* Service Info */}
-                                <div className="flex gap-4 mb-5 pb-5 border-b border-neutral-100">
-                                    <div className="w-28 h-28 lg:w-40 lg:h-40 bg-gradient-to-br from-neutral-100 via-neutral-50 to-neutral-200 rounded-xl flex-shrink-0 overflow-hidden shadow-inner">
+                                <div className="mb-5 flex gap-5 border-b border-[#E9DDD3] pb-6">
+                                    <div className="h-36 w-36 flex-shrink-0 overflow-hidden rounded-[6px] bg-[#F5ECE3] sm:h-44 sm:w-44">
                                         {image ? (
                                             <img
                                                 src={image}
@@ -165,21 +199,26 @@ function CheckoutContent() {
                                             <div className="w-full h-full bg-gradient-to-br from-neutral-200 via-neutral-100 to-neutral-300" />
                                         )}
                                     </div>
-                                    <div className="flex-1 flex flex-col justify-between h-28 lg:h-40">
-                                        <h3 className="text-2xl font-serif text-neutral-900 leading-tight">
-                                            {styleName}
-                                        </h3>
-                                        <div className="space-y-2">
+                                    <div className="flex min-w-0 flex-1 flex-col">
+                                        <h3 className="font-serif text-2xl leading-tight text-[#2C1810]">{styleName}</h3>
+                                        <button
+                                            type="button"
+                                            onClick={changeService}
+                                            className="mt-3 w-fit text-xs font-medium text-[#A25735] underline decoration-[#B8754E] underline-offset-4 transition hover:text-[#2C1810]"
+                                        >
+                                            Edit selection
+                                        </button>
+                                        <div className="mt-auto space-y-3">
                                             {serviceName && (
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-neutral-500 text-xs tracking-wide">Size</span>
-                                                    <span className="text-neutral-900 font-medium text-sm">{serviceName}</span>
+                                                <div className="flex items-center justify-between border-b border-[#EEE3DA] pb-2">
+                                                    <span className="text-xs tracking-wide text-[#76675E]">Size</span>
+                                                    <span className="text-sm font-medium text-[#2C1810]">{serviceName}</span>
                                                 </div>
                                             )}
                                             {lengthLabel && (
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-neutral-500 text-xs tracking-wide">Length</span>
-                                                    <span className="text-neutral-900 font-medium text-sm">{lengthLabel}</span>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs tracking-wide text-[#76675E]">Length</span>
+                                                    <span className="text-sm font-medium text-[#2C1810]">{lengthLabel}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -187,40 +226,38 @@ function CheckoutContent() {
                                 </div>
 
                                 {/* Selected Date/Time */}
-                                <div className="space-y-3 pb-4 border-b border-neutral-100">
-                                    <div className="flex justify-between items-center px-3 py-2">
-                                        <span className="text-neutral-500 text-xs tracking-wide">Selected Date</span>
-                                        <span className="text-neutral-900 font-medium text-sm">
+                                <div className="space-y-1 border-b border-[#E9DDD3] pb-4">
+                                    <div className="flex items-center justify-between px-1 py-3">
+                                        <span className="text-xs tracking-wide text-[#76675E]">Selected Date</span>
+                                        <span className="text-sm font-medium text-[#2C1810]">
                                             {selectedDate ? selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Not selected'}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between items-center px-3 py-2">
-                                        <span className="text-neutral-500 text-xs tracking-wide">Selected Time</span>
-                                        <span className="text-neutral-900 font-medium text-sm">
+                                    <div className="flex items-center justify-between px-1 py-3">
+                                        <span className="text-xs tracking-wide text-[#76675E]">Selected Time</span>
+                                        <span className="text-sm font-medium text-[#2C1810]">
                                             {selectedTime || 'Not selected'}
                                         </span>
                                     </div>
                                 </div>
 
                                 {/* Price Breakdown */}
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center px-3 py-2">
-                                        <span className="text-neutral-600 font-medium text-sm tracking-wide">Total Price</span>
-                                        <span className="text-neutral-900 font-semibold">
-                                            {price || "$0.00"}
+                                <div className="space-y-1 pt-3">
+                                    <div className="flex items-center justify-between px-1 py-3">
+                                        <span className="text-sm font-medium tracking-wide text-[#4F4038]">Total Price</span>
+                                        <span className="font-semibold text-[#2C1810]">
+                                            {formatCurrency(numericPrice)}
                                         </span>
                                     </div>
 
-                                    <div className="flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50/50 border border-amber-200/50 rounded-xl px-3 py-2 shadow-sm">
-                                        <span className="text-amber-900 font-medium text-sm">Deposit Today <span className="text-amber-700/80 font-normal text-xs"></span></span>
-                                        <span className="text-amber-900 font-semibold">$50.00</span>
+                                    <div className="flex items-center justify-between rounded-[4px] border border-[#E2CDBB] bg-[#F8EFE7] px-3 py-3">
+                                        <span className="text-sm font-medium text-[#8E4E30]">Deposit Today</span>
+                                        <span className="font-semibold text-[#8E4E30]">{formatCurrency(depositAmount)}</span>
                                     </div>
 
-                                    <div className="flex justify-between items-center px-3 py-2">
-                                        <span className="text-neutral-600 font-medium text-sm tracking-wide">Remaining Balance</span>
-                                        <span className="text-neutral-900 font-semibold">
-                                            ${price ? (parseFloat(price.replace("$", "").replace(",", "")) - 50).toFixed(2) : "0.00"}
-                                        </span>
+                                    <div className="flex items-center justify-between px-1 py-3">
+                                        <span className="text-sm font-medium tracking-wide text-[#4F4038]">Remaining Balance</span>
+                                        <span className="font-semibold text-[#2C1810]">{formatCurrency(remainingBalance)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -238,8 +275,10 @@ function CheckoutContent() {
                                     lengthOptionId={lengthOptionId}
                                     selectedTexture={texture}
                                     selectedFoundation={foundation}
+                                    depositAmountCents={depositAmountCents}
                                     onDateSelected={setSelectedDate}
                                     onTimeSelected={setSelectedTime}
+                                    onStepChange={setBookingStep}
                                     onBookingComplete={() => undefined}
                                 />
                             </div>
