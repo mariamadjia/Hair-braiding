@@ -167,11 +167,11 @@ function CheckoutContent() {
 
             <section className="min-h-[70vh] bg-[#FBF7F1] pb-24 md:pb-32">
                 <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                         {/* Left Column - Appointment Summary */}
-                        <div className="space-y-6 lg:sticky lg:top-24">
+                        <div className="space-y-6 lg:sticky lg:top-24 lg:h-full">
                             {/* Appointment Summary Card */}
-                            <div className="min-h-[650px] border border-[#D9C4B3] bg-[#FFFDF9] p-6 shadow-[0_10px_30px_rgba(44,24,16,0.06)] sm:p-7">
+                            <div className="border border-[#D9C4B3] bg-[#FFFDF9] p-6 shadow-[0_10px_30px_rgba(44,24,16,0.06)] sm:p-7 lg:h-full">
                                 {/* Header */}
                                 <div className="mb-6 flex items-center gap-3 border-b border-[#E9DDD3] pb-5">
                                     <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#D9C4B3] bg-[#F8EFE7]">
@@ -264,9 +264,10 @@ function CheckoutContent() {
 
 </div>
                         {/* Right Column - Embedded Calendar */}
-                        <div className="flex flex-col">
-                            <div className="rounded-sm shadow-[0_4px_20px_rgb(0,0,0,0.06)]">
+                        <div className="flex h-full flex-col">
+                            <div className="h-full rounded-sm shadow-[0_4px_20px_rgb(0,0,0,0.06)]">
                                 <BookingCalendar
+                                    className="h-full"
                                     serviceName={styleName}
                                     serviceSize={serviceName}
                                     serviceLength={lengthLabel}
