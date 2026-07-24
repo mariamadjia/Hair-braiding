@@ -173,18 +173,14 @@ function CheckoutContent() {
                         <h1 className="text-4xl font-light leading-tight tracking-wide text-[#2C1810] md:text-5xl lg:text-[3.5rem]">
                             <span className="font-serif">Complete Your Appointment</span>
                         </h1>
-                        <div className="mx-auto mt-4 flex max-w-[360px] items-center gap-2.5 text-[#B8754E]" aria-hidden="true">
-                            <span className="h-px flex-1 bg-[#CDB5A2]" />
-                            <svg className="h-7 w-24" viewBox="0 0 96 28" fill="none">
-                                <path d="M4 18c13 0 15-9 26-9 7 0 10 4 10 8 0 3-2 5-5 5-2 0-4-2-4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                                <path d="M92 18c-13 0-15-9-26-9-7 0-10 4-10 8 0 3 2 5 5 5 2 0 4-2 4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                                <path d="M48 1l3.2 7.8L59 12l-7.8 3.2L48 23l-3.2-7.8L37 12l7.8-3.2L48 1Z" fill="currentColor" />
-                            </svg>
-                            <span className="h-px flex-1 bg-[#CDB5A2]" />
-                        </div>
-                        <p className="mx-auto mt-2 max-w-3xl text-sm font-light leading-relaxed tracking-[0.04em] text-[#665850] md:text-[16px]">
+                        <p className="mx-auto mt-4 max-w-3xl text-sm font-light leading-relaxed tracking-[0.04em] text-[#665850] md:text-[16px]">
                           Review your selection, choose a date, and continue to payment.
                         </p>
+                        <div className="mx-auto mt-5 flex max-w-[280px] items-center gap-3" aria-hidden="true">
+                            <span className="h-px flex-1 bg-[#D9C2B1]" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#B8754E]" />
+                            <span className="h-px flex-1 bg-[#D9C2B1]" />
+                        </div>
                     </div>
                 </div>
 
