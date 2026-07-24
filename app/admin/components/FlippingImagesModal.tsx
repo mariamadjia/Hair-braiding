@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, GripVertical, Trash2, Plus } from "lucide-react";
+import { X, GripVertical, Trash2, Plus, ArrowLeft, ArrowRight } from "lucide-react";
 import { GalleryImage } from "@/lib/api/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
 
@@ -28,6 +28,7 @@ export function FlippingImagesModal({
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [showImagePicker, setShowImagePicker] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState("");
 
     const MIN_IMAGES = 2;
     const MAX_IMAGES = 5;
@@ -55,7 +56,7 @@ export function FlippingImagesModal({
 
     const handleRemove = (index: number) => {
         if (selectedImages.length <= MIN_IMAGES) {
-            alert(`You need at least ${MIN_IMAGES} images for the flipping effect.`);
+            setMessage(`You need at least ${MIN_IMAGES} images for the flipping effect.`);
             return;
         }
         const newImages = selectedImages.filter((_, i) => i !== index);
@@ -64,12 +65,12 @@ export function FlippingImagesModal({
 
     const handleAddImage = (imageUrl: string) => {
         if (selectedImages.length >= MAX_IMAGES) {
-            alert(`Maximum ${MAX_IMAGES} images allowed.`);
+            setMessage(`Maximum ${MAX_IMAGES} images allowed.`);
             return;
         }
 
         if (selectedImages.includes(imageUrl)) {
-            alert("This image is already selected.");
+            setMessage("This image is already selected.");
             return;
         }
 
@@ -79,7 +80,7 @@ export function FlippingImagesModal({
 
     const handleSave = async () => {
         if (selectedImages.length < MIN_IMAGES) {
-            alert(`Please select at least ${MIN_IMAGES} images.`);
+            setMessage(`Please select at least ${MIN_IMAGES} images.`);
             return;
         }
         setSaving(true);
@@ -88,6 +89,15 @@ export function FlippingImagesModal({
         } finally {
             setSaving(false);
         }
+    };
+
+    const moveImage = (index: number, direction: -1 | 1) => {
+        const target = index + direction;
+        if (target < 0 || target >= selectedImages.length) return;
+        const next = [...selectedImages];
+        [next[index], next[target]] = [next[target], next[index]];
+        setSelectedImages(next);
+        setMessage(`Image moved to position ${target + 1}.`);
     };
 
     const allSelectableImageUrls = Array.from(
@@ -102,12 +112,12 @@ export function FlippingImagesModal({
     );
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="flipping-images-title">
             <div className="bg-white rounded-lg max-w-4xl w-full my-8 flex flex-col max-h-[90vh]">
                 {/* Header */}
                 <div className="p-6 border-b border-neutral-200 flex items-center justify-between shrink-0 bg-white">
                     <div>
-                        <h3 className="text-lg font-semibold text-neutral-900">
+                        <h3 id="flipping-images-title" className="text-lg font-semibold text-neutral-900">
                             {category.name} - Flipping Images
                         </h3>
                         <p className="text-sm text-neutral-500 mt-1">
@@ -117,6 +127,7 @@ export function FlippingImagesModal({
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
+                        aria-label="Close rotating images editor"
                     >
                         <X className="h-5 w-5 text-neutral-600" />
                     </button>
@@ -124,6 +135,7 @@ export function FlippingImagesModal({
 
                 {/* Selected Images Grid */}
                 <div className="p-6 overflow-y-auto flex-1">
+                    <p aria-live="polite" className="mb-3 min-h-5 text-sm text-amber-800">{message}</p>
                     <div className="mb-6">
                         <h4 className="text-sm font-medium text-neutral-700 mb-4">
                             Selected Images ({selectedImages.length})
@@ -174,6 +186,10 @@ export function FlippingImagesModal({
                                         </div>
 
                                         {/* Delete Button */}
+                                        <div className="absolute bottom-2 left-2 z-10 flex gap-1">
+                                            <button type="button" onClick={() => moveImage(index, -1)} disabled={index === 0} className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow disabled:opacity-30" aria-label={`Move image ${index + 1} left`}><ArrowLeft className="h-4 w-4" /></button>
+                                            <button type="button" onClick={() => moveImage(index, 1)} disabled={index === selectedImages.length - 1} className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow disabled:opacity-30" aria-label={`Move image ${index + 1} right`}><ArrowRight className="h-4 w-4" /></button>
+                                        </div>
                                         <button
                                             onClick={() => handleRemove(index)}
                                             disabled={selectedImages.length <= MIN_IMAGES}
@@ -183,6 +199,7 @@ export function FlippingImagesModal({
                                                     : 'bg-red-600 hover:bg-red-700 text-white'
                                             }`}
                                             title={selectedImages.length <= MIN_IMAGES ? `Minimum ${MIN_IMAGES} images required` : 'Remove'}
+                                            aria-label={`Remove image ${index + 1}`}
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </button>

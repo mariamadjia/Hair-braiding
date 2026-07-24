@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Edit, Trash2, Plus } from "lucide-react";
+import { Edit, ArrowUp, ArrowDown } from "lucide-react";
+import { useReducedMotion } from "framer-motion";
 import { galleryApi, GalleryImage } from '@/lib/api/gallery';
 import { API_BASE_URL } from '@/lib/config/api';
 import { FlippingImagesModal } from "./FlippingImagesModal";
@@ -38,6 +39,11 @@ export function GalleryAdminNew() {
     const [selectedCategoryForFlipping, setSelectedCategoryForFlipping] = useState<Category | null>(null);
     const [selectedCategoryImages, setSelectedCategoryImages] = useState<GalleryImage[]>([]);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [loadError, setLoadError] = useState("");
+    const [statusMessage, setStatusMessage] = useState("");
+    const orderBeforeDrag = useRef<Category[]>([]);
+    const rotationTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+    const reduceMotion = useReducedMotion();
 
     useEffect(() => {
         loadData();
@@ -46,6 +52,7 @@ export function GalleryAdminNew() {
     const loadData = async () => {
         try {
             setLoading(true);
+            setLoadError("");
 
             const [imagesData, categoriesData] = await Promise.all([
                 galleryApi.getAllImages(),
@@ -85,28 +92,9 @@ export function GalleryAdminNew() {
         } catch (error) {
             console.error("Failed to load Admin Gallery:", error);
             setCategories([]);
+            setLoadError("Gallery data could not be loaded. Nothing has been deleted.");
         } finally {
             setLoading(false);
-        }
-    };
-
-    const updateCategoryDisplayOrder = async (categoryId: number, displayOrder: number) => {
-        try {
-            const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
-            const response = await fetch(`${API_BASE_URL}/api/categories/${categoryId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-                body: JSON.stringify({ displayOrder: displayOrder.toString() }),
-            });
-            if (!response.ok) {
-                throw new Error(`Failed to update display order: ${response.status}`);
-            }
-        } catch (error) {
-            console.error('Failed to update display order:', error);
-            throw error;
         }
     };
 
@@ -163,6 +151,7 @@ export function GalleryAdminNew() {
     };
 
     const handleDragStart = (index: number) => {
+        orderBeforeDrag.current = [...categories];
         setDraggedIndex(index);
     };
 
@@ -182,48 +171,80 @@ export function GalleryAdminNew() {
     const handleDragEnd = async () => {
         if (draggedIndex === null) return;
 
-        const originalCategories = [...categories];
         setDraggedIndex(null);
 
         try {
-            // Update display order for all categories
-            const updatePromises = categories.map((cat, index) =>
-                updateCategoryDisplayOrder(cat.id, index)
-            );
-            await Promise.all(updatePromises);
+            await saveCategoryOrder(categories);
+            setStatusMessage("Gallery order saved.");
         } catch (error) {
             console.error('Failed to update order:', error);
-            // Rollback on error
-            setCategories(originalCategories);
-            alert('Failed to save order. Please try again.');
+            setCategories(orderBeforeDrag.current);
+            setStatusMessage("Gallery order could not be saved. The previous order was restored.");
+        }
+    };
+
+    const saveCategoryOrder = async (orderedCategories: Category[]) => {
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        const response = await fetch(`${API_BASE_URL}/api/categories/reorder`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify(orderedCategories.map((category) => category.id)),
+        });
+        if (!response.ok) throw new Error(`Failed to update display order: ${response.status}`);
+    };
+
+    const moveCategory = async (index: number, direction: -1 | 1) => {
+        const target = index + direction;
+        if (target < 0 || target >= categories.length) return;
+        const previous = [...categories];
+        const next = [...categories];
+        [next[index], next[target]] = [next[target], next[index]];
+        setCategories(next);
+        try {
+            await saveCategoryOrder(next);
+            setStatusMessage(`${next[target].name} moved ${direction < 0 ? 'up' : 'down'}.`);
+        } catch {
+            setCategories(previous);
+            setStatusMessage("The order could not be saved. The previous order was restored.");
         }
     };
 
     // Auto-rotate images for category cards (same as public gallery)
     useEffect(() => {
+        if (reduceMotion) return;
         const interval = setInterval(() => {
-            categories.forEach((category, index) => {
+            categories.forEach((category) => {
+                const key = category.id;
                 // Only rotate if category has multiple images
                 if (category.images && category.images.length > 1) {
-                    setIsFlipping(prev => ({ ...prev, [index]: true }));
+                    setIsFlipping(prev => ({ ...prev, [key]: true }));
                     
-                    setTimeout(() => {
+                    const changeTimer = setTimeout(() => {
                         setCardImageIndexes(prev => {
-                            const currentIndex = prev[index] || 0;
+                            const currentIndex = Math.min(prev[key] || 0, category.images!.length - 1);
                             const newIndex = currentIndex === category.images!.length - 1 ? 0 : currentIndex + 1;
-                            return { ...prev, [index]: newIndex };
+                            return { ...prev, [key]: newIndex };
                         });
                         
-                        setTimeout(() => {
-                            setIsFlipping(prev => ({ ...prev, [index]: false }));
+                        const finishTimer = setTimeout(() => {
+                            setIsFlipping(prev => ({ ...prev, [key]: false }));
                         }, 300);
+                        rotationTimers.current.push(finishTimer);
                     }, 300);
+                    rotationTimers.current.push(changeTimer);
                 }
             });
         }, 3000); // Flip every 3 seconds
 
-        return () => clearInterval(interval);
-    }, [categories]);
+        return () => {
+            clearInterval(interval);
+            rotationTimers.current.forEach(clearTimeout);
+            rotationTimers.current = [];
+        };
+    }, [categories, reduceMotion]);
 
     if (loading) {
         return (
@@ -245,13 +266,17 @@ export function GalleryAdminNew() {
 
             {/* Gallery Grid - Same as Public */}
             <div className="px-8 py-12 overflow-y-auto flex-1">
+                <div aria-live="polite" className="mx-auto mb-5 max-w-7xl">
+                    {loadError && <div role="alert" className="border border-red-200 bg-red-50 p-4 text-sm text-red-800">{loadError}<button type="button" onClick={loadData} className="ml-3 underline">Retry</button></div>}
+                    {statusMessage && <p className="mt-2 text-sm text-neutral-600">{statusMessage}</p>}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8 max-w-7xl mx-auto">
                     {categories.map((category, index) => {
                         const categoryImages = getCategoryImages(category.id);
                         const isEditing = editingCategory === category.id;
                         
                         // Get current rotating image
-                        const cardImageIndex = cardImageIndexes[index] || 0;
+                        const cardImageIndex = Math.min(cardImageIndexes[category.id] || 0, Math.max(0, (category.images?.length || 1) - 1));
                         const currentImage = category.images && category.images.length > 0 
                             ? category.images[cardImageIndex] 
                             : category.image;
@@ -266,7 +291,9 @@ export function GalleryAdminNew() {
                                 onDragEnd={handleDragEnd}
                             >
                                 {/* Edit Button */}
-                                <div className="absolute top-4 right-4 z-10">
+                                <div className="absolute top-4 right-4 z-10 flex gap-1">
+                                    <button type="button" onClick={(event) => { event.stopPropagation(); moveCategory(index, -1); }} disabled={index === 0} className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow disabled:opacity-30" aria-label={`Move ${category.name} up`}><ArrowUp className="h-4 w-4" /></button>
+                                    <button type="button" onClick={(event) => { event.stopPropagation(); moveCategory(index, 1); }} disabled={index === categories.length - 1} className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow disabled:opacity-30" aria-label={`Move ${category.name} down`}><ArrowDown className="h-4 w-4" /></button>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -274,6 +301,7 @@ export function GalleryAdminNew() {
                                         }}
                                         className="p-2 rounded-full shadow-lg transition-colors bg-white dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-600"
                                         title="Edit flipping images"
+                                        aria-label={`Edit ${category.name} rotating images`}
                                     >
                                         <Edit className="h-4 w-4" />
                                     </button>
@@ -292,7 +320,7 @@ export function GalleryAdminNew() {
                                             className="w-full h-full transition-transform duration-600"
                                             style={{
                                                 transformStyle: 'preserve-3d',
-                                                transform: isFlipping[index] ? 'rotateY(90deg)' : 'rotateY(0deg)',
+                                                transform: isFlipping[category.id] ? 'rotateY(90deg)' : 'rotateY(0deg)',
                                             }}
                                         >
                                             {currentImage ? (
@@ -333,6 +361,12 @@ export function GalleryAdminNew() {
                         );
                     })}
                 </div>
+                {!loadError && categories.length === 0 && (
+                    <div className="mx-auto max-w-xl border border-neutral-200 bg-white p-10 text-center">
+                        <h2 className="text-lg font-semibold text-neutral-900">No gallery categories yet</h2>
+                        <p className="mt-2 text-sm text-neutral-500">Create a service category first, then return here to choose its gallery photos.</p>
+                    </div>
+                )}
             </div>
 
             {/* Flipping Images Modal */}

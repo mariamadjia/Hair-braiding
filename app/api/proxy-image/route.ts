@@ -23,10 +23,11 @@ export async function GET(request: NextRequest) {
       targetUrl = `${API_BASE_URL}${imageUrl}`;
     }
 
-    // Validate that the target URL is from the allowed backend
-    if (!targetUrl.startsWith(`${allowedBase}/api/gallery/image/`) && 
-        !targetUrl.startsWith(`${allowedBase}/api/`) &&
-        !targetUrl.startsWith(`${allowedBase}/uploads/`)) {
+    const allowedUrl = new URL(allowedBase);
+    const parsedTarget = new URL(targetUrl);
+    const allowedPath = parsedTarget.pathname.startsWith('/api/gallery/image/')
+      || parsedTarget.pathname.startsWith('/uploads/');
+    if (parsedTarget.origin !== allowedUrl.origin || !allowedPath) {
       console.error('Invalid image URL:', targetUrl);
       return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 });
     }
@@ -43,7 +44,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch the image from backend
-    const imageResponse = await fetch(targetUrl, { headers });
+    const imageResponse = await fetch(targetUrl, {
+      headers,
+      signal: AbortSignal.timeout(15_000),
+      cache: 'force-cache',
+    });
 
     if (!imageResponse.ok) {
       console.error('Failed to fetch image:', targetUrl, imageResponse.status);
@@ -53,6 +58,9 @@ export async function GET(request: NextRequest) {
     // Get the image data
     const imageBuffer = await imageResponse.arrayBuffer();
     const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+    if (!contentType.startsWith('image/')) {
+      return NextResponse.json({ error: 'Upstream response is not an image' }, { status: 502 });
+    }
 
     // Return the image with proper headers
     return new NextResponse(imageBuffer, {

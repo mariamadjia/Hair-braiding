@@ -1,8 +1,8 @@
 "use client";
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { ChevronLeft, Edit, Trash2, Plus } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { ChevronLeft, Edit, Trash2, Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { API_BASE_URL } from "@/lib/config/api";
 import { EditSubcategoryModal } from '../../components/EditSubcategoryModal';
 import { CreateSubcategoryModal } from '../../components/CreateSubcategoryModal';
@@ -17,6 +17,9 @@ export default function AdminCategoryDetailPage() {
     const [editingSubcategory, setEditingSubcategory] = useState(null);
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [draggedIndex, setDraggedIndex] = useState(null);
+    const [loadError, setLoadError] = useState("");
+    const [statusMessage, setStatusMessage] = useState("");
+    const orderBeforeDrag = useRef([]);
 
     useEffect(() => {
         loadCategoryData();
@@ -59,6 +62,7 @@ export default function AdminCategoryDetailPage() {
     const loadCategoryData = async () => {
         try {
             setLoading(true);
+            setLoadError("");
 
             const categoryResponse = await fetch(
                 `${API_BASE_URL}/api/categories/slug/${params.slug}`
@@ -94,6 +98,7 @@ export default function AdminCategoryDetailPage() {
             void loadCategoryImagesInBackground(categoryData.id);
         } catch (error) {
             console.error("Failed to load category:", error);
+            setLoadError("This gallery category could not be loaded.");
         } finally {
             setLoading(false);
         }
@@ -144,6 +149,7 @@ export default function AdminCategoryDetailPage() {
     };
 
     const handleDragStart = (index) => {
+        orderBeforeDrag.current = [...subcategories];
         setDraggedIndex(index);
     };
 
@@ -165,23 +171,42 @@ export default function AdminCategoryDetailPage() {
         
         try {
             const token = getAuthToken();
-            
-            // Update display order for all subcategories
-            for (let i = 0; i < subcategories.length; i++) {
-                await fetch(`${API_BASE_URL}/api/subcategories/${subcategories[i].id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    },
-                    body: JSON.stringify({ displayOrder: i.toString() }),
-                });
-            }
+            const response = await fetch(`${API_BASE_URL}/api/subcategories/reorder`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                body: JSON.stringify(subcategories.map((subcategory) => subcategory.id)),
+            });
+            if (!response.ok) throw new Error("Failed to save subcategory order");
+            setStatusMessage("Subcategory order saved.");
         } catch (error) {
             console.error('Failed to update order:', error);
+            setSubcategories(orderBeforeDrag.current);
+            setStatusMessage("Order could not be saved. The previous order was restored.");
         }
         
         setDraggedIndex(null);
+    };
+
+    const moveSubcategory = async (index, direction) => {
+        const target = index + direction;
+        if (target < 0 || target >= subcategories.length) return;
+        orderBeforeDrag.current = [...subcategories];
+        const next = [...subcategories];
+        [next[index], next[target]] = [next[target], next[index]];
+        setSubcategories(next);
+        try {
+            const token = getAuthToken();
+            const response = await fetch(`${API_BASE_URL}/api/subcategories/reorder`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                body: JSON.stringify(next.map((subcategory) => subcategory.id)),
+            });
+            if (!response.ok) throw new Error("Failed to save subcategory order");
+            setStatusMessage(`${next[target].name} moved ${direction < 0 ? "up" : "down"}.`);
+        } catch {
+            setSubcategories(orderBeforeDrag.current);
+            setStatusMessage("Order could not be saved. The previous order was restored.");
+        }
     };
 
     const handleSaveSubcategory = async (
@@ -307,7 +332,7 @@ export default function AdminCategoryDetailPage() {
     if (!category) {
         return (
             <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center">
-                <div className="text-neutral-600 dark:text-neutral-400">Category not found</div>
+                <div className="text-center text-neutral-600 dark:text-neutral-400"><p>{loadError || "Category not found"}</p><button type="button" onClick={loadCategoryData} className="mt-4 underline">Retry</button></div>
             </div>
         );
     }
@@ -342,6 +367,7 @@ export default function AdminCategoryDetailPage() {
             {/* Subcategories Grid */}
             <div className="flex-1 overflow-y-auto">
                 <div className="max-w-7xl mx-auto px-6 py-12">
+                <p aria-live="polite" className="mb-4 min-h-5 text-sm text-neutral-600">{statusMessage}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {subcategories.map((subcategory, index) => (
                         <div 
@@ -354,6 +380,8 @@ export default function AdminCategoryDetailPage() {
                         >
                             {/* Edit Controls */}
                             <div className="absolute top-4 right-4 z-10 flex gap-2">
+                                <button type="button" onClick={() => moveSubcategory(index, -1)} disabled={index === 0} className="p-2 bg-white rounded-full shadow disabled:opacity-30" aria-label={`Move ${subcategory.name} up`}><ArrowUp className="h-4 w-4" /></button>
+                                <button type="button" onClick={() => moveSubcategory(index, 1)} disabled={index === subcategories.length - 1} className="p-2 bg-white rounded-full shadow disabled:opacity-30" aria-label={`Move ${subcategory.name} down`}><ArrowDown className="h-4 w-4" /></button>
                                 <button
                                     onClick={() => handleEditSubcategory(subcategory)}
                                     className="p-2 bg-white dark:bg-neutral-700 rounded-full shadow-lg hover:bg-neutral-100 dark:hover:bg-neutral-600"

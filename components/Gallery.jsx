@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useReducedMotion } from 'framer-motion';
@@ -13,7 +14,9 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [failedImages, setFailedImages] = useState(new Set());
   const reduceMotion = useReducedMotion();
+  const rotationTimers = useRef([]);
 
   // Load collections from API
   useEffect(() => {
@@ -55,51 +58,58 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
   useEffect(() => {
     if (reduceMotion) return;
     const interval = setInterval(() => {
-      collections.forEach((collection, index) => {
+      collections.forEach((collection) => {
+        const key = collection.id ?? collection.slug;
         if (collection.images.length > 1) {
-          setIsFlipping(prev => ({ ...prev, [index]: true }));
+          setIsFlipping(prev => ({ ...prev, [key]: true }));
           
-          setTimeout(() => {
+          const changeTimer = setTimeout(() => {
             setCurrentImageIndex(prev => {
-              const currentIndex = prev[index] || 0;
+              const currentIndex = Math.min(prev[key] || 0, collection.images.length - 1);
               const newIndex = currentIndex === collection.images.length - 1 ? 0 : currentIndex + 1;
-              return { ...prev, [index]: newIndex };
+              return { ...prev, [key]: newIndex };
             });
             
-            setTimeout(() => {
-              setIsFlipping(prev => ({ ...prev, [index]: false }));
+            const finishTimer = setTimeout(() => {
+              setIsFlipping(prev => ({ ...prev, [key]: false }));
             }, 300);
+            rotationTimers.current.push(finishTimer);
           }, 300);
+          rotationTimers.current.push(changeTimer);
         }
       });
     }, 3000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      rotationTimers.current.forEach(clearTimeout);
+      rotationTimers.current = [];
+    };
   }, [collections, reduceMotion]);
 
-  const handlePrevImage = (collectionIndex, e) => {
+  const handlePrevImage = (collectionIndex, collectionKey, e) => {
     e.stopPropagation();
     const collection = collections[collectionIndex];
-    const currentIndex = currentImageIndex[collectionIndex] || 0;
+    const currentIndex = Math.min(currentImageIndex[collectionKey] || 0, collection.images.length - 1);
     const newIndex = currentIndex === 0 ? collection.images.length - 1 : currentIndex - 1;
-    setCurrentImageIndex({ ...currentImageIndex, [collectionIndex]: newIndex });
+    setCurrentImageIndex((previous) => ({ ...previous, [collectionKey]: newIndex }));
   };
 
-  const handleNextImage = (collectionIndex, e) => {
+  const handleNextImage = (collectionIndex, collectionKey, e) => {
     e.stopPropagation();
     const collection = collections[collectionIndex];
-    const currentIndex = currentImageIndex[collectionIndex] || 0;
+    const currentIndex = Math.min(currentImageIndex[collectionKey] || 0, collection.images.length - 1);
     const newIndex = currentIndex === collection.images.length - 1 ? 0 : currentIndex + 1;
-    setCurrentImageIndex({ ...currentImageIndex, [collectionIndex]: newIndex });
+    setCurrentImageIndex((previous) => ({ ...previous, [collectionKey]: newIndex }));
   };
 
-  const handleSwipe = (collectionIndex, startX, endX) => {
+  const handleSwipe = (collectionIndex, collectionKey, startX, endX) => {
     const diff = startX - endX;
     if (Math.abs(diff) > 50) {
       if (diff > 0) {
-        handleNextImage(collectionIndex, { stopPropagation: () => {} });
+        handleNextImage(collectionIndex, collectionKey, { stopPropagation: () => {} });
       } else {
-        handlePrevImage(collectionIndex, { stopPropagation: () => {} });
+        handlePrevImage(collectionIndex, collectionKey, { stopPropagation: () => {} });
       }
     }
   };
@@ -155,13 +165,14 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
         {/* Gallery Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {collections.map((item, index) => {
-            const currentIndex = currentImageIndex[index] || 0;
+            const itemKey = item.id ?? item.slug;
+            const currentIndex = Math.min(currentImageIndex[itemKey] || 0, item.images.length - 1);
             const hasMultipleImages = item.images.length > 1;
             let touchStartX = 0;
 
             return (
               <div 
-                key={index} 
+                key={itemKey}
                 className="group cursor-pointer"
                 role={interactive ? 'link' : undefined}
                 tabIndex={interactive ? 0 : -1}
@@ -189,7 +200,7 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
                     onTouchEnd={(e) => {
                       if (hasMultipleImages) {
                         const touchEndX = e.changedTouches[0].clientX;
-                        handleSwipe(index, touchStartX, touchEndX);
+                        handleSwipe(index, itemKey, touchStartX, touchEndX);
                       }
                     }}
                   >
@@ -197,23 +208,25 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
                       className="w-full h-full transition-transform duration-600"
                       style={{
                         transformStyle: 'preserve-3d',
-                        transform: isFlipping[index] ? 'rotateY(90deg)' : 'rotateY(0deg)',
+                        transform: isFlipping[itemKey] ? 'rotateY(90deg)' : 'rotateY(0deg)',
                       }}
                     >
-                      {item.images && item.images.length > 0 && item.images[currentIndex] ? (
-                        <img
+                      {item.images && item.images.length > 0 && item.images[currentIndex] && !failedImages.has(item.images[currentIndex]) ? (
+                        <Image
                           src={item.images[currentIndex].replace(/ /g, '%20')}
                           alt={`${item.title} ${currentIndex + 1}`}
+                          fill
+                          sizes="(max-width: 767px) 50vw, 25vw"
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           style={{ backfaceVisibility: 'hidden' }}
-                          onError={(e) => {
+                          onError={() => {
                             console.error('Image load error:', item.images[currentIndex]);
-                            console.error('Image source:', e.currentTarget.src);
+                            setFailedImages((previous) => new Set(previous).add(item.images[currentIndex]));
                           }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-neutral-100 text-neutral-400 text-sm">
-                          No Images
+                            Image unavailable
                         </div>
                       )}
                     </div>
@@ -222,16 +235,16 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
                     {hasMultipleImages && (
                       <>
                         <button
-                          onClick={(e) => handlePrevImage(index, e)}
+                          onClick={(e) => handlePrevImage(index, itemKey, e)}
                           className="absolute left-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity duration-300 hover:bg-black/70 group-hover:opacity-100 focus:opacity-100"
-                          aria-label="Previous image"
+                          aria-label={`Previous ${item.title} image`}
                         >
                           <ChevronLeft size={20} />
                         </button>
                         <button
-                          onClick={(e) => handleNextImage(index, e)}
+                          onClick={(e) => handleNextImage(index, itemKey, e)}
                           className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity duration-300 hover:bg-black/70 group-hover:opacity-100 focus:opacity-100"
-                          aria-label="Next image"
+                          aria-label={`Next ${item.title} image`}
                         >
                           <ChevronRight size={20} />
                         </button>
