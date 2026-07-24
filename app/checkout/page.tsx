@@ -122,9 +122,21 @@ function CheckoutContent() {
     return (
         <>
             <Navbar />
-            <section className="bg-[#FBF7F1] pb-10 pt-8 text-neutral-900 md:pb-12 md:pt-10">
-                <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-                    <ol className="mx-auto mb-9 grid max-w-3xl grid-cols-4" aria-label="Booking progress">
+            <section className="relative isolate overflow-hidden border-b border-[#E8D9CC] bg-[#FBF7F1] pb-20 pt-8 text-neutral-900 md:pb-24 md:pt-10">
+                <img
+                    src="/contact/salon-clean.png"
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 -z-30 h-full w-full scale-105 object-cover object-[center_36%] opacity-25 blur-[4px]"
+                />
+                <div className="absolute inset-0 -z-20 bg-[#FBF7F1]/80" aria-hidden="true" />
+                <div
+                    className="absolute inset-0 -z-10 bg-gradient-to-b from-[#FFFDF9]/55 via-[#FBF7F1]/70 to-[#FBF7F1]"
+                    aria-hidden="true"
+                />
+
+                <div className="container relative z-10 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+                    <ol className="mx-auto mb-10 grid max-w-3xl grid-cols-4" aria-label="Booking progress">
                         {["Style", "Date & Time", "Details", "Payment"].map((label, index) => {
                             const stepNumber = index + 1;
                             const isActive = activeProgressStep === stepNumber;
@@ -155,14 +167,27 @@ function CheckoutContent() {
                         })}
                     </ol>
                     <div className="text-center">
+                        <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.38em] text-[#A25735] sm:text-xs">
+                            Book Your Appointment
+                        </p>
                         <h1 className="text-4xl font-light leading-tight tracking-wide text-[#2C1810] md:text-6xl">
                             <span className="font-serif">Complete Your Appointment</span>
                         </h1>
                         <p className="mx-auto mt-3 max-w-3xl text-sm font-light leading-relaxed tracking-[0.04em] text-[#665850] md:text-[16px]">
                           Review your selection, choose a date, and continue to payment.
                         </p>
+                        <div className="mx-auto mt-7 flex max-w-[220px] items-center gap-3" aria-hidden="true">
+                            <span className="h-px flex-1 bg-[#CDB5A2]" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#B8754E]" />
+                            <span className="h-px flex-1 bg-[#CDB5A2]" />
+                        </div>
                     </div>
                 </div>
+
+                <div
+                    className="absolute -bottom-16 left-1/2 h-24 w-[115%] -translate-x-1/2 rounded-[50%] bg-[#FBF7F1]"
+                    aria-hidden="true"
+                />
             </section>
 
             <section className="min-h-[70vh] bg-[#FBF7F1] pb-24 md:pb-32">
