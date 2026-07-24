@@ -52,7 +52,7 @@ export default function CalendarView({ appointments, onAppointmentClick, onRange
     }, [appointments]);
 
     const appointmentsFor = (date: Date) => grouped.get(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`) ?? [];
-    const statusClass = (status: string) => ({ PENDING: "bg-amber-600", APPROVAL_PENDING_CAPTURE: "bg-blue-600", APPROVED: "bg-emerald-700", DENIED: "bg-red-700", CANCELLED: "bg-neutral-500", COMPLETED: "bg-blue-700" }[status] ?? "bg-neutral-600");
+    const statusClass = (status: string) => ({ PENDING: "bg-amber-600", APPROVED: "bg-emerald-700", DENIED: "bg-red-700", CANCELLED: "bg-neutral-500", COMPLETED: "bg-blue-700" }[status] ?? "bg-neutral-600");
     const time = (value: string) => new Date(value).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
     const eventTime = (appointment: Appointment) => {
         if (appointment.appointmentEndDateTime) return `${time(appointment.appointmentDateTime)}–${time(appointment.appointmentEndDateTime)}`;

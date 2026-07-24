@@ -39,11 +39,11 @@ export type Appointment = {
     paymentAuthorizationExpiresAt?: string;
 };
 
-type StatusFilter = "ALL" | "PENDING" | "APPROVAL_PENDING_CAPTURE" | "APPROVED" | "DENIED" | "CANCELLED" | "COMPLETED";
+type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "DENIED" | "CANCELLED" | "COMPLETED";
 type SortChoice = "appointment-asc" | "appointment-desc" | "requested-desc" | "payment";
 type ActionKind = "approve" | "deny";
 
-const STATUSES: StatusFilter[] = ["ALL", "PENDING", "APPROVAL_PENDING_CAPTURE", "APPROVED", "DENIED", "CANCELLED", "COMPLETED"];
+const STATUSES: StatusFilter[] = ["ALL", "PENDING", "APPROVED", "DENIED", "CANCELLED", "COMPLETED"];
 
 const localDateTime = (date: Date) => {
     const pad = (value: number) => String(value).padStart(2, "0");
@@ -158,7 +158,10 @@ function AppointmentManagement() {
     };
 
     const isPast = (appointment: Appointment) => new Date(appointment.appointmentDateTime).getTime() <= Date.now();
-    const canApprove = (appointment: Appointment) => appointment.status === "PENDING" && appointment.paymentStatus === "AUTHORIZED" && !isPast(appointment);
+    const canApprove = (appointment: Appointment) => appointment.status === "PENDING"
+        && !appointment.approvedAt
+        && appointment.paymentStatus === "AUTHORIZED"
+        && !isPast(appointment);
 
     const submitAction = async () => {
         if (!action) return;
@@ -228,7 +231,6 @@ function AppointmentManagement() {
 
     const statusClass = (status: string) => ({
         PENDING: "bg-amber-100 text-amber-900 border-amber-300",
-        APPROVAL_PENDING_CAPTURE: "bg-blue-100 text-blue-900 border-blue-300",
         APPROVED: "bg-emerald-100 text-emerald-900 border-emerald-300",
         DENIED: "bg-red-100 text-red-900 border-red-300",
         CANCELLED: "bg-neutral-100 text-neutral-700 border-neutral-300",
@@ -315,6 +317,7 @@ function AppointmentManagement() {
                 <div className="space-y-4">
                     {visibleAppointments.map(appointment => {
                         const overdue = appointment.status === "PENDING" && isPast(appointment);
+                        const captureProcessing = appointment.status === "PENDING" && Boolean(appointment.approvedAt);
                         return (
                             <article key={appointment.id} className={cn("rounded-sm border bg-white p-4 transition hover:shadow-sm sm:p-6", overdue ? "border-red-300" : "border-neutral-200")}>
                                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
@@ -322,6 +325,7 @@ function AppointmentManagement() {
                                         <div className="mb-3 flex flex-wrap items-center gap-2">
                                             <h2 className="text-lg font-semibold text-neutral-900">{appointment.customer.firstName} {appointment.customer.lastName}</h2>
                                             <span className={cn("rounded-full border px-2.5 py-1 text-xs font-semibold", statusClass(appointment.status))}>{appointment.status}</span>
+                                            {captureProcessing && <span className="rounded-full border border-blue-300 bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-900">CAPTURE PROCESSING</span>}
                                             {overdue && <span className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white">OVERDUE</span>}
                                             {appointment.paymentStatus && <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", paymentClass(appointment.paymentStatus))}>PAYMENT: {appointment.paymentStatus.replaceAll("_", " ")}</span>}
                                         </div>
@@ -330,7 +334,7 @@ function AppointmentManagement() {
                                                 Capture this authorization before {formatDateTime(appointment.paymentAuthorizationExpiresAt)}.
                                             </p>
                                         )}
-                                        {appointment.status === "APPROVAL_PENDING_CAPTURE" && (
+                                        {captureProcessing && (
                                             <p className="mt-3 text-xs font-medium text-blue-700">Approval is waiting for the deposit capture to finish.</p>
                                         )}
                                         <div className="grid gap-2 text-sm text-neutral-600 md:grid-cols-2">
@@ -357,7 +361,7 @@ function AppointmentManagement() {
                                     </div>
                                     <div className="flex shrink-0 flex-wrap gap-2 xl:max-w-[240px] xl:justify-end">
                                         <Button variant="outline" size="sm" onClick={() => setSelectedAppointment(appointment)}><ExternalLink className="mr-1 h-4 w-4" />Details</Button>
-                                        {appointment.status === "PENDING" && <>
+                                        {appointment.status === "PENDING" && !captureProcessing && <>
                                             <Button size="sm" className="bg-emerald-700 text-white hover:bg-emerald-800" disabled={!canApprove(appointment) || actionLoading === appointment.id}
                                                 title={overdue ? "Past appointments cannot be approved" : appointment.paymentStatus !== "AUTHORIZED" ? "Payment authorization is required" : undefined}
                                                 onClick={() => { setAction({ kind: "approve", appointment }); setActionNotes(""); }}><Check className="mr-1 h-4 w-4" />Approve</Button>
@@ -380,7 +384,7 @@ function AppointmentManagement() {
                 <div className="flex gap-2"><Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(value => Math.max(0, value - 1))}>Previous</Button><Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(value => Math.min(totalPages - 1, value + 1))}>Next</Button></div>
             </nav>}
 
-            {selectedAppointment && <AppointmentDialog appointment={selectedAppointment} formatDateTime={formatDateTime} onClose={() => setSelectedAppointment(null)} onApprove={canApprove(selectedAppointment) ? () => { setAction({ kind: "approve", appointment: selectedAppointment }); setActionNotes(""); } : undefined} onDeny={selectedAppointment.status === "PENDING" ? () => { setAction({ kind: "deny", appointment: selectedAppointment }); setActionNotes(""); } : undefined} />}
+            {selectedAppointment && <AppointmentDialog appointment={selectedAppointment} formatDateTime={formatDateTime} onClose={() => setSelectedAppointment(null)} onApprove={canApprove(selectedAppointment) ? () => { setAction({ kind: "approve", appointment: selectedAppointment }); setActionNotes(""); } : undefined} onDeny={selectedAppointment.status === "PENDING" && !selectedAppointment.approvedAt ? () => { setAction({ kind: "deny", appointment: selectedAppointment }); setActionNotes(""); } : undefined} />}
 
             {action && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setAction(null); }}>
                 <section role="dialog" aria-modal="true" aria-labelledby="appointment-action-title" className="w-full max-w-lg rounded-sm bg-white p-6 shadow-xl">
