@@ -117,40 +117,6 @@ export default function PaymentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-300 rounded-sm p-6 shadow-sm">
-        <div className="flex gap-4">
-          <div className="flex-shrink-0">
-            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-              <Lock className="h-6 w-6 text-white" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-neutral-900 mb-3 tracking-wide">
-              Payment Authorization
-            </h3>
-            <div className="space-y-2 text-sm text-blue-900">
-              <p className="font-medium text-base">
-                Authorization Amount: <span className="text-lg font-bold text-blue-700">${(amount / 100).toFixed(2)}</span>
-              </p>
-              <div className="space-y-1.5 mt-3">
-                <div className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold">✓</span>
-                  <span className="text-blue-800">Card authorized, <strong className="font-semibold">NOT charged</strong></span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold">✓</span>
-                  <span className="text-blue-800">Payment processes after admin approval</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold">✓</span>
-                  <span className="text-blue-800">Full refund if appointment denied</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="bg-white border-2 border-neutral-300 rounded-sm p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-4 pb-3 border-b border-neutral-200">
           <div className="w-10 h-10 bg-neutral-900 rounded-full flex items-center justify-center">
