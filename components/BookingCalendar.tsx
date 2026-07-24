@@ -462,21 +462,36 @@ export default function BookingCalendar({
     };
 
     return (
-        <div className={cn("bg-white rounded-lg shadow-sm border border-neutral-200/40 overflow-hidden", className)}>
+        <div className={cn("bg-[#FFFDF9] rounded-lg shadow-sm border border-[#E5D5C8] overflow-hidden", className)}>
             {/* Header */}
-            <div className="bg-gradient-to-br from-neutral-50 to-white border-b border-neutral-200/40 px-8 py-6">
+            <div className="bg-[#FFFDF9] border-b border-[#E9DDD3] px-8 py-6">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white rounded-lg shadow-sm">
-                            <Calendar className="h-5 w-5 text-neutral-700" />
-                        </div>
-                        <h3 className="text-xl font-light tracking-tight text-neutral-900">
-                            {step === "date" && "Select Date"}
+                    {step === "date" ? (
+                        <>
+                            <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#B0633E]">Choose Your Visit</p>
+                                <h3 className="mt-2 font-serif text-3xl font-normal tracking-[-0.02em] text-[#2C1810] sm:text-4xl">
+                                    Select a Date
+                                </h3>
+                                <p className="mt-3 text-xs tracking-wide text-[#76675E]">Select a date to view available times</p>
+                            </div>
+                            <span className="hidden min-h-11 items-center gap-2 rounded-[4px] border border-[#CDB5A2] px-4 text-xs text-[#4F4038] sm:flex">
+                                <Clock className="h-4 w-4 text-[#8B735F]" />
+                                San Antonio Central Time
+                            </span>
+                        </>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-white rounded-lg shadow-sm">
+                                <Calendar className="h-5 w-5 text-neutral-700" />
+                            </div>
+                            <h3 className="text-xl font-light tracking-tight text-neutral-900">
                             {step === "time" && "Select Time"}
                             {step === "details" && "Your Details"}
                             {step === "payment" && "Payment"}
-                        </h3>
-                    </div>
+                            </h3>
+                        </div>
+                    )}
                     {step !== "date" && (
                         <Button
                             type="button"
@@ -512,27 +527,30 @@ export default function BookingCalendar({
             {/* Date Selection */}
             {step === "date" && (
                 <div className="p-8">
-                    <p className="text-xs text-neutral-500 mb-6 tracking-wide">
-                        Select a date to view available times
-                    </p>
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="mb-7 flex sm:hidden">
+                        <span className="flex min-h-11 items-center gap-2 rounded-[4px] border border-[#CDB5A2] px-3 text-[11px] text-[#4F4038]">
+                            <Clock className="h-4 w-4 text-[#8B735F]" />
+                            San Antonio Central Time
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between mb-7">
                         <button
                             onClick={goToPreviousMonth}
                             disabled={!canGoToPreviousMonth()}
-                            className="p-2.5 hover:bg-neutral-100 rounded-full transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 disabled:opacity-25 disabled:pointer-events-none"
+                            className="p-2.5 text-[#B0633E] transition-all duration-200 hover:bg-[#F4E9E0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B8754E] disabled:opacity-25 disabled:pointer-events-none"
                             aria-label="Previous month"
                         >
-                            <ChevronLeft className="h-5 w-5 text-neutral-600" />
+                            <ChevronLeft className="h-5 w-5" />
                         </button>
-                        <h4 className="text-lg font-light tracking-wide text-neutral-900">
+                        <h4 className="font-serif text-2xl font-normal tracking-[-0.01em] text-[#2C1810]">
                             {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
                         </h4>
                         <button
                             onClick={goToNextMonth}
-                            className="p-2.5 hover:bg-neutral-100 rounded-full transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900"
+                            className="p-2.5 text-[#B0633E] transition-all duration-200 hover:bg-[#F4E9E0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B8754E]"
                             aria-label="Next month"
                         >
-                            <ChevronRight className="h-5 w-5 text-neutral-600" />
+                            <ChevronRight className="h-5 w-5" />
                         </button>
                     </div>
 
@@ -540,7 +558,7 @@ export default function BookingCalendar({
                         {DAYS.map((day) => (
                             <div
                                 key={day}
-                                className="text-center text-xs font-medium text-neutral-400 uppercase tracking-[0.1em] py-3"
+                                className="py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-[#665850]"
                             >
                                 {day}
                             </div>
@@ -557,12 +575,12 @@ export default function BookingCalendar({
                                 aria-label={day ? `${MONTHS[currentDate.getMonth()]} ${day}${status === 'available' ? ', appointments available' : status === 'unavailable' ? ', unavailable' : ''}` : "Empty day"}
                                 aria-pressed={isSameDay(selectedDate, day)}
                                 className={cn(
-                                    "relative aspect-square min-h-11 p-2 text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900",
+                                    "relative aspect-square min-h-11 rounded-[8px] border p-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B8754E]",
                                     day === null && "invisible",
-                                    !isDateDisabled(day) && "bg-neutral-50 hover:bg-emerald-50 hover:-translate-y-0.5 cursor-pointer text-neutral-800 hover:shadow-sm",
-                                    isDateDisabled(day) && "text-neutral-300 bg-neutral-50/40 cursor-not-allowed line-through decoration-neutral-300",
-                                    isToday(day) && !isSameDay(selectedDate, day) && "ring-1 ring-inset ring-neutral-400 font-semibold",
-                                    isSameDay(selectedDate, day) && "bg-neutral-900 text-white hover:bg-neutral-800 shadow-md -translate-y-0.5"
+                                    !isDateDisabled(day) && "cursor-pointer border-[#EADFD5] bg-[#FFFCF8] text-[#2C1810] hover:-translate-y-0.5 hover:border-[#B8754E] hover:bg-[#F8EFE7] hover:shadow-sm",
+                                    isDateDisabled(day) && "cursor-not-allowed border-[#F1EBE5] bg-[#FBF8F4]/70 text-[#D1C8C0]",
+                                    isToday(day) && !isSameDay(selectedDate, day) && "ring-1 ring-inset ring-[#A58D7C] font-semibold",
+                                    isSameDay(selectedDate, day) && "border-[#2C1810] bg-[#FFFDF9] text-[#2C1810] ring-2 ring-[#2C1810] ring-offset-1 shadow-sm"
                                 )}
                             >
                                 {day}
@@ -570,15 +588,14 @@ export default function BookingCalendar({
                                     <span className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-neutral-300 animate-pulse" />
                                 )}
                                 {status === "available" && day && !isSameDay(selectedDate, day) && (
-                                    <span className="absolute bottom-1.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-emerald-500" />
+                                    <span className="absolute bottom-1.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[#B7602E]" />
                                 )}
                             </button>
                         )})}
                     </div>
-                    <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-neutral-500">
-                        <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Available</span>
-                        <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-neutral-200" /> Fully booked or closed</span>
-                        <span className="ml-auto">San Antonio Central Time</span>
+                    <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#EEE3DA] pt-5 text-[11px] text-[#76675E]">
+                        <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#B7602E]" /> Available</span>
+                        <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#DED7D0]" /> Fully booked or closed</span>
                     </div>
                 </div>
             )}
