@@ -720,114 +720,90 @@ export default function GalleryPage({
 
         {/* Modal for Image Viewing */}
         {isModalOpen && selectedCategory && (
-          <div ref={modalRef} className="fixed inset-0 bg-black z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="gallery-dialog-title" onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
-            {/* Close Button */}
-            <button
-              onClick={closeModal}
-              ref={closeButtonRef}
-              className="absolute top-6 right-6 text-white hover:text-gray-400 transition-colors z-20"
-              aria-label="Close modal"
-            >
-              <X size={24} />
-            </button>
+          <div ref={modalRef} className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#1B0F0A]/95 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="gallery-dialog-title" onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
+            <div className="relative my-auto grid w-full max-w-7xl overflow-hidden rounded-[5px] border border-[#D4BDAA] bg-[#F8F1E8] shadow-[0_30px_90px_rgba(0,0,0,0.45)] lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
+              <button
+                onClick={closeModal}
+                ref={closeButtonRef}
+                className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-[#B8754E] bg-[#FBF6EF]/95 text-[#2C1810] transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#B8754E] focus:ring-offset-2 sm:right-6 sm:top-6"
+                aria-label="Close gallery viewer"
+              >
+                <X size={20} />
+              </button>
 
-            {/* Modal Container */}
-            <div className="bg-neutral-900/50 rounded-xl max-w-md w-full">
-              {/* Header with Title */}
-              <div className="flex items-center justify-center py-6 border-b border-white/10">
-                  <h2 id="gallery-dialog-title" className="text-base md:text-lg font-normal text-white">
+              <div className="border-b border-[#E3D4C8] p-4 pb-3 sm:p-6 sm:pb-4 lg:border-b-0 lg:border-r lg:p-8">
+                <div className="relative aspect-[4/5] overflow-hidden rounded-[3px] bg-[#E8DED4] sm:aspect-[4/3] lg:aspect-[5/4]">
+                  {!failedImages.has(selectedCategory.images[currentImageIndex]) ? (
+                    <Image
+                      src={selectedCategory.images[currentImageIndex]}
+                      alt={selectedCategory.imageAltTexts?.[currentImageIndex] || `${selectedCategory.title} hairstyle ${currentImageIndex + 1}`}
+                      fill
+                      priority
+                      sizes="(max-width: 1023px) 100vw, 65vw"
+                      className="h-full w-full object-cover"
+                      onError={() => setFailedImages((previous) => new Set(previous).add(selectedCategory.images[currentImageIndex]))}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-[#6E5C52]">Image unavailable</div>
+                  )}
+
+                  {selectedCategory.images.length > 1 && (
+                    <>
+                      <button onClick={handlePrevImage} className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#B8754E] bg-[#FBF6EF]/90 text-[#B0633E] shadow-sm transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-white sm:left-5" aria-label="Previous image">
+                        <ChevronLeft size={24} />
+                      </button>
+                      <button onClick={handleNextImage} className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#B8754E] bg-[#FBF6EF]/90 text-[#B0633E] shadow-sm transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-white sm:right-5" aria-label="Next image">
+                        <ChevronRight size={24} />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {selectedCategory.images.length > 1 && (
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1 sm:justify-center">
+                    {selectedCategory.images.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`relative h-16 w-14 flex-shrink-0 overflow-hidden rounded-[3px] transition sm:h-20 sm:w-18 ${
+                          index === currentImageIndex
+                            ? 'ring-2 ring-[#B8754E] ring-offset-2 ring-offset-[#F8F1E8]'
+                            : 'opacity-65 hover:opacity-100'
+                        }`}
+                        aria-label={`View image ${index + 1} of ${selectedCategory.images.length}`}
+                        aria-current={index === currentImageIndex ? 'true' : undefined}
+                      >
+                        <Image src={image} alt={selectedCategory.imageAltTexts?.[index] || `${selectedCategory.title} thumbnail ${index + 1}`} fill sizes="72px" className="h-full w-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex min-h-[360px] flex-col justify-center px-6 py-12 sm:px-10 lg:min-h-0 lg:px-12 lg:py-16">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#B0633E]">
+                  {(selectedCategory.description?.split(' - ')[0] || 'Gallery')} Styles
+                </p>
+                <h2 id="gallery-dialog-title" className="mt-6 max-w-md font-serif text-4xl leading-[0.98] tracking-[-0.03em] text-[#2C1810] sm:text-5xl lg:text-6xl">
                   {selectedCategory.title}
                 </h2>
-              </div>
+                <span aria-hidden="true" className="mt-8 h-0.5 w-14 bg-[#B8754E]" />
 
-              {/* Main Image Container */}
-              <div className="p-4">
-                <div className="relative w-full aspect-[3/4] bg-black rounded-lg overflow-hidden">
-                {/* Main Image */}
-                {!failedImages.has(selectedCategory.images[currentImageIndex]) ? <Image
-                  src={selectedCategory.images[currentImageIndex]}
-                  alt={selectedCategory.imageAltTexts?.[currentImageIndex] || `${selectedCategory.title} hairstyle ${currentImageIndex + 1}`}
-                  fill
-                  sizes="(max-width: 640px) 100vw, 448px"
-                  className="w-full h-full object-cover"
-                  onError={() => setFailedImages((previous) => new Set(previous).add(selectedCategory.images[currentImageIndex]))}
-                /> : <div className="flex h-full items-center justify-center text-sm text-white">Image unavailable</div>}
-
-                {/* Navigation Arrows */}
-                {selectedCategory.images.length > 1 && (
-                  <>
-                    <button
-                      onClick={handlePrevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors"
-                      aria-label="Previous image"
-                    >
-                      <ChevronLeft size={32} />
-                    </button>
-                    <button
-                      onClick={handleNextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors"
-                      aria-label="Next image"
-                    >
-                      <ChevronRight size={32} />
-                    </button>
-                  </>
-                )}
-                </div>
-              </div>
-
-              {/* Bottom Section - Thumbnails and Button */}
-              <div className="pb-4 px-4">
-              {/* Thumbnail Strip */}
-              {selectedCategory.images.length > 1 && (
-                <div className="flex gap-2 justify-center mb-4 overflow-x-auto pb-2">
-                  {selectedCategory.images.map((image, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`relative flex-shrink-0 w-14 h-16 rounded overflow-hidden ${
-                        index === currentImageIndex
-                          ? 'ring-2 ring-white'
-                          : 'opacity-60 hover:opacity-100'
-                      }`}
-                    >
-                      <Image
-                        src={image}
-                        alt={selectedCategory.imageAltTexts?.[index] || `${selectedCategory.title} thumbnail ${index + 1}`}
-                        fill
-                        sizes="56px"
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Dot Indicators */}
-              {selectedCategory.images.length > 1 && (
-                <div className="flex gap-1.5 justify-center mb-6">
-                  {selectedCategory.images.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`h-1.5 rounded-full transition-all ${
-                        index === currentImageIndex
-                          ? 'w-6 bg-white'
-                          : 'w-1.5 bg-gray-600'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Book Now Button */}
-              <div className="flex justify-center">
+                <p className="mt-16 text-sm tracking-[0.08em] text-[#5E4D44]">
+                  <span className="font-semibold text-[#B0633E]">{String(currentImageIndex + 1).padStart(2, '0')}</span>
+                  {' / '}
+                  {String(selectedCategory.images.length).padStart(2, '0')}
+                </p>
                 <button
                   onClick={() => router.push(selectedCategory.bookingLink ?? selectedCategory.link)}
-                  className="bg-white text-black px-8 py-2.5 text-xs uppercase tracking-wider font-medium hover:bg-gray-100 transition-colors"
+                  className="mt-6 min-h-14 w-full max-w-xs bg-[#2C1810] px-8 text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#45271B] focus:outline-none focus:ring-2 focus:ring-[#B8754E] focus:ring-offset-2"
                 >
-                  Book Now
+                  Book This Style
+                </button>
+                <button type="button" onClick={closeModal} className="mt-7 w-fit border-b border-[#B8754E] pb-1 text-sm text-[#4E3A31] transition-colors hover:text-[#B0633E]">
+                  Back to Gallery
                 </button>
               </div>
-            </div>
             </div>
           </div>
         )}
