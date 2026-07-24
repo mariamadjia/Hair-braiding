@@ -124,7 +124,7 @@ function CheckoutContent() {
             <Navbar />
             <section className="relative isolate overflow-hidden bg-[#FBF7F1] pb-16 pt-6 text-neutral-900 md:pb-20 md:pt-7">
                 <img
-                    src="/Gallery/Salon.JPG"
+                    src="/checkout/checkout-hero.png"
                     alt=""
                     aria-hidden="true"
                     className="absolute inset-0 -z-30 h-full w-full scale-[1.02] object-cover object-center opacity-55 blur-[1.5px]"
