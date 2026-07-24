@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Calendar, Clock, User, Mail, MessageSquare, Loader2, Phone } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Calendar, Clock, User, Mail, MessageSquare, Loader2, Phone, X, ShieldCheck, LockKeyhole } from "lucide-react";
 import { Elements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,39 @@ const MONTHS = [
     "July", "August", "September", "October", "November", "December"
 ];
 
+const POLICY_SECTIONS = [
+    {
+        title: "Deposits & Approval",
+        points: [
+            "A $50 card authorization is required with your appointment request.",
+            "Your card is not charged unless the salon approves your appointment.",
+            "If your request is denied, the authorization hold is released.",
+        ],
+    },
+    {
+        title: "Late Arrivals",
+        points: [
+            "Please arrive on time. A 15-minute grace period is provided.",
+            "After 15 minutes, a late fee may apply. After 30 minutes, your appointment may be canceled and your deposit forfeited.",
+        ],
+    },
+    {
+        title: "Cancellations & No-Shows",
+        points: [
+            "Cancellations within 48 hours and no-shows forfeit the deposit.",
+            "Please contact the salon directly as soon as possible if you cannot attend.",
+        ],
+    },
+    {
+        title: "Appointment Preparation",
+        points: [
+            "Arrive with clean, detangled, and blown-out hair unless your selected service states otherwise.",
+            "Extra preparation may require an additional fee or a new appointment.",
+            "No extra guests or children unless they are being serviced.",
+        ],
+    },
+];
+
 export default function BookingCalendar({ 
     className, 
     onBookingComplete,
@@ -77,8 +110,25 @@ export default function BookingCalendar({
     const availabilityRequest = useRef<AbortController | null>(null);
     const slotsCache = useRef(new Map<string, TimeSlot[]>());
     const [dateAvailability, setDateAvailability] = useState<Record<string, DateAvailability>>({});
+    const [policyAccepted, setPolicyAccepted] = useState(false);
+    const [policyModalOpen, setPolicyModalOpen] = useState(false);
+    const [expandedPolicy, setExpandedPolicy] = useState(0);
 
     useEffect(() => () => availabilityRequest.current?.abort(), []);
+
+    useEffect(() => {
+        if (!policyModalOpen) return;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === "Escape") setPolicyModalOpen(false);
+        };
+        window.addEventListener("keydown", closeOnEscape);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener("keydown", closeOnEscape);
+        };
+    }, [policyModalOpen]);
     
     const [formData, setFormData] = useState({
         firstName: "",
@@ -321,6 +371,10 @@ export default function BookingCalendar({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedDate || !selectedTime || isSubmitting) return;
+        if (!policyAccepted) {
+            setError("Please review and accept the booking policies before continuing.");
+            return;
+        }
         if (!serviceId) {
             setError("This service is not configured for online booking. Please choose it again or contact the salon.");
             return;
@@ -833,10 +887,46 @@ export default function BookingCalendar({
                         />
                     </div>
 
+                    <section className="border border-[#D9C4B3] bg-[#FCF7F1] p-4" aria-labelledby="booking-policy-consent">
+                        <div className="flex items-center gap-2 text-[#B0633E]">
+                            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                            <h4 id="booking-policy-consent" className="text-[10px] font-semibold uppercase tracking-[0.22em]">Booking Policies</h4>
+                        </div>
+                        <label className="mt-3 flex cursor-pointer items-start gap-3 text-sm leading-6 text-[#4F4038]">
+                            <input
+                                type="checkbox"
+                                checked={policyAccepted}
+                                onChange={(event) => {
+                                    setPolicyAccepted(event.target.checked);
+                                    if (event.target.checked) setError(null);
+                                }}
+                                className="mt-1 h-5 w-5 flex-shrink-0 rounded-sm border-[#BBA18E] text-[#2C1810] focus:ring-[#B8754E]"
+                                required
+                            />
+                            <span>
+                                I have read and agree to the Booking, Deposit, Late Arrival, and No-Show Policies.{" "}
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        setPolicyModalOpen(true);
+                                    }}
+                                    className="font-medium text-[#A25735] underline decoration-[#B8754E] underline-offset-4 hover:text-[#2C1810]"
+                                >
+                                    View full policies
+                                </button>
+                            </span>
+                        </label>
+                    </section>
+
+                    {error && step === "details" && (
+                        <p role="alert" className="text-xs text-red-700">{error}</p>
+                    )}
+
                     <Button
                         type="submit"
-                        disabled={loading || isSubmitting}
-                        className="w-full rounded-none bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-3 text-xs font-medium uppercase tracking-[0.25em] transition"
+                        disabled={loading || isSubmitting || !policyAccepted}
+                        className="w-full rounded-none bg-[#2C1810] hover:bg-[#45271B] text-white px-6 py-3 text-xs font-medium uppercase tracking-[0.25em] transition disabled:cursor-not-allowed disabled:bg-[#D8CFC8] disabled:text-[#8E8178]"
                     >
                         {loading || isSubmitting ? (
                             <>
@@ -844,7 +934,7 @@ export default function BookingCalendar({
                                 Confirming...
                             </>
                         ) : (
-                            "Next: Payment"
+                            "Continue to Payment"
                         )}
                     </Button>
                 </form>
@@ -928,12 +1018,111 @@ export default function BookingCalendar({
                             setCreatedAppointmentId(null);
                             setPaymentToken(null);
                             setConfirmationNumber(null);
+                            setPolicyAccepted(false);
                             setStep("date");
                         }}
                         className="w-full rounded-none bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-3 text-xs font-medium uppercase tracking-[0.25em] transition"
                     >
                         Book Another Appointment
                     </Button>
+                </div>
+            )}
+
+            {policyModalOpen && (
+                <div
+                    className="fixed inset-0 z-[70] flex items-center justify-center bg-[#1C0F0A]/75 p-4 backdrop-blur-[2px]"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="booking-policies-title"
+                    onMouseDown={(event) => {
+                        if (event.target === event.currentTarget) setPolicyModalOpen(false);
+                    }}
+                >
+                    <div className="relative max-h-[90vh] w-full max-w-2xl overflow-hidden border border-[#B8754E]/60 bg-[#FBF6EF] p-1 shadow-2xl">
+                        <div className="flex max-h-[calc(90vh-10px)] flex-col border border-[#D8C3B1]">
+                            <button
+                                type="button"
+                                onClick={() => setPolicyModalOpen(false)}
+                                className="absolute right-5 top-5 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[#B8754E]/60 bg-[#FBF6EF] text-[#2C1810] transition hover:bg-[#F1E5D9] focus:outline-none focus:ring-2 focus:ring-[#B8754E] focus:ring-offset-2"
+                                aria-label="Close booking policies"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+
+                            <header className="border-b border-[#E1D2C5] px-6 pb-6 pt-8 sm:px-10">
+                                <p className="mb-2 text-xs font-medium uppercase tracking-[0.3em] text-[#A25735]">
+                                    Before You Continue
+                                </p>
+                                <h2
+                                    id="booking-policies-title"
+                                    className="font-serif text-3xl text-[#2C1810] sm:text-4xl"
+                                >
+                                    Booking Policies
+                                </h2>
+                                <div className="my-4 h-px w-14 bg-[#B8754E]" />
+                                <p className="max-w-xl text-sm leading-6 text-[#66554B]">
+                                    Please review these policies before continuing to payment. They help us protect your appointment time and provide every client with a smooth experience.
+                                </p>
+                            </header>
+
+                            <div className="overflow-y-auto px-6 py-4 sm:px-10">
+                                <div className="divide-y divide-[#E1D2C5] border-y border-[#E1D2C5]">
+                                    {POLICY_SECTIONS.map((section, index) => {
+                                        const isExpanded = expandedPolicy === index;
+                                        return (
+                                            <section key={section.title}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setExpandedPolicy(isExpanded ? -1 : index)}
+                                                    className="flex w-full items-center justify-between gap-4 py-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8754E] focus-visible:ring-inset"
+                                                    aria-expanded={isExpanded}
+                                                >
+                                                    <span className="font-serif text-lg text-[#2C1810]">
+                                                        {section.title}
+                                                    </span>
+                                                    {isExpanded ? (
+                                                        <ChevronUp className="h-5 w-5 flex-shrink-0 text-[#A25735]" />
+                                                    ) : (
+                                                        <ChevronDown className="h-5 w-5 flex-shrink-0 text-[#A25735]" />
+                                                    )}
+                                                </button>
+                                                {isExpanded && (
+                                                    <ul className="space-y-3 pb-5">
+                                                        {section.points.map((item) => (
+                                                            <li
+                                                                key={item}
+                                                                className="flex gap-3 text-sm leading-6 text-[#66554B]"
+                                                            >
+                                                                <span
+                                                                    className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#B8754E]"
+                                                                    aria-hidden="true"
+                                                                />
+                                                                <span>{item}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </section>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <footer className="border-t border-[#E1D2C5] bg-[#F5ECE3] px-6 py-5 sm:px-10">
+                                <div className="mb-4 flex items-center justify-center gap-2 text-xs text-[#66554B]">
+                                    <LockKeyhole className="h-4 w-4 text-[#A25735]" />
+                                    <span>Your booking and payment information are protected.</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setPolicyModalOpen(false)}
+                                    className="w-full bg-[#2C1810] px-6 py-3.5 text-xs font-medium uppercase tracking-[0.25em] text-white transition hover:bg-[#45271B] focus:outline-none focus:ring-2 focus:ring-[#B8754E] focus:ring-offset-2"
+                                >
+                                    I Understand
+                                </button>
+                            </footer>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
