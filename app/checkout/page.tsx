@@ -124,14 +124,14 @@ function CheckoutContent() {
             <Navbar />
             <section className="relative isolate overflow-hidden border-b border-[#E8D9CC] bg-[#FBF7F1] pb-20 pt-8 text-neutral-900 md:pb-24 md:pt-10">
                 <img
-                    src="/contact/salon-clean.png"
+                    src="/Gallery/Salon.JPG"
                     alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 -z-30 h-full w-full scale-105 object-cover object-[center_36%] opacity-25 blur-[4px]"
+                    className="absolute inset-0 -z-30 h-full w-full scale-[1.03] object-cover object-[center_44%] opacity-50 blur-[2px]"
                 />
-                <div className="absolute inset-0 -z-20 bg-[#FBF7F1]/80" aria-hidden="true" />
+                <div className="absolute inset-0 -z-20 bg-[#FBF7F1]/60" aria-hidden="true" />
                 <div
-                    className="absolute inset-0 -z-10 bg-gradient-to-b from-[#FFFDF9]/55 via-[#FBF7F1]/70 to-[#FBF7F1]"
+                    className="absolute inset-0 -z-10 bg-gradient-to-b from-[#FFFDF9]/35 via-[#FBF7F1]/50 to-[#FBF7F1]/90"
                     aria-hidden="true"
                 />
 
