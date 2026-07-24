@@ -4,6 +4,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-hairbraiding
 
 const nextConfig: NextConfig = {
   images: {
+    // Next.js 16 blocks local image sources with query strings unless they
+    // are explicitly allowed. The proxy route validates the upstream origin
+    // and gallery path before fetching, so dynamic `?url=` values are safe
+    // for this one local endpoint.
+    localPatterns: [
+      {
+        pathname: '/api/proxy-image',
+      },
+    ],
     remotePatterns: [
       {
         protocol: 'http',
