@@ -52,8 +52,18 @@ export default function CalendarView({ appointments, onAppointmentClick, onRange
     }, [appointments]);
 
     const appointmentsFor = (date: Date) => grouped.get(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`) ?? [];
-    const statusClass = (status: string) => ({ PENDING: "bg-amber-600", APPROVED: "bg-emerald-700", DENIED: "bg-red-700", CANCELLED: "bg-neutral-500", COMPLETED: "bg-blue-700" }[status] ?? "bg-neutral-600");
-    const time = (value: string) => new Date(value).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    const operationalStatus = (appointment: Appointment) => {
+        if (appointment.paymentStatus?.includes("FAILED")) return "PAYMENT ISSUE";
+        if (appointment.status === "PENDING" && appointment.approvedAt) return "CAPTURE PROCESSING";
+        if (appointment.status === "PENDING" && appointment.paymentStatus === "AUTHORIZED") return "READY FOR APPROVAL";
+        if (appointment.status === "PENDING") return "AWAITING PAYMENT";
+        return appointment.status;
+    };
+    const statusClass = (appointment: Appointment) => {
+        const status = operationalStatus(appointment);
+        return ({ "AWAITING PAYMENT": "bg-amber-600", "READY FOR APPROVAL": "bg-emerald-700", "CAPTURE PROCESSING": "bg-blue-700", "PAYMENT ISSUE": "bg-red-700", APPROVED: "bg-emerald-700", DENIED: "bg-red-700", CANCELLED: "bg-neutral-500", COMPLETED: "bg-blue-700" }[status] ?? "bg-neutral-600");
+    };
+    const time = (value: string) => new Date(`${value.replace(/Z$/, "")}Z`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" });
     const eventTime = (appointment: Appointment) => {
         if (appointment.appointmentEndDateTime) return `${time(appointment.appointmentDateTime)}–${time(appointment.appointmentEndDateTime)}`;
         return time(appointment.appointmentDateTime);
@@ -73,11 +83,11 @@ export default function CalendarView({ appointments, onAppointmentClick, onRange
 
     const Event = ({ appointment, compact = false }: { appointment: Appointment; compact?: boolean }) => (
         <button type="button" onClick={() => onAppointmentClick(appointment)}
-            aria-label={`${appointment.customer.firstName} ${appointment.customer.lastName}, ${eventTime(appointment)}, ${appointment.status}`}
-            className={cn("w-full rounded-sm text-left text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1", compact ? "px-2 py-1 text-xs" : "p-3 text-sm", statusClass(appointment.status))}>
+            aria-label={`${appointment.customer.firstName} ${appointment.customer.lastName}, ${eventTime(appointment)} Central Time, ${operationalStatus(appointment)}`}
+            className={cn("w-full rounded-sm text-left text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1", compact ? "px-2 py-1 text-xs" : "p-3 text-sm", statusClass(appointment))}>
             <span className="flex items-center gap-1 font-semibold"><Clock className="h-3 w-3 shrink-0" />{eventTime(appointment)}</span>
             <span className="block truncate">{appointment.customer.firstName} {appointment.customer.lastName}</span>
-            {!compact && <><span className="mt-1 block truncate text-xs opacity-90">{appointment.selectedService || appointment.service?.name || "Appointment"}</span><span className="mt-1 block text-xs uppercase tracking-wide opacity-80">{appointment.status} · {appointment.paymentStatus?.replaceAll("_", " ") || "Payment unknown"}</span></>}
+            {!compact && <><span className="mt-1 block truncate text-xs opacity-90">{appointment.selectedService || appointment.service?.name || "Appointment"}</span><span className="mt-1 block text-xs uppercase tracking-wide opacity-80">{operationalStatus(appointment)} · CT</span></>}
         </button>
     );
 
@@ -103,7 +113,8 @@ export default function CalendarView({ appointments, onAppointmentClick, onRange
                     </div>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-3 text-xs text-neutral-600" aria-label="Status legend">
-                    {[["bg-amber-600", "Pending"], ["bg-emerald-700", "Approved"], ["bg-red-700", "Denied"], ["bg-neutral-500", "Cancelled"], ["bg-blue-700", "Completed"]].map(([color, label]) => <span key={label} className="flex items-center gap-1.5"><i aria-hidden="true" className={cn("h-2.5 w-2.5 rounded-full", color)} />{label}</span>)}
+                    {[["bg-amber-600", "Awaiting payment"], ["bg-emerald-700", "Ready / approved"], ["bg-blue-700", "Processing / completed"], ["bg-red-700", "Needs payment attention"], ["bg-neutral-500", "Cancelled"]].map(([color, label]) => <span key={label} className="flex items-center gap-1.5"><i aria-hidden="true" className={cn("h-2.5 w-2.5 rounded-full", color)} />{label}</span>)}
+                    <span className="ml-auto font-medium">San Antonio Central Time</span>
                 </div>
             </header>
 
