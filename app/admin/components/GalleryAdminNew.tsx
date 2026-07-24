@@ -375,7 +375,11 @@ export function GalleryAdminNew() {
                     category={{
                         id: selectedCategoryForFlipping.id,
                         name: selectedCategoryForFlipping.name,
-                        images: selectedCategoryForFlipping.rawImages ?? [],
+                        images:
+                            selectedCategoryForFlipping.rawImages &&
+                            selectedCategoryForFlipping.rawImages.length > 0
+                                ? selectedCategoryForFlipping.rawImages
+                                : (selectedCategoryForFlipping.fallbackImages ?? []).slice(0, 5),
                     }}
                     allCategoryImages={selectedCategoryImages}
                     fallbackImageUrls={selectedCategoryForFlipping.fallbackImages ?? []}
