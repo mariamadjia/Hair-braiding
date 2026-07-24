@@ -110,6 +110,8 @@ export default function BookingCalendar({
     const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
     const [createdAppointmentId, setCreatedAppointmentId] = useState<number | null>(null);
     const [paymentToken, setPaymentToken] = useState<string | null>(null);
+    const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
+    const [authorizedAmountCents, setAuthorizedAmountCents] = useState(depositAmountCents);
     const [confirmationNumber, setConfirmationNumber] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stripePromise] = useState(() => getStripe());
@@ -136,34 +138,36 @@ export default function BookingCalendar({
         void stripePromise.then(async (stripe) => {
             if (!stripe || cancelled) return;
 
-            const { paymentIntent, error: paymentError } = await stripe.retrievePaymentIntent(clientSecret);
-            if (cancelled) return;
-
-            if (paymentError || !paymentIntent) {
-                setError(paymentError?.message || "We could not verify your payment authorization.");
-                return;
-            }
-
-            if (paymentIntent.status !== "requires_capture" && paymentIntent.status !== "succeeded") {
-                setError(`Payment authorization was not completed. Status: ${paymentIntent.status}`);
-                return;
-            }
-
             const storedBooking = sessionStorage.getItem(PENDING_PAYMENT_STORAGE_KEY);
-            if (storedBooking) {
-                try {
+            if (!storedBooking) {
+                setError("We could not verify this payment against your booking. Please start again.");
+                return;
+            }
+            try {
                     const restored = JSON.parse(storedBooking);
+                    const statusResponse = await fetch(
+                        `${API_BASE_URL}/api/payments/booking-status?appointmentId=${encodeURIComponent(restored.appointmentId)}&paymentToken=${encodeURIComponent(restored.paymentToken)}`
+                    );
+                    if (!statusResponse.ok) throw new Error("Booking payment verification failed.");
+                    const verified = await statusResponse.json();
+                    if (verified.paymentIntentId !== returnedPaymentIntentId
+                        || (verified.status !== "requires_capture" && verified.status !== "succeeded")) {
+                        throw new Error(`Payment authorization was not completed. Status: ${verified.status || "unknown"}`);
+                    }
+                    if (cancelled) return;
                     const restoredDate = new Date(restored.date);
                     setSelectedDate(restoredDate);
                     setSelectedTime(restored.time);
                     setFormData(restored.formData);
                     setCreatedAppointmentId(restored.appointmentId);
+                    setPaymentToken(restored.paymentToken);
+                    setAuthorizedAmountCents(verified.amount);
                     setConfirmationNumber(`APT-${restored.appointmentId}`);
                     onDateSelected?.(restoredDate);
                     onTimeSelected?.(restored.time);
-                } catch {
-                    // The authorization is still valid even if local display state cannot be restored.
-                }
+            } catch (verificationError) {
+                setError(verificationError instanceof Error ? verificationError.message : "Payment verification failed.");
+                return;
             }
 
             sessionStorage.removeItem(PENDING_PAYMENT_STORAGE_KEY);
@@ -452,6 +456,20 @@ export default function BookingCalendar({
 
         try {
             if (createdAppointmentId && paymentToken) {
+                if (!paymentClientSecret) {
+                    const paymentResponse = await fetch(`${API_BASE_URL}/api/payments/create-intent`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ appointmentId: createdAppointmentId, paymentToken }),
+                    });
+                    if (!paymentResponse.ok) {
+                        const paymentError = await paymentResponse.json();
+                        throw new Error(paymentError.error || paymentError.message || "Failed to initialize payment");
+                    }
+                    const payment = await paymentResponse.json();
+                    setPaymentClientSecret(payment.clientSecret);
+                    setAuthorizedAmountCents(payment.amount);
+                }
                 setStep("payment");
                 return;
             }
@@ -493,8 +511,22 @@ export default function BookingCalendar({
             setCreatedAppointmentId(result.id);
             setPaymentToken(result.paymentToken);
             setConfirmationNumber(`APT-${result.id}`);
+
+            const paymentResponse = await fetch(`${API_BASE_URL}/api/payments/create-intent`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ appointmentId: result.id, paymentToken: result.paymentToken }),
+            });
+            if (!paymentResponse.ok) {
+                const paymentError = await paymentResponse.json();
+                throw new Error(paymentError.error || paymentError.message || "Failed to initialize payment");
+            }
+            const payment = await paymentResponse.json();
+            setPaymentClientSecret(payment.clientSecret);
+            setAuthorizedAmountCents(payment.amount);
             sessionStorage.setItem(PENDING_PAYMENT_STORAGE_KEY, JSON.stringify({
                 appointmentId: result.id,
+                paymentToken: result.paymentToken,
                 date: selectedDate.toISOString(),
                 time: selectedTime,
                 formData,
@@ -1006,15 +1038,12 @@ export default function BookingCalendar({
             )}
 
             {/* Payment Step */}
-            {step === "payment" && stripePromise && (
+            {step === "payment" && stripePromise && paymentClientSecret && (
                 <div className="p-6">
                     <Elements
                         stripe={stripePromise}
                         options={{
-                            mode: "payment",
-                            amount: depositAmountCents,
-                            currency: "usd",
-                            capture_method: "manual",
+                            clientSecret: paymentClientSecret,
                             appearance: {
                                 theme: "stripe",
                                 variables: {
@@ -1029,11 +1058,10 @@ export default function BookingCalendar({
                         }}
                     >
                         <PaymentForm
-                            amount={depositAmountCents}
+                            amount={authorizedAmountCents}
                             onSuccess={handlePaymentSuccess}
                             onBack={() => setStep("details")}
-                            appointmentId={createdAppointmentId || undefined}
-                            paymentToken={paymentToken || undefined}
+                            clientSecret={paymentClientSecret}
                             customerEmail={formData.email}
                             customerName={`${formData.firstName} ${formData.lastName}`}
                         />
@@ -1057,7 +1085,7 @@ export default function BookingCalendar({
                     </div>
                     <h3 className="text-2xl font-light text-neutral-900 mb-4">Appointment Request Submitted</h3>
                     <p className="text-neutral-600 mb-6">
-                        Your card has been authorized for ${(depositAmountCents / 100).toFixed(2)}. The salon will review your request before the hold is captured.
+                        Your payment method has been authorized for ${(authorizedAmountCents / 100).toFixed(2)}. The salon will review your request before the hold is captured.
                     </p>
                     
                     {confirmationNumber && (

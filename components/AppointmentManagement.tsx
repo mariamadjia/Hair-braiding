@@ -36,13 +36,14 @@ export type Appointment = {
     durationMinutes?: number;
     paymentMethodBrand?: string;
     paymentMethodLast4?: string;
+    paymentAuthorizationExpiresAt?: string;
 };
 
-type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "DENIED" | "CANCELLED" | "COMPLETED";
+type StatusFilter = "ALL" | "PENDING" | "APPROVAL_PENDING_CAPTURE" | "APPROVED" | "DENIED" | "CANCELLED" | "COMPLETED";
 type SortChoice = "appointment-asc" | "appointment-desc" | "requested-desc" | "payment";
 type ActionKind = "approve" | "deny";
 
-const STATUSES: StatusFilter[] = ["ALL", "PENDING", "APPROVED", "DENIED", "CANCELLED", "COMPLETED"];
+const STATUSES: StatusFilter[] = ["ALL", "PENDING", "APPROVAL_PENDING_CAPTURE", "APPROVED", "DENIED", "CANCELLED", "COMPLETED"];
 
 const localDateTime = (date: Date) => {
     const pad = (value: number) => String(value).padStart(2, "0");
@@ -176,7 +177,7 @@ function AppointmentManagement() {
                 body: JSON.stringify({ adminNotes: notes })
             }));
             setNotice(action.kind === "approve"
-                ? "Appointment approved. Payment capture is processing."
+                ? "Approval is processing while the authorized deposit is captured."
                 : "Appointment denied. Payment authorization release is processing when applicable.");
             setAction(null);
             setActionNotes("");
@@ -227,6 +228,7 @@ function AppointmentManagement() {
 
     const statusClass = (status: string) => ({
         PENDING: "bg-amber-100 text-amber-900 border-amber-300",
+        APPROVAL_PENDING_CAPTURE: "bg-blue-100 text-blue-900 border-blue-300",
         APPROVED: "bg-emerald-100 text-emerald-900 border-emerald-300",
         DENIED: "bg-red-100 text-red-900 border-red-300",
         CANCELLED: "bg-neutral-100 text-neutral-700 border-neutral-300",
@@ -323,6 +325,14 @@ function AppointmentManagement() {
                                             {overdue && <span className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white">OVERDUE</span>}
                                             {appointment.paymentStatus && <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", paymentClass(appointment.paymentStatus))}>PAYMENT: {appointment.paymentStatus.replaceAll("_", " ")}</span>}
                                         </div>
+                                        {appointment.paymentAuthorizationExpiresAt && appointment.paymentStatus === "AUTHORIZED" && (
+                                            <p className="mt-3 text-xs font-medium text-amber-700">
+                                                Capture this authorization before {formatDateTime(appointment.paymentAuthorizationExpiresAt)}.
+                                            </p>
+                                        )}
+                                        {appointment.status === "APPROVAL_PENDING_CAPTURE" && (
+                                            <p className="mt-3 text-xs font-medium text-blue-700">Approval is waiting for the deposit capture to finish.</p>
+                                        )}
                                         <div className="grid gap-2 text-sm text-neutral-600 md:grid-cols-2">
                                             <p className="flex items-center gap-2"><Calendar className="h-4 w-4 shrink-0" />{formatDateTime(appointment.appointmentDateTime)}</p>
                                             <a className="flex min-w-0 items-center gap-2 hover:text-neutral-900 hover:underline" href={`mailto:${appointment.customer.email}`}><Mail className="h-4 w-4 shrink-0" /><span className="truncate">{appointment.customer.email}</span></a>

@@ -4,15 +4,12 @@ import { useState } from "react";
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2, Lock, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { API_BASE_URL } from "@/lib/config/api";
 
 type PaymentFormProps = {
   amount: number;
   onSuccess: (paymentIntentId: string) => void;
   onBack: () => void;
-  appointmentId?: number;
-  paymentToken?: string;
+  clientSecret: string;
   customerEmail: string;
   customerName: string;
 };
@@ -21,8 +18,7 @@ export default function PaymentForm({
   amount,
   onSuccess,
   onBack,
-  appointmentId,
-  paymentToken,
+  clientSecret,
   customerEmail,
   customerName,
 }: PaymentFormProps) {
@@ -49,34 +45,6 @@ export default function PaymentForm({
         return;
       }
 
-      // Create payment intent on backend without payment method
-      if (!appointmentId || !paymentToken) {
-        throw new Error("Your booking session has expired. Please start again.");
-      }
-
-      const requestBody = {
-        appointmentId,
-        paymentToken,
-      };
-
-      console.log("Sending payment intent request:", requestBody);
-
-      const response = await fetch(`${API_BASE_URL}/api/payments/create-intent`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || "Failed to authorize payment");
-      }
-
-      const result = await response.json();
-      console.log("Payment intent created:", result);
-
       const returnUrl = new URL(window.location.href);
       returnUrl.searchParams.delete("payment_intent");
       returnUrl.searchParams.delete("payment_intent_client_secret");
@@ -85,7 +53,7 @@ export default function PaymentForm({
       // Confirm payment using the client secret
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
-        clientSecret: result.clientSecret,
+        clientSecret,
         confirmParams: {
           return_url: returnUrl.toString(),
           payment_method_data: {
@@ -128,7 +96,7 @@ export default function PaymentForm({
             <CreditCard className="h-5 w-5 text-white" />
           </div>
           <h3 className="text-base font-semibold text-neutral-900 tracking-wide">
-            Card Information
+            Payment Method
           </h3>
         </div>
         <div className="bg-white rounded-sm">
