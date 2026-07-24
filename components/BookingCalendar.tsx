@@ -577,21 +577,24 @@ export default function BookingCalendar({
                     )}
                 </div>
                 
-                {selectedDate && step === "payment" && (
-                    <div className="mt-4 pt-4 border-t border-neutral-200/50">
-                        <p className="text-sm text-neutral-600 font-light">
-                            {selectedDate.toLocaleDateString('en-US', { 
-                                weekday: 'long', 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                            })}
-                            {selectedTime && (
-                                <span className="ml-2 px-2.5 py-1 bg-neutral-900 text-white text-xs rounded-full">
-                                    {selectedTime}
-                                </span>
-                            )}
-                        </p>
+                {selectedDate && (step === "details" || step === "payment") && (
+                    <div className="mt-5 border-t border-[#E9DDD3] pt-4 sm:hidden">
+                        <div className="flex items-center gap-3 border border-[#D9C4B3] bg-[#F8EFE7] px-3 py-3">
+                            <Calendar className="h-4 w-4 flex-shrink-0 text-[#B0633E]" aria-hidden="true" />
+                            <div className="min-w-0">
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#A25735]">
+                                    Your Appointment
+                                </p>
+                                <p className="mt-1 truncate text-xs font-medium text-[#2C1810]">
+                                    {selectedDate.toLocaleDateString("en-US", {
+                                        weekday: "short",
+                                        month: "short",
+                                        day: "numeric",
+                                    })}
+                                    {selectedTime && <span> · {selectedTime}</span>}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
