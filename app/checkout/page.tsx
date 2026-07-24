@@ -122,21 +122,21 @@ function CheckoutContent() {
     return (
         <>
             <Navbar />
-            <section className="relative isolate overflow-hidden bg-[#FBF7F1] pb-20 pt-6 text-neutral-900 md:pb-24 md:pt-8">
+            <section className="relative isolate overflow-hidden bg-[#FBF7F1] pb-16 pt-6 text-neutral-900 md:pb-20 md:pt-7">
                 <img
                     src="/Gallery/Salon.JPG"
                     alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 -z-30 h-full w-full scale-[1.02] object-cover object-[center_44%] opacity-55 blur-[1px]"
+                    className="absolute inset-0 -z-30 h-full w-full scale-[1.02] object-cover object-center opacity-55 blur-[1.5px]"
                 />
                 <div className="absolute inset-0 -z-20 bg-[#FBF7F1]/55" aria-hidden="true" />
                 <div
-                    className="absolute inset-0 -z-10 bg-gradient-to-b from-[#FFFDF9]/35 via-[#FBF7F1]/50 to-[#FBF7F1]/90"
+                    className="absolute inset-0 -z-10 bg-gradient-to-b from-[#FFFDF9]/30 via-[#FBF7F1]/45 to-[#FBF7F1]/85"
                     aria-hidden="true"
                 />
 
                 <div className="container relative z-10 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-                    <ol className="mx-auto mb-7 grid max-w-3xl grid-cols-4" aria-label="Booking progress">
+                    <ol className="mx-auto mb-6 grid max-w-3xl grid-cols-4" aria-label="Booking progress">
                         {["Style", "Date & Time", "Details", "Payment"].map((label, index) => {
                             const stepNumber = index + 1;
                             const isActive = activeProgressStep === stepNumber;
@@ -170,13 +170,13 @@ function CheckoutContent() {
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.38em] text-[#A25735] sm:text-xs">
                             Book Your Appointment
                         </p>
-                        <h1 className="text-4xl font-light leading-tight tracking-wide text-[#2C1810] md:text-5xl lg:text-[3.5rem]">
+                        <h1 className="text-4xl font-light leading-tight tracking-[0.025em] text-[#2C1810] md:text-5xl lg:text-[3.25rem]">
                             <span className="font-serif">Complete Your Appointment</span>
                         </h1>
-                        <p className="mx-auto mt-4 max-w-3xl text-sm font-light leading-relaxed tracking-[0.04em] text-[#665850] md:text-[16px]">
+                        <p className="mx-auto mt-3 max-w-3xl text-sm font-light leading-relaxed tracking-[0.04em] text-[#665850] md:text-[16px]">
                           Review your selection, choose a date, and continue to payment.
                         </p>
-                        <div className="mx-auto mt-5 flex max-w-[280px] items-center gap-3" aria-hidden="true">
+                        <div className="mx-auto mt-4 flex max-w-[280px] items-center gap-3" aria-hidden="true">
                             <span className="h-px flex-1 bg-[#D9C2B1]" />
                             <span className="h-1.5 w-1.5 rounded-full bg-[#B8754E]" />
                             <span className="h-px flex-1 bg-[#D9C2B1]" />
@@ -185,31 +185,25 @@ function CheckoutContent() {
                 </div>
 
                 <svg
-                    className="pointer-events-none absolute -bottom-[52px] left-0 h-20 w-full"
+                    className="pointer-events-none absolute -bottom-[44px] left-0 h-16 w-full"
                     viewBox="0 0 1440 96"
                     preserveAspectRatio="none"
                     aria-hidden="true"
                 >
                     <path
-                        d="M0 5 Q720 60 1440 5 L1440 96 L0 96 Z"
+                        d="M0 5 Q720 52 1440 5 L1440 96 L0 96 Z"
                         fill="#FBF7F1"
                     />
                     <path
-                        d="M0 5 Q720 60 1440 5"
+                        d="M0 5 Q720 52 1440 5"
                         fill="none"
-                        stroke="#D4B49C"
-                        strokeWidth="1"
-                    />
-                    <path
-                        d="M0 13 Q720 68 1440 13"
-                        fill="none"
-                        stroke="#E7D4C5"
+                        stroke="#DEC8B8"
                         strokeWidth="1"
                     />
                 </svg>
             </section>
 
-            <section className="relative z-20 min-h-[70vh] bg-transparent pb-24 pt-10 md:pb-32">
+            <section className="relative z-20 min-h-[70vh] bg-transparent pb-24 pt-6 md:pb-32">
                 <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                         {/* Left Column - Appointment Summary */}
