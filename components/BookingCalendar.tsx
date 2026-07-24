@@ -466,19 +466,25 @@ export default function BookingCalendar({
             {/* Header */}
             <div className="bg-[#FFFDF9] border-b border-[#E9DDD3] px-8 py-6">
                 <div className="flex items-center justify-between">
-                    {step === "date" ? (
+                    {step === "date" || step === "time" ? (
                         <>
                             <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#B0633E]">Choose Your Visit</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#B0633E]">
+                                    {step === "date" ? "Choose Your Visit" : "Choose Your Time"}
+                                </p>
                                 <h3 className="mt-2 font-serif text-3xl font-normal tracking-[-0.02em] text-[#2C1810] sm:text-4xl">
-                                    Select a Date
+                                    {step === "date" ? "Select a Date" : "Select a Time"}
                                 </h3>
-                                <p className="mt-3 text-xs tracking-wide text-[#76675E]">Select a date to view available times</p>
+                                <p className="mt-3 text-xs tracking-wide text-[#76675E]">
+                                    {step === "date" ? "Select a date to view available times" : "Choose an available appointment start"}
+                                </p>
                             </div>
-                            <span className="hidden min-h-11 items-center gap-2 rounded-[4px] border border-[#CDB5A2] px-4 text-xs text-[#4F4038] sm:flex">
-                                <Clock className="h-4 w-4 text-[#8B735F]" />
-                                San Antonio Central Time
-                            </span>
+                            {step === "date" && (
+                                <span className="hidden min-h-11 items-center gap-2 rounded-[4px] border border-[#CDB5A2] px-4 text-xs text-[#4F4038] sm:flex">
+                                    <Clock className="h-4 w-4 text-[#8B735F]" />
+                                    San Antonio Central Time
+                                </span>
+                            )}
                         </>
                     ) : (
                         <div className="flex items-center gap-3">
@@ -486,7 +492,6 @@ export default function BookingCalendar({
                                 <Calendar className="h-5 w-5 text-neutral-700" />
                             </div>
                             <h3 className="text-xl font-light tracking-tight text-neutral-900">
-                            {step === "time" && "Select Time"}
                             {step === "details" && "Your Details"}
                             {step === "payment" && "Payment"}
                             </h3>
@@ -497,10 +502,10 @@ export default function BookingCalendar({
                             type="button"
                             variant="ghost"
                             onClick={step === "time" ? resetToDateSelection : resetToTimeSelection}
-                            className="text-xs uppercase tracking-[0.15em] text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100/50"
+                            className="text-[10px] uppercase tracking-[0.18em] text-[#8B735F] hover:text-[#2C1810] hover:bg-[#F4E9E0]"
                         >
                             <ChevronLeft className="h-3.5 w-3.5 mr-1.5" />
-                            Back
+                            {step === "time" ? "Back to Dates" : "Back"}
                         </Button>
                     )}
                 </div>
@@ -602,54 +607,57 @@ export default function BookingCalendar({
 
             {/* Time Selection */}
             {step === "time" && (
-                <div className="p-8 space-y-8 max-h-[500px] overflow-y-auto">
+                <div className="h-[430px] space-y-7 overflow-y-auto p-8 sm:h-[580px]">
                     {selectedDate && (
-                        <div className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
+                        <div className="flex items-center justify-between gap-4 rounded-[5px] border border-[#D9C4B3] bg-[#FCF6F0] px-4 py-3.5">
                             <div>
-                                <p className="text-sm font-medium text-neutral-900">
+                                <p className="font-serif text-lg text-[#2C1810]">
                                     {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                                 </p>
-                                <p className="text-xs text-neutral-500 mt-0.5">Choose an available appointment start</p>
+                                <p className="mt-1 text-[11px] text-[#76675E]">Your selected appointment date</p>
                             </div>
-                            <span className="shrink-0 text-[11px] font-medium text-neutral-500">Central Time</span>
+                            <span className="flex shrink-0 items-center gap-1.5 text-[10px] font-medium text-[#8B735F]">
+                                <Clock className="h-3.5 w-3.5" />
+                                Central Time
+                            </span>
                         </div>
                     )}
                     {loading ? (
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-neutral-400">
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                            <div className="flex items-center gap-2 text-[#8B735F]">
+                                <Loader2 className="h-4 w-4 animate-spin text-[#B0633E]" />
                                 <span className="text-xs tracking-wide">Loading available times...</span>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                                    <div key={i} className="h-12 bg-neutral-50 rounded-sm animate-pulse" />
+                                    <div key={i} className="h-12 animate-pulse rounded-[4px] border border-[#EEE3DA] bg-[#FBF7F2]" />
                                 ))}
                             </div>
                         </div>
                     ) : error ? (
                         <div className="flex flex-col items-center justify-center py-12">
-                            <p className="text-xs text-neutral-500 text-center max-w-md mb-4 tracking-wide">We couldn't load available times. Please try again.</p>
+                            <p className="text-xs text-[#76675E] text-center max-w-md mb-4 tracking-wide">We couldn't load available times. Please try again.</p>
                             <Button
                                 onClick={() => {
                                     setError(null);
                                     if (selectedDate) fetchAvailableSlots(selectedDate);
                                 }}
                                 variant="ghost"
-                                className="text-xs tracking-wide"
+                                className="border border-[#B8754E] text-xs tracking-wide text-[#8E4E30] hover:bg-[#F4E9E0]"
                             >
                                 Try again
                             </Button>
                         </div>
                     ) : availableSlots.filter(slot => slot.available).length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12">
-                            <p className="text-xs text-neutral-500 font-medium mb-1 tracking-wide">No available times</p>
-                            <p className="text-xs text-neutral-400 mb-4">
+                            <p className="mb-1 text-xs font-medium tracking-wide text-[#4F4038]">No available times</p>
+                            <p className="mb-4 text-xs text-[#8B7B71]">
                                 This date is fully booked or the salon is closed.
                             </p>
                             <Button
                                 onClick={resetToDateSelection}
                                 variant="ghost"
-                                className="text-xs tracking-wide"
+                                className="border border-[#B8754E] text-xs tracking-wide text-[#8E4E30] hover:bg-[#F4E9E0]"
                             >
                                 Choose another date
                             </Button>
@@ -664,7 +672,7 @@ export default function BookingCalendar({
                         return hour24 < 12 && slot.available;
                     }).length > 0 && (
                         <fieldset className="space-y-3">
-                            <legend className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">Morning</legend>
+                            <legend className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#B0633E]">Morning</legend>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {availableSlots.filter(slot => {
                                     const hour = parseInt(slot.time.split(':')[0]);
@@ -678,9 +686,9 @@ export default function BookingCalendar({
                                         aria-label={`${slot.time} available`}
                                         aria-pressed={selectedTime === slot.time}
                                         className={cn(
-                                            "px-4 py-3 text-xs font-light tracking-wide rounded-sm border transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-neutral-900",
-                                            "border-neutral-200 hover:border-neutral-400 hover:bg-white cursor-pointer text-neutral-700",
-                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810]"
+                                            "rounded-[4px] border px-4 py-3 text-xs font-medium tracking-wide transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B8754E]",
+                                            "cursor-pointer border-[#D9C4B3] bg-[#FFFDF9] text-[#4F4038] hover:border-[#B8754E] hover:bg-[#F8EFE7]",
+                                            selectedTime === slot.time && "border-[#2C1810] bg-[#2C1810] text-[#FFF8EF] hover:bg-[#2C1810]"
                                         )}
                                     >
                                         {slot.time}
@@ -698,7 +706,7 @@ export default function BookingCalendar({
                         return hour24 >= 12 && hour24 < 17 && slot.available;
                     }).length > 0 && (
                         <fieldset className="space-y-3">
-                            <legend className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">Afternoon</legend>
+                            <legend className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#B0633E]">Afternoon</legend>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {availableSlots.filter(slot => {
                                     const hour = parseInt(slot.time.split(':')[0]);
@@ -712,9 +720,9 @@ export default function BookingCalendar({
                                         aria-label={`${slot.time} available`}
                                         aria-pressed={selectedTime === slot.time}
                                         className={cn(
-                                            "px-4 py-3 text-xs font-light tracking-wide rounded-sm border transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-neutral-900",
-                                            "border-neutral-200 hover:border-neutral-400 hover:bg-white cursor-pointer text-neutral-700",
-                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810]"
+                                            "rounded-[4px] border px-4 py-3 text-xs font-medium tracking-wide transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B8754E]",
+                                            "cursor-pointer border-[#D9C4B3] bg-[#FFFDF9] text-[#4F4038] hover:border-[#B8754E] hover:bg-[#F8EFE7]",
+                                            selectedTime === slot.time && "border-[#2C1810] bg-[#2C1810] text-[#FFF8EF] hover:bg-[#2C1810]"
                                         )}
                                     >
                                         {slot.time}
@@ -732,7 +740,7 @@ export default function BookingCalendar({
                         return hour24 >= 17 && slot.available;
                     }).length > 0 && (
                         <fieldset className="space-y-3">
-                            <legend className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">Evening</legend>
+                            <legend className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#B0633E]">Evening</legend>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {availableSlots.filter(slot => {
                                     const hour = parseInt(slot.time.split(':')[0]);
@@ -746,9 +754,9 @@ export default function BookingCalendar({
                                         aria-label={`${slot.time} available`}
                                         aria-pressed={selectedTime === slot.time}
                                         className={cn(
-                                            "px-4 py-3 text-xs font-light tracking-wide rounded-sm border transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-neutral-900",
-                                            "border-neutral-200 hover:border-neutral-400 hover:bg-white cursor-pointer text-neutral-700",
-                                            selectedTime === slot.time && "bg-[#2C1810] text-white border-[#2C1810]"
+                                            "rounded-[4px] border px-4 py-3 text-xs font-medium tracking-wide transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B8754E]",
+                                            "cursor-pointer border-[#D9C4B3] bg-[#FFFDF9] text-[#4F4038] hover:border-[#B8754E] hover:bg-[#F8EFE7]",
+                                            selectedTime === slot.time && "border-[#2C1810] bg-[#2C1810] text-[#FFF8EF] hover:bg-[#2C1810]"
                                         )}
                                     >
                                         {slot.time}
