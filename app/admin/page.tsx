@@ -182,7 +182,11 @@ export default function AdminPage() {
     };
 
     // New subcategory loading functions
-    const loadSubcategorySummaries = async (categorySlug: string, jwtToken: string) => {
+    const loadSubcategorySummaries = async (
+        categorySlug: string,
+        jwtToken: string,
+        forceRefresh = false
+    ) => {
         try {
             if (!jwtToken) {
                 setToken("");
@@ -191,7 +195,7 @@ export default function AdminPage() {
             }
 
             // Check cache first
-            if (subcategorySummariesCache.has(categorySlug)) {
+            if (!forceRefresh && subcategorySummariesCache.has(categorySlug)) {
                 return subcategorySummariesCache.get(categorySlug)!;
             }
 
@@ -480,8 +484,17 @@ export default function AdminPage() {
     };
 
     const refreshSubcategorySummaries = async (categorySlug: string) => {
-        invalidateCaches('category', categorySlug);
-        return loadSubcategorySummaries(categorySlug, token);
+        setSubcategorySummariesCache((prev) => {
+            const next = new Map(prev);
+            next.delete(categorySlug);
+            return next;
+        });
+        setCategoryDetailsCache((prev) => {
+            const next = new Map(prev);
+            next.delete(categorySlug);
+            return next;
+        });
+        return loadSubcategorySummaries(categorySlug, token, true);
     };
 
     const refreshCategorySummaries = async () => {
@@ -528,6 +541,9 @@ export default function AdminPage() {
         // Reset selection when changing sections
         if (section === "categories") {
             setSelection({ type: "root" });
+            // Gallery and Services share category/subcategory displayOrder.
+            // Refresh instead of reusing a cache that may predate a Gallery edit.
+            void refreshCategorySummaries();
         }
     };
 

@@ -6,7 +6,7 @@ import type { GalleryImage } from "@/lib/types/gallery";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
-import { ChevronRight, FolderTree, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle } from "lucide-react";
+import { ChevronRight, FolderTree, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
@@ -40,6 +40,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     const [newSubName, setNewSubName] = useState("");
     const [saving, setSaving] = useState(false);
     const [loadingCategory, setLoadingCategory] = useState(false);
+    const [reorderingSubcategories, setReorderingSubcategories] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [subSummaries, setSubSummaries] = useState<SubcategorySummary[]>([]);
@@ -305,6 +306,67 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         }
     };
 
+    const moveSubcategory = async (index: number, direction: -1 | 1) => {
+        const target = index + direction;
+        if (
+            target < 0 ||
+            target >= subSummaries.length ||
+            reorderingSubcategories
+        ) {
+            return;
+        }
+
+        const previous = [...subSummaries];
+        const reordered = [...subSummaries];
+        [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+
+        const subcategoryIds = reordered
+            .map((subcategory) => subcategory.id)
+            .filter((id): id is number => id !== undefined);
+
+        if (subcategoryIds.length !== reordered.length) {
+            setErrorMessage("Subcategory order could not be saved because an item is missing its ID.");
+            return;
+        }
+
+        setSubSummaries(
+            reordered.map((subcategory, displayOrder) => ({
+                ...subcategory,
+                displayOrder,
+            }))
+        );
+        setReorderingSubcategories(true);
+        setErrorMessage(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/subcategories/reorder`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(subcategoryIds),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Unable to reorder subcategories: ${response.status}`);
+            }
+
+            const fresh = await onSubcategorySummariesRefresh?.(cat.slug);
+            if (fresh) {
+                setSubSummaries(fresh);
+            }
+            setSuccessMessage("Subcategory order updated across Services and Gallery.");
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (error) {
+            console.error("Failed to reorder subcategories:", error);
+            setSubSummaries(previous);
+            setErrorMessage("Subcategory order could not be saved. The previous order was restored.");
+        } finally {
+            setReorderingSubcategories(false);
+        }
+    };
+
     const totalServices = (cat.subcategories ?? []).reduce((acc, sub) => acc + (sub.items?.length || 0), 0);
     const hasSubcategories = (cat.subcategories ?? []).length > 0;
 
@@ -468,7 +530,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     ) : subSummaries.length === 0 ? (
                         <div className="p-3 text-sm text-neutral-500">No subcategories yet</div>
                     ) : (
-                        subSummaries.map((sub) => (
+                        subSummaries.map((sub, index) => (
                             <div 
                                 key={sub.id || sub.slug} 
                                 className="flex items-center gap-3 p-3 rounded-sm border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
@@ -492,6 +554,26 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                     </div>
                                 </button>
                                 <div className="flex items-center gap-2 flex-shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => void moveSubcategory(index, -1)}
+                                        disabled={index === 0 || reorderingSubcategories}
+                                        className="p-2 rounded-sm border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-30"
+                                        aria-label={`Move ${sub.name} up`}
+                                        title="Move up"
+                                    >
+                                        <ArrowUp className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void moveSubcategory(index, 1)}
+                                        disabled={index === subSummaries.length - 1 || reorderingSubcategories}
+                                        className="p-2 rounded-sm border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-30"
+                                        aria-label={`Move ${sub.name} down`}
+                                        title="Move down"
+                                    >
+                                        <ArrowDown className="w-4 h-4" />
+                                    </button>
                                     <button 
                                         type="button" 
                                         onClick={async () => {

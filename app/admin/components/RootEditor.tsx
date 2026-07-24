@@ -93,7 +93,13 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                 });
                 if (!response.ok) throw new Error('Failed to reorder categories');
             }
-            await mutate("GET", "");
+            // Reload the shared category summaries so Services immediately
+            // reflects the same order consumed by Gallery and booking.
+            if (onCategorySummariesRefresh) {
+                await onCategorySummariesRefresh();
+            } else {
+                await mutate("GET", "");
+            }
         } catch (error) {
             console.error('Failed to reorder categories:', error);
             setErrorMsg('Failed to reorder categories. Please try again.');
