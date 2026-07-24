@@ -135,7 +135,7 @@ export default function PaymentForm({
                 radios: true,
                 spacedAccordionItems: false,
               },
-              paymentMethodOrder: ["card", "apple_pay", "google_pay"],
+              paymentMethodOrder: ["card", "apple_pay"],
               defaultValues: {
                 billingDetails: {
                   name: customerName,
@@ -150,7 +150,7 @@ export default function PaymentForm({
               },
               wallets: {
                 applePay: "auto",
-                googlePay: "auto",
+                googlePay: "never",
               },
               terms: {
                 card: "never",

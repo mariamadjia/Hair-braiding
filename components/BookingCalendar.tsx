@@ -952,6 +952,7 @@ export default function BookingCalendar({
                             amount: depositAmountCents,
                             currency: "usd",
                             capture_method: "manual",
+                            paymentMethodTypes: ["card"],
                             appearance: {
                                 theme: "stripe",
                                 variables: {
