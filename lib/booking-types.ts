@@ -37,6 +37,7 @@ export type BookingItem = {
     displayOrder?: number;
     foundationChoicesEnabled?: boolean;
     knotlessPriceAdjustment?: string;
+    depositOverrideCents?: number | null;
 };
 
 export type GalleryImageItem = {

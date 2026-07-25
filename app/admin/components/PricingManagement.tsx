@@ -6,7 +6,7 @@ import type { BookingCategory, BookingItem, CategoriesData, LengthOption } from 
 
 type Tab = "overview" | "matrix" | "deposits" | "history";
 type Row = { category: BookingCategory; subcategory: NonNullable<BookingCategory["subcategories"]>[number]; item: BookingItem };
-type Change = { at: string; service: string; detail: string };
+type Change = { id: number; createdAt: string; serviceName: string; action: string; summary: string };
 
 const money = (value?: string) => {
   const amount = Number(String(value ?? "").replace(/[^0-9.-]/g, ""));
@@ -25,14 +25,31 @@ export function PricingManagement({ token }: { token: string }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [history, setHistory] = useState<Change[]>([]);
+  const [defaultDepositCents, setDefaultDepositCents] = useState(5000);
+  const [depositOverrides, setDepositOverrides] = useState<Record<number, number | null>>({});
+  const [bulkAmount, setBulkAmount] = useState("");
+  const [bulkMode, setBulkMode] = useState<"fixed" | "percent">("fixed");
+  const [showCreate, setShowCreate] = useState(false);
+  const [newService, setNewService] = useState({ categoryId: "", subcategoryId: "", name: "", price: "" });
 
   const load = async () => {
     setLoading(true); setError("");
     try {
-      const response = await fetch("/api/admin/categories", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Unable to load pricing.");
+      const headers = { Authorization: `Bearer ${token}` };
+      const [catalogResponse, depositResponse, historyResponse] = await Promise.all([
+        fetch("/api/admin/categories", { headers, cache: "no-store" }),
+        fetch("/api/admin/pricing/deposits", { headers, cache: "no-store" }),
+        fetch("/api/admin/pricing/history", { headers, cache: "no-store" }),
+      ]);
+      const payload = await catalogResponse.json().catch(() => ({}));
+      if (!catalogResponse.ok) throw new Error(payload.error || "Unable to load pricing.");
       setData(payload);
+      if (depositResponse.ok) {
+        const depositPayload = await depositResponse.json();
+        setDefaultDepositCents(depositPayload.defaultDepositCents ?? 5000);
+        setDepositOverrides(Object.fromEntries((depositPayload.overrides ?? []).map((entry: { serviceId: number; depositCents: number }) => [entry.serviceId, entry.depositCents])));
+      }
+      if (historyResponse.ok) setHistory(await historyResponse.json());
       setDrafts({});
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to load pricing.");
@@ -80,17 +97,86 @@ export function PricingManagement({ token }: { token: string }) {
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || `Unable to save ${item.name}.`);
-        setHistory(previous => [{
-          at: new Date().toISOString(),
-          service: `${row.subcategory.name} · ${item.name}`,
-          detail: "Prices and options updated",
-        }, ...previous].slice(0, 30));
       }
       setSuccess(`${dirtyIds.length} service${dirtyIds.length === 1 ? "" : "s"} updated everywhere.`);
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to save pricing.");
     } finally { setSaving(false); }
+  };
+
+  const applyBulkAdjustment = () => {
+    const adjustment = Number(bulkAmount);
+    if (!Number.isFinite(adjustment) || adjustment === 0) return setError("Enter a valid non-zero adjustment.");
+    const targetRows = visibleRows;
+    targetRows.forEach(({ item }) => updateItem(item.id!, draft => {
+      const adjust = (value?: string) => {
+        const current = Number(value || 0);
+        const next = bulkMode === "percent" ? current * (1 + adjustment / 100) : current + adjustment;
+        return Math.max(0, Math.round(next * 100) / 100).toFixed(2);
+      };
+      return draft.lengthOptions?.length
+        ? { ...draft, lengthOptions: draft.lengthOptions.map(option => ({ ...option, price: adjust(option.price) })) }
+        : { ...draft, price: adjust(draft.price) };
+    }));
+    setSuccess(`Applied ${bulkMode === "percent" ? `${adjustment}%` : money(String(adjustment))} to ${targetRows.length} visible services. Review, then save.`);
+  };
+
+  const createService = async () => {
+    const category = data?.categories.find(entry => String(entry.id) === newService.categoryId);
+    const subcategory = category?.subcategories?.find(entry => String(entry.id) === newService.subcategoryId);
+    if (!category || !subcategory || !newService.name.trim() || !newService.price) return setError("Choose a category and style, then enter a name and price.");
+    setSaving(true); setError("");
+    try {
+      const response = await fetch("/api/admin/services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: newService.name.trim(), price: newService.price, description: "", notes: "", image: "", link: "",
+          objectPosition: "center center", images: [], sizePhotos: [], availableSizes: [], hairTextures: [],
+          lengthOptions: [], category: { id: category.id }, subcategory: { id: subcategory.id },
+          foundationChoicesEnabled: false, knotlessPriceAdjustment: "0",
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Unable to add size/service.");
+      setShowCreate(false); setNewService({ categoryId: "", subcategoryId: "", name: "", price: "" });
+      setSuccess("Size/service created and published.");
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to add size/service."); }
+    finally { setSaving(false); }
+  };
+
+  const deleteService = async (item: BookingItem) => {
+    if (!item.id || !confirm(`Delete "${item.name}" from booking? Existing appointments will be kept.`)) return;
+    setSaving(true); setError("");
+    try {
+      const response = await fetch(`/api/admin/services/${item.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Unable to delete service.");
+      setSuccess(`${item.name} deleted from booking.`);
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to delete service."); }
+    finally { setSaving(false); }
+  };
+
+  const saveDeposits = async () => {
+    setSaving(true); setError(""); setSuccess("");
+    try {
+      const overrides = Object.entries(depositOverrides)
+        .filter(([, cents]) => cents != null && cents > 0)
+        .map(([serviceId, depositCents]) => ({ serviceId: Number(serviceId), depositCents }));
+      const response = await fetch("/api/admin/pricing/deposits", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ defaultDepositCents, overrides }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Unable to save deposits.");
+      setSuccess("Deposit settings saved and applied to checkout.");
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to save deposits."); }
+    finally { setSaving(false); }
   };
 
   if (loading) return <div className="p-8 space-y-4"><div className="h-9 w-64 animate-pulse rounded bg-neutral-200" /><div className="h-72 animate-pulse rounded-xl bg-neutral-100" /></div>;
@@ -116,7 +202,7 @@ export function PricingManagement({ token }: { token: string }) {
         {tab === "overview" && (
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[["Active services", rows.length], ["Length prices", rows.reduce((n, row) => n + (row.item.lengthOptions?.length ?? 0), 0)], ["Price range", allPrices.length ? `${money(String(Math.min(...allPrices)))}–${money(String(Math.max(...allPrices)))}` : "—"], ["Standard deposit", "$50"]].map(([label, value]) => (
+              {[["Active services", rows.length], ["Length prices", rows.reduce((n, row) => n + (row.item.lengthOptions?.length ?? 0), 0)], ["Price range", allPrices.length ? `${money(String(Math.min(...allPrices)))}–${money(String(Math.max(...allPrices)))}` : "—"], ["Standard deposit", money(String(defaultDepositCents / 100))]].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-[#e4d8cc] bg-white p-5 shadow-[0_12px_30px_rgba(73,45,28,.05)]"><p className="text-xs uppercase tracking-[.16em] text-neutral-500">{label}</p><p className="mt-3 font-serif text-3xl">{value}</p></div>
               ))}
             </div>
@@ -138,17 +224,34 @@ export function PricingManagement({ token }: { token: string }) {
             <div className="flex flex-wrap gap-3 rounded-xl border border-[#e4d8cc] bg-white p-4">
               <label className="relative min-w-[240px] flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-neutral-400" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search services or sizes…" className="w-full rounded-lg border border-[#ddd0c4] py-2.5 pl-10 pr-3 outline-none focus:ring-2 focus:ring-[#bd7a52]" /></label>
               <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="rounded-lg border border-[#ddd0c4] bg-white px-4 py-2.5"><option value="all">All categories</option>{data.categories.map(category => <option key={category.slug} value={category.slug}>{category.name}</option>)}</select>
+              <button onClick={() => setShowCreate(value => !value)} className="flex items-center gap-2 rounded-lg bg-[#351a10] px-4 py-2 text-sm text-white"><Plus className="h-4 w-4" /> Add size/service</button>
+            </div>
+            {showCreate && <div className="grid gap-3 rounded-xl border border-[#d9c8b9] bg-white p-5 sm:grid-cols-2 lg:grid-cols-5">
+              <select value={newService.categoryId} onChange={e => setNewService({ categoryId: e.target.value, subcategoryId: "", name: newService.name, price: newService.price })} className="rounded-lg border px-3 py-2"><option value="">Category</option>{data.categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select>
+              <select value={newService.subcategoryId} onChange={e => setNewService(previous => ({ ...previous, subcategoryId: e.target.value }))} className="rounded-lg border px-3 py-2"><option value="">Style</option>{data.categories.find(category => String(category.id) === newService.categoryId)?.subcategories?.map(subcategory => <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>)}</select>
+              <input value={newService.name} onChange={e => setNewService(previous => ({ ...previous, name: e.target.value }))} placeholder="Size or service name" className="rounded-lg border px-3 py-2" />
+              <div className="flex rounded-lg border"><span className="px-3 py-2">$</span><input value={newService.price} inputMode="decimal" onChange={e => setNewService(previous => ({ ...previous, price: e.target.value }))} placeholder="Base price" className="min-w-0 flex-1 rounded-r-lg px-2" /></div>
+              <button disabled={saving} onClick={createService} className="rounded-lg bg-[#ad6b45] px-4 py-2 text-sm font-medium text-white disabled:opacity-60">Create</button>
+            </div>}
+            <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[#e4d8cc] bg-[#fffaf5] p-4">
+              <div className="mr-auto"><p className="text-sm font-semibold">Bulk adjustment</p><p className="text-xs text-neutral-500">Applies to the services currently visible below.</p></div>
+              <select value={bulkMode} onChange={e => setBulkMode(e.target.value as "fixed" | "percent")} className="rounded-lg border bg-white px-3 py-2"><option value="fixed">Dollar amount</option><option value="percent">Percentage</option></select>
+              <div className="flex w-36 rounded-lg border bg-white"><span className="px-3 py-2">{bulkMode === "fixed" ? "$" : "%"}</span><input value={bulkAmount} inputMode="decimal" onChange={e => setBulkAmount(e.target.value)} className="min-w-0 flex-1 rounded-r-lg px-1" /></div>
+              <button onClick={applyBulkAdjustment} className="rounded-lg border border-[#ad6b45] px-4 py-2 text-sm font-medium text-[#8d4f31]">Apply for review</button>
             </div>
             {visibleRows.map(({ category, subcategory, item }) => {
               const id = item.id!;
               const isOpen = expanded.has(id);
               return <section key={id} className="overflow-hidden rounded-xl border border-[#e4d8cc] bg-white">
-                <button onClick={() => setExpanded(previous => { const next = new Set(previous); next.has(id) ? next.delete(id) : next.add(id); return next; })} className="flex w-full items-center gap-4 p-5 text-left">
+                <div className="flex items-center">
+                <button onClick={() => setExpanded(previous => { const next = new Set(previous); next.has(id) ? next.delete(id) : next.add(id); return next; })} className="flex min-w-0 flex-1 items-center gap-4 p-5 text-left">
                   <div className="min-w-0 flex-1"><p className="text-xs uppercase tracking-[.16em] text-[#ad6b45]">{category.name} / {subcategory.name}</p><h3 className="mt-1 text-lg font-semibold">{item.name}</h3></div>
                   <span className="text-sm text-neutral-500">{item.lengthOptions?.length ? `${item.lengthOptions.length} length prices` : `Base ${money(item.price)}`}</span>
                   {drafts[id] && <span className="rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-800">Unsaved</span>}
                   {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 </button>
+                <button aria-label={`Delete ${item.name}`} onClick={() => deleteService(item)} className="mr-4 rounded-lg p-2 text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
+                </div>
                 {isOpen && <div className="border-t border-[#eee5dc] bg-[#fdfbf8] p-5">
                   {!item.lengthOptions?.length && <label className="block max-w-xs text-xs font-semibold uppercase tracking-wider text-neutral-500">Base price<div className="mt-2 flex rounded-lg border bg-white"><span className="px-3 py-2">$</span><input inputMode="decimal" value={item.price} onChange={e => updateItem(id, draft => ({ ...draft, price: e.target.value }))} className="min-w-0 flex-1 rounded-r-lg px-2 outline-none" /></div></label>}
                   {!!item.lengthOptions?.length && <div className="space-y-2">{item.lengthOptions.map((option, index) => <div key={option.id ?? index} className="grid grid-cols-[36px_minmax(120px,1fr)_140px_40px] items-center gap-2 rounded-lg border border-[#e7ddd3] bg-white p-2">
@@ -164,9 +267,12 @@ export function PricingManagement({ token }: { token: string }) {
           </div>
         )}
 
-        {tab === "deposits" && <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]"><div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><DollarSign className="h-8 w-8 text-[#ad6b45]" /><h3 className="mt-4 font-serif text-2xl">Standard deposit</h3><p className="mt-2 text-sm text-neutral-600">Checkout authorizes the lesser of $50 or the full service price. It is captured only after approval.</p><div className="mt-6 flex max-w-xs rounded-lg border border-[#ddd0c4] bg-[#fbf7f2]"><span className="px-4 py-3">$</span><input value="50.00" disabled className="min-w-0 flex-1 bg-transparent px-2 font-semibold" /></div><p className="mt-3 text-xs text-neutral-500">Protected by backend checkout validation.</p></div><div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><h3 className="font-serif text-2xl">How deposits behave</h3><div className="mt-5 space-y-4 text-sm">{["Customer card details remain with Stripe—not your database.","The service price is recalculated from this catalog before payment.","Existing appointments keep their booked price snapshot.","A service below $50 authorizes only its full price."].map(text => <div key={text} className="flex gap-3"><Check className="mt-0.5 h-4 w-4 text-[#ad6b45]" /><span>{text}</span></div>)}</div></div></div>}
+        {tab === "deposits" && <div className="space-y-5">
+          <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]"><div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><DollarSign className="h-8 w-8 text-[#ad6b45]" /><h3 className="mt-4 font-serif text-2xl">Standard deposit</h3><p className="mt-2 text-sm text-neutral-600">Used unless a service-specific amount is entered below. Checkout never authorizes more than the full service price.</p><div className="mt-6 flex max-w-xs rounded-lg border border-[#ddd0c4] bg-[#fbf7f2]"><span className="px-4 py-3">$</span><input inputMode="decimal" value={(defaultDepositCents / 100).toFixed(2)} onChange={e => setDefaultDepositCents(Math.max(1, Math.round(Number(e.target.value || 0) * 100)))} className="min-w-0 flex-1 bg-transparent px-2 font-semibold outline-none" /></div></div><div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><h3 className="font-serif text-2xl">How deposits behave</h3><div className="mt-5 space-y-4 text-sm">{["Customer card details remain with Stripe—not your database.","The service price is recalculated from this catalog before payment.","Existing appointments keep their booked price snapshot.","A lower-priced service authorizes only its full price."].map(text => <div key={text} className="flex gap-3"><Check className="mt-0.5 h-4 w-4 text-[#ad6b45]" /><span>{text}</span></div>)}</div></div></div>
+          <div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-serif text-2xl">Service overrides</h3><p className="text-sm text-neutral-500">Leave blank to use the standard deposit.</p></div><button disabled={saving} onClick={saveDeposits} className="flex items-center gap-2 rounded-lg bg-[#351a10] px-5 py-2.5 text-sm text-white"><Save className="h-4 w-4" /> Save deposits</button></div><div className="mt-5 grid gap-3 md:grid-cols-2">{rows.map(({ subcategory, item }) => <label key={item.id} className="flex items-center gap-3 rounded-lg border border-[#e7ddd3] p-3"><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{item.name}</strong><span className="text-xs text-neutral-500">{subcategory.name}</span></span><div className="flex w-32 rounded-md border bg-[#fbf7f2]"><span className="px-2 py-2">$</span><input aria-label={`${item.name} deposit override`} inputMode="decimal" value={depositOverrides[item.id!] == null ? "" : (depositOverrides[item.id!]! / 100).toFixed(2)} placeholder={(defaultDepositCents / 100).toFixed(2)} onChange={e => setDepositOverrides(previous => ({ ...previous, [item.id!]: e.target.value === "" ? null : Math.max(1, Math.round(Number(e.target.value) * 100)) }))} className="min-w-0 flex-1 bg-transparent px-1 text-sm outline-none" /></div></label>)}</div></div>
+        </div>}
 
-        {tab === "history" && <div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><div className="flex items-center gap-3"><History className="h-5 w-5 text-[#ad6b45]" /><h3 className="font-serif text-2xl">Pricing activity</h3></div>{history.length ? <div className="mt-5 divide-y">{history.map((entry, index) => <div key={`${entry.at}-${index}`} className="grid gap-1 py-4 sm:grid-cols-[180px_1fr_1fr]"><span className="text-xs text-neutral-500">{new Date(entry.at).toLocaleString()}</span><span className="font-medium">{entry.service}</span><span className="text-sm text-neutral-600">{entry.detail}</span></div>)}</div> : <div className="py-14 text-center text-sm text-neutral-500">Changes made during this session will appear here.</div>}</div>}
+        {tab === "history" && <div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><div className="flex items-center gap-3"><History className="h-5 w-5 text-[#ad6b45]" /><h3 className="font-serif text-2xl">Pricing activity</h3></div>{history.length ? <div className="mt-5 divide-y">{history.map(entry => <div key={entry.id} className="grid gap-1 py-4 sm:grid-cols-[180px_1fr_1.5fr]"><span className="text-xs text-neutral-500">{new Date(entry.createdAt).toLocaleString()}</span><span><strong className="block text-sm">{entry.serviceName}</strong><span className="text-[10px] uppercase tracking-wider text-[#ad6b45]">{entry.action.replaceAll("_", " ")}</span></span><span className="text-sm text-neutral-600">{entry.summary}</span></div>)}</div> : <div className="py-14 text-center text-sm text-neutral-500">No pricing changes have been recorded yet.</div>}</div>}
       </div>
 
       {dirtyIds.length > 0 && <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#d9c8b9] bg-white/95 p-3 shadow-[0_-10px_30px_rgba(45,24,15,.10)] backdrop-blur md:left-64"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><p className="text-sm"><strong>{dirtyIds.length}</strong> unsaved service{dirtyIds.length === 1 ? "" : "s"}</p><div className="flex gap-2"><button onClick={() => setDrafts({})} className="rounded-lg border px-4 py-2 text-sm">Discard</button><button disabled={saving} onClick={save} className="flex items-center gap-2 rounded-lg bg-[#351a10] px-5 py-2 text-sm text-white disabled:opacity-60"><Save className="h-4 w-4" />{saving ? "Saving…" : "Save all changes"}</button></div></div></div>}

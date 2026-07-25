@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePublicServices } from "@/lib/utils/admin-route";
 
 export const runtime = "nodejs";
 
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
         }
         
         const data = await response.json();
+        revalidatePublicServices();
         return NextResponse.json(data);
     } catch (error) {
         console.error('Failed to create service:', error);
