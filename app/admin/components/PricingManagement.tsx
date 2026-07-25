@@ -386,11 +386,12 @@ export function PricingManagement({ token }: { token: string }) {
 
         {tab === "matrix" && (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <label className="relative min-w-[240px] flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-neutral-400" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search services or sizes…" className="w-full rounded-lg border border-[#ddd0c4] py-2.5 pl-10 pr-3 outline-none focus:ring-2 focus:ring-[#bd7a52]" /></label>
               <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="rounded-lg border border-[#ddd0c4] bg-white px-4 py-2.5"><option value="all">All categories</option>{data.categories.map(category => <option key={category.slug} value={category.slug}>{category.name}</option>)}</select>
               <button onClick={() => setShowBulk(value => !value)} className="rounded-lg border border-[#351a10] bg-white px-4 py-2 text-sm">Bulk adjust prices</button>
               <button onClick={() => setShowCreate(value => !value)} className="flex items-center gap-2 rounded-lg bg-[#351a10] px-4 py-2 text-sm text-white shadow-lg"><Plus className="h-4 w-4" /> Add pricing option</button>
+              <span className="ml-auto text-xs text-neutral-500">Showing {visibleRows.length} of {rows.length} services</span>
             </div>
             {showCreate && <div className="grid gap-3 rounded-xl border border-[#d9c8b9] bg-white p-5 sm:grid-cols-2 lg:grid-cols-5">
               <select value={newService.categoryId} onChange={e => setNewService({ categoryId: e.target.value, subcategoryId: "", name: newService.name, price: newService.price })} className="rounded-lg border px-3 py-2"><option value="">Category</option>{data.categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select>
@@ -405,6 +406,14 @@ export function PricingManagement({ token }: { token: string }) {
               <div className="flex w-36 rounded-lg border bg-white"><span className="px-3 py-2">{bulkMode === "fixed" ? "$" : "%"}</span><input value={bulkAmount} inputMode="decimal" onChange={e => setBulkAmount(e.target.value)} className="min-w-0 flex-1 rounded-r-lg px-1" /></div>
               <button onClick={applyBulkAdjustment} className="rounded-lg border border-[#ad6b45] px-4 py-2 text-sm font-medium text-[#8d4f31]">Apply for review</button>
             </div>}
+            {!visibleRows.length && (
+              <div className="rounded-xl border border-dashed border-[#d9c8b9] bg-white p-10 text-center">
+                <Search className="mx-auto h-6 w-6 text-neutral-400" />
+                <p className="mt-3 text-sm font-medium">No services match your filters</p>
+                <p className="mt-1 text-sm text-neutral-500">Try a different search term or switch category to &quot;All categories&quot;.</p>
+                {(query || categoryFilter !== "all") && <button onClick={() => { setQuery(""); setCategoryFilter("all"); }} className="mt-4 text-sm font-medium text-[#8d4f31] underline underline-offset-4">Clear filters</button>}
+              </div>
+            )}
             {data.categories.filter(category => visibleRows.some(row => row.category.slug === category.slug)).map(category => {
               const categoryClosed = collapsedCategories.has(category.slug);
               return <section key={category.slug} className="overflow-hidden rounded-xl border border-[#dfd2c5] bg-white shadow-[0_8px_25px_rgba(66,38,22,.05)]">
@@ -426,18 +435,28 @@ export function PricingManagement({ token }: { token: string }) {
                     </div>
                     {!subClosed && <div className="overflow-x-auto">
                       <table className="w-full min-w-[760px] border-collapse text-sm">
-                        <thead><tr className="bg-[#fbf8f3]">{["Size", ...columns, ...(hasKnotless ? ["Knotless"] : []), "Actions"].map(column => <th key={column} className="border-b border-r border-[#e7ddd3] px-4 py-3 text-center font-medium last:border-r-0">{column}</th>)}</tr></thead>
+                        <thead><tr className="bg-[#fbf8f3]">{["Size", ...columns, ...(hasKnotless ? ["Knotless"] : []), "Actions"].map((column, columnIndex) => <th key={column} className={`border-b border-r border-[#e7ddd3] px-4 py-3 text-center font-medium last:border-r-0 ${columnIndex === 0 ? "sticky left-0 z-10 bg-[#fbf8f3] text-left" : ""}`}>{column}</th>)}</tr></thead>
                         <tbody>{subRows.map((row, rowIndex) => {
                           const item = row.item;
-                          return <tr key={item.id} className={drafts[item.id!] ? "bg-[#fff9f1]" : "hover:bg-[#fdfaf6]"}>
-                            <td className="border-b border-r border-[#e7ddd3] px-5 py-4 font-medium">{item.name}</td>
+                          const isDirty = !!drafts[item.id!];
+                          const rowBg = isDirty ? "bg-[#fff9f1]" : rowIndex % 2 === 1 ? "bg-[#fbfaf7]" : "bg-white";
+                          const knotlessInvalid = item.foundationChoicesEnabled && !hasValidAdjustment(item.knotlessPriceAdjustment);
+                          return <tr key={item.id} className={`${rowBg} hover:bg-[#fdfaf6]`}>
+                            <td className={`sticky left-0 z-10 border-b border-r border-[#e7ddd3] px-5 py-4 font-medium ${rowBg}`}>
+                              <span className="flex items-center gap-2">
+                                {isDirty && <span title="Unsaved changes" className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#bd7a52]" />}
+                                {item.name}
+                              </span>
+                            </td>
                             {columns.map(column => {
                               const isBase = column === "Base price";
                               const optionIndex = isBase ? -1 : (item.lengthOptions ?? []).findIndex(option => option.name === column);
+                              const optionExists = isBase ? !item.lengthOptions?.length : optionIndex >= 0;
                               const value = isBase ? (!item.lengthOptions?.length ? item.price : "") : (optionIndex >= 0 ? item.lengthOptions?.[optionIndex]?.price : "");
+                              const invalid = optionExists && !hasValidPrice(value);
                               return <td key={column} className="group border-b border-r border-[#e7ddd3] px-2 py-2">
-                                <div className="flex items-center rounded-md border border-transparent focus-within:border-[#bd7a52] focus-within:bg-white">
-                                  <span className="pl-2 text-neutral-500">$</span>
+                                <div title={invalid ? "Missing or invalid price" : undefined} className={`flex items-center rounded-md border ${invalid ? "border-red-300 bg-red-50" : "border-transparent"} focus-within:border-[#bd7a52] focus-within:bg-white`}>
+                                  <span className={`pl-2 ${invalid ? "text-red-400" : "text-neutral-500"}`}>$</span>
                                   <input aria-label={`${item.name} ${column} price`} inputMode="decimal" value={value ?? ""} placeholder="—" onChange={e => updateItem(item.id!, draft => {
                                     if (isBase) return { ...draft, price: e.target.value };
                                     const options = [...(draft.lengthOptions ?? [])];
@@ -445,12 +464,15 @@ export function PricingManagement({ token }: { token: string }) {
                                     if (index >= 0) options[index] = { ...options[index], price: e.target.value };
                                     else options.push({ name: column, price: e.target.value });
                                     return { ...draft, lengthOptions: options };
-                                  })} className="w-20 min-w-0 flex-1 bg-transparent px-1 py-2 text-center outline-none" />
+                                  })} className={`w-20 min-w-0 flex-1 bg-transparent px-1 py-2 text-center outline-none ${invalid ? "text-red-700" : ""}`} />
+                                  {invalid && <AlertCircle className="mr-1 h-3.5 w-3.5 shrink-0 text-red-500" />}
                                   {!isBase && optionIndex >= 0 && <button aria-label={`Remove ${column} from ${item.name}`} onClick={() => setDeleteTarget({ row, lengthName: column })} className="invisible mr-1 rounded p-1 text-red-600 group-hover:visible focus:visible"><Trash2 className="h-3.5 w-3.5" /></button>}
                                 </div>
                               </td>;
                             })}
-                            {hasKnotless && <td className="border-b border-r border-[#e7ddd3] px-4 py-3 text-center">{item.foundationChoicesEnabled ? `+${money(item.knotlessPriceAdjustment)}` : "—"}</td>}
+                            {hasKnotless && <td className={`border-b border-r border-[#e7ddd3] px-4 py-3 text-center ${knotlessInvalid ? "text-red-600" : ""}`}>
+                              {item.foundationChoicesEnabled ? (knotlessInvalid ? <span className="inline-flex items-center gap-1 text-xs font-medium"><AlertCircle className="h-3.5 w-3.5" /> Missing</span> : `+${money(item.knotlessPriceAdjustment)}`) : "—"}
+                            </td>}
                             <td className="border-b border-[#e7ddd3] px-3 py-3"><div className="flex items-center justify-center gap-1">
                               <button title="Edit row" onClick={() => document.querySelector<HTMLInputElement>(`[aria-label="${item.name} ${columns[0]} price"]`)?.focus()} className="rounded p-1.5 hover:bg-[#f0e7dc]"><Pencil className="h-4 w-4" /></button>
                               <button title="Duplicate row" onClick={() => duplicateService(row)} className="rounded p-1.5 hover:bg-[#f0e7dc]"><Copy className="h-4 w-4" /></button>
