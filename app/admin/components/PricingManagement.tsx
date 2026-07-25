@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, ChevronDown, ChevronUp, Copy, DollarSign, History, Pencil, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
+import { AlertCircle, BriefcaseBusiness, Check, ChevronDown, ChevronRight, ChevronUp, Clock3, Copy, CreditCard, DollarSign, Download, History, Pencil, Plus, RefreshCw, Save, Search, ShieldCheck, Trash2 } from "lucide-react";
 import type { BookingCategory, BookingItem, CategoriesData } from "@/lib/booking-types";
 
 type Tab = "overview" | "matrix" | "deposits" | "history";
@@ -34,6 +34,8 @@ export function PricingManagement({ token }: { token: string }) {
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; lengthName?: string } | null>(null);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [collapsedSubcategories, setCollapsedSubcategories] = useState<Set<string>>(new Set());
+  const [depositQuery, setDepositQuery] = useState("");
+  const [depositCategory, setDepositCategory] = useState("all");
 
   const load = async () => {
     setLoading(true); setError("");
@@ -75,6 +77,11 @@ export function PricingManagement({ token }: { token: string }) {
   const allPrices = rows.flatMap(({ item }) => item.lengthOptions?.length
     ? item.lengthOptions.map(option => Number(option.price))
     : [Number(item.price)]).filter(Number.isFinite);
+  const depositRows = rows.filter(({ category, subcategory, item }) => {
+    const matchesCategory = depositCategory === "all" || category.slug === depositCategory;
+    const matchesSearch = `${item.name} ${subcategory.name}`.toLowerCase().includes(depositQuery.trim().toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   const updateItem = (id: number, recipe: (item: BookingItem) => BookingItem) => {
     const source = rows.find(row => row.item.id === id)?.item;
@@ -239,20 +246,52 @@ export function PricingManagement({ token }: { token: string }) {
     finally { setSaving(false); }
   };
 
+  const exportPriceList = () => {
+    const lines = [["Category", "Style", "Size / Service", "Length", "Price", "Knotless adjustment", "Deposit override"]];
+    rows.forEach(({ category, subcategory, item }) => {
+      const options = item.lengthOptions?.length ? item.lengthOptions : [{ name: "Base", price: item.price }];
+      options.forEach(option => lines.push([
+        category.name,
+        subcategory.name,
+        item.name,
+        option.name || "Base",
+        option.price || "",
+        item.foundationChoicesEnabled ? item.knotlessPriceAdjustment || "0" : "",
+        depositOverrides[item.id!] == null ? "" : String(depositOverrides[item.id!]! / 100),
+      ]));
+    });
+    const csv = lines.map(line => line.map(value => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url; link.download = `braiding-prices-${new Date().toISOString().slice(0, 10)}.csv`; link.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) return <div className="p-8 space-y-4"><div className="h-9 w-64 animate-pulse rounded bg-neutral-200" /><div className="h-72 animate-pulse rounded-xl bg-neutral-100" /></div>;
   if (!data) return <div className="m-8 rounded-xl border border-red-200 bg-red-50 p-6"><p className="text-red-800">{error || "Pricing data could not be loaded."}</p><button onClick={load} className="mt-4 rounded bg-neutral-900 px-4 py-2 text-sm text-white">Retry</button></div>;
 
   return (
     <div className="min-h-full bg-[#f8f5ef] text-[#2d180f]">
       <div className="mx-auto max-w-7xl p-5 pb-28 sm:p-8">
-        <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
-          <div><p className="text-xs font-semibold uppercase tracking-[.26em] text-[#ad6b45]">Revenue controls</p><h2 className="mt-2 font-serif text-4xl">Pricing</h2><p className="mt-2 text-sm text-neutral-600">One source of truth for Services, booking, and checkout.</p></div>
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+          <div><h2 className="font-serif text-5xl">Pricing</h2><p className="mt-2 text-sm text-neutral-600">Review and manage pricing across your service catalog.</p></div>
           <button onClick={load} className="flex items-center gap-2 rounded-lg border border-[#d9c8b9] bg-white px-4 py-2 text-sm"><RefreshCw className="h-4 w-4" /> Refresh</button>
         </div>
 
-        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-[#e3d8cc] bg-white p-1.5">
+        <div className="mb-5 grid gap-4 md:grid-cols-3">
+          {[
+            { label: "Services Priced", value: rows.length, icon: BriefcaseBusiness },
+            { label: "Price Range", value: allPrices.length ? `${money(String(Math.min(...allPrices)))}–${money(String(Math.max(...allPrices)))}` : "—", icon: DollarSign },
+            { label: "Default Deposit", value: money(String(defaultDepositCents / 100)), icon: CreditCard },
+          ].map(card => <div key={card.label} className="flex items-center gap-5 rounded-xl border border-[#ded2c7] bg-white px-5 py-5 shadow-[0_5px_16px_rgba(56,35,21,.04)]">
+            <div className="rounded-full border border-[#d9c8b9] bg-[#f6f0e7] p-4"><card.icon className="h-5 w-5" /></div>
+            <div><p className="text-sm text-neutral-600">{card.label}</p><p className="mt-1 font-serif text-3xl">{card.value}</p></div>
+          </div>)}
+        </div>
+
+        <div className="mb-6 flex gap-7 overflow-x-auto border-b border-[#d8cabc]">
           {(["overview", "matrix", "deposits", "history"] as Tab[]).map(value => (
-            <button key={value} onClick={() => setTab(value)} className={`min-w-max rounded-lg px-5 py-2.5 text-sm capitalize ${tab === value ? "bg-[#351a10] text-white shadow" : "text-neutral-600 hover:bg-[#f8f3ed]"}`}>{value === "matrix" ? "Price Matrix" : value}</button>
+            <button key={value} onClick={() => setTab(value)} className={`min-w-max border-b-2 px-1 py-3 text-sm capitalize ${tab === value ? "border-[#7b482d] font-semibold text-[#351a10]" : "border-transparent text-neutral-600 hover:text-[#351a10]"}`}>{value === "matrix" ? "Price Matrix" : value}</button>
           ))}
         </div>
 
@@ -260,22 +299,44 @@ export function PricingManagement({ token }: { token: string }) {
         {success && <div role="status" className="mb-5 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><Check className="h-4 w-4" />{success}</div>}
 
         {tab === "overview" && (
-          <div className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[["Active services", rows.length], ["Length prices", rows.reduce((n, row) => n + (row.item.lengthOptions?.length ?? 0), 0)], ["Price range", allPrices.length ? `${money(String(Math.min(...allPrices)))}–${money(String(Math.max(...allPrices)))}` : "—"], ["Standard deposit", money(String(defaultDepositCents / 100))]].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-[#e4d8cc] bg-white p-5 shadow-[0_12px_30px_rgba(73,45,28,.05)]"><p className="text-xs uppercase tracking-[.16em] text-neutral-500">{label}</p><p className="mt-3 font-serif text-3xl">{value}</p></div>
-              ))}
+          <div className="space-y-5">
+            <div className="grid gap-5 lg:grid-cols-[1fr_1.1fr]">
+              <section className="rounded-xl border border-[#ded2c7] bg-white p-6">
+                <h3 className="font-serif text-2xl">Catalog health</h3>
+                <div className="mt-7 grid grid-cols-3 divide-x divide-[#decfc1] text-center">
+                  <div><p className="font-serif text-4xl">{rows.length}</p><p className="mt-1 text-sm text-neutral-600">priced services</p></div>
+                  <div><p className="font-serif text-4xl">{rows.reduce((total, row) => total + (row.item.lengthOptions?.length || 1), 0)}</p><p className="mt-1 text-sm text-neutral-600">price options</p></div>
+                  <div><p className="font-serif text-4xl">{data.categories.length}</p><p className="mt-1 text-sm text-neutral-600">service categories</p></div>
+                </div>
+                <div className="mt-8 h-3 overflow-hidden rounded-full bg-[#eee7de]"><div className="h-full w-full rounded-full bg-[#351a10]" /></div>
+                <p className="mt-3 text-right text-xs font-medium text-neutral-500">Catalog pricing is synchronized</p>
+              </section>
+              <section className="rounded-xl border border-[#ded2c7] bg-white p-6">
+                <div className="flex items-center justify-between"><h3 className="font-serif text-2xl">Recent changes</h3><button onClick={() => setTab("history")} className="flex items-center gap-1 text-sm underline">View history <ChevronRight className="h-4 w-4" /></button></div>
+                {history.length ? <div className="mt-4 divide-y divide-[#e7ddd3]">{history.slice(0, 4).map(entry => <div key={entry.id} className="grid grid-cols-[36px_1fr_auto] items-center gap-3 py-3">
+                  <div className="rounded-full bg-[#f3eadf] p-2"><Clock3 className="h-4 w-4" /></div>
+                  <div className="min-w-0"><p className="truncate text-sm font-medium">{entry.serviceName}</p><p className="truncate text-xs text-neutral-500">{entry.summary}</p></div>
+                  <time className="text-xs text-neutral-500">{new Date(entry.createdAt).toLocaleDateString()}</time>
+                </div>)}</div> : <div className="flex h-40 items-center justify-center text-sm text-neutral-500">No pricing changes recorded yet.</div>}
+              </section>
             </div>
-            <div className="rounded-2xl border border-[#e4d8cc] bg-white p-6">
-              <h3 className="font-serif text-2xl">Catalog overview</h3>
-              <div className="mt-5 divide-y divide-[#eee5dc]">
+            <section className="rounded-xl border border-[#ded2c7] bg-white p-5">
+              <div className="flex items-center justify-between"><h3 className="font-serif text-2xl">Pricing by category</h3><button onClick={() => setTab("matrix")} className="flex items-center gap-1 text-sm underline">View price matrix <ChevronRight className="h-4 w-4" /></button></div>
+              <div className="mt-4 overflow-x-auto rounded-lg border border-[#e2d7cd]">
+                <table className="w-full min-w-[600px] text-sm"><thead><tr className="bg-[#f6f1ea] text-left"><th className="px-4 py-3">Category</th><th className="px-4 py-3">Services</th><th className="px-4 py-3">Price Range</th><th className="px-4 py-3">Deposit</th></tr></thead><tbody>
                 {data.categories.map(category => {
                   const categoryRows = rows.filter(row => row.category.slug === category.slug);
                   const prices = categoryRows.flatMap(row => row.item.lengthOptions?.map(o => Number(o.price)) ?? [Number(row.item.price)]).filter(Number.isFinite);
-                  return <div key={category.slug} className="grid grid-cols-[1fr_auto_auto] gap-6 py-4 text-sm"><span className="font-medium">{category.name}</span><span className="text-neutral-500">{categoryRows.length} services</span><span>{prices.length ? `${money(String(Math.min(...prices)))}–${money(String(Math.max(...prices)))}` : "—"}</span></div>;
+                  return <tr key={category.slug} className="border-t border-[#e7ddd3]"><td className="px-4 py-3 font-medium">{category.name}</td><td className="px-4 py-3">{categoryRows.length}</td><td className="px-4 py-3">{prices.length ? `${money(String(Math.min(...prices)))}–${money(String(Math.max(...prices)))}` : "—"}</td><td className="px-4 py-3">{money(String(defaultDepositCents / 100))} default</td></tr>;
                 })}
+                </tbody></table>
               </div>
-            </div>
+            </section>
+            <section className="flex flex-wrap items-center gap-5 rounded-xl border border-[#ded2c7] bg-white p-5">
+              <div className="rounded-full bg-[#f3eadf] p-4"><ShieldCheck className="h-7 w-7" /></div>
+              <div className="mr-auto"><h3 className="font-serif text-xl">Keep your pricing accurate</h3><p className="mt-1 text-sm text-neutral-600">Export a current copy of every service, length, price, and deposit override.</p></div>
+              <button onClick={exportPriceList} className="flex items-center gap-2 rounded-lg border border-[#7b482d] px-5 py-3 text-sm font-medium"><Download className="h-4 w-4" /> Export price list</button>
+            </section>
           </div>
         )}
 
@@ -366,8 +427,108 @@ export function PricingManagement({ token }: { token: string }) {
         )}
 
         {tab === "deposits" && <div className="space-y-5">
-          <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]"><div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><DollarSign className="h-8 w-8 text-[#ad6b45]" /><h3 className="mt-4 font-serif text-2xl">Standard deposit</h3><p className="mt-2 text-sm text-neutral-600">Used unless a service-specific amount is entered below. Checkout never authorizes more than the full service price.</p><div className="mt-6 flex max-w-xs rounded-lg border border-[#ddd0c4] bg-[#fbf7f2]"><span className="px-4 py-3">$</span><input inputMode="decimal" value={(defaultDepositCents / 100).toFixed(2)} onChange={e => setDefaultDepositCents(Math.max(1, Math.round(Number(e.target.value || 0) * 100)))} className="min-w-0 flex-1 bg-transparent px-2 font-semibold outline-none" /></div></div><div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><h3 className="font-serif text-2xl">How deposits behave</h3><div className="mt-5 space-y-4 text-sm">{["Customer card details remain with Stripe—not your database.","The service price is recalculated from this catalog before payment.","Existing appointments keep their booked price snapshot.","A lower-priced service authorizes only its full price."].map(text => <div key={text} className="flex gap-3"><Check className="mt-0.5 h-4 w-4 text-[#ad6b45]" /><span>{text}</span></div>)}</div></div></div>
-          <div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-serif text-2xl">Service overrides</h3><p className="text-sm text-neutral-500">Leave blank to use the standard deposit.</p></div><button disabled={saving} onClick={saveDeposits} className="flex items-center gap-2 rounded-lg bg-[#351a10] px-5 py-2.5 text-sm text-white"><Save className="h-4 w-4" /> Save deposits</button></div><div className="mt-5 grid gap-3 md:grid-cols-2">{rows.map(({ subcategory, item }) => <label key={item.id} className="flex items-center gap-3 rounded-lg border border-[#e7ddd3] p-3"><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{item.name}</strong><span className="text-xs text-neutral-500">{subcategory.name}</span></span><div className="flex w-32 rounded-md border bg-[#fbf7f2]"><span className="px-2 py-2">$</span><input aria-label={`${item.name} deposit override`} inputMode="decimal" value={depositOverrides[item.id!] == null ? "" : (depositOverrides[item.id!]! / 100).toFixed(2)} placeholder={(defaultDepositCents / 100).toFixed(2)} onChange={e => setDepositOverrides(previous => ({ ...previous, [item.id!]: e.target.value === "" ? null : Math.max(1, Math.round(Number(e.target.value) * 100)) }))} className="min-w-0 flex-1 bg-transparent px-1 text-sm outline-none" /></div></label>)}</div></div>
+          <div>
+            <h2 className="font-serif text-3xl text-[#2f1a12]">Deposit settings</h2>
+            <p className="mt-1 text-sm text-neutral-600">Control the authorization amount collected when customers request an appointment.</p>
+          </div>
+
+          <section className="rounded-xl border border-[#e1d5c9] bg-white p-5 shadow-sm">
+            <div className="grid gap-6 lg:grid-cols-[1fr_1px_1fr]">
+              <div className="flex flex-col justify-center">
+                <label htmlFor="default-deposit" className="text-base font-semibold">Default deposit</label>
+                <div className="mt-3 flex max-w-md rounded-md border border-[#bdaea1] bg-white focus-within:ring-2 focus-within:ring-[#bd7953]/25">
+                  <span className="border-r border-[#ded3c8] px-4 py-3">$</span>
+                  <input id="default-deposit" inputMode="decimal" value={(defaultDepositCents / 100).toFixed(2)} onFocus={event => event.currentTarget.select()} onChange={event => setDefaultDepositCents(Math.max(1, Math.round(Number(event.target.value || 0) * 100)))} className="min-w-0 flex-1 bg-transparent px-4 font-medium outline-none" />
+                </div>
+                <p className="mt-2 text-xs text-neutral-500">Applied to every service unless a service-specific override is set.</p>
+                <button disabled={saving} onClick={saveDeposits} className="mt-5 flex w-fit items-center gap-2 rounded-md bg-[#351a10] px-5 py-2.5 text-sm font-medium text-white shadow-sm disabled:opacity-60">
+                  <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save deposit settings"}
+                </button>
+              </div>
+              <div className="hidden bg-[#e5dad0] lg:block" />
+              <div className="rounded-lg border border-[#e5d9cf] bg-[#fdfaf6] p-5">
+                <p className="text-sm font-medium">Customer sees</p>
+                <div className="mt-4 flex items-center justify-between border-t border-dashed border-[#ddd0c5] pt-4">
+                  <strong className="text-base">Deposit Today</strong>
+                  <span className="font-serif text-3xl text-[#351a10]">${(defaultDepositCents / 100).toFixed(2)}</span>
+                </div>
+                <p className="mt-4 text-xs text-neutral-500">Remaining balance is calculated from the selected service price.</p>
+              </div>
+            </div>
+          </section>
+
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
+            <section className="overflow-hidden rounded-xl border border-[#e1d5c9] bg-white shadow-sm">
+              <div className="flex flex-wrap items-end justify-between gap-4 p-5">
+                <div>
+                  <h3 className="font-serif text-2xl text-[#2f1a12]">Service-specific overrides</h3>
+                  <p className="mt-1 text-xs text-neutral-500">Leave a deposit blank to use the default amount.</p>
+                </div>
+                <button onClick={() => document.querySelector<HTMLInputElement>("[data-deposit-input]")?.focus()} className="flex items-center gap-2 rounded-md border border-[#a46645] px-4 py-2 text-sm font-medium text-[#6b3824]">
+                  <Plus className="h-4 w-4" /> Add override
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-3 border-y border-[#eadfd5] bg-[#fdfbf8] p-4">
+                <label className="relative min-w-56 flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                  <input value={depositQuery} onChange={event => setDepositQuery(event.target.value)} placeholder="Search services" className="w-full rounded-md border border-[#ddd0c4] bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#bd7953]/20" />
+                </label>
+                <select value={depositCategory} onChange={event => setDepositCategory(event.target.value)} className="min-w-48 rounded-md border border-[#ddd0c4] bg-white px-3 py-2.5 text-sm outline-none">
+                  <option value="all">All categories</option>
+                  {data?.categories.map(category => <option key={category.slug} value={category.slug}>{category.name}</option>)}
+                </select>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+                  <thead className="bg-[#f7f1ea] text-xs text-neutral-600"><tr>
+                    <th className="border-b border-r border-[#e2d7cc] px-4 py-3 font-medium">Service</th>
+                    <th className="border-b border-r border-[#e2d7cc] px-4 py-3 font-medium">Standard price range</th>
+                    <th className="border-b border-r border-[#e2d7cc] px-4 py-3 font-medium">Deposit</th>
+                    <th className="border-b border-r border-[#e2d7cc] px-4 py-3 font-medium">Status</th>
+                    <th className="border-b border-[#e2d7cc] px-4 py-3 font-medium">Actions</th>
+                  </tr></thead>
+                  <tbody>{depositRows.map(({ subcategory, item }) => {
+                    const itemPrices = (item.lengthOptions?.length ? item.lengthOptions.map(option => Number(option.price)) : [Number(item.price)]).filter(Number.isFinite);
+                    const minimumPriceCents = Math.round(Math.min(...itemPrices) * 100);
+                    const maximumPriceCents = Math.round(Math.max(...itemPrices) * 100);
+                    const configuredDeposit = depositOverrides[item.id!] ?? defaultDepositCents;
+                    const effectiveDeposit = Math.min(configuredDeposit, minimumPriceCents);
+                    const isLimited = configuredDeposit > minimumPriceCents;
+                    const hasOverride = depositOverrides[item.id!] != null;
+                    return <tr key={item.id} className="hover:bg-[#fdfaf6]">
+                      <td className="border-b border-r border-[#ece3da] px-4 py-3"><strong className="block">{item.name}</strong><span className="text-xs text-neutral-500">{subcategory.name}</span></td>
+                      <td className="border-b border-r border-[#ece3da] px-4 py-3">{minimumPriceCents === maximumPriceCents ? money(String(minimumPriceCents / 100)) : `${money(String(minimumPriceCents / 100))}–${money(String(maximumPriceCents / 100))}`}</td>
+                      <td className="border-b border-r border-[#ece3da] px-3 py-2">
+                        <div className="flex w-28 rounded-md border border-[#d8cabd] bg-white focus-within:ring-2 focus-within:ring-[#bd7953]/20">
+                          <span className="px-2 py-2">$</span>
+                          <input data-deposit-input aria-label={`${item.name} deposit override`} inputMode="decimal" value={hasOverride ? (depositOverrides[item.id!]! / 100).toFixed(2) : ""} placeholder={(defaultDepositCents / 100).toFixed(2)} onFocus={event => event.currentTarget.select()} onChange={event => setDepositOverrides(previous => ({ ...previous, [item.id!]: event.target.value === "" ? null : Math.max(1, Math.round(Number(event.target.value) * 100)) }))} className="min-w-0 flex-1 bg-transparent py-2 pr-2 outline-none" />
+                        </div>
+                      </td>
+                      <td className="border-b border-r border-[#ece3da] px-4 py-3 text-xs">{isLimited ? "Limited to service price" : hasOverride ? "Custom override" : "Uses default"}</td>
+                      <td className="border-b border-[#ece3da] px-4 py-3">
+                        <button onClick={() => document.querySelector<HTMLInputElement>(`[aria-label="${item.name} deposit override"]`)?.focus()} className="font-medium text-[#6f3b27] underline underline-offset-4">Edit</button>
+                        {hasOverride && <><span className="mx-2 text-neutral-300">·</span><button onClick={() => setDepositOverrides(previous => ({ ...previous, [item.id!]: null }))} className="font-medium text-[#6f3b27] underline underline-offset-4">Remove</button></>}
+                        <span className="sr-only">Effective deposit ${(effectiveDeposit / 100).toFixed(2)}</span>
+                      </td>
+                    </tr>;
+                  })}</tbody>
+                </table>
+                {!depositRows.length && <div className="p-10 text-center text-sm text-neutral-500">No services match these filters.</div>}
+              </div>
+              <div className="m-4 flex gap-3 rounded-md border border-[#e1b36a] bg-[#fff8e9] px-4 py-3 text-sm text-[#6d4a20]">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> A deposit can never exceed the selected appointment price.
+              </div>
+            </section>
+
+            <aside className="h-fit rounded-xl border border-[#e1d5c9] bg-white p-5 shadow-sm">
+              <h3 className="font-serif text-2xl text-[#2f1a12]">Authorization behavior</h3>
+              <div className="mt-6 space-y-5">
+                {["Authorize now, capture after admin approval", "Release authorization when denied", "Warn when authorization is close to expiring"].map(text => <div key={text} className="flex gap-3 text-sm leading-5">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#351a10] text-white"><Check className="h-4 w-4" /></span><span>{text}</span>
+                </div>)}
+              </div>
+            </aside>
+          </div>
         </div>}
 
         {tab === "history" && <div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><div className="flex items-center gap-3"><History className="h-5 w-5 text-[#ad6b45]" /><h3 className="font-serif text-2xl">Pricing activity</h3></div>{history.length ? <div className="mt-5 divide-y">{history.map(entry => <div key={entry.id} className="grid gap-1 py-4 sm:grid-cols-[180px_1fr_1.5fr]"><span className="text-xs text-neutral-500">{new Date(entry.createdAt).toLocaleString()}</span><span><strong className="block text-sm">{entry.serviceName}</strong><span className="text-[10px] uppercase tracking-wider text-[#ad6b45]">{entry.action.replaceAll("_", " ")}</span></span><span className="text-sm text-neutral-600">{entry.summary}</span></div>)}</div> : <div className="py-14 text-center text-sm text-neutral-500">No pricing changes have been recorded yet.</div>}</div>}
