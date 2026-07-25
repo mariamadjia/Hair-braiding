@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, ChevronDown, ChevronUp, DollarSign, History, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
-import type { BookingCategory, BookingItem, CategoriesData, LengthOption } from "@/lib/booking-types";
+import { AlertCircle, Check, ChevronDown, ChevronUp, Copy, DollarSign, History, Pencil, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
+import type { BookingCategory, BookingItem, CategoriesData } from "@/lib/booking-types";
 
 type Tab = "overview" | "matrix" | "deposits" | "history";
 type Row = { category: BookingCategory; subcategory: NonNullable<BookingCategory["subcategories"]>[number]; item: BookingItem };
@@ -17,7 +17,6 @@ export function PricingManagement({ token }: { token: string }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [data, setData] = useState<CategoriesData | null>(null);
   const [drafts, setDrafts] = useState<Record<number, BookingItem>>({});
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -30,7 +29,11 @@ export function PricingManagement({ token }: { token: string }) {
   const [bulkAmount, setBulkAmount] = useState("");
   const [bulkMode, setBulkMode] = useState<"fixed" | "percent">("fixed");
   const [showCreate, setShowCreate] = useState(false);
+  const [showBulk, setShowBulk] = useState(false);
   const [newService, setNewService] = useState({ categoryId: "", subcategoryId: "", name: "", price: "" });
+  const [deleteTarget, setDeleteTarget] = useState<{ row: Row; lengthName?: string } | null>(null);
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  const [collapsedSubcategories, setCollapsedSubcategories] = useState<Set<string>>(new Set());
 
   const load = async () => {
     setLoading(true); setError("");
@@ -148,16 +151,73 @@ export function PricingManagement({ token }: { token: string }) {
   };
 
   const deleteService = async (item: BookingItem) => {
-    if (!item.id || !confirm(`Delete "${item.name}" from booking? Existing appointments will be kept.`)) return;
+    if (!item.id) return;
     setSaving(true); setError("");
     try {
       const response = await fetch(`/api/admin/services/${item.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Unable to delete service.");
       setSuccess(`${item.name} deleted from booking.`);
+      setDeleteTarget(null);
       await load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to delete service."); }
     finally { setSaving(false); }
+  };
+
+  const duplicateService = async (row: Row) => {
+    const item = row.item;
+    setSaving(true); setError("");
+    try {
+      const { id: _id, ...copy } = item;
+      const response = await fetch("/api/admin/services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          ...copy,
+          name: `${item.name} Copy`,
+          lengthOptions: (item.lengthOptions ?? []).map(({ id: _optionId, ...option }) => option),
+          category: { id: row.category.id },
+          subcategory: { id: row.subcategory.id },
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Unable to duplicate service.");
+      setSuccess(`${item.name} duplicated.`);
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to duplicate service."); }
+    finally { setSaving(false); }
+  };
+
+  const reorderService = async (row: Row, offset: number) => {
+    const siblings = rows.filter(entry => entry.subcategory.id === row.subcategory.id);
+    const index = siblings.findIndex(entry => entry.item.id === row.item.id);
+    const target = index + offset;
+    if (target < 0 || target >= siblings.length) return;
+    const ordered = [...siblings];
+    [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
+    setSaving(true); setError("");
+    try {
+      const response = await fetch("/api/admin/services/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ serviceIds: ordered.map(entry => entry.item.id) }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Unable to reorder sizes.");
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to reorder sizes."); }
+    finally { setSaving(false); }
+  };
+
+  const addLengthColumn = (subcategoryId?: number) => {
+    if (!subcategoryId) return;
+    const name = prompt("Length name");
+    if (!name?.trim()) return;
+    rows.filter(row => row.subcategory.id === subcategoryId).forEach(({ item }) =>
+      updateItem(item.id!, draft => ({
+        ...draft,
+        lengthOptions: [...(draft.lengthOptions ?? []), { name: name.trim(), price: draft.price || "0" }],
+      })));
   };
 
   const saveDeposits = async () => {
@@ -221,10 +281,11 @@ export function PricingManagement({ token }: { token: string }) {
 
         {tab === "matrix" && (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-3 rounded-xl border border-[#e4d8cc] bg-white p-4">
+            <div className="flex flex-wrap gap-3">
               <label className="relative min-w-[240px] flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-neutral-400" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search services or sizes…" className="w-full rounded-lg border border-[#ddd0c4] py-2.5 pl-10 pr-3 outline-none focus:ring-2 focus:ring-[#bd7a52]" /></label>
               <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="rounded-lg border border-[#ddd0c4] bg-white px-4 py-2.5"><option value="all">All categories</option>{data.categories.map(category => <option key={category.slug} value={category.slug}>{category.name}</option>)}</select>
-              <button onClick={() => setShowCreate(value => !value)} className="flex items-center gap-2 rounded-lg bg-[#351a10] px-4 py-2 text-sm text-white"><Plus className="h-4 w-4" /> Add size/service</button>
+              <button onClick={() => setShowBulk(value => !value)} className="rounded-lg border border-[#351a10] bg-white px-4 py-2 text-sm">Bulk adjust prices</button>
+              <button onClick={() => setShowCreate(value => !value)} className="flex items-center gap-2 rounded-lg bg-[#351a10] px-4 py-2 text-sm text-white shadow-lg"><Plus className="h-4 w-4" /> Add pricing option</button>
             </div>
             {showCreate && <div className="grid gap-3 rounded-xl border border-[#d9c8b9] bg-white p-5 sm:grid-cols-2 lg:grid-cols-5">
               <select value={newService.categoryId} onChange={e => setNewService({ categoryId: e.target.value, subcategoryId: "", name: newService.name, price: newService.price })} className="rounded-lg border px-3 py-2"><option value="">Category</option>{data.categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select>
@@ -233,35 +294,72 @@ export function PricingManagement({ token }: { token: string }) {
               <div className="flex rounded-lg border"><span className="px-3 py-2">$</span><input value={newService.price} inputMode="decimal" onChange={e => setNewService(previous => ({ ...previous, price: e.target.value }))} placeholder="Base price" className="min-w-0 flex-1 rounded-r-lg px-2" /></div>
               <button disabled={saving} onClick={createService} className="rounded-lg bg-[#ad6b45] px-4 py-2 text-sm font-medium text-white disabled:opacity-60">Create</button>
             </div>}
-            <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[#e4d8cc] bg-[#fffaf5] p-4">
+            {showBulk && <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[#e4d8cc] bg-[#fffaf5] p-4">
               <div className="mr-auto"><p className="text-sm font-semibold">Bulk adjustment</p><p className="text-xs text-neutral-500">Applies to the services currently visible below.</p></div>
               <select value={bulkMode} onChange={e => setBulkMode(e.target.value as "fixed" | "percent")} className="rounded-lg border bg-white px-3 py-2"><option value="fixed">Dollar amount</option><option value="percent">Percentage</option></select>
               <div className="flex w-36 rounded-lg border bg-white"><span className="px-3 py-2">{bulkMode === "fixed" ? "$" : "%"}</span><input value={bulkAmount} inputMode="decimal" onChange={e => setBulkAmount(e.target.value)} className="min-w-0 flex-1 rounded-r-lg px-1" /></div>
               <button onClick={applyBulkAdjustment} className="rounded-lg border border-[#ad6b45] px-4 py-2 text-sm font-medium text-[#8d4f31]">Apply for review</button>
-            </div>
-            {visibleRows.map(({ category, subcategory, item }) => {
-              const id = item.id!;
-              const isOpen = expanded.has(id);
-              return <section key={id} className="overflow-hidden rounded-xl border border-[#e4d8cc] bg-white">
-                <div className="flex items-center">
-                <button onClick={() => setExpanded(previous => { const next = new Set(previous); next.has(id) ? next.delete(id) : next.add(id); return next; })} className="flex min-w-0 flex-1 items-center gap-4 p-5 text-left">
-                  <div className="min-w-0 flex-1"><p className="text-xs uppercase tracking-[.16em] text-[#ad6b45]">{category.name} / {subcategory.name}</p><h3 className="mt-1 text-lg font-semibold">{item.name}</h3></div>
-                  <span className="text-sm text-neutral-500">{item.lengthOptions?.length ? `${item.lengthOptions.length} length prices` : `Base ${money(item.price)}`}</span>
-                  {drafts[id] && <span className="rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-800">Unsaved</span>}
-                  {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            </div>}
+            {data.categories.filter(category => visibleRows.some(row => row.category.slug === category.slug)).map(category => {
+              const categoryClosed = collapsedCategories.has(category.slug);
+              return <section key={category.slug} className="overflow-hidden rounded-xl border border-[#dfd2c5] bg-white shadow-[0_8px_25px_rgba(66,38,22,.05)]">
+                <button onClick={() => setCollapsedCategories(previous => { const next = new Set(previous); next.has(category.slug) ? next.delete(category.slug) : next.add(category.slug); return next; })} className="flex w-full items-center gap-3 bg-[#f6f0e8] px-5 py-4 text-left">
+                  {categoryClosed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}<span className="font-serif text-xl">{category.name}</span>
                 </button>
-                <button aria-label={`Delete ${item.name}`} onClick={() => deleteService(item)} className="mr-4 rounded-lg p-2 text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
-                </div>
-                {isOpen && <div className="border-t border-[#eee5dc] bg-[#fdfbf8] p-5">
-                  {!item.lengthOptions?.length && <label className="block max-w-xs text-xs font-semibold uppercase tracking-wider text-neutral-500">Base price<div className="mt-2 flex rounded-lg border bg-white"><span className="px-3 py-2">$</span><input inputMode="decimal" value={item.price} onChange={e => updateItem(id, draft => ({ ...draft, price: e.target.value }))} className="min-w-0 flex-1 rounded-r-lg px-2 outline-none" /></div></label>}
-                  {!!item.lengthOptions?.length && <div className="space-y-2">{item.lengthOptions.map((option, index) => <div key={option.id ?? index} className="grid grid-cols-[36px_minmax(120px,1fr)_140px_40px] items-center gap-2 rounded-lg border border-[#e7ddd3] bg-white p-2">
-                    <div className="flex flex-col"><button aria-label="Move up" disabled={!index} onClick={() => updateItem(id, draft => { const options = [...(draft.lengthOptions ?? [])]; [options[index - 1], options[index]] = [options[index], options[index - 1]]; return { ...draft, lengthOptions: options }; })}><ChevronUp className="h-4 w-4" /></button><button aria-label="Move down" disabled={index === (item.lengthOptions?.length ?? 0) - 1} onClick={() => updateItem(id, draft => { const options = [...(draft.lengthOptions ?? [])]; [options[index + 1], options[index]] = [options[index], options[index + 1]]; return { ...draft, lengthOptions: options }; })}><ChevronDown className="h-4 w-4" /></button></div>
-                    <input aria-label="Length name" value={option.name ?? ""} onChange={e => updateItem(id, draft => ({ ...draft, lengthOptions: draft.lengthOptions?.map((current, i) => i === index ? { ...current, name: e.target.value } : current) }))} className="rounded-md border px-3 py-2" />
-                    <div className="flex rounded-md border"><span className="px-3 py-2">$</span><input aria-label={`${option.name} price`} inputMode="decimal" value={option.price ?? ""} onChange={e => updateItem(id, draft => ({ ...draft, lengthOptions: draft.lengthOptions?.map((current, i) => i === index ? { ...current, price: e.target.value } : current) }))} className="min-w-0 flex-1 rounded-r-md px-1 outline-none" /></div>
-                    <button aria-label={`Delete ${option.name}`} onClick={() => { if (confirm(`Delete ${option.name}?`)) updateItem(id, draft => ({ ...draft, lengthOptions: draft.lengthOptions?.filter((_, i) => i !== index) })); }} className="rounded-md p-2 text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
-                  </div>)}</div>}
-                  <button onClick={() => updateItem(id, draft => ({ ...draft, lengthOptions: [...(draft.lengthOptions ?? []), { name: "New length", price: draft.price || "0" } as LengthOption] }))} className="mt-4 flex items-center gap-2 text-sm font-medium text-[#8d4f31]"><Plus className="h-4 w-4" /> Add length price</button>
-                </div>}
+                {!categoryClosed && (category.subcategories ?? []).filter(subcategory => visibleRows.some(row => row.subcategory.id === subcategory.id)).map(subcategory => {
+                  const subRows = visibleRows.filter(row => row.subcategory.id === subcategory.id);
+                  const subKey = `${category.slug}:${subcategory.slug}`;
+                  const subClosed = collapsedSubcategories.has(subKey);
+                  const lengthNames = Array.from(new Set(subRows.flatMap(row => row.item.lengthOptions?.map(option => option.name || "") ?? []))).filter(Boolean);
+                  const hasBaseOnly = subRows.some(row => !row.item.lengthOptions?.length);
+                  const columns = hasBaseOnly ? ["Base price", ...lengthNames] : lengthNames;
+                  const hasKnotless = subRows.some(row => row.item.foundationChoicesEnabled);
+                  return <div key={subcategory.slug} className="border-t border-[#e7ddd3]">
+                    <div className="flex items-center border-b border-[#e7ddd3] px-6 py-3">
+                      <button onClick={() => setCollapsedSubcategories(previous => { const next = new Set(previous); next.has(subKey) ? next.delete(subKey) : next.add(subKey); return next; })} className="flex flex-1 items-center gap-3 text-left font-medium">{subClosed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}{subcategory.name}</button>
+                      <button onClick={() => addLengthColumn(subcategory.id)} className="flex items-center gap-2 text-sm font-medium text-[#ad6b45]"><Plus className="h-4 w-4 rounded-full border border-current" /> Add length column</button>
+                    </div>
+                    {!subClosed && <div className="overflow-x-auto">
+                      <table className="w-full min-w-[760px] border-collapse text-sm">
+                        <thead><tr className="bg-[#fbf8f3]">{["Size", ...columns, ...(hasKnotless ? ["Knotless"] : []), "Actions"].map(column => <th key={column} className="border-b border-r border-[#e7ddd3] px-4 py-3 text-center font-medium last:border-r-0">{column}</th>)}</tr></thead>
+                        <tbody>{subRows.map((row, rowIndex) => {
+                          const item = row.item;
+                          return <tr key={item.id} className={drafts[item.id!] ? "bg-[#fff9f1]" : "hover:bg-[#fdfaf6]"}>
+                            <td className="border-b border-r border-[#e7ddd3] px-5 py-4 font-medium">{item.name}</td>
+                            {columns.map(column => {
+                              const isBase = column === "Base price";
+                              const optionIndex = isBase ? -1 : (item.lengthOptions ?? []).findIndex(option => option.name === column);
+                              const value = isBase ? (!item.lengthOptions?.length ? item.price : "") : (optionIndex >= 0 ? item.lengthOptions?.[optionIndex]?.price : "");
+                              return <td key={column} className="group border-b border-r border-[#e7ddd3] px-2 py-2">
+                                <div className="flex items-center rounded-md border border-transparent focus-within:border-[#bd7a52] focus-within:bg-white">
+                                  <span className="pl-2 text-neutral-500">$</span>
+                                  <input aria-label={`${item.name} ${column} price`} inputMode="decimal" value={value ?? ""} placeholder="—" onChange={e => updateItem(item.id!, draft => {
+                                    if (isBase) return { ...draft, price: e.target.value };
+                                    const options = [...(draft.lengthOptions ?? [])];
+                                    const index = options.findIndex(option => option.name === column);
+                                    if (index >= 0) options[index] = { ...options[index], price: e.target.value };
+                                    else options.push({ name: column, price: e.target.value });
+                                    return { ...draft, lengthOptions: options };
+                                  })} className="w-20 min-w-0 flex-1 bg-transparent px-1 py-2 text-center outline-none" />
+                                  {!isBase && optionIndex >= 0 && <button aria-label={`Remove ${column} from ${item.name}`} onClick={() => setDeleteTarget({ row, lengthName: column })} className="invisible mr-1 rounded p-1 text-red-600 group-hover:visible focus:visible"><Trash2 className="h-3.5 w-3.5" /></button>}
+                                </div>
+                              </td>;
+                            })}
+                            {hasKnotless && <td className="border-b border-r border-[#e7ddd3] px-4 py-3 text-center">{item.foundationChoicesEnabled ? `+${money(item.knotlessPriceAdjustment)}` : "—"}</td>}
+                            <td className="border-b border-[#e7ddd3] px-3 py-3"><div className="flex items-center justify-center gap-1">
+                              <button title="Edit row" onClick={() => document.querySelector<HTMLInputElement>(`[aria-label="${item.name} ${columns[0]} price"]`)?.focus()} className="rounded p-1.5 hover:bg-[#f0e7dc]"><Pencil className="h-4 w-4" /></button>
+                              <button title="Duplicate row" onClick={() => duplicateService(row)} className="rounded p-1.5 hover:bg-[#f0e7dc]"><Copy className="h-4 w-4" /></button>
+                              <button title="Move up" disabled={!rowIndex} onClick={() => reorderService(row, -1)} className="rounded p-1.5 hover:bg-[#f0e7dc] disabled:opacity-25"><ChevronUp className="h-4 w-4" /></button>
+                              <button title="Move down" disabled={rowIndex === subRows.length - 1} onClick={() => reorderService(row, 1)} className="rounded p-1.5 hover:bg-[#f0e7dc] disabled:opacity-25"><ChevronDown className="h-4 w-4" /></button>
+                              <button title="Delete row" onClick={() => setDeleteTarget({ row })} className="rounded p-1.5 text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
+                            </div></td>
+                          </tr>;
+                        })}</tbody>
+                      </table>
+                      <button onClick={() => { setNewService(previous => ({ ...previous, categoryId: String(category.id), subcategoryId: String(subcategory.id) })); setShowCreate(true); }} className="flex w-full items-center gap-3 border-t border-dashed border-[#d9c8b9] px-8 py-5 text-sm font-medium text-[#ad6b45]"><Plus className="h-5 w-5 rounded-full border border-current p-0.5" /> Add size</button>
+                    </div>}
+                  </div>;
+                })}
               </section>;
             })}
           </div>
@@ -274,6 +372,26 @@ export function PricingManagement({ token }: { token: string }) {
 
         {tab === "history" && <div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><div className="flex items-center gap-3"><History className="h-5 w-5 text-[#ad6b45]" /><h3 className="font-serif text-2xl">Pricing activity</h3></div>{history.length ? <div className="mt-5 divide-y">{history.map(entry => <div key={entry.id} className="grid gap-1 py-4 sm:grid-cols-[180px_1fr_1.5fr]"><span className="text-xs text-neutral-500">{new Date(entry.createdAt).toLocaleString()}</span><span><strong className="block text-sm">{entry.serviceName}</strong><span className="text-[10px] uppercase tracking-wider text-[#ad6b45]">{entry.action.replaceAll("_", " ")}</span></span><span className="text-sm text-neutral-600">{entry.summary}</span></div>)}</div> : <div className="py-14 text-center text-sm text-neutral-500">No pricing changes have been recorded yet.</div>}</div>}
       </div>
+
+      {deleteTarget && <div className="fixed inset-0 z-50 flex justify-end bg-black/15" onMouseDown={event => { if (event.target === event.currentTarget) setDeleteTarget(null); }}>
+        <aside role="dialog" aria-modal="true" aria-labelledby="delete-pricing-title" className="flex h-full w-full max-w-sm flex-col border-l border-[#d9c8b9] bg-[#fffdf9] p-7 shadow-2xl">
+          <div className="flex items-start justify-between"><div className="rounded-full bg-[#f4eadc] p-4 text-[#8d4f31]"><Trash2 className="h-5 w-5" /></div><button aria-label="Close confirmation" onClick={() => setDeleteTarget(null)} className="text-2xl">×</button></div>
+          <h3 id="delete-pricing-title" className="mt-8 font-serif text-3xl">{deleteTarget.lengthName ? `Remove ${deleteTarget.lengthName} price?` : `Delete ${deleteTarget.row.item.name}?`}</h3>
+          <p className="mt-4 text-sm leading-7 text-neutral-600">{deleteTarget.lengthName
+            ? `This removes ${deleteTarget.lengthName} from ${deleteTarget.row.item.name} ${deleteTarget.row.subcategory.name} on the customer booking page.`
+            : `This removes ${deleteTarget.row.item.name} from customer booking. Existing appointments will remain unchanged.`}</p>
+          <div className="mt-auto space-y-3">
+            <button onClick={() => setDeleteTarget(null)} className="w-full rounded-lg border border-[#6b5548] px-4 py-3 text-sm font-medium">Keep option</button>
+            <button onClick={() => {
+              if (deleteTarget.lengthName) {
+                const { row, lengthName } = deleteTarget;
+                updateItem(row.item.id!, draft => ({ ...draft, lengthOptions: draft.lengthOptions?.filter(option => option.name !== lengthName) }));
+                setDeleteTarget(null);
+              } else void deleteService(deleteTarget.row.item);
+            }} className="w-full rounded-lg bg-[#351a10] px-4 py-3 text-sm font-medium text-white">{deleteTarget.lengthName ? "Delete option" : "Delete size/service"}</button>
+          </div>
+        </aside>
+      </div>}
 
       {dirtyIds.length > 0 && <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#d9c8b9] bg-white/95 p-3 shadow-[0_-10px_30px_rgba(45,24,15,.10)] backdrop-blur md:left-64"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><p className="text-sm"><strong>{dirtyIds.length}</strong> unsaved service{dirtyIds.length === 1 ? "" : "s"}</p><div className="flex gap-2"><button onClick={() => setDrafts({})} className="rounded-lg border px-4 py-2 text-sm">Discard</button><button disabled={saving} onClick={save} className="flex items-center gap-2 rounded-lg bg-[#351a10] px-5 py-2 text-sm text-white disabled:opacity-60"><Save className="h-4 w-4" />{saving ? "Saving…" : "Save all changes"}</button></div></div></div>}
     </div>
