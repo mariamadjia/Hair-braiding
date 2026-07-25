@@ -14,6 +14,7 @@ export type SubcategorySummary = {
 
 export type LengthOption = {
     id?: number;
+    displayOrder?: number;
     name?: string;
     price?: string;
     notes?: string;
@@ -22,6 +23,7 @@ export type LengthOption = {
 
 export type BookingItem = {
     id?: number;
+    version?: number;
     name: string;
     price: string;
     description: string;

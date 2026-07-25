@@ -537,7 +537,16 @@ export default function AdminPage() {
     };
 
     const handleSectionChange = (section: string) => {
+        if (section !== currentSection
+            && document.documentElement.dataset.pricingDirty === "true"
+            && !window.confirm("Discard your unsaved pricing changes and leave Pricing?")) {
+            return;
+        }
         setCurrentSection(section);
+        const url = new URL(window.location.href);
+        url.searchParams.set("section", section);
+        if (section !== "pricing") url.searchParams.delete("pricingTab");
+        window.history.pushState({}, "", url);
         if (section !== "customers") setSelectedCustomerId(null);
         // Reset selection when changing sections
         if (section === "categories") {

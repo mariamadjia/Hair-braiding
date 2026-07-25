@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, BriefcaseBusiness, Check, ChevronDown, ChevronRight, ChevronUp, Clock3, Copy, CreditCard, DollarSign, Download, History, MoreVertical, Pencil, Plus, RefreshCw, Save, Search, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import type { BookingCategory, BookingItem, CategoriesData } from "@/lib/booking-types";
 
 type Tab = "overview" | "matrix" | "deposits" | "history";
 type Row = { category: BookingCategory; subcategory: NonNullable<BookingCategory["subcategories"]>[number]; item: BookingItem };
-type Change = { id: number; createdAt: string; serviceName: string; action: string; summary: string };
+type Change = { id: number; createdAt: string; serviceName: string; action: string; summary: string; changedBy?: string; beforeValue?: string; afterValue?: string };
 type InlineSizeDraft = { name: string; prices: Record<string, string> };
 
 const money = (value?: string) => {
@@ -40,7 +40,11 @@ export function PricingManagement({ token }: { token: string }) {
   const [success, setSuccess] = useState("");
   const [history, setHistory] = useState<Change[]>([]);
   const [defaultDepositCents, setDefaultDepositCents] = useState(5000);
+  const [defaultDepositInput, setDefaultDepositInput] = useState("50.00");
+  const [depositSettingsVersion, setDepositSettingsVersion] = useState(0);
   const [depositOverrides, setDepositOverrides] = useState<Record<number, number | null>>({});
+  const [depositOverrideInputs, setDepositOverrideInputs] = useState<Record<number, string>>({});
+  const initialDeposits = useRef<{ defaultDepositCents: number; overrides: Record<number, number | null> }>({ defaultDepositCents: 5000, overrides: {} });
   const [bulkAmount, setBulkAmount] = useState("");
   const [bulkMode, setBulkMode] = useState<"fixed" | "percent">("fixed");
   const [showCreate, setShowCreate] = useState(false);
@@ -54,6 +58,9 @@ export function PricingManagement({ token }: { token: string }) {
   const [openRowMenu, setOpenRowMenu] = useState<number | null>(null);
   const [addingSizeSubcategoryId, setAddingSizeSubcategoryId] = useState<number | null>(null);
   const [inlineSizeDraft, setInlineSizeDraft] = useState<InlineSizeDraft>({ name: "", prices: {} });
+  const [addLengthTarget, setAddLengthTarget] = useState<{ subcategoryId: number; subcategoryName: string } | null>(null);
+  const [newLengthName, setNewLengthName] = useState("");
+  const [newLengthPrice, setNewLengthPrice] = useState("");
   const [showPricingIssues, setShowPricingIssues] = useState(false);
   const [collapsedIssueGroups, setCollapsedIssueGroups] = useState<Set<string>>(new Set());
 
@@ -72,7 +79,12 @@ export function PricingManagement({ token }: { token: string }) {
       if (depositResponse.ok) {
         const depositPayload = await depositResponse.json();
         setDefaultDepositCents(depositPayload.defaultDepositCents ?? 5000);
-        setDepositOverrides(Object.fromEntries((depositPayload.overrides ?? []).map((entry: { serviceId: number; depositCents: number }) => [entry.serviceId, entry.depositCents])));
+        setDefaultDepositInput(((depositPayload.defaultDepositCents ?? 5000) / 100).toFixed(2));
+        setDepositSettingsVersion(depositPayload.version ?? 0);
+        const nextOverrides = Object.fromEntries((depositPayload.overrides ?? []).map((entry: { serviceId: number; depositCents: number }) => [entry.serviceId, entry.depositCents]));
+        setDepositOverrides(nextOverrides);
+        setDepositOverrideInputs(Object.fromEntries(Object.entries(nextOverrides).map(([id, cents]) => [id, (Number(cents) / 100).toFixed(2)])));
+        initialDeposits.current = { defaultDepositCents: depositPayload.defaultDepositCents ?? 5000, overrides: nextOverrides };
       }
       if (historyResponse.ok) setHistory(await historyResponse.json());
       setDrafts({});
@@ -83,20 +95,26 @@ export function PricingManagement({ token }: { token: string }) {
 
   useEffect(() => { void load(); }, [token]);
 
-  const rows = useMemo<Row[]>(() => (data?.categories ?? []).flatMap(category =>
-    (category.subcategories ?? []).flatMap(subcategory =>
+  const rows = useMemo<Row[]>(() => (data?.categories ?? []).flatMap(category => {
+    const direct = category.items?.length
+      ? [{ id: category.id, name: category.name, slug: `${category.slug}-services`, items: category.items }]
+      : [];
+    return [...direct, ...(category.subcategories ?? [])].flatMap(subcategory =>
       (subcategory.items ?? []).map(item => ({ category, subcategory, item: drafts[item.id ?? -1] ?? item }))
-    )
-  ), [data, drafts]);
+    );
+  }), [data, drafts]);
 
   const visibleRows = rows.filter(({ category, subcategory, item }) => {
-    const haystack = `${category.name} ${subcategory.name} ${item.name}`.toLowerCase();
+    const haystack = `${category.name} ${subcategory.name} ${item.name} ${(item.lengthOptions ?? []).map(option => option.name).join(" ")}`.toLowerCase();
     return (categoryFilter === "all" || category.slug === categoryFilter) && haystack.includes(query.toLowerCase());
   });
   const dirtyIds = Object.keys(drafts).map(Number);
   const dirtyPriceCount = useMemo(() => Object.entries(drafts).reduce((total, [id, draft]) => {
     const original = (data?.categories ?? [])
-      .flatMap(category => category.subcategories ?? [])
+      .flatMap(category => [
+        ...(category.items?.length ? [{ items: category.items }] : []),
+        ...(category.subcategories ?? []),
+      ])
       .flatMap(subcategory => subcategory.items ?? [])
       .find(item => item.id === Number(id));
 
@@ -114,8 +132,64 @@ export function PricingManagement({ token }: { token: string }) {
     return total + changed;
   }, 0), [data, drafts]);
   const allPrices = rows.flatMap(({ item }) => item.lengthOptions?.length
-    ? item.lengthOptions.map(option => Number(option.price))
-    : [Number(item.price)]).filter(Number.isFinite);
+    ? item.lengthOptions.map(option => parsePrice(option.price))
+    : [parsePrice(item.price)]).filter(value => Number.isFinite(value) && value > 0);
+  const depositInputsDirty = defaultDepositInput !== (initialDeposits.current.defaultDepositCents / 100).toFixed(2)
+    || rows.some(({ item }) => {
+      if (!item.id || !(item.id in depositOverrideInputs)) return false;
+      const initial = initialDeposits.current.overrides[item.id];
+      return depositOverrideInputs[item.id] !== (initial == null ? "" : (initial / 100).toFixed(2));
+    });
+  const depositsDirty = defaultDepositCents !== initialDeposits.current.defaultDepositCents
+    || rows.some(({ item }) => (depositOverrides[item.id!] ?? null) !== (initialDeposits.current.overrides[item.id!] ?? null));
+  const hasUnsavedChanges = dirtyIds.length > 0 || depositsDirty || depositInputsDirty;
+
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    document.documentElement.dataset.pricingDirty = hasUnsavedChanges ? "true" : "false";
+    return () => { delete document.documentElement.dataset.pricingDirty; };
+  }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    const selected = new URLSearchParams(window.location.search).get("pricingTab") as Tab | null;
+    if (selected && ["overview", "matrix", "deposits", "history"].includes(selected)) setTab(selected);
+  }, []);
+
+  useEffect(() => {
+    const closeDialog = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setDeleteTarget(null);
+      setAddLengthTarget(null);
+      setOpenRowMenu(null);
+    };
+    window.addEventListener("keydown", closeDialog);
+    return () => window.removeEventListener("keydown", closeDialog);
+  }, []);
+
+  const selectTab = (next: Tab) => {
+    if (next === tab) return;
+    if (hasUnsavedChanges && !window.confirm("Discard your unsaved pricing changes and switch tabs?")) return;
+    if (hasUnsavedChanges) {
+      setDrafts({});
+      setDefaultDepositCents(initialDeposits.current.defaultDepositCents);
+      setDefaultDepositInput((initialDeposits.current.defaultDepositCents / 100).toFixed(2));
+      setDepositOverrides(initialDeposits.current.overrides);
+      setDepositOverrideInputs(Object.fromEntries(Object.entries(initialDeposits.current.overrides).map(([id, cents]) => [id, cents == null ? "" : (cents / 100).toFixed(2)])));
+    }
+    setTab(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set("pricingTab", next);
+    window.history.replaceState({}, "", url);
+  };
   const depositRows = rows.filter(({ category, subcategory, item }) => {
     const matchesCategory = depositCategory === "all" || category.slug === depositCategory;
     const matchesSearch = `${item.name} ${subcategory.name}`.toLowerCase().includes(depositQuery.trim().toLowerCase());
@@ -192,23 +266,32 @@ export function PricingManagement({ token }: { token: string }) {
     if (!dirtyIds.length) return;
     setSaving(true); setError(""); setSuccess("");
     try {
-      for (const id of dirtyIds) {
-        const row = rows.find(entry => entry.item.id === id);
+      const changes = dirtyIds.map(id => {
         const item = drafts[id];
-        if (!row || !item) continue;
-        const response = await fetch(`/api/admin/services/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            ...item,
-            category: { id: row.category.id },
-            subcategory: { id: row.subcategory.id },
-          }),
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || `Unable to save ${item.name}.`);
+        return {
+          serviceId: id,
+          version: item.version ?? 0,
+          basePriceCents: item.lengthOptions?.length ? undefined : Math.round(parsePrice(item.price) * 100),
+          knotlessAdjustmentCents: item.foundationChoicesEnabled ? Math.round(parsePrice(item.knotlessPriceAdjustment) * 100) : undefined,
+          lengths: (item.lengthOptions ?? []).map((option, displayOrder) => ({
+            lengthOptionId: option.id,
+            priceCents: Math.round(parsePrice(option.price) * 100),
+            displayOrder,
+          })),
+        };
+      });
+      if (changes.some(change => (!change.basePriceCents && !change.lengths.length)
+        || change.lengths.some(length => !length.lengthOptionId || length.priceCents < 1))) {
+        throw new Error("Every published price must be greater than zero.");
       }
-      setSuccess(`${dirtyIds.length} service${dirtyIds.length === 1 ? "" : "s"} updated everywhere.`);
+      const response = await fetch("/api/admin/pricing/prices", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ changes }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Unable to save pricing changes.");
+      setSuccess(`${dirtyIds.length} service price${dirtyIds.length === 1 ? "" : "s"} saved.`);
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to save pricing.");
@@ -223,7 +306,7 @@ export function PricingManagement({ token }: { token: string }) {
       const adjust = (value?: string) => {
         const current = Number(value || 0);
         const next = bulkMode === "percent" ? current * (1 + adjustment / 100) : current + adjustment;
-        return Math.max(0, Math.round(next * 100) / 100).toFixed(2);
+        return Math.max(0.01, Math.round(next * 100) / 100).toFixed(2);
       };
       return draft.lengthOptions?.length
         ? { ...draft, lengthOptions: draft.lengthOptions.map(option => ({ ...option, price: adjust(option.price) })) }
@@ -290,43 +373,28 @@ export function PricingManagement({ token }: { token: string }) {
       return setError(`Enter a valid price for ${missingColumns.join(", ")}.`);
     }
 
-    const basePrice = expectedColumns.includes("Base price")
-      ? inlineSizeDraft.prices["Base price"]
-      : inlineSizeDraft.prices[expectedColumns[0]];
-
-    const lengthOptions = expectedColumns
-      .filter(column => column !== "Base price")
-      .map(column => ({ name: column, price: inlineSizeDraft.prices[column] }));
+    const source = rows.filter(row => row.subcategory.id === subcategory.id).at(-1)?.item;
+    if (!source?.id) return setError("Add the first service from the Services editor, then clone pricing here.");
 
     setSaving(true); setError(""); setSuccess("");
     try {
-      const response = await fetch("/api/admin/services", {
+      const response = await fetch("/api/admin/pricing/sizes/clone", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
+          cloneFromServiceId: source.id,
           name,
-          price: basePrice,
-          description: "",
-          notes: "",
-          image: "",
-          link: "",
-          objectPosition: "center center",
-          images: [],
-          sizePhotos: [],
-          availableSizes: [],
-          hairTextures: [],
-          lengthOptions,
-          category: { id: category.id },
-          subcategory: { id: subcategory.id },
-          foundationChoicesEnabled: false,
-          knotlessPriceAdjustment: "0",
+          prices: Object.fromEntries(expectedColumns.map(column => [
+            column,
+            Math.round(parsePrice(inlineSizeDraft.prices[column]) * 100),
+          ])),
         }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Unable to add size.");
 
       cancelInlineSize();
-      setSuccess(`${name} added to ${subcategory.name}.`);
+      setSuccess(`${name} was created with its complete pricing and published.`);
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to add size.");
@@ -394,31 +462,93 @@ export function PricingManagement({ token }: { token: string }) {
     finally { setSaving(false); }
   };
 
-  const addLengthColumn = (subcategoryId?: number) => {
+  const addLengthColumn = (subcategoryId?: number, subcategoryName = "this style") => {
     if (!subcategoryId) return;
-    const name = prompt("Length name");
-    if (!name?.trim()) return;
-    rows.filter(row => row.subcategory.id === subcategoryId).forEach(({ item }) =>
-      updateItem(item.id!, draft => ({
-        ...draft,
-        lengthOptions: [...(draft.lengthOptions ?? []), { name: name.trim(), price: draft.price || "0" }],
-      })));
+    setNewLengthName("");
+    setNewLengthPrice("");
+    setAddLengthTarget({ subcategoryId, subcategoryName });
+  };
+
+  const submitAddLength = async () => {
+    if (!addLengthTarget) return;
+    const name = newLengthName.trim();
+    if (!name) {
+      setError("Enter a length name.");
+      return;
+    }
+    if (!hasValidPrice(newLengthPrice)) {
+      setError("Enter a starting price greater than zero.");
+      return;
+    }
+    const serviceIds = rows.filter(row => row.subcategory.id === addLengthTarget.subcategoryId).map(row => row.item.id).filter((id): id is number => Boolean(id));
+    if (!serviceIds.length) {
+      setError("This style has no sizes to update.");
+      return;
+    }
+    setSaving(true); setError(""); setSuccess("");
+    try {
+      const response = await fetch("/api/admin/pricing/lengths", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, serviceIds, initialPriceCents: Math.round(parsePrice(newLengthPrice) * 100) }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Unable to add length.");
+      setSuccess(`${name} added to ${serviceIds.length} size${serviceIds.length === 1 ? "" : "s"}.`);
+      setAddLengthTarget(null);
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to add length.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const saveDeposits = async () => {
     setSaving(true); setError(""); setSuccess("");
     try {
-      const overrides = Object.entries(depositOverrides)
-        .filter(([, cents]) => cents != null && cents > 0)
-        .map(([serviceId, depositCents]) => ({ serviceId: Number(serviceId), depositCents }));
-      const response = await fetch("/api/admin/pricing/deposits", {
-        method: "PUT",
+      const parsedDefault = Number(defaultDepositInput);
+      if (!Number.isFinite(parsedDefault) || parsedDefault <= 0 || parsedDefault > 1000) {
+        throw new Error("Default deposit must be between $0.01 and $1,000.");
+      }
+      const nextDefaultCents = Math.round(parsedDefault * 100);
+      const nextOverrides = { ...depositOverrides };
+      for (const { item } of rows) {
+        if (!item.id || !(item.id in depositOverrideInputs)) continue;
+        const raw = depositOverrideInputs[item.id].trim();
+        if (!raw) {
+          nextOverrides[item.id] = null;
+          continue;
+        }
+        const amount = Number(raw);
+        if (!Number.isFinite(amount) || amount <= 0 || amount > 1000) {
+          throw new Error(`${item.name} deposit must be between $0.01 and $1,000.`);
+        }
+        nextOverrides[item.id] = Math.round(amount * 100);
+      }
+      const requests: Promise<Response>[] = [];
+      if (nextDefaultCents !== initialDeposits.current.defaultDepositCents) requests.push(fetch("/api/admin/pricing/deposits/default", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ defaultDepositCents, overrides }),
+        body: JSON.stringify({ version: depositSettingsVersion, depositCents: nextDefaultCents }),
+      }));
+      rows.forEach(({ item }) => {
+        if (!item.id || (nextOverrides[item.id] ?? null) === (initialDeposits.current.overrides[item.id] ?? null)) return;
+        requests.push(fetch(`/api/admin/pricing/deposits/services/${item.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ version: item.version ?? 0, depositCents: nextOverrides[item.id] ?? null }),
+        }));
       });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Unable to save deposits.");
-      setSuccess("Deposit settings saved and applied to checkout.");
+      const responses = await Promise.all(requests);
+      const failed = responses.find(response => !response.ok);
+      if (failed) {
+        const payload = await failed.json().catch(() => ({}));
+        throw new Error(payload.error || "Unable to save all deposit changes. Reload before trying again.");
+      }
+      setDefaultDepositCents(nextDefaultCents);
+      setDepositOverrides(nextOverrides);
+      setSuccess("Deposit settings saved. New booking quotes will use them.");
       await load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to save deposits."); }
     finally { setSaving(false); }
@@ -438,7 +568,8 @@ export function PricingManagement({ token }: { token: string }) {
         depositOverrides[item.id!] == null ? "" : String(depositOverrides[item.id!]! / 100),
       ]));
     });
-    const csv = lines.map(line => line.map(value => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const safeCell = (value: string) => /^[=+\-@]/.test(value.trim()) ? `'${value}` : value;
+    const csv = lines.map(line => line.map(value => `"${safeCell(String(value)).replaceAll('"', '""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url; link.download = `braiding-prices-${new Date().toISOString().slice(0, 10)}.csv`; link.click();
@@ -452,16 +583,15 @@ export function PricingManagement({ token }: { token: string }) {
     <div className="min-h-full bg-[#f8f5ef] text-[#2d180f]">
       <div className="mx-auto max-w-7xl p-5 pb-28 sm:p-8">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-          <div><h2 className="font-serif text-5xl">Pricing</h2><p className="mt-2 text-sm text-neutral-600">Review and manage pricing across your service catalog.</p></div>
-          <button onClick={load} className="flex items-center gap-2 rounded-lg border border-[#d9c8b9] bg-white px-4 py-2 text-sm"><RefreshCw className="h-4 w-4" /> Refresh</button>
+          <p className="text-sm text-neutral-600">Review and manage pricing across your service catalog.</p>
+          <button onClick={() => { if (!hasUnsavedChanges || window.confirm("Discard unsaved pricing changes and reload?")) void load(); }} className="flex items-center gap-2 rounded-lg border border-[#d9c8b9] bg-white px-4 py-2 text-sm"><RefreshCw className="h-4 w-4" /> Refresh</button>
         </div>
 
-        <div className="mb-5 grid gap-4 md:grid-cols-4">
+        <div className="mb-5 grid gap-4 md:grid-cols-3">
           {[
             { label: "Services Priced", value: rows.length, icon: BriefcaseBusiness },
             { label: "Price Range", value: allPrices.length ? `${money(String(Math.min(...allPrices)))}–${money(String(Math.max(...allPrices)))}` : "—", icon: DollarSign },
             { label: "Default Deposit", value: money(String(defaultDepositCents / 100)), icon: CreditCard },
-            { label: "Pricing Issues", value: pricingIssues.length, icon: AlertCircle },
           ].map(card => {
             const content = (
               <>
@@ -495,7 +625,7 @@ export function PricingManagement({ token }: { token: string }) {
           })}
         </div>
 
-        {pricingIssues.length > 0 && (
+        {false && pricingIssues.length > 0 && (
           <div className="mb-5 flex flex-wrap items-center gap-4 rounded-xl border border-[#efbd79] bg-[#fff9ef] px-5 py-4 shadow-[0_4px_14px_rgba(112,64,39,.03)]">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#efc692] bg-white text-[#b86633]">
               <AlertCircle className="h-4 w-4" />
@@ -520,7 +650,7 @@ export function PricingManagement({ token }: { token: string }) {
 
         <div className="mb-6 flex gap-7 overflow-x-auto border-b border-[#d8cabc]">
           {(["overview", "matrix", "deposits", "history"] as Tab[]).map(value => (
-            <button key={value} onClick={() => setTab(value)} className={`min-w-max border-b-2 px-1 py-3 text-sm capitalize ${tab === value ? "border-[#7b482d] font-semibold text-[#351a10]" : "border-transparent text-neutral-600 hover:text-[#351a10]"}`}>{value === "matrix" ? "Price Matrix" : value}</button>
+            <button key={value} onClick={() => selectTab(value)} className={`min-w-max border-b-2 px-1 py-3 text-sm capitalize ${tab === value ? "border-[#7b482d] font-semibold text-[#351a10]" : "border-transparent text-neutral-600 hover:text-[#351a10]"}`}>{value === "matrix" ? "Price Matrix" : value}</button>
           ))}
         </div>
 
@@ -537,8 +667,8 @@ export function PricingManagement({ token }: { token: string }) {
                   <div><p className="font-serif text-4xl">{rows.reduce((total, row) => total + (row.item.lengthOptions?.length || 1), 0)}</p><p className="mt-1 text-sm text-neutral-600">price options</p></div>
                   <div><p className="font-serif text-4xl">{data.categories.length}</p><p className="mt-1 text-sm text-neutral-600">service categories</p></div>
                 </div>
-                <div className="mt-8 h-3 overflow-hidden rounded-full bg-[#eee7de]"><div className="h-full w-full rounded-full bg-[#351a10]" /></div>
-                <p className="mt-3 text-right text-xs font-medium text-neutral-500">Catalog pricing is synchronized</p>
+                <div className="mt-8 h-3 overflow-hidden rounded-full bg-[#eee7de]"><div className="h-full rounded-full bg-[#351a10]" style={{ width: `${rows.length ? Math.round(((rows.length - new Set(pricingIssues.map(issue => issue.item.id)).size) / rows.length) * 100) : 0}%` }} /></div>
+                <p className="mt-3 text-right text-xs font-medium text-neutral-500">{rows.length ? Math.round(((rows.length - new Set(pricingIssues.map(issue => issue.item.id)).size) / rows.length) * 100) : 0}% of services have complete pricing</p>
               </section>
               <section className="rounded-xl border border-[#ded2c7] bg-white p-6">
                 <div className="flex items-center justify-between"><h3 className="font-serif text-2xl">Recent changes</h3><button onClick={() => setTab("history")} className="flex items-center gap-1 text-sm underline">View history <ChevronRight className="h-4 w-4" /></button></div>
@@ -703,7 +833,7 @@ export function PricingManagement({ token }: { token: string }) {
                                     <span className="mt-1 block text-xs text-neutral-500">{subRows.length} size{subRows.length === 1 ? "" : "s"} · {columns.length} length{columns.length === 1 ? "" : "s"} · {subPriceRange}</span>
                                   </button>
 
-                                  <button onClick={() => addLengthColumn(subcategory.id)} className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-[#9a5835] transition hover:bg-[#fbf1e8]">
+                                  <button onClick={() => addLengthColumn(subcategory.id, subcategory.name)} className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-[#9a5835] transition hover:bg-[#fbf1e8]">
                                     <Plus className="h-4 w-4" /> Add length
                                   </button>
                                 </div>
@@ -918,7 +1048,16 @@ export function PricingManagement({ token }: { token: string }) {
                 <label htmlFor="default-deposit" className="text-base font-semibold">Default deposit</label>
                 <div className="mt-3 flex max-w-md rounded-md border border-[#bdaea1] bg-white focus-within:ring-2 focus-within:ring-[#bd7953]/25">
                   <span className="border-r border-[#ded3c8] px-4 py-3">$</span>
-                  <input id="default-deposit" inputMode="decimal" value={(defaultDepositCents / 100).toFixed(2)} onFocus={event => event.currentTarget.select()} onChange={event => setDefaultDepositCents(Math.max(1, Math.round(Number(event.target.value || 0) * 100)))} className="min-w-0 flex-1 bg-transparent px-4 font-medium outline-none" />
+                  <input id="default-deposit" inputMode="decimal" value={defaultDepositInput} onFocus={event => event.currentTarget.select()} onChange={event => setDefaultDepositInput(event.target.value)} onBlur={() => {
+                    const amount = Number(defaultDepositInput);
+                    if (Number.isFinite(amount) && amount > 0 && amount <= 1000) {
+                      setDefaultDepositCents(Math.round(amount * 100));
+                      setDefaultDepositInput(amount.toFixed(2));
+                    } else {
+                      setDefaultDepositInput((defaultDepositCents / 100).toFixed(2));
+                      setError("Default deposit must be between $0.01 and $1,000.");
+                    }
+                  }} className="min-w-0 flex-1 bg-transparent px-4 font-medium outline-none" />
                 </div>
                 <p className="mt-2 text-xs text-neutral-500">Applied to every service unless a service-specific override is set.</p>
                 <button disabled={saving} onClick={saveDeposits} className="mt-5 flex w-fit items-center gap-2 rounded-md bg-[#351a10] px-5 py-2.5 text-sm font-medium text-white shadow-sm disabled:opacity-60">
@@ -981,13 +1120,27 @@ export function PricingManagement({ token }: { token: string }) {
                       <td className="border-b border-r border-[#ece3da] px-3 py-2">
                         <div className="flex w-28 rounded-md border border-[#d8cabd] bg-white focus-within:ring-2 focus-within:ring-[#bd7953]/20">
                           <span className="px-2 py-2">$</span>
-                          <input data-deposit-input aria-label={`${item.name} deposit override`} inputMode="decimal" value={hasOverride ? (depositOverrides[item.id!]! / 100).toFixed(2) : ""} placeholder={(defaultDepositCents / 100).toFixed(2)} onFocus={event => event.currentTarget.select()} onChange={event => setDepositOverrides(previous => ({ ...previous, [item.id!]: event.target.value === "" ? null : Math.max(1, Math.round(Number(event.target.value) * 100)) }))} className="min-w-0 flex-1 bg-transparent py-2 pr-2 outline-none" />
+                          <input data-deposit-input aria-label={`${item.name} deposit override`} inputMode="decimal" value={depositOverrideInputs[item.id!] ?? (hasOverride ? (depositOverrides[item.id!]! / 100).toFixed(2) : "")} placeholder={(defaultDepositCents / 100).toFixed(2)} onFocus={event => event.currentTarget.select()} onChange={event => setDepositOverrideInputs(previous => ({ ...previous, [item.id!]: event.target.value }))} onBlur={() => {
+                            const raw = depositOverrideInputs[item.id!] ?? "";
+                            if (!raw.trim()) {
+                              setDepositOverrides(previous => ({ ...previous, [item.id!]: null }));
+                              return;
+                            }
+                            const amount = Number(raw);
+                            if (Number.isFinite(amount) && amount > 0 && amount <= 1000) {
+                              setDepositOverrides(previous => ({ ...previous, [item.id!]: Math.round(amount * 100) }));
+                              setDepositOverrideInputs(previous => ({ ...previous, [item.id!]: amount.toFixed(2) }));
+                            } else {
+                              setDepositOverrideInputs(previous => ({ ...previous, [item.id!]: hasOverride ? (depositOverrides[item.id!]! / 100).toFixed(2) : "" }));
+                              setError(`${item.name} deposit must be between $0.01 and $1,000.`);
+                            }
+                          }} className="min-w-0 flex-1 bg-transparent py-2 pr-2 outline-none" />
                         </div>
                       </td>
                       <td className="border-b border-r border-[#ece3da] px-4 py-3 text-xs">{isLimited ? "Limited to service price" : hasOverride ? "Custom override" : "Uses default"}</td>
                       <td className="border-b border-[#ece3da] px-4 py-3">
                         <button onClick={() => document.querySelector<HTMLInputElement>(`[aria-label="${item.name} deposit override"]`)?.focus()} className="font-medium text-[#6f3b27] underline underline-offset-4">Edit</button>
-                        {hasOverride && <><span className="mx-2 text-neutral-300">·</span><button onClick={() => setDepositOverrides(previous => ({ ...previous, [item.id!]: null }))} className="font-medium text-[#6f3b27] underline underline-offset-4">Remove</button></>}
+                        {hasOverride && <><span className="mx-2 text-neutral-300">·</span><button onClick={() => { setDepositOverrides(previous => ({ ...previous, [item.id!]: null })); setDepositOverrideInputs(previous => ({ ...previous, [item.id!]: "" })); }} className="font-medium text-[#6f3b27] underline underline-offset-4">Remove</button></>}
                         <span className="sr-only">Effective deposit ${(effectiveDeposit / 100).toFixed(2)}</span>
                       </td>
                     </tr>;
@@ -1011,10 +1164,10 @@ export function PricingManagement({ token }: { token: string }) {
           </div>
         </div>}
 
-        {tab === "history" && <div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><div className="flex items-center gap-3"><History className="h-5 w-5 text-[#ad6b45]" /><h3 className="font-serif text-2xl">Pricing activity</h3></div>{history.length ? <div className="mt-5 divide-y">{history.map(entry => <div key={entry.id} className="grid gap-1 py-4 sm:grid-cols-[180px_1fr_1.5fr]"><span className="text-xs text-neutral-500">{new Date(entry.createdAt).toLocaleString()}</span><span><strong className="block text-sm">{entry.serviceName}</strong><span className="text-[10px] uppercase tracking-wider text-[#ad6b45]">{entry.action.replaceAll("_", " ")}</span></span><span className="text-sm text-neutral-600">{entry.summary}</span></div>)}</div> : <div className="py-14 text-center text-sm text-neutral-500">No pricing changes have been recorded yet.</div>}</div>}
+        {tab === "history" && <div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><div className="flex items-center gap-3"><History className="h-5 w-5 text-[#ad6b45]" /><h3 className="font-serif text-2xl">Pricing activity</h3></div>{history.length ? <div className="mt-5 divide-y">{history.map(entry => <div key={entry.id} className="grid gap-1 py-4 sm:grid-cols-[180px_1fr_1.5fr]"><span className="text-xs text-neutral-500">{new Date(entry.createdAt).toLocaleString()}</span><span><strong className="block text-sm">{entry.serviceName}</strong><span className="text-[10px] uppercase tracking-wider text-[#ad6b45]">{entry.action.replaceAll("_", " ")}</span>{entry.changedBy && <span className="mt-1 block text-xs text-neutral-500">by {entry.changedBy}</span>}</span><span className="text-sm text-neutral-600">{entry.summary}</span></div>)}</div> : <div className="py-14 text-center text-sm text-neutral-500">No pricing changes have been recorded yet.</div>}</div>}
       </div>
 
-      {showPricingIssues && (
+      {false && showPricingIssues && (
         <div
           className="fixed inset-0 z-50 flex justify-end bg-[#28170f]/20 backdrop-blur-[1px]"
           onMouseDown={event => { if (event.target === event.currentTarget) setShowPricingIssues(false); }}
@@ -1123,8 +1276,39 @@ export function PricingManagement({ token }: { token: string }) {
         </aside>
       </div>}
 
+      {addLengthTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#28170f]/25 p-4 backdrop-blur-[1px]" onMouseDown={event => { if (event.target === event.currentTarget) setAddLengthTarget(null); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="add-length-title" className="w-full max-w-md rounded-2xl border border-[#dfd1c4] bg-[#fffdf9] p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 id="add-length-title" className="font-serif text-3xl text-[#2d180f]">Add a length</h3>
+                <p className="mt-1 text-sm text-neutral-500">Add one customer-facing length to every size in {addLengthTarget.subcategoryName}.</p>
+              </div>
+              <button type="button" aria-label="Close add length dialog" onClick={() => setAddLengthTarget(null)} className="rounded-lg p-2 text-neutral-500 hover:bg-[#f3ebe3]"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="mt-6 space-y-5">
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#6b4b3c]">Length name</span>
+                <input autoFocus value={newLengthName} onChange={event => setNewLengthName(event.target.value)} placeholder="e.g. Mid-Back" className="w-full rounded-xl border border-[#d9cabd] bg-white px-4 py-3 outline-none focus:border-[#a46645] focus:ring-4 focus:ring-[#b7734d]/10" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#6b4b3c]">Starting price for every size</span>
+                <div className="flex rounded-xl border border-[#d9cabd] bg-white focus-within:border-[#a46645] focus-within:ring-4 focus-within:ring-[#b7734d]/10">
+                  <span className="px-4 py-3 text-neutral-500">$</span>
+                  <input inputMode="decimal" value={newLengthPrice} onChange={event => setNewLengthPrice(event.target.value)} onKeyDown={event => { if (event.key === "Enter") void submitAddLength(); }} placeholder="0.00" className="min-w-0 flex-1 bg-transparent py-3 pr-4 outline-none" />
+                </div>
+              </label>
+            </div>
+            <div className="mt-7 flex justify-end gap-3">
+              <button type="button" onClick={() => setAddLengthTarget(null)} className="rounded-xl border border-[#d9cabd] bg-white px-5 py-3 text-sm font-medium">Cancel</button>
+              <button type="button" disabled={saving} onClick={() => void submitAddLength()} className="rounded-xl bg-[#351a10] px-5 py-3 text-sm font-medium text-white disabled:opacity-60">{saving ? "Adding…" : "Add to all sizes"}</button>
+            </div>
+          </section>
+        </div>
+      )}
+
       {dirtyIds.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#e4d8cc] bg-[#fffdf9]/95 px-4 py-3 shadow-[0_-12px_35px_rgba(45,24,15,.10)] backdrop-blur md:left-64">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#e4d8cc] bg-[#fffdf9]/95 px-4 py-3 shadow-[0_-12px_35px_rgba(45,24,15,.10)] backdrop-blur">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#d6b999] bg-white font-serif text-xl text-[#351a10]">{dirtyPriceCount || dirtyIds.length}</span>

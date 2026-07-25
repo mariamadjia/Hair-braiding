@@ -32,6 +32,7 @@ type BookingCalendarProps = {
     selectedTexture?: string;
     selectedFoundation?: string;
     depositAmountCents?: number;
+    quoteToken: string;
 };
 
 type BookingData = {
@@ -52,11 +53,11 @@ const MONTHS = [
 
 const PENDING_PAYMENT_STORAGE_KEY = "ah-braiding-pending-payment";
 
-const POLICY_SECTIONS = [
+const policySections = (depositAmountCents: number) => [
     {
         title: "Deposits & Approval",
         points: [
-            "A card authorization of up to $50 is required with your appointment request.",
+            `A card authorization of up to $${(depositAmountCents / 100).toFixed(2)} is required with your appointment request.`,
             "Your card is not charged unless the salon approves your appointment.",
             "If your request is denied, the authorization hold is released.",
         ],
@@ -99,7 +100,8 @@ export default function BookingCalendar({
     lengthOptionId,
     selectedTexture,
     selectedFoundation,
-    depositAmountCents = 5000
+    depositAmountCents = 5000,
+    quoteToken
 }: BookingCalendarProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -498,7 +500,8 @@ export default function BookingCalendar({
                     selectedTexture: selectedTexture || null,
                     selectedFoundation: selectedFoundation || null,
                     price: servicePrice ? servicePrice.replace('$', '').trim() : null,
-                    notes: formData.notes
+                    notes: formData.notes,
+                    quoteToken,
                 })
             });
 
@@ -1162,7 +1165,7 @@ export default function BookingCalendar({
 
                             <div className="overflow-y-auto px-6 py-4 sm:px-10">
                                 <div className="divide-y divide-[#E1D2C5] border-y border-[#E1D2C5]">
-                                    {POLICY_SECTIONS.map((section, index) => {
+                                    {policySections(depositAmountCents).map((section, index) => {
                                         const isExpanded = expandedPolicy === index;
                                         return (
                                             <section key={section.title}>

@@ -25,6 +25,14 @@ type AuthoritativeService = {
     knotlessPriceAdjustment?: string;
     lengthOptions?: Array<{ id: number; name?: string; price?: string; imageUrl?: string }>;
 };
+type BookingQuote = {
+    servicePrice: string;
+    servicePriceCents: number;
+    depositCents: number;
+    remainingBalanceCents: number;
+    quoteToken: string;
+    expiresAt: string;
+};
 
 function CheckoutContent() {
     const searchParams = useSearchParams();
@@ -34,6 +42,8 @@ function CheckoutContent() {
     const [authoritativeService, setAuthoritativeService] = useState<AuthoritativeService | null>(null);
     const [serviceLoading, setServiceLoading] = useState(true);
     const [serviceError, setServiceError] = useState<string | null>(null);
+    const [quote, setQuote] = useState<BookingQuote | null>(null);
+    const [quoteLoading, setQuoteLoading] = useState(false);
     const [bookingStep, setBookingStep] = useState<"date" | "time" | "details" | "payment" | "success">("date");
 
     const categorySlug = searchParams.get("categorySlug") || "";
@@ -48,9 +58,10 @@ function CheckoutContent() {
     const lengthLabel = selectedOption?.name || "";
     const foundation = searchParams.get("foundation") || "";
     const basePrice = selectedOption?.price || authoritativeService?.price || "";
-    const price = foundation === "KNOTLESS"
+    const fallbackPrice = foundation === "KNOTLESS"
         ? String(Number(basePrice.replace(/[^0-9.]/g, "")) + Number((authoritativeService?.knotlessPriceAdjustment || "0").replace(/[^0-9.]/g, "")))
         : basePrice;
+    const price = quote?.servicePrice ?? fallbackPrice;
     const description = authoritativeService?.description || "";
     const texture = searchParams.get("texture") || "";
     const image = toProxyUrl(
@@ -60,10 +71,10 @@ function CheckoutContent() {
         || searchParams.get("image")
         || ""
     );
-    const numericPrice = Number(price.replace(/[^0-9.]/g, "")) || 0;
-    const depositAmount = Math.min(50, numericPrice);
-    const depositAmountCents = Math.round(depositAmount * 100);
-    const remainingBalance = Math.max(0, numericPrice - depositAmount);
+    const numericPrice = quote ? quote.servicePriceCents / 100 : 0;
+    const depositAmountCents = quote?.depositCents ?? 0;
+    const depositAmount = depositAmountCents / 100;
+    const remainingBalance = (quote?.remainingBalanceCents ?? 0) / 100;
     const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
     const activeProgressStep = bookingStep === "date" || bookingStep === "time"
         ? 2
@@ -107,6 +118,27 @@ function CheckoutContent() {
     }, [serviceId, lengthOptionId, foundation]);
 
     useEffect(() => {
+        if (!authoritativeService || !serviceId) return;
+        const controller = new AbortController();
+        setQuoteLoading(true);
+        setQuote(null);
+        fetch("/api/booking/quote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ serviceId, lengthOptionId: lengthOptionId ?? null, foundation: foundation || null }),
+            signal: controller.signal,
+        }).then(async response => {
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || payload.message || "Unable to confirm the current price.");
+            setQuote(payload);
+        }).catch(error => {
+            if (error instanceof DOMException && error.name === "AbortError") return;
+            setServiceError(error instanceof Error ? error.message : "Unable to confirm the current price.");
+        }).finally(() => setQuoteLoading(false));
+        return () => controller.abort();
+    }, [authoritativeService, serviceId, lengthOptionId, foundation]);
+
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
                 router.back();
@@ -116,8 +148,8 @@ function CheckoutContent() {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [router]);
 
-    if (serviceLoading) return <><Navbar /><main className="flex min-h-[65vh] items-center justify-center bg-[#F6F5F1]"><LoadingSpinner /></main><FooterWrapper /></>;
-    if (serviceError || !authoritativeService) return <><Navbar /><main className="flex min-h-[65vh] items-center justify-center bg-[#F6F5F1] px-6"><div role="alert" className="max-w-lg rounded-xl border border-red-200 bg-white p-8 text-center"><AlertCircle className="mx-auto mb-3 h-7 w-7 text-red-600" /><h1 className="font-serif text-2xl">Service unavailable</h1><p className="mt-2 text-sm text-neutral-600">{serviceError}</p><Button className="mt-6" onClick={() => router.back()}>Choose another service</Button></div></main><FooterWrapper /></>;
+    if (serviceLoading || quoteLoading) return <><Navbar /><main className="flex min-h-[65vh] items-center justify-center bg-[#F6F5F1]"><LoadingSpinner /></main><FooterWrapper /></>;
+    if (serviceError || !authoritativeService || !quote) return <><Navbar /><main className="flex min-h-[65vh] items-center justify-center bg-[#F6F5F1] px-6"><div role="alert" className="max-w-lg rounded-xl border border-red-200 bg-white p-8 text-center"><AlertCircle className="mx-auto mb-3 h-7 w-7 text-red-600" /><h1 className="font-serif text-2xl">Service unavailable</h1><p className="mt-2 text-sm text-neutral-600">{serviceError || "Unable to confirm the current price."}</p><Button className="mt-6" onClick={() => router.back()}>Choose another service</Button></div></main><FooterWrapper /></>;
 
     return (
         <>
@@ -315,6 +347,7 @@ function CheckoutContent() {
                                     selectedTexture={texture}
                                     selectedFoundation={foundation}
                                     depositAmountCents={depositAmountCents}
+                                    quoteToken={quote.quoteToken}
                                     onDateSelected={setSelectedDate}
                                     onTimeSelected={setSelectedTime}
                                     onStepChange={setBookingStep}
