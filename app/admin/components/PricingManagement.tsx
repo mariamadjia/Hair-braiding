@@ -13,6 +13,20 @@ const money = (value?: string) => {
   return Number.isFinite(amount) ? `$${amount.toFixed(0)}` : "—";
 };
 
+const parsePrice = (value?: string) => Number(String(value ?? "").trim().replace(/[^0-9.-]/g, ""));
+const hasValidPrice = (value?: string) => {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return false;
+  const amount = parsePrice(value);
+  return Number.isFinite(amount) && amount > 0;
+};
+const hasValidAdjustment = (value?: string) => {
+  const trimmed = String(value ?? "").trim();
+  return trimmed !== "" && Number.isFinite(parsePrice(value));
+};
+
+type PricingIssue = { category: BookingCategory; subcategory: NonNullable<BookingCategory["subcategories"]>[number]; item: BookingItem; option?: string };
+
 export function PricingManagement({ token }: { token: string }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [data, setData] = useState<CategoriesData | null>(null);
@@ -81,6 +95,20 @@ export function PricingManagement({ token }: { token: string }) {
     const matchesCategory = depositCategory === "all" || category.slug === depositCategory;
     const matchesSearch = `${item.name} ${subcategory.name}`.toLowerCase().includes(depositQuery.trim().toLowerCase());
     return matchesCategory && matchesSearch;
+  });
+  const pricingIssues = rows.flatMap<PricingIssue>(({ category, subcategory, item }) => {
+    const issues: PricingIssue[] = [];
+    if (item.lengthOptions?.length) {
+      item.lengthOptions.forEach(option => {
+        if (!hasValidPrice(option.price)) issues.push({ category, subcategory, item, option: option.name || "Unnamed length" });
+      });
+    } else if (!hasValidPrice(item.price)) {
+      issues.push({ category, subcategory, item });
+    }
+    if (item.foundationChoicesEnabled && !hasValidAdjustment(item.knotlessPriceAdjustment)) {
+      issues.push({ category, subcategory, item, option: "Knotless adjustment" });
+    }
+    return issues;
   });
 
   const updateItem = (id: number, recipe: (item: BookingItem) => BookingItem) => {
@@ -278,16 +306,32 @@ export function PricingManagement({ token }: { token: string }) {
           <button onClick={load} className="flex items-center gap-2 rounded-lg border border-[#d9c8b9] bg-white px-4 py-2 text-sm"><RefreshCw className="h-4 w-4" /> Refresh</button>
         </div>
 
-        <div className="mb-5 grid gap-4 md:grid-cols-3">
+        <div className="mb-5 grid gap-4 md:grid-cols-4">
           {[
             { label: "Services Priced", value: rows.length, icon: BriefcaseBusiness },
             { label: "Price Range", value: allPrices.length ? `${money(String(Math.min(...allPrices)))}–${money(String(Math.max(...allPrices)))}` : "—", icon: DollarSign },
             { label: "Default Deposit", value: money(String(defaultDepositCents / 100)), icon: CreditCard },
+            { label: "Pricing Issues", value: pricingIssues.length, icon: AlertCircle },
           ].map(card => <div key={card.label} className="flex items-center gap-5 rounded-xl border border-[#ded2c7] bg-white px-5 py-5 shadow-[0_5px_16px_rgba(56,35,21,.04)]">
             <div className="rounded-full border border-[#d9c8b9] bg-[#f6f0e7] p-4"><card.icon className="h-5 w-5" /></div>
             <div><p className="text-sm text-neutral-600">{card.label}</p><p className="mt-1 font-serif text-3xl">{card.value}</p></div>
           </div>)}
         </div>
+
+        {pricingIssues.length > 0 && (
+          <div className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-5">
+            <div className="flex items-center gap-2 text-amber-900"><AlertCircle className="h-4 w-4" /><h3 className="font-serif text-xl">Missing prices</h3></div>
+            <p className="mt-1 text-sm text-amber-800">These active options can be selected by customers but don&apos;t have a valid price yet.</p>
+            <ul className="mt-3 space-y-2">
+              {pricingIssues.map((issue, index) => (
+                <li key={index} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/70 px-4 py-2 text-sm">
+                  <span>{issue.category.name} → {issue.subcategory.name} → {issue.item.name}{issue.option ? ` → ${issue.option}` : " (base price)"}</span>
+                  <button onClick={() => { setTab("matrix"); setQuery(issue.item.name); }} className="text-xs font-medium text-[#8d4f31] underline underline-offset-4">Fix in matrix</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="mb-6 flex gap-7 overflow-x-auto border-b border-[#d8cabc]">
           {(["overview", "matrix", "deposits", "history"] as Tab[]).map(value => (
