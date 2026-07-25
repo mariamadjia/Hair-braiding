@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, BriefcaseBusiness, Check, ChevronDown, ChevronRight, ChevronUp, Clock3, Copy, CreditCard, DollarSign, Download, History, MoreVertical, Pencil, Plus, RefreshCw, Save, Search, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { AlertCircle, BriefcaseBusiness, Check, ChevronDown, ChevronRight, ChevronUp, Clock3, Copy, CreditCard, DollarSign, Download, History, MoreVertical, Pencil, Plus, RefreshCw, Save, Search, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import type { BookingCategory, BookingItem, CategoriesData } from "@/lib/booking-types";
 
 type Tab = "overview" | "matrix" | "deposits" | "history";
@@ -54,6 +54,8 @@ export function PricingManagement({ token }: { token: string }) {
   const [openRowMenu, setOpenRowMenu] = useState<number | null>(null);
   const [addingSizeSubcategoryId, setAddingSizeSubcategoryId] = useState<number | null>(null);
   const [inlineSizeDraft, setInlineSizeDraft] = useState<InlineSizeDraft>({ name: "", prices: {} });
+  const [showPricingIssues, setShowPricingIssues] = useState(false);
+  const [collapsedIssueGroups, setCollapsedIssueGroups] = useState<Set<string>>(new Set());
 
   const load = async () => {
     setLoading(true); setError("");
@@ -133,6 +135,53 @@ export function PricingManagement({ token }: { token: string }) {
     }
     return issues;
   });
+
+  const pricingIssueGroups = useMemo(() => {
+    const groups = new Map<string, { category: BookingCategory; issues: PricingIssue[] }>();
+    pricingIssues.forEach(issue => {
+      const key = issue.category.slug || String(issue.category.id);
+      const current = groups.get(key);
+      if (current) current.issues.push(issue);
+      else groups.set(key, { category: issue.category, issues: [issue] });
+    });
+    return Array.from(groups.values());
+  }, [pricingIssues]);
+
+  const jumpToPricingIssue = (issue: PricingIssue) => {
+    setTab("matrix");
+    setQuery(issue.item.name);
+    setCategoryFilter("all");
+    setShowPricingIssues(false);
+
+    setCollapsedCategories(previous => {
+      const next = new Set(previous);
+      next.delete(issue.category.slug);
+      return next;
+    });
+
+    const subKey = `${issue.category.slug}:${issue.subcategory.slug}`;
+    setCollapsedSubcategories(previous => {
+      const next = new Set(previous);
+      next.delete(subKey);
+      return next;
+    });
+
+    window.setTimeout(() => {
+      const serviceId = String(issue.item.id ?? "");
+      const priceKey = issue.option ?? "Base price";
+      const inputs = Array.from(document.querySelectorAll<HTMLInputElement>("[data-pricing-service-id]"));
+      const exactInput = inputs.find(input => input.dataset.pricingServiceId === serviceId && input.dataset.pricingPriceKey === priceKey);
+      const row = document.querySelector<HTMLElement>(`[data-pricing-row-id="${serviceId}"]`);
+      const target = exactInput ?? row;
+      target?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      if (exactInput) {
+        window.setTimeout(() => {
+          exactInput.focus();
+          exactInput.select();
+        }, 250);
+      }
+    }, 100);
+  };
 
   const updateItem = (id: number, recipe: (item: BookingItem) => BookingItem) => {
     const source = rows.find(row => row.item.id === id)?.item;
@@ -413,24 +462,59 @@ export function PricingManagement({ token }: { token: string }) {
             { label: "Price Range", value: allPrices.length ? `${money(String(Math.min(...allPrices)))}–${money(String(Math.max(...allPrices)))}` : "—", icon: DollarSign },
             { label: "Default Deposit", value: money(String(defaultDepositCents / 100)), icon: CreditCard },
             { label: "Pricing Issues", value: pricingIssues.length, icon: AlertCircle },
-          ].map(card => <div key={card.label} className="flex items-center gap-5 rounded-xl border border-[#ded2c7] bg-white px-5 py-5 shadow-[0_5px_16px_rgba(56,35,21,.04)]">
-            <div className="rounded-full border border-[#d9c8b9] bg-[#f6f0e7] p-4"><card.icon className="h-5 w-5" /></div>
-            <div><p className="text-sm text-neutral-600">{card.label}</p><p className="mt-1 font-serif text-3xl">{card.value}</p></div>
-          </div>)}
+          ].map(card => {
+            const content = (
+              <>
+                <div className={`rounded-full border p-4 ${card.label === "Pricing Issues" && pricingIssues.length ? "border-[#efc28e] bg-[#fff7ed] text-[#b7662f]" : "border-[#d9c8b9] bg-[#f6f0e7]"}`}><card.icon className="h-5 w-5" /></div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-neutral-600">{card.label}</p>
+                  <p className="mt-1 font-serif text-3xl">{card.value}</p>
+                  {card.label === "Pricing Issues" && pricingIssues.length > 0 && (
+                    <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-[#8d4f31]">
+                      Needs attention <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                    </span>
+                  )}
+                </div>
+              </>
+            );
+
+            if (card.label === "Pricing Issues") {
+              return (
+                <button
+                  key={card.label}
+                  type="button"
+                  onClick={() => setShowPricingIssues(true)}
+                  className={`group flex items-center gap-5 rounded-xl border bg-white px-5 py-5 text-left shadow-[0_5px_16px_rgba(56,35,21,.04)] transition ${pricingIssues.length ? "border-[#dca46d] hover:-translate-y-0.5 hover:shadow-[0_9px_24px_rgba(56,35,21,.08)]" : "border-[#ded2c7]"}`}
+                >
+                  {content}
+                </button>
+              );
+            }
+
+            return <div key={card.label} className="flex items-center gap-5 rounded-xl border border-[#ded2c7] bg-white px-5 py-5 text-left shadow-[0_5px_16px_rgba(56,35,21,.04)]">{content}</div>;
+          })}
         </div>
 
         {pricingIssues.length > 0 && (
-          <div className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-5">
-            <div className="flex items-center gap-2 text-amber-900"><AlertCircle className="h-4 w-4" /><h3 className="font-serif text-xl">Missing prices</h3></div>
-            <p className="mt-1 text-sm text-amber-800">These active options can be selected by customers but don&apos;t have a valid price yet.</p>
-            <ul className="mt-3 space-y-2">
-              {pricingIssues.map((issue, index) => (
-                <li key={index} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/70 px-4 py-2 text-sm">
-                  <span>{issue.category.name} → {issue.subcategory.name} → {issue.item.name}{issue.option ? ` → ${issue.option}` : " (base price)"}</span>
-                  <button onClick={() => { setTab("matrix"); setQuery(issue.item.name); }} className="text-xs font-medium text-[#8d4f31] underline underline-offset-4">Fix in matrix</button>
-                </li>
-              ))}
-            </ul>
+          <div className="mb-5 flex flex-wrap items-center gap-4 rounded-xl border border-[#efbd79] bg-[#fff9ef] px-5 py-4 shadow-[0_4px_14px_rgba(112,64,39,.03)]">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#efc692] bg-white text-[#b86633]">
+              <AlertCircle className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p className="font-serif text-lg text-[#47281b]">{pricingIssues.length} pricing issue{pricingIssues.length === 1 ? "" : "s"}</p>
+                <span className="text-neutral-300">·</span>
+                <p className="text-sm font-medium text-[#6a4a3b]">{pricingIssueGroups.length} service group{pricingIssueGroups.length === 1 ? "" : "s"} affected</p>
+              </div>
+              <p className="mt-0.5 text-xs text-[#8c6957]">Some active service variations are missing valid prices.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPricingIssues(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#c58b59] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#ac7447]"
+            >
+              Review <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         )}
 
@@ -645,7 +729,7 @@ export function PricingManagement({ token }: { token: string }) {
                                             const knotlessInvalid = item.foundationChoicesEnabled && !hasValidAdjustment(item.knotlessPriceAdjustment);
 
                                             return (
-                                              <tr key={item.id} className="group transition hover:bg-[#fdfaf6]">
+                                              <tr key={item.id} data-pricing-row-id={item.id} className="group transition hover:bg-[#fdfaf6]">
                                                 <td className="sticky left-0 z-20 border-b border-[#f0e8e0] bg-white px-5 py-3.5 group-hover:bg-[#fdfaf6]">
                                                   <span className="block font-medium text-[#321d14]">{item.name}</span>
                                                   {isDirty && <span className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-[#a6613d]"><span className="h-1.5 w-1.5 rounded-full bg-[#b7734d]" />Modified</span>}
@@ -664,6 +748,8 @@ export function PricingManagement({ token }: { token: string }) {
                                                         <span className={`pl-2.5 text-xs ${invalid ? "text-amber-600" : "text-neutral-400"}`}>$</span>
                                                         <input
                                                           aria-label={`${item.name} ${column} price`}
+                                                          data-pricing-service-id={item.id}
+                                                          data-pricing-price-key={column}
                                                           inputMode="decimal"
                                                           value={value ?? ""}
                                                           placeholder="—"
@@ -927,6 +1013,95 @@ export function PricingManagement({ token }: { token: string }) {
 
         {tab === "history" && <div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><div className="flex items-center gap-3"><History className="h-5 w-5 text-[#ad6b45]" /><h3 className="font-serif text-2xl">Pricing activity</h3></div>{history.length ? <div className="mt-5 divide-y">{history.map(entry => <div key={entry.id} className="grid gap-1 py-4 sm:grid-cols-[180px_1fr_1.5fr]"><span className="text-xs text-neutral-500">{new Date(entry.createdAt).toLocaleString()}</span><span><strong className="block text-sm">{entry.serviceName}</strong><span className="text-[10px] uppercase tracking-wider text-[#ad6b45]">{entry.action.replaceAll("_", " ")}</span></span><span className="text-sm text-neutral-600">{entry.summary}</span></div>)}</div> : <div className="py-14 text-center text-sm text-neutral-500">No pricing changes have been recorded yet.</div>}</div>}
       </div>
+
+      {showPricingIssues && (
+        <div
+          className="fixed inset-0 z-50 flex justify-end bg-[#28170f]/20 backdrop-blur-[1px]"
+          onMouseDown={event => { if (event.target === event.currentTarget) setShowPricingIssues(false); }}
+        >
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pricing-issues-title"
+            className="flex h-full w-full max-w-[430px] flex-col border-l border-[#e4d8cc] bg-[#fffdf9] shadow-[-20px_0_55px_rgba(45,24,15,.14)]"
+          >
+            <div className="flex items-start justify-between gap-5 border-b border-[#eee4da] px-6 py-6">
+              <div>
+                <h3 id="pricing-issues-title" className="font-serif text-3xl text-[#2d180f]">Pricing Issues</h3>
+                <p className="mt-1 text-sm text-neutral-500">{pricingIssues.length} issue{pricingIssues.length === 1 ? "" : "s"} across {pricingIssueGroups.length} service group{pricingIssueGroups.length === 1 ? "" : "s"}</p>
+              </div>
+              <button type="button" aria-label="Close pricing issues" onClick={() => setShowPricingIssues(false)} className="rounded-lg p-2 text-neutral-500 transition hover:bg-[#f3ebe3] hover:text-[#351a10]">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-3 overflow-y-auto px-5 py-5">
+              {pricingIssueGroups.map(group => {
+                const groupKey = group.category.slug || String(group.category.id);
+                const collapsed = collapsedIssueGroups.has(groupKey);
+                return (
+                  <section key={groupKey} className="overflow-hidden rounded-xl border border-[#e8ddd2] bg-white shadow-[0_4px_14px_rgba(45,24,15,.035)]">
+                    <button
+                      type="button"
+                      onClick={() => setCollapsedIssueGroups(previous => {
+                        const next = new Set(previous);
+                        next.has(groupKey) ? next.delete(groupKey) : next.add(groupKey);
+                        return next;
+                      })}
+                      className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-[#fdf9f5]"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f5eadf] text-[#7e4a30]">
+                        <AlertCircle className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1 font-semibold text-[#3b2117]">{group.category.name}</span>
+                      <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-[#f4eadf] px-2 text-xs font-semibold text-[#704027]">{group.issues.length}</span>
+                      {collapsed ? <ChevronDown className="h-4 w-4 text-neutral-400" /> : <ChevronUp className="h-4 w-4 text-neutral-400" />}
+                    </button>
+
+                    {!collapsed && (
+                      <div className="divide-y divide-[#f0e8e0] border-t border-[#eee4da]">
+                        {group.issues.map((issue, index) => (
+                          <div key={`${issue.item.id}-${issue.option ?? "base"}-${index}`} className="flex items-start gap-3 px-4 py-3.5">
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c58b59]" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm leading-5 text-[#4d352a]">
+                                <span className="font-medium">{issue.subcategory.name}</span>
+                                <span className="text-neutral-400"> → </span>
+                                {issue.item.name}
+                              </p>
+                              <p className="mt-0.5 text-xs text-neutral-500">{issue.option ? `${issue.option} price` : "Missing base price"}</p>
+                            </div>
+                            <button type="button" onClick={() => jumpToPricingIssue(issue)} className="inline-flex shrink-0 items-center gap-0.5 pt-0.5 text-xs font-semibold text-[#8d4f31] underline decoration-[#d4b39d] underline-offset-4 hover:text-[#5f321f]">
+                              Fix <ChevronRight className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
+
+            <div className="border-t border-[#eee4da] bg-[#fffaf5] p-5">
+              <button
+                type="button"
+                onClick={() => {
+                  setTab("matrix");
+                  setQuery("");
+                  setCategoryFilter("all");
+                  setCollapsedCategories(new Set());
+                  setCollapsedSubcategories(new Set());
+                  setShowPricingIssues(false);
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#351a10] px-5 py-3 text-sm font-medium text-white shadow-[0_8px_20px_rgba(53,26,16,.14)] transition hover:bg-[#472317]"
+              >
+                Review all issues <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
 
       {deleteTarget && <div className="fixed inset-0 z-50 flex justify-end bg-black/15" onMouseDown={event => { if (event.target === event.currentTarget) setDeleteTarget(null); }}>
         <aside role="dialog" aria-modal="true" aria-labelledby="delete-pricing-title" className="flex h-full w-full max-w-sm flex-col border-l border-[#d9c8b9] bg-[#fffdf9] p-7 shadow-2xl">
