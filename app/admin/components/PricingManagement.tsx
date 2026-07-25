@@ -7,6 +7,7 @@ import type { BookingCategory, BookingItem, CategoriesData } from "@/lib/booking
 type Tab = "overview" | "matrix" | "deposits" | "history";
 type Row = { category: BookingCategory; subcategory: NonNullable<BookingCategory["subcategories"]>[number]; item: BookingItem };
 type Change = { id: number; createdAt: string; serviceName: string; action: string; summary: string };
+type InlineSizeDraft = { name: string; prices: Record<string, string> };
 
 const money = (value?: string) => {
   const amount = Number(String(value ?? "").replace(/[^0-9.-]/g, ""));
@@ -51,6 +52,8 @@ export function PricingManagement({ token }: { token: string }) {
   const [depositQuery, setDepositQuery] = useState("");
   const [depositCategory, setDepositCategory] = useState("all");
   const [openRowMenu, setOpenRowMenu] = useState<number | null>(null);
+  const [addingSizeSubcategoryId, setAddingSizeSubcategoryId] = useState<number | null>(null);
+  const [inlineSizeDraft, setInlineSizeDraft] = useState<InlineSizeDraft>({ name: "", prices: {} });
 
   const load = async () => {
     setLoading(true); setError("");
@@ -203,6 +206,84 @@ export function PricingManagement({ token }: { token: string }) {
       await load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to add size/service."); }
     finally { setSaving(false); }
+  };
+
+  const beginInlineSize = (subcategoryId: number, columns: string[]) => {
+    setAddingSizeSubcategoryId(subcategoryId);
+    setInlineSizeDraft({
+      name: "",
+      prices: Object.fromEntries(columns.map(column => [column, ""])),
+    });
+    setError("");
+  };
+
+  const cancelInlineSize = () => {
+    setAddingSizeSubcategoryId(null);
+    setInlineSizeDraft({ name: "", prices: {} });
+  };
+
+  const copyPreviousSizePrices = (item: BookingItem, columns: string[]) => {
+    const prices = Object.fromEntries(columns.map(column => {
+      if (column === "Base price") return [column, item.price ?? ""];
+      const option = item.lengthOptions?.find(entry => entry.name === column);
+      return [column, option?.price ?? ""];
+    }));
+    setInlineSizeDraft(previous => ({ ...previous, prices }));
+  };
+
+  const createInlineSize = async (category: BookingCategory, subcategory: NonNullable<BookingCategory["subcategories"]>[number], columns: string[]) => {
+    const name = inlineSizeDraft.name.trim();
+    if (!name) return setError("Enter a size name.");
+
+    const expectedColumns = columns.length ? columns : ["Base price"];
+    const missingColumns = expectedColumns.filter(column => !hasValidPrice(inlineSizeDraft.prices[column]));
+    if (missingColumns.length) {
+      return setError(`Enter a valid price for ${missingColumns.join(", ")}.`);
+    }
+
+    const basePrice = expectedColumns.includes("Base price")
+      ? inlineSizeDraft.prices["Base price"]
+      : inlineSizeDraft.prices[expectedColumns[0]];
+
+    const lengthOptions = expectedColumns
+      .filter(column => column !== "Base price")
+      .map(column => ({ name: column, price: inlineSizeDraft.prices[column] }));
+
+    setSaving(true); setError(""); setSuccess("");
+    try {
+      const response = await fetch("/api/admin/services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name,
+          price: basePrice,
+          description: "",
+          notes: "",
+          image: "",
+          link: "",
+          objectPosition: "center center",
+          images: [],
+          sizePhotos: [],
+          availableSizes: [],
+          hairTextures: [],
+          lengthOptions,
+          category: { id: category.id },
+          subcategory: { id: subcategory.id },
+          foundationChoicesEnabled: false,
+          knotlessPriceAdjustment: "0",
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Unable to add size.");
+
+      cancelInlineSize();
+      setSuccess(`${name} added to ${subcategory.name}.`);
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to add size.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const deleteService = async (item: BookingItem) => {
@@ -640,16 +721,90 @@ export function PricingManagement({ token }: { token: string }) {
                                               </tr>
                                             );
                                           })}
+
+                                          {addingSizeSubcategoryId === subcategory.id && (
+                                            <tr className="bg-[#fffaf5]">
+                                              <td className="sticky left-0 z-20 border-b border-[#eadfd5] bg-[#fffaf5] px-4 py-3">
+                                                <input
+                                                  autoFocus
+                                                  value={inlineSizeDraft.name}
+                                                  onChange={event => setInlineSizeDraft(previous => ({ ...previous, name: event.target.value }))}
+                                                  onKeyDown={event => {
+                                                    if (event.key === "Escape") cancelInlineSize();
+                                                  }}
+                                                  placeholder="Size name"
+                                                  className="w-full rounded-lg border border-[#d9cabd] bg-white px-3 py-2 text-sm font-medium text-[#321d14] outline-none focus:border-[#b7734d] focus:ring-3 focus:ring-[#b7734d]/10"
+                                                />
+                                                <span className="mt-1.5 block text-[11px] text-neutral-500">New size</span>
+                                              </td>
+
+                                              {columns.map(column => {
+                                                const value = inlineSizeDraft.prices[column] ?? "";
+                                                const invalid = value !== "" && !hasValidPrice(value);
+                                                return (
+                                                  <td key={column} className="border-b border-[#eadfd5] px-2.5 py-2.5 text-center">
+                                                    <div className={`mx-auto flex w-[94px] items-center rounded-lg border bg-white transition focus-within:ring-3 ${invalid ? "border-red-300 focus-within:border-red-400 focus-within:ring-red-100" : "border-[#ddcfc3] focus-within:border-[#b7734d] focus-within:ring-[#b7734d]/10"}`}>
+                                                      <span className="pl-2.5 text-xs text-neutral-400">$</span>
+                                                      <input
+                                                        aria-label={`New ${subcategory.name} ${column} price`}
+                                                        inputMode="decimal"
+                                                        value={value}
+                                                        onFocus={event => event.currentTarget.select()}
+                                                        onChange={event => setInlineSizeDraft(previous => ({
+                                                          ...previous,
+                                                          prices: { ...previous.prices, [column]: event.target.value },
+                                                        }))}
+                                                        placeholder="0"
+                                                        className="w-full min-w-0 bg-transparent py-2 pr-2 text-center text-sm font-medium text-[#3a241a] outline-none"
+                                                      />
+                                                    </div>
+                                                  </td>
+                                                );
+                                              })}
+
+                                              {hasKnotless && (
+                                                <td className="border-b border-[#eadfd5] px-3 py-2.5 text-center text-xs text-neutral-400">—</td>
+                                              )}
+
+                                              <td className="sticky right-0 z-20 border-b border-[#eadfd5] bg-[#fffaf5] px-2 py-2.5 text-center">
+                                                <button onClick={cancelInlineSize} aria-label="Cancel adding size" className="rounded-lg p-2 text-neutral-400 transition hover:bg-white hover:text-[#351a10]">×</button>
+                                              </td>
+                                            </tr>
+                                          )}
                                         </tbody>
                                       </table>
                                     </div>
 
-                                    <button
-                                      onClick={() => { setNewService(previous => ({ ...previous, categoryId: String(category.id), subcategoryId: String(subcategory.id) })); setShowCreate(true); }}
-                                      className="flex w-full items-center gap-2 border-t border-dashed border-[#e6d9cd] px-5 py-4 text-sm font-medium text-[#9a5835] transition hover:bg-[#fffaf5]"
-                                    >
-                                      <Plus className="h-4 w-4" /> Add size
-                                    </button>
+                                    {addingSizeSubcategoryId === subcategory.id ? (
+                                      <div className="flex flex-wrap items-center gap-3 border-t border-[#eadfd5] bg-[#fffaf5] px-5 py-3.5">
+                                        <p className="mr-auto text-xs text-neutral-500">Add the prices for this size directly in the row above.</p>
+                                        {subRows.length > 0 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => copyPreviousSizePrices(subRows[subRows.length - 1].item, columns)}
+                                            className="rounded-lg border border-[#d9cabd] bg-white px-3.5 py-2 text-xs font-medium text-[#5b3423] transition hover:bg-[#fbf7f2]"
+                                          >
+                                            Copy previous size
+                                          </button>
+                                        )}
+                                        <button type="button" onClick={cancelInlineSize} className="rounded-lg px-3.5 py-2 text-xs font-medium text-neutral-600 hover:bg-white">Cancel</button>
+                                        <button
+                                          type="button"
+                                          disabled={saving}
+                                          onClick={() => void createInlineSize(category, subcategory, columns)}
+                                          className="rounded-lg bg-[#351a10] px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-[#472317] disabled:opacity-50"
+                                        >
+                                          {saving ? "Adding…" : "Add size"}
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => beginInlineSize(subcategory.id!, columns)}
+                                        className="flex w-full items-center gap-2 border-t border-dashed border-[#e6d9cd] px-5 py-4 text-sm font-medium text-[#9a5835] transition hover:bg-[#fffaf5]"
+                                      >
+                                        <Plus className="h-4 w-4" /> Add size
+                                      </button>
+                                    )}
                                   </>
                                 )}
                               </div>
