@@ -27,7 +27,7 @@ export default function StickySaveBar({
 
     return (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 shadow-lg z-40">
-            <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div className="mx-auto flex max-w-[1500px] items-center justify-between px-6 py-4">
                 <div className="flex items-center gap-3">
                     {hasUnsavedChanges && (
                         <div className="flex items-center gap-2 text-amber-600">

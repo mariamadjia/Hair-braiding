@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Ban, CalendarDays, ChevronDown, ChevronUp, Clock, Copy, Loader2, Minus, Plus, Trash2, Users } from "lucide-react";
+import { AlertTriangle, Ban, CalendarDays, CheckCircle2, ChevronRight, Clock, Copy, LayoutTemplate, Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/lib/config/api";
 import { getAuthToken } from "@/lib/utils/auth";
@@ -67,7 +67,7 @@ const TEMPLATES: TemplateChoice[] = [
     { name: "Split day", description: "9 AM–1 PM and 2 PM–6 PM, Monday–Saturday", schedule: Object.fromEntries(DAYS.map(day => [day.key, day.key === "SUNDAY" ? [] : [{ id: windowId(), startTime: "09:00", endTime: "13:00" }, { id: windowId(), startTime: "14:00", endTime: "18:00" }]])) }
 ];
 
-export default function AvailabilitySchedule() {
+export default function AvailabilitySchedule({ onManageBlockedDates }: { onManageBlockedDates?: () => void }) {
     const [schedule, setSchedule] = useState<DayAvailability[]>([]);
     const [slotGap, setSlotGap] = useState(60);
     const [defaultCapacity, setDefaultCapacity] = useState(1);
@@ -296,93 +296,113 @@ export default function AvailabilitySchedule() {
         });
     }, [blockedDates]);
 
-    const totalStarts = useMemo(() => schedule.reduce((sum, day) => sum + (day.enabled ? generatedStarts(day).length : 0), 0), [schedule, slotGap]);
+    const selectedDay = schedule.find(day => day.dayOfWeek === expandedDay) || schedule[0];
+    const selectedDayLabel = DAYS.find(day => day.key === selectedDay?.dayOfWeek)?.label || selectedDay?.dayOfWeek;
+    const selectedStarts = selectedDay?.enabled ? generatedStarts(selectedDay) : [];
+    const blockedOccurrenceCount = upcomingBlockedOccurrences.filter(item => item.blocks.length > 0).length;
 
     if (loading) return <div className="flex min-h-72 items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-neutral-400" /></div>;
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-4 border-b border-neutral-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
+            <header className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                    <div className="flex items-center gap-2"><Clock className="h-5 w-5" /><h2 className="text-lg font-medium">Weekly availability</h2></div>
-                    <p className="mt-1 text-sm text-neutral-500">Set working windows. Customer start times are generated every {slotGap} minutes.</p>
-                    <p className="mt-1 text-xs font-medium text-neutral-500">San Antonio Central Time · {totalStarts} customer start{totalStarts === 1 ? "" : "s"} per week</p>
+                    <h2 className="font-serif text-3xl text-[#2f1b12] sm:text-4xl">Weekly availability</h2>
+                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                        <p className="text-sm text-neutral-600">Set the times customers can book.</p>
+                        <span className="inline-flex items-center gap-2 rounded-md border border-[#e4d3c2] bg-[#f8f0e6] px-3 py-1.5 text-xs font-medium text-[#4a2b1d]"><Clock className="h-3.5 w-3.5" />San Antonio Central Time</span>
+                    </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Button type="button" variant="outline" onClick={copyMonday} disabled={!schedule.length}><Copy className="mr-2 h-4 w-4" />Copy Monday to week</Button>
+                    <label className="relative">
+                        <span className="sr-only">Preview a schedule template</span>
+                        <LayoutTemplate className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4a2b1d]" />
+                        <select defaultValue="" onChange={event => { const template = TEMPLATES.find(item => item.name === event.target.value); if (template) setTemplatePreview(template); event.target.value = ""; }} className="min-h-11 appearance-none rounded-md border border-[#d9c3ae] bg-white pl-10 pr-9 text-sm font-medium text-[#3a241a] focus:outline-none focus:ring-2 focus:ring-[#7f4b2e]">
+                            <option value="" disabled>Templates</option>
+                            {TEMPLATES.map(template => <option key={template.name} value={template.name}>{template.name}</option>)}
+                        </select>
+                        <ChevronRight className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 rotate-90 text-neutral-500" />
+                    </label>
+                    <Button type="button" variant="outline" onClick={copyMonday} disabled={!schedule.length} className="min-h-11 border-[#d9c3ae] bg-white text-[#3a241a] hover:bg-[#fbf6f0]"><Copy className="mr-2 h-4 w-4" />Copy Monday to week</Button>
                 </div>
-            </div>
+            </header>
 
             {error && <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error} {!schedule.length && <button onClick={loadSchedule} className="ml-2 font-semibold underline">Try again</button>}</div>}
             {success && <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">Availability saved. The customer calendar has been refreshed.</div>}
 
-            <section aria-labelledby="weekly-preview-title" className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 sm:p-5">
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div><h3 id="weekly-preview-title" className="font-medium text-neutral-900">Customer-facing weekly preview</h3><p className="text-xs text-neutral-500">Use Left and Right Arrow keys to move between days. Select a day to edit it.</p></div>
-                    <div className="flex flex-wrap gap-2">{TEMPLATES.map(template => <button key={template.name} type="button" onClick={() => setTemplatePreview(template)} className="min-h-10 rounded-md border border-neutral-300 bg-white px-3 text-xs font-medium hover:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900">Preview {template.name}</button>)}</div>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-7">{schedule.map((day, index) => {
+            <section aria-labelledby="weekly-preview-title" className="rounded-xl border border-[#e8ddd2] bg-white p-4 shadow-[0_8px_25px_rgba(57,32,18,0.04)] sm:p-5">
+                <div className="mb-4"><h3 id="weekly-preview-title" className="font-serif text-xl text-[#352016]">Weekly overview</h3><p className="text-xs text-neutral-500">Business windows and customer starts per day</p></div>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">{schedule.map((day, index) => {
                     const starts = day.enabled ? generatedStarts(day) : [];
                     const label = DAYS[index]?.label || day.dayOfWeek;
-                    return <button key={day.dayOfWeek} type="button" data-day-preview onClick={() => { setExpandedDay(day.dayOfWeek); document.getElementById(`day-${day.dayOfWeek}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); }} onKeyDown={event => {
+                    return <button key={day.dayOfWeek} type="button" data-day-preview onClick={() => setExpandedDay(day.dayOfWeek)} onKeyDown={event => {
                         if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
                         event.preventDefault();
                         const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-day-preview]"));
                         const next = event.key === "ArrowRight" ? (index + 1) % buttons.length : (index - 1 + buttons.length) % buttons.length;
                         buttons[next]?.focus();
-                    }} className={`min-h-36 rounded-lg border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-neutral-900 ${day.enabled ? "border-emerald-200 bg-white hover:border-emerald-400" : "border-neutral-200 bg-neutral-100 text-neutral-400"}`}>
+                    }} className={`min-h-24 rounded-lg border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-emerald-700 ${expandedDay === day.dayOfWeek ? "border-emerald-500 bg-emerald-50/60 shadow-sm" : day.enabled ? "border-[#e8ddd2] bg-white hover:border-emerald-300" : "border-neutral-200 bg-neutral-50 text-neutral-400"}`}>
                         <span className="text-xs font-semibold uppercase tracking-wide">{label.slice(0, 3)}</span>
-                        {day.enabled ? <><span className="mt-2 block text-[11px] text-neutral-500">Business window</span><span className="block text-xs font-medium text-neutral-800">{day.windows.map(window => `${displayTime(window.startTime)}–${displayTime(window.endTime)}`).join(", ")}</span><span className="mt-2 block text-[11px] text-neutral-500">Customer starts</span><span className="mt-1 flex flex-wrap gap-1">{starts.slice(0, 4).map(start => <span key={start} className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] text-emerald-800">{displayTime(start).replace(":00", "")}</span>)}{starts.length > 4 && <span className="text-[10px] text-neutral-500">+{starts.length - 4}</span>}</span></> : <span className="mt-4 block text-xs">Closed</span>}
+                        {day.enabled ? <><span className="mt-3 block text-xs font-medium text-neutral-800">{day.windows.map(window => `${displayTime(window.startTime)}–${displayTime(window.endTime)}`).join(", ")}</span><span className="mt-2 flex items-center gap-2 text-xs text-neutral-500"><span className="h-2 w-2 rounded-full bg-emerald-600" />{starts.length} starts</span></> : <span className="mt-4 block text-xs">Closed</span>}
                     </button>;
                 })}</div>
+                <div className="mt-5 border-t border-[#eee4da] pt-4">
+                    <button type="button" onClick={onManageBlockedDates} className="flex min-h-12 w-full items-center gap-3 rounded-lg px-2 text-left hover:bg-[#fbf7f2] focus:outline-none focus:ring-2 focus:ring-[#7f4b2e]">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#fbf1e6] text-[#8a4e2d]"><Ban className="h-4 w-4" /></span>
+                        <span className="flex-1"><span className="block text-sm font-medium text-[#352016]">Blocked dates</span><span className="block text-xs text-neutral-500">Next 14 days · {blockedOccurrenceCount} blocked</span></span>
+                        <span className="text-sm font-medium text-[#7a4227]">Manage</span><ChevronRight className="h-4 w-4 text-[#7a4227]" />
+                    </button>
+                </div>
             </section>
 
-            <section aria-labelledby="blocked-preview-title" className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5">
-                <div className="mb-4 flex items-center gap-2"><Ban className="h-4 w-4 text-red-500" /><div><h3 id="blocked-preview-title" className="text-sm font-medium">Blocked-date preview</h3><p className="text-xs text-neutral-500">The next 14 days in Central Time</p></div></div>
-                <div className="grid grid-cols-7 gap-2">{upcomingBlockedOccurrences.map(({ date, blocks }) => <div key={date.toISOString()} title={blocks.map(block => block.reason).join(", ")} className={`min-h-16 rounded-lg border p-2 text-center ${blocks.length ? "border-red-200 bg-red-50 text-red-800" : "border-neutral-200 bg-neutral-50 text-neutral-600"}`}><span className="block text-[10px] uppercase">{date.toLocaleDateString("en-US", { weekday: "short" })}</span><span className="block text-sm font-semibold">{date.getDate()}</span>{blocks.length > 0 && <span className="mt-1 block truncate text-[9px]">{blocks[0].reason}</span>}</div>)}</div>
-            </section>
+            {selectedDay && <section className="grid overflow-hidden rounded-xl border border-[#e8ddd2] bg-white shadow-[0_10px_30px_rgba(57,32,18,0.05)] lg:grid-cols-[310px_minmax(0,1fr)]">
+                <nav aria-label="Choose a day to edit" className="border-b border-[#e8ddd2] bg-[#fffdfa] p-3 lg:border-b-0 lg:border-r">
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">{schedule.map(day => {
+                        const label = DAYS.find(item => item.key === day.dayOfWeek)?.label || day.dayOfWeek;
+                        const starts = day.enabled ? generatedStarts(day) : [];
+                        const selected = day.dayOfWeek === selectedDay.dayOfWeek;
+                        return <div key={day.dayOfWeek} className={`flex min-h-[70px] items-center gap-3 rounded-lg border px-3 transition ${selected ? "border-emerald-500 bg-emerald-50/70" : "border-transparent hover:border-[#e8ddd2] hover:bg-white"}`}>
+                            <button type="button" role="switch" aria-checked={day.enabled} aria-label={`${label} availability`} onClick={() => updateDay(day.dayOfWeek, current => ({ ...current, enabled: !current.enabled, windows: !current.enabled && !current.windows.length ? [{ id: windowId(), startTime: "09:00", endTime: "17:00" }] : current.windows }))} className={`relative h-6 w-11 shrink-0 rounded-full transition focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2 ${day.enabled ? "bg-emerald-600" : "bg-neutral-300"}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${day.enabled ? "left-6" : "left-1"}`} /></button>
+                            <button type="button" onClick={() => setExpandedDay(day.dayOfWeek)} className="flex min-w-0 flex-1 items-center text-left focus:outline-none focus:ring-2 focus:ring-emerald-700">
+                                <span className="min-w-0 flex-1"><span className="block font-medium text-[#352016]">{label}</span><span className="block truncate text-xs text-neutral-500">{day.enabled ? `${day.windows.map(window => `${displayTime(window.startTime)}–${displayTime(window.endTime)}`).join(", ")} · ${starts.length} starts` : "Unavailable"}</span></span><ChevronRight className="h-4 w-4 text-neutral-500" />
+                            </button>
+                        </div>;
+                    })}</div>
+                </nav>
 
-            <div className="space-y-3">
-                {schedule.map(day => {
-                    const label = DAYS.find(item => item.key === day.dayOfWeek)?.label || day.dayOfWeek;
-                    const starts = day.enabled ? generatedStarts(day) : [];
-                    const expanded = expandedDay === day.dayOfWeek;
-                    return (
-                        <section id={`day-${day.dayOfWeek}`} key={day.dayOfWeek} className="scroll-mt-6 overflow-hidden rounded-xl border border-neutral-200 bg-white">
-                            <div className="flex min-h-16 items-center gap-3 px-4 sm:px-5">
-                                <button type="button" role="switch" aria-checked={day.enabled} aria-label={`${label} availability`} onClick={() => updateDay(day.dayOfWeek, current => ({
-                                    ...current,
-                                    enabled: !current.enabled,
-                                    windows: !current.enabled && !current.windows.length ? [{ id: windowId(), startTime: "09:00", endTime: "17:00" }] : current.windows
-                                }))} className={`relative h-6 w-11 shrink-0 rounded-full transition focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2 ${day.enabled ? "bg-emerald-600" : "bg-neutral-300"}`}>
-                                    <span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${day.enabled ? "left-6" : "left-1"}`} />
-                                </button>
-                                <div className="min-w-0 flex-1"><h3 className="font-medium text-neutral-900">{label}</h3><p className="truncate text-xs text-neutral-500">{day.enabled ? `${day.windows.length} window${day.windows.length === 1 ? "" : "s"} · ${starts.length} customer starts` : "Unavailable"}</p></div>
-                                {day.enabled && <button type="button" onClick={() => setExpandedDay(expanded ? null : day.dayOfWeek)} className="flex min-h-11 items-center gap-2 rounded-md px-3 text-sm text-neutral-600 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-900">Edit {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</button>}
-                            </div>
+                <div className="min-w-0 p-4 sm:p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <h3 className="font-serif text-3xl text-[#352016]">{selectedDayLabel}</h3>
+                        <span className={`inline-flex items-center gap-2 text-sm font-medium ${selectedDay.enabled ? "text-emerald-800" : "text-neutral-500"}`}><span className={`h-2.5 w-2.5 rounded-full ${selectedDay.enabled ? "bg-emerald-600" : "bg-neutral-300"}`} />{selectedDay.enabled ? "Available" : "Unavailable"}</span>
+                    </div>
 
-                            {day.enabled && expanded && <div className="space-y-5 border-t border-neutral-200 bg-neutral-50/50 p-4 sm:p-5">
-                                <div className="space-y-3">
-                                    {day.windows.map((window, index) => <div key={window.id} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-                                        <label className="text-xs font-medium text-neutral-600">Available from<input type="time" value={window.startTime} onChange={event => updateWindow(day.dayOfWeek, window.id, "startTime", event.target.value)} className="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
-                                        <label className="text-xs font-medium text-neutral-600">Available until<input type="time" value={window.endTime} onChange={event => updateWindow(day.dayOfWeek, window.id, "endTime", event.target.value)} className="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
-                                        <button type="button" disabled={day.windows.length === 1} aria-label={`Remove window ${index + 1}`} onClick={() => updateDay(day.dayOfWeek, current => ({ ...current, windows: current.windows.filter(item => item.id !== window.id) }))} className="flex min-h-11 items-center justify-center rounded-md border border-neutral-200 px-3 text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-30"><Trash2 className="h-4 w-4" /></button>
-                                    </div>)}
-                                    <button type="button" onClick={() => updateDay(day.dayOfWeek, current => ({ ...current, windows: [...current.windows, { id: windowId(), startTime: "14:00", endTime: "18:00" }] }))} className="flex min-h-11 items-center gap-2 rounded-md border border-dashed border-neutral-300 px-4 text-sm font-medium text-neutral-600 hover:border-neutral-500 hover:bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"><Plus className="h-4 w-4" />Add another window</button>
-                                </div>
+                    {selectedDay.enabled ? <div className="mt-5 space-y-5">
+                        <div className="space-y-3">
+                            {selectedDay.windows.map((window, index) => <div key={window.id} className="grid gap-3 rounded-lg border border-[#e8ddd2] bg-[#fffdfa] p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                                <label className="text-xs font-medium text-neutral-600">Available from<input type="time" value={window.startTime} onChange={event => updateWindow(selectedDay.dayOfWeek, window.id, "startTime", event.target.value)} className="mt-1.5 min-h-12 w-full rounded-md border border-[#d9cabe] bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700" /></label>
+                                <label className="text-xs font-medium text-neutral-600">Available until<input type="time" value={window.endTime} onChange={event => updateWindow(selectedDay.dayOfWeek, window.id, "endTime", event.target.value)} className="mt-1.5 min-h-12 w-full rounded-md border border-[#d9cabe] bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700" /></label>
+                                <button type="button" disabled={selectedDay.windows.length === 1} aria-label={`Remove window ${index + 1}`} onClick={() => updateDay(selectedDay.dayOfWeek, current => ({ ...current, windows: current.windows.filter(item => item.id !== window.id) }))} className="flex min-h-12 items-center justify-center rounded-md border border-[#e8ddd2] px-3 text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-30"><Trash2 className="h-4 w-4" /></button>
+                            </div>)}
+                            <button type="button" onClick={() => updateDay(selectedDay.dayOfWeek, current => ({ ...current, windows: [...current.windows, { id: windowId(), startTime: "14:00", endTime: "18:00" }] }))} className="flex min-h-11 items-center gap-2 rounded-md border border-dashed border-[#d9cabe] px-4 text-sm font-medium text-[#68402c] hover:bg-[#fbf6f0] focus:outline-none focus:ring-2 focus:ring-[#7f4b2e]"><Plus className="h-4 w-4" />Add another window</button>
+                        </div>
 
-                                <div>
-                                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h4 className="text-sm font-medium text-neutral-900">Customer booking starts</h4><p className="text-xs text-neutral-500">Customers will see {starts.length} start{starts.length === 1 ? "" : "s"}{starts.length ? `: ${displayTime(starts[0])}–${displayTime(starts[starts.length - 1])}` : ""}. Adjust capacity for any start.</p></div><div className="flex items-center gap-2"><span className="text-xs text-neutral-500">Default: {defaultCapacity}</span><button type="button" onClick={() => applyCapacityToDay(day.dayOfWeek, defaultCapacity)} className="min-h-10 rounded-md border border-neutral-300 bg-white px-3 text-xs font-medium hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-900">Apply {defaultCapacity} to all</button></div></div>
-                                    {starts.length ? <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{starts.map(start => {
-                                        const capacity = day.capacities[start] || defaultCapacity;
-                                        return <div key={start} className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2.5"><div><p className="text-sm font-medium">{displayTime(start)}</p><p className="text-[11px] text-neutral-500">appointment start</p></div><div className="flex items-center gap-1" aria-label={`${capacity} booking spots`}><button type="button" onClick={() => updateDay(day.dayOfWeek, current => ({ ...current, capacities: { ...current.capacities, [start]: Math.max(1, capacity - 1) } }))} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900" aria-label={`Decrease ${displayTime(start)} capacity`}><Minus className="h-3.5 w-3.5" /></button><span className="flex min-w-12 items-center justify-center gap-1 text-sm font-semibold"><Users className="h-3.5 w-3.5" />{capacity}</span><button type="button" onClick={() => updateDay(day.dayOfWeek, current => ({ ...current, capacities: { ...current.capacities, [start]: Math.min(10, capacity + 1) } }))} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900" aria-label={`Increase ${displayTime(start)} capacity`}><Plus className="h-3.5 w-3.5" /></button></div></div>;
-                                    })}</div> : <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">This window does not produce any customer start times. Check its from/until values.</div>}
-                                </div>
-                            </div>}
-                        </section>
-                    );
-                })}
-            </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-lg border border-[#e8ddd2] bg-white p-3"><span className="block text-xs text-neutral-500">Booking gap</span><span className="mt-1 block text-sm font-medium text-[#352016]">Every {slotGap} minutes</span></div>
+                            <div className="rounded-lg border border-[#e8ddd2] bg-white p-3"><span className="block text-xs text-neutral-500">Default capacity</span><span className="mt-1 block text-sm font-medium text-[#352016]">{defaultCapacity} customer{defaultCapacity === 1 ? "" : "s"} per start</span></div>
+                        </div>
+
+                        <div className="flex items-center gap-3 rounded-lg border border-emerald-300 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-900"><CheckCircle2 className="h-5 w-5 shrink-0" /><span>Customers will see <strong>{selectedStarts.length} starts</strong>{selectedStarts.length ? ` · ${displayTime(selectedStarts[0])}–${displayTime(selectedStarts[selectedStarts.length - 1])}` : ""}</span></div>
+
+                        <div>
+                            <div className="mb-3 flex flex-wrap items-end justify-between gap-3"><div><h4 className="font-serif text-xl text-[#352016]">Customer booking starts</h4><p className="text-xs text-neutral-500">Adjust how many customers can book each time.</p></div><button type="button" onClick={() => applyCapacityToDay(selectedDay.dayOfWeek, defaultCapacity)} className="min-h-10 text-sm font-medium text-[#7a4227] underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-[#7f4b2e]">Apply capacity to all</button></div>
+                            {selectedStarts.length ? <div className="grid overflow-hidden rounded-lg border border-[#e8ddd2] sm:grid-cols-2 sm:gap-x-8">{selectedStarts.map(start => {
+                                const capacity = selectedDay.capacities[start] || defaultCapacity;
+                                return <div key={start} className="flex min-h-12 items-center justify-between border-b border-[#eee6de] px-4 last:border-b-0"><span className="text-sm font-medium text-[#352016]">{displayTime(start)}</span><div className="flex items-center gap-1" aria-label={`${capacity} booking spots`}><button type="button" onClick={() => updateDay(selectedDay.dayOfWeek, current => ({ ...current, capacities: { ...current.capacities, [start]: Math.max(1, capacity - 1) } }))} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-[#f8f1ea] focus:outline-none focus:ring-2 focus:ring-[#7f4b2e]" aria-label={`Decrease ${displayTime(start)} capacity`}><Minus className="h-3.5 w-3.5" /></button><span className="min-w-8 text-center text-sm font-semibold">{capacity}</span><button type="button" onClick={() => updateDay(selectedDay.dayOfWeek, current => ({ ...current, capacities: { ...current.capacities, [start]: Math.min(10, capacity + 1) } }))} className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-[#f8f1ea] focus:outline-none focus:ring-2 focus:ring-[#7f4b2e]" aria-label={`Increase ${displayTime(start)} capacity`}><Plus className="h-3.5 w-3.5" /></button></div></div>;
+                            })}</div> : <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">This window does not produce any customer start times. Check its from/until values.</div>}
+                        </div>
+                    </div> : <div className="mt-5 rounded-lg border border-dashed border-[#d9cabe] bg-[#fffdfa] p-8 text-center"><p className="text-sm text-neutral-600">{selectedDayLabel} is unavailable.</p><button type="button" onClick={() => updateDay(selectedDay.dayOfWeek, current => ({ ...current, enabled: true, windows: current.windows.length ? current.windows : [{ id: windowId(), startTime: "09:00", endTime: "17:00" }] }))} className="mt-3 rounded-md bg-[#3b2115] px-4 py-2 text-sm font-medium text-white hover:bg-[#4c2c1d]">Make this day available</button></div>}
+                </div>
+            </section>}
 
             {templatePreview && <div role="dialog" aria-modal="true" aria-labelledby="template-preview-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"><div className="w-full max-w-3xl rounded-xl bg-white p-6 shadow-xl"><div className="flex items-start justify-between gap-4"><div><h3 id="template-preview-title" className="text-lg font-medium">Preview: {templatePreview.name}</h3><p className="text-sm text-neutral-500">{templatePreview.description}. Nothing changes until you apply it.</p></div><CalendarDays className="h-5 w-5 text-neutral-400" /></div><div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-7">{DAYS.map(day => { const windows = templatePreview.schedule[day.key] || []; const count = windows.flatMap(window => startsForWindow(window, slotGap)).length; return <div key={day.key} className={`rounded-lg border p-3 ${windows.length ? "border-blue-200 bg-blue-50" : "border-neutral-200 bg-neutral-50"}`}><p className="text-xs font-semibold">{day.label.slice(0, 3)}</p><p className="mt-2 text-xs">{windows.length ? windows.map(window => `${displayTime(window.startTime)}–${displayTime(window.endTime)}`).join(", ") : "Closed"}</p><p className="mt-1 text-[10px] text-neutral-500">{count} starts</p></div>; })}</div><div className="mt-6 flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => setTemplatePreview(null)}>Cancel</Button><Button type="button" onClick={() => applyTemplate(templatePreview)}>Apply template</Button></div></div></div>}
 

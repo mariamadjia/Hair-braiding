@@ -85,7 +85,7 @@ export default function AvailabilitySettings() {
     };
 
     return (
-        <div className="max-w-6xl mx-auto p-6">
+        <div className="mx-auto max-w-[1500px] p-4 sm:p-6 lg:p-8">
             <div className="mb-8">
                 <h1 className="text-3xl font-light tracking-wide text-neutral-900 mb-2">
                     Availability Settings
@@ -134,8 +134,8 @@ export default function AvailabilitySettings() {
             </div>
 
             {/* Content */}
-            <div className="bg-white border border-neutral-200 rounded-sm p-6">
-                {activeTab === 'hours' && <AvailabilitySchedule key="hours" />}
+            <div className="rounded-2xl border border-[#e8ddd2] bg-[#fffdfa] p-4 shadow-[0_18px_45px_rgba(57,32,18,0.05)] sm:p-6">
+                {activeTab === 'hours' && <AvailabilitySchedule key="hours" onManageBlockedDates={() => handleTabChange('blocked')} />}
                 {activeTab === 'blocked' && <BlockTimeModal key="blocked" />}
                 {activeTab === 'settings' && <AppointmentSettingsTab key="settings" />}
             </div>
