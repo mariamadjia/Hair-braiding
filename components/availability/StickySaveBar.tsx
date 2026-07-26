@@ -25,7 +25,7 @@ export default function StickySaveBar({
     }
 
     return (
-        <div className="sticky bottom-0 z-30 -mx-4 mt-6 border-t border-[#e8ddd2] bg-[#fffdfa]/95 shadow-[0_-10px_28px_rgba(57,32,18,0.08)] backdrop-blur sm:-mx-6 lg:-mx-8">
+        <div className="sticky bottom-0 z-30 -mx-4 mt-6 border-t border-[#e8ddd2] bg-white/95 shadow-[0_-10px_28px_rgba(57,32,18,0.08)] backdrop-blur sm:-mx-6 lg:-mx-8">
             <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
                 <div className="flex items-center gap-3">
                     {hasUnsavedChanges && (
