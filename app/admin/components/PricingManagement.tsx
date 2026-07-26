@@ -1,20 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, BriefcaseBusiness, Check, ChevronDown, ChevronRight, ChevronUp, Clock3, Copy, CreditCard, DollarSign, Download, History, MoreVertical, Pencil, Plus, RefreshCw, Save, Search, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
+import { AlertCircle, BriefcaseBusiness, Check, ChevronDown, ChevronRight, ChevronUp, Clock3, CreditCard, DollarSign, Download, History, Pencil, Plus, RefreshCw, Save, Search, ShieldCheck, Sparkles, X } from "lucide-react";
 import type { BookingCategory, BookingItem, CategoriesData } from "@/lib/booking-types";
 
 type Tab = "overview" | "matrix" | "deposits" | "history";
 type Row = { category: BookingCategory; subcategory: NonNullable<BookingCategory["subcategories"]>[number]; item: BookingItem };
 type Change = { id: number; createdAt: string; serviceName: string; action: string; summary: string; changedBy?: string; beforeValue?: string; afterValue?: string };
-type InlineSizeDraft = { name: string; prices: Record<string, string> };
 
 const money = (value?: string) => {
   const amount = Number(String(value ?? "").replace(/[^0-9.-]/g, ""));
   return Number.isFinite(amount) ? `$${amount.toFixed(0)}` : "—";
 };
 
-const parsePrice = (value?: string) => Number(String(value ?? "").trim().replace(/[^0-9.-]/g, ""));
+const parsePrice = (value?: string) => {
+  const normalized = String(value ?? "").trim().replaceAll("$", "").replaceAll(",", "");
+  return /^-?\d+(?:\.\d{0,2})?$/.test(normalized) ? Number(normalized) : Number.NaN;
+};
 const hasValidPrice = (value?: string) => {
   const trimmed = String(value ?? "").trim();
   if (!trimmed) return false;
@@ -47,20 +49,14 @@ export function PricingManagement({ token }: { token: string }) {
   const initialDeposits = useRef<{ defaultDepositCents: number; overrides: Record<number, number | null> }>({ defaultDepositCents: 5000, overrides: {} });
   const [bulkAmount, setBulkAmount] = useState("");
   const [bulkMode, setBulkMode] = useState<"fixed" | "percent">("fixed");
-  const [showCreate, setShowCreate] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
-  const [newService, setNewService] = useState({ categoryId: "", subcategoryId: "", name: "", price: "" });
-  const [deleteTarget, setDeleteTarget] = useState<{ row: Row; lengthName?: string } | null>(null);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [collapsedSubcategories, setCollapsedSubcategories] = useState<Set<string>>(new Set());
   const [depositQuery, setDepositQuery] = useState("");
   const [depositCategory, setDepositCategory] = useState("all");
-  const [openRowMenu, setOpenRowMenu] = useState<number | null>(null);
-  const [addingSizeSubcategoryId, setAddingSizeSubcategoryId] = useState<number | null>(null);
-  const [inlineSizeDraft, setInlineSizeDraft] = useState<InlineSizeDraft>({ name: "", prices: {} });
   const [addLengthTarget, setAddLengthTarget] = useState<{ subcategoryId: number; subcategoryName: string } | null>(null);
   const [newLengthName, setNewLengthName] = useState("");
-  const [newLengthPrice, setNewLengthPrice] = useState("");
+  const [newLengthPrices, setNewLengthPrices] = useState<Record<number, string>>({});
   const [showPricingIssues, setShowPricingIssues] = useState(false);
   const [collapsedIssueGroups, setCollapsedIssueGroups] = useState<Set<string>>(new Set());
 
@@ -75,18 +71,19 @@ export function PricingManagement({ token }: { token: string }) {
       ]);
       const payload = await catalogResponse.json().catch(() => ({}));
       if (!catalogResponse.ok) throw new Error(payload.error || "Unable to load pricing.");
+      const depositPayload = await depositResponse.json().catch(() => ({}));
+      if (!depositResponse.ok) throw new Error(depositPayload.error || "Unable to load deposit settings.");
+      const historyPayload = await historyResponse.json().catch(() => ({}));
+      if (!historyResponse.ok) throw new Error(historyPayload.error || "Unable to load pricing history.");
       setData(payload);
-      if (depositResponse.ok) {
-        const depositPayload = await depositResponse.json();
-        setDefaultDepositCents(depositPayload.defaultDepositCents ?? 5000);
-        setDefaultDepositInput(((depositPayload.defaultDepositCents ?? 5000) / 100).toFixed(2));
-        setDepositSettingsVersion(depositPayload.version ?? 0);
-        const nextOverrides = Object.fromEntries((depositPayload.overrides ?? []).map((entry: { serviceId: number; depositCents: number }) => [entry.serviceId, entry.depositCents]));
-        setDepositOverrides(nextOverrides);
-        setDepositOverrideInputs(Object.fromEntries(Object.entries(nextOverrides).map(([id, cents]) => [id, (Number(cents) / 100).toFixed(2)])));
-        initialDeposits.current = { defaultDepositCents: depositPayload.defaultDepositCents ?? 5000, overrides: nextOverrides };
-      }
-      if (historyResponse.ok) setHistory(await historyResponse.json());
+      setDefaultDepositCents(depositPayload.defaultDepositCents);
+      setDefaultDepositInput((depositPayload.defaultDepositCents / 100).toFixed(2));
+      setDepositSettingsVersion(depositPayload.version ?? 0);
+      const nextOverrides = Object.fromEntries((depositPayload.overrides ?? []).map((entry: { serviceId: number; depositCents: number }) => [entry.serviceId, entry.depositCents]));
+      setDepositOverrides(nextOverrides);
+      setDepositOverrideInputs(Object.fromEntries(Object.entries(nextOverrides).map(([id, cents]) => [id, (Number(cents) / 100).toFixed(2)])));
+      initialDeposits.current = { defaultDepositCents: depositPayload.defaultDepositCents, overrides: nextOverrides };
+      setHistory(Array.isArray(historyPayload) ? historyPayload : []);
       setDrafts({});
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to load pricing.");
@@ -167,9 +164,7 @@ export function PricingManagement({ token }: { token: string }) {
   useEffect(() => {
     const closeDialog = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      setDeleteTarget(null);
       setAddLengthTarget(null);
-      setOpenRowMenu(null);
     };
     window.addEventListener("keydown", closeDialog);
     return () => window.removeEventListener("keydown", closeDialog);
@@ -302,170 +297,44 @@ export function PricingManagement({ token }: { token: string }) {
     const adjustment = Number(bulkAmount);
     if (!Number.isFinite(adjustment) || adjustment === 0) return setError("Enter a valid non-zero adjustment.");
     const targetRows = visibleRows;
+    if (!targetRows.length) return setError("No services match the current filters.");
+    const currentPrices = targetRows.flatMap(({ item }) => item.lengthOptions?.length
+      ? item.lengthOptions.map(option => ({ service: item.name, option: option.name, value: parsePrice(option.price) }))
+      : [{ service: item.name, option: "Base price", value: parsePrice(item.price) }]);
+    const invalidCurrent = currentPrices.find(price => !Number.isFinite(price.value) || price.value <= 0);
+    if (invalidCurrent) {
+      return setError(`${invalidCurrent.service} ${invalidCurrent.option} needs a valid price before using Bulk Edit.`);
+    }
+    const invalidResult = currentPrices.find(price => {
+      const next = bulkMode === "percent" ? price.value * (1 + adjustment / 100) : price.value + adjustment;
+      return !Number.isFinite(next) || next <= 0;
+    });
+    if (invalidResult) {
+      return setError(`This adjustment would make ${invalidResult.service} ${invalidResult.option} zero or negative.`);
+    }
     targetRows.forEach(({ item }) => updateItem(item.id!, draft => {
       const adjust = (value?: string) => {
-        const current = Number(value || 0);
+        const current = parsePrice(value);
         const next = bulkMode === "percent" ? current * (1 + adjustment / 100) : current + adjustment;
-        return Math.max(0.01, Math.round(next * 100) / 100).toFixed(2);
+        return (Math.round(next * 100) / 100).toFixed(2);
       };
       return draft.lengthOptions?.length
         ? { ...draft, lengthOptions: draft.lengthOptions.map(option => ({ ...option, price: adjust(option.price) })) }
         : { ...draft, price: adjust(draft.price) };
     }));
-    setSuccess(`Applied ${bulkMode === "percent" ? `${adjustment}%` : money(String(adjustment))} to ${targetRows.length} visible services. Review, then save.`);
-  };
-
-  const createService = async () => {
-    const category = data?.categories.find(entry => String(entry.id) === newService.categoryId);
-    const subcategory = category?.subcategories?.find(entry => String(entry.id) === newService.subcategoryId);
-    if (!category || !subcategory || !newService.name.trim() || !newService.price) return setError("Choose a category and style, then enter a name and price.");
-    setSaving(true); setError("");
-    try {
-      const response = await fetch("/api/admin/services", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          name: newService.name.trim(), price: newService.price, description: "", notes: "", image: "", link: "",
-          objectPosition: "center center", images: [], sizePhotos: [], availableSizes: [], hairTextures: [],
-          lengthOptions: [], category: { id: category.id }, subcategory: { id: subcategory.id },
-          foundationChoicesEnabled: false, knotlessPriceAdjustment: "0",
-        }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Unable to add size/service.");
-      setShowCreate(false); setNewService({ categoryId: "", subcategoryId: "", name: "", price: "" });
-      setSuccess("Size/service created and published.");
-      await load();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to add size/service."); }
-    finally { setSaving(false); }
-  };
-
-  const beginInlineSize = (subcategoryId: number, columns: string[]) => {
-    setAddingSizeSubcategoryId(subcategoryId);
-    setInlineSizeDraft({
-      name: "",
-      prices: Object.fromEntries(columns.map(column => [column, ""])),
-    });
     setError("");
-  };
-
-  const cancelInlineSize = () => {
-    setAddingSizeSubcategoryId(null);
-    setInlineSizeDraft({ name: "", prices: {} });
-  };
-
-  const copyPreviousSizePrices = (item: BookingItem, columns: string[]) => {
-    const prices = Object.fromEntries(columns.map(column => {
-      if (column === "Base price") return [column, item.price ?? ""];
-      const option = item.lengthOptions?.find(entry => entry.name === column);
-      return [column, option?.price ?? ""];
-    }));
-    setInlineSizeDraft(previous => ({ ...previous, prices }));
-  };
-
-  const createInlineSize = async (category: BookingCategory, subcategory: NonNullable<BookingCategory["subcategories"]>[number], columns: string[]) => {
-    const name = inlineSizeDraft.name.trim();
-    if (!name) return setError("Enter a size name.");
-
-    const expectedColumns = columns.length ? columns : ["Base price"];
-    const missingColumns = expectedColumns.filter(column => !hasValidPrice(inlineSizeDraft.prices[column]));
-    if (missingColumns.length) {
-      return setError(`Enter a valid price for ${missingColumns.join(", ")}.`);
-    }
-
-    const source = rows.filter(row => row.subcategory.id === subcategory.id).at(-1)?.item;
-    if (!source?.id) return setError("Add the first service from the Services editor, then clone pricing here.");
-
-    setSaving(true); setError(""); setSuccess("");
-    try {
-      const response = await fetch("/api/admin/pricing/sizes/clone", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          cloneFromServiceId: source.id,
-          name,
-          prices: Object.fromEntries(expectedColumns.map(column => [
-            column,
-            Math.round(parsePrice(inlineSizeDraft.prices[column]) * 100),
-          ])),
-        }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Unable to add size.");
-
-      cancelInlineSize();
-      setSuccess(`${name} was created with its complete pricing and published.`);
-      await load();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to add size.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteService = async (item: BookingItem) => {
-    if (!item.id) return;
-    setSaving(true); setError("");
-    try {
-      const response = await fetch(`/api/admin/services/${item.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Unable to delete service.");
-      setSuccess(`${item.name} deleted from booking.`);
-      setDeleteTarget(null);
-      await load();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to delete service."); }
-    finally { setSaving(false); }
-  };
-
-  const duplicateService = async (row: Row) => {
-    const item = row.item;
-    setSaving(true); setError("");
-    try {
-      const { id: _id, ...copy } = item;
-      const response = await fetch("/api/admin/services", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          ...copy,
-          name: `${item.name} Copy`,
-          lengthOptions: (item.lengthOptions ?? []).map(({ id: _optionId, ...option }) => option),
-          category: { id: row.category.id },
-          subcategory: { id: row.subcategory.id },
-        }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Unable to duplicate service.");
-      setSuccess(`${item.name} duplicated.`);
-      await load();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to duplicate service."); }
-    finally { setSaving(false); }
-  };
-
-  const reorderService = async (row: Row, offset: number) => {
-    const siblings = rows.filter(entry => entry.subcategory.id === row.subcategory.id);
-    const index = siblings.findIndex(entry => entry.item.id === row.item.id);
-    const target = index + offset;
-    if (target < 0 || target >= siblings.length) return;
-    const ordered = [...siblings];
-    [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
-    setSaving(true); setError("");
-    try {
-      const response = await fetch("/api/admin/services/reorder", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ serviceIds: ordered.map(entry => entry.item.id) }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Unable to reorder sizes.");
-      await load();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to reorder sizes."); }
-    finally { setSaving(false); }
+    setSuccess(`Applied ${bulkMode === "percent" ? `${adjustment}%` : money(String(adjustment))} to ${targetRows.length} filtered services. Review the highlighted cells, then save.`);
   };
 
   const addLengthColumn = (subcategoryId?: number, subcategoryName = "this style") => {
     if (!subcategoryId) return;
+    if (dirtyIds.length) {
+      setError("Save or discard your current price changes before adding a length.");
+      return;
+    }
+    const targets = rows.filter(row => row.subcategory.id === subcategoryId && row.item.id);
     setNewLengthName("");
-    setNewLengthPrice("");
+    setNewLengthPrices(Object.fromEntries(targets.map(row => [row.item.id!, ""])));
     setAddLengthTarget({ subcategoryId, subcategoryName });
   };
 
@@ -476,25 +345,30 @@ export function PricingManagement({ token }: { token: string }) {
       setError("Enter a length name.");
       return;
     }
-    if (!hasValidPrice(newLengthPrice)) {
-      setError("Enter a starting price greater than zero.");
-      return;
-    }
-    const serviceIds = rows.filter(row => row.subcategory.id === addLengthTarget.subcategoryId).map(row => row.item.id).filter((id): id is number => Boolean(id));
-    if (!serviceIds.length) {
+    const targetRows = rows.filter(row => row.subcategory.id === addLengthTarget.subcategoryId && row.item.id);
+    if (!targetRows.length) {
       setError("This style has no sizes to update.");
       return;
     }
+    const missingPrice = targetRows.find(row => !hasValidPrice(newLengthPrices[row.item.id!]));
+    if (missingPrice) return setError(`Enter a valid ${missingPrice.item.name} price greater than zero.`);
     setSaving(true); setError(""); setSuccess("");
     try {
       const response = await fetch("/api/admin/pricing/lengths", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name, serviceIds, initialPriceCents: Math.round(parsePrice(newLengthPrice) * 100) }),
+        body: JSON.stringify({
+          name,
+          servicePrices: targetRows.map(row => ({
+            serviceId: row.item.id,
+            version: row.item.version ?? 0,
+            priceCents: Math.round(parsePrice(newLengthPrices[row.item.id!]) * 100),
+          })),
+        }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Unable to add length.");
-      setSuccess(`${name} added to ${serviceIds.length} size${serviceIds.length === 1 ? "" : "s"}.`);
+      setSuccess(`${name} added to ${targetRows.length} size${targetRows.length === 1 ? "" : "s"} with customer-facing prices.`);
       setAddLengthTarget(null);
       await load();
     } catch (cause) {
@@ -526,25 +400,26 @@ export function PricingManagement({ token }: { token: string }) {
         }
         nextOverrides[item.id] = Math.round(amount * 100);
       }
-      const requests: Promise<Response>[] = [];
-      if (nextDefaultCents !== initialDeposits.current.defaultDepositCents) requests.push(fetch("/api/admin/pricing/deposits/default", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ version: depositSettingsVersion, depositCents: nextDefaultCents }),
-      }));
-      rows.forEach(({ item }) => {
-        if (!item.id || (nextOverrides[item.id] ?? null) === (initialDeposits.current.overrides[item.id] ?? null)) return;
-        requests.push(fetch(`/api/admin/pricing/deposits/services/${item.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ version: item.version ?? 0, depositCents: nextOverrides[item.id] ?? null }),
-        }));
+      const changedOverrides = rows.flatMap(({ item }) => {
+        if (!item.id || (nextOverrides[item.id] ?? null) === (initialDeposits.current.overrides[item.id] ?? null)) return [];
+        return [{
+          serviceId: item.id,
+          version: item.version ?? 0,
+          depositCents: nextOverrides[item.id] ?? null,
+        }];
       });
-      const responses = await Promise.all(requests);
-      const failed = responses.find(response => !response.ok);
-      if (failed) {
-        const payload = await failed.json().catch(() => ({}));
-        throw new Error(payload.error || "Unable to save all deposit changes. Reload before trying again.");
+      const response = await fetch("/api/admin/pricing/deposits", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          version: depositSettingsVersion,
+          defaultDepositCents: nextDefaultCents,
+          overrides: changedOverrides,
+        }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || "Unable to save deposit changes. Nothing was changed.");
       }
       setDefaultDepositCents(nextDefaultCents);
       setDepositOverrides(nextOverrides);
@@ -583,7 +458,10 @@ export function PricingManagement({ token }: { token: string }) {
     <div className="min-h-full bg-[#f8f5ef] text-[#2d180f]">
       <div className="mx-auto max-w-7xl p-5 pb-28 sm:p-8">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-          <p className="text-sm text-neutral-600">Review and manage pricing across your service catalog.</p>
+          <div>
+            <p className="text-sm text-neutral-600">Edit only the prices customers see. Names, photos, availability, and ordering stay in Services.</p>
+            <a href="/admin?section=categories" className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-[#8d4f31] underline underline-offset-4">Manage service structure <ChevronRight className="h-3.5 w-3.5" /></a>
+          </div>
           <button onClick={() => { if (!hasUnsavedChanges || window.confirm("Discard unsaved pricing changes and reload?")) void load(); }} className="flex items-center gap-2 rounded-lg border border-[#d9c8b9] bg-white px-4 py-2 text-sm"><RefreshCw className="h-4 w-4" /> Refresh</button>
         </div>
 
@@ -729,33 +607,10 @@ export function PricingManagement({ token }: { token: string }) {
                   <Pencil className="h-4 w-4" /> Bulk Edit
                 </button>
 
-                <button
-                  onClick={() => setShowCreate(value => !value)}
-                  className="flex items-center gap-2 rounded-xl bg-[#351a10] px-5 py-3 text-sm font-medium text-white shadow-[0_8px_20px_rgba(53,26,16,.16)] transition hover:bg-[#472317]"
-                >
-                  <Plus className="h-4 w-4" /> Add Service
-                </button>
-
                 <span className="ml-auto whitespace-nowrap text-xs text-neutral-500">
-                  Showing {visibleRows.length} of {rows.length} services
+                  Showing {visibleRows.length} of {rows.length} sizes/services
                 </span>
               </div>
-
-              {showCreate && (
-                <div className="grid gap-3 border-b border-[#eee5dc] bg-[#fdf9f4] p-5 sm:grid-cols-2 lg:grid-cols-5">
-                  <select value={newService.categoryId} onChange={event => setNewService({ categoryId: event.target.value, subcategoryId: "", name: newService.name, price: newService.price })} className="rounded-xl border border-[#ded1c5] bg-white px-3 py-2.5 text-sm">
-                    <option value="">Category</option>
-                    {data.categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
-                  </select>
-                  <select value={newService.subcategoryId} onChange={event => setNewService(previous => ({ ...previous, subcategoryId: event.target.value }))} className="rounded-xl border border-[#ded1c5] bg-white px-3 py-2.5 text-sm">
-                    <option value="">Style</option>
-                    {data.categories.find(category => String(category.id) === newService.categoryId)?.subcategories?.map(subcategory => <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>)}
-                  </select>
-                  <input value={newService.name} onChange={event => setNewService(previous => ({ ...previous, name: event.target.value }))} placeholder="Size or service name" className="rounded-xl border border-[#ded1c5] bg-white px-3 py-2.5 text-sm" />
-                  <div className="flex overflow-hidden rounded-xl border border-[#ded1c5] bg-white"><span className="border-r border-[#eee5dc] px-3 py-2.5 text-neutral-500">$</span><input value={newService.price} inputMode="decimal" onChange={event => setNewService(previous => ({ ...previous, price: event.target.value }))} placeholder="Base price" className="min-w-0 flex-1 px-3 text-sm outline-none" /></div>
-                  <button disabled={saving} onClick={createService} className="rounded-xl bg-[#ad6b45] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60">Create service</button>
-                </div>
-              )}
 
               {showBulk && (
                 <div className="flex flex-wrap items-end gap-3 border-b border-[#eee5dc] bg-[#fffaf5] p-5">
@@ -831,6 +686,7 @@ export function PricingManagement({ token }: { token: string }) {
                                       {subClosed ? <ChevronDown className="h-4 w-4 text-neutral-400" /> : <ChevronUp className="h-4 w-4 text-neutral-400" />}
                                     </span>
                                     <span className="mt-1 block text-xs text-neutral-500">{subRows.length} size{subRows.length === 1 ? "" : "s"} · {columns.length} length{columns.length === 1 ? "" : "s"} · {subPriceRange}</span>
+                                    {hasBaseOnly && <span className="mt-1 block text-[11px] text-[#8c6957]">Base price applies only to rows that do not offer length choices.</span>}
                                   </button>
 
                                   <button onClick={() => addLengthColumn(subcategory.id, subcategory.name)} className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-[#9a5835] transition hover:bg-[#fbf1e8]">
@@ -849,11 +705,10 @@ export function PricingManagement({ token }: { token: string }) {
                                               <th key={column} className="min-w-[112px] border-b border-[#eee5dc] px-3 py-3.5 text-center text-xs font-medium text-neutral-600">{column}</th>
                                             ))}
                                             {hasKnotless && <th className="min-w-[105px] border-b border-[#eee5dc] px-3 py-3.5 text-center text-xs font-medium text-neutral-600">Knotless</th>}
-                                            <th className="sticky right-0 z-30 w-14 border-b border-[#eee5dc] bg-[#fffdfa] px-2 py-3.5"><span className="sr-only">Actions</span></th>
                                           </tr>
                                         </thead>
                                         <tbody>
-                                          {subRows.map((row, rowIndex) => {
+                                          {subRows.map(row => {
                                             const item = row.item;
                                             const isDirty = !!drafts[item.id!];
                                             const knotlessInvalid = item.foundationChoicesEnabled && !hasValidAdjustment(item.knotlessPriceAdjustment);
@@ -874,7 +729,9 @@ export function PricingManagement({ token }: { token: string }) {
 
                                                   return (
                                                     <td key={column} className="border-b border-[#f0e8e0] px-2.5 py-2.5 text-center">
-                                                      <div title={invalid ? "Missing or invalid price" : undefined} className={`mx-auto flex w-[94px] items-center rounded-lg border bg-[#fffdfa] transition focus-within:bg-white focus-within:ring-3 ${invalid ? "border-amber-300 focus-within:border-amber-400 focus-within:ring-amber-100" : "border-[#eee5dd] hover:border-[#d8c7b9] focus-within:border-[#b7734d] focus-within:ring-[#b7734d]/10"}`}>
+                                                      {!optionExists ? (
+                                                        <span className="inline-flex min-h-9 items-center justify-center rounded-lg bg-[#f5f1ec] px-3 text-[11px] font-medium text-neutral-500" title={`${item.name} does not offer ${column}`}>Not offered</span>
+                                                      ) : <div title={invalid ? "Missing or invalid price" : undefined} className={`mx-auto flex w-[94px] items-center rounded-lg border bg-[#fffdfa] transition focus-within:bg-white focus-within:ring-3 ${invalid ? "border-amber-300 focus-within:border-amber-400 focus-within:ring-amber-100" : "border-[#eee5dd] hover:border-[#d8c7b9] focus-within:border-[#b7734d] focus-within:ring-[#b7734d]/10"}`}>
                                                         <span className={`pl-2.5 text-xs ${invalid ? "text-amber-600" : "text-neutral-400"}`}>$</span>
                                                         <input
                                                           aria-label={`${item.name} ${column} price`}
@@ -895,7 +752,7 @@ export function PricingManagement({ token }: { token: string }) {
                                                           className={`w-full min-w-0 bg-transparent py-2 pr-2 text-center text-sm font-medium outline-none ${invalid ? "text-amber-800" : "text-[#3a241a]"}`}
                                                         />
                                                         {invalid && <AlertCircle className="mr-2 h-3.5 w-3.5 shrink-0 text-amber-500" />}
-                                                      </div>
+                                                      </div>}
                                                     </td>
                                                   );
                                                 })}
@@ -903,124 +760,29 @@ export function PricingManagement({ token }: { token: string }) {
                                                 {hasKnotless && (
                                                   <td className="border-b border-[#f0e8e0] px-3 py-2.5 text-center">
                                                     {item.foundationChoicesEnabled ? (
-                                                      knotlessInvalid
-                                                        ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700"><AlertCircle className="h-3.5 w-3.5" /> Missing</span>
-                                                        : <span className="inline-flex rounded-full bg-[#f8eddf] px-2.5 py-1 text-xs font-medium text-[#704027]">+{money(item.knotlessPriceAdjustment)}</span>
+                                                      <div className={`mx-auto flex w-[94px] items-center rounded-lg border bg-[#fffdfa] ${knotlessInvalid ? "border-amber-300" : "border-[#eee5dd]"} focus-within:border-[#b7734d] focus-within:ring-3 focus-within:ring-[#b7734d]/10`}>
+                                                        <span className="pl-2 text-xs text-neutral-400">+$</span>
+                                                        <input
+                                                          aria-label={`${item.name} Knotless adjustment`}
+                                                          data-pricing-service-id={item.id}
+                                                          data-pricing-price-key="Knotless adjustment"
+                                                          inputMode="decimal"
+                                                          value={item.knotlessPriceAdjustment ?? ""}
+                                                          onFocus={event => event.currentTarget.select()}
+                                                          onChange={event => updateItem(item.id!, draft => ({ ...draft, knotlessPriceAdjustment: event.target.value }))}
+                                                          className="w-full min-w-0 bg-transparent py-2 pr-2 text-center text-sm font-medium outline-none"
+                                                        />
+                                                      </div>
                                                     ) : <span className="text-neutral-300">—</span>}
                                                   </td>
                                                 )}
-
-                                                <td className="sticky right-0 z-20 border-b border-[#f0e8e0] bg-white px-2 py-2.5 text-center group-hover:bg-[#fdfaf6]">
-                                                  <div className="relative">
-                                                    <button
-                                                      aria-label={`Actions for ${item.name}`}
-                                                      aria-expanded={openRowMenu === item.id}
-                                                      onClick={() => setOpenRowMenu(current => current === item.id ? null : item.id!)}
-                                                      className="rounded-lg p-2 text-neutral-500 transition hover:bg-[#f2e8df] hover:text-[#351a10]"
-                                                    >
-                                                      <MoreVertical className="h-4 w-4" />
-                                                    </button>
-
-                                                    {openRowMenu === item.id && (
-                                                      <div className="absolute right-1 top-10 z-50 w-44 overflow-hidden rounded-xl border border-[#e2d5ca] bg-white py-1.5 text-left shadow-[0_14px_35px_rgba(45,24,15,.16)]">
-                                                        <button onClick={() => { setOpenRowMenu(null); document.querySelector<HTMLInputElement>(`[aria-label="${item.name} ${columns[0]} price"]`)?.focus(); }} className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-[#fbf6f1]"><Pencil className="h-4 w-4" /> Edit prices</button>
-                                                        <button onClick={() => { setOpenRowMenu(null); void duplicateService(row); }} className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-[#fbf6f1]"><Copy className="h-4 w-4" /> Duplicate</button>
-                                                        <div className="my-1 border-t border-[#eee5dc]" />
-                                                        <button disabled={!rowIndex} onClick={() => { setOpenRowMenu(null); void reorderService(row, -1); }} className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-[#fbf6f1] disabled:cursor-not-allowed disabled:opacity-35"><ChevronUp className="h-4 w-4" /> Move up</button>
-                                                        <button disabled={rowIndex === subRows.length - 1} onClick={() => { setOpenRowMenu(null); void reorderService(row, 1); }} className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-[#fbf6f1] disabled:cursor-not-allowed disabled:opacity-35"><ChevronDown className="h-4 w-4" /> Move down</button>
-                                                        <div className="my-1 border-t border-[#eee5dc]" />
-                                                        <button onClick={() => { setOpenRowMenu(null); setDeleteTarget({ row }); }} className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-700 hover:bg-red-50"><Trash2 className="h-4 w-4" /> Delete size</button>
-                                                      </div>
-                                                    )}
-                                                  </div>
-                                                </td>
                                               </tr>
                                             );
                                           })}
 
-                                          {addingSizeSubcategoryId === subcategory.id && (
-                                            <tr className="bg-[#fffaf5]">
-                                              <td className="sticky left-0 z-20 border-b border-[#eadfd5] bg-[#fffaf5] px-4 py-3">
-                                                <input
-                                                  autoFocus
-                                                  value={inlineSizeDraft.name}
-                                                  onChange={event => setInlineSizeDraft(previous => ({ ...previous, name: event.target.value }))}
-                                                  onKeyDown={event => {
-                                                    if (event.key === "Escape") cancelInlineSize();
-                                                  }}
-                                                  placeholder="Size name"
-                                                  className="w-full rounded-lg border border-[#d9cabd] bg-white px-3 py-2 text-sm font-medium text-[#321d14] outline-none focus:border-[#b7734d] focus:ring-3 focus:ring-[#b7734d]/10"
-                                                />
-                                                <span className="mt-1.5 block text-[11px] text-neutral-500">New size</span>
-                                              </td>
-
-                                              {columns.map(column => {
-                                                const value = inlineSizeDraft.prices[column] ?? "";
-                                                const invalid = value !== "" && !hasValidPrice(value);
-                                                return (
-                                                  <td key={column} className="border-b border-[#eadfd5] px-2.5 py-2.5 text-center">
-                                                    <div className={`mx-auto flex w-[94px] items-center rounded-lg border bg-white transition focus-within:ring-3 ${invalid ? "border-red-300 focus-within:border-red-400 focus-within:ring-red-100" : "border-[#ddcfc3] focus-within:border-[#b7734d] focus-within:ring-[#b7734d]/10"}`}>
-                                                      <span className="pl-2.5 text-xs text-neutral-400">$</span>
-                                                      <input
-                                                        aria-label={`New ${subcategory.name} ${column} price`}
-                                                        inputMode="decimal"
-                                                        value={value}
-                                                        onFocus={event => event.currentTarget.select()}
-                                                        onChange={event => setInlineSizeDraft(previous => ({
-                                                          ...previous,
-                                                          prices: { ...previous.prices, [column]: event.target.value },
-                                                        }))}
-                                                        placeholder="0"
-                                                        className="w-full min-w-0 bg-transparent py-2 pr-2 text-center text-sm font-medium text-[#3a241a] outline-none"
-                                                      />
-                                                    </div>
-                                                  </td>
-                                                );
-                                              })}
-
-                                              {hasKnotless && (
-                                                <td className="border-b border-[#eadfd5] px-3 py-2.5 text-center text-xs text-neutral-400">—</td>
-                                              )}
-
-                                              <td className="sticky right-0 z-20 border-b border-[#eadfd5] bg-[#fffaf5] px-2 py-2.5 text-center">
-                                                <button onClick={cancelInlineSize} aria-label="Cancel adding size" className="rounded-lg p-2 text-neutral-400 transition hover:bg-white hover:text-[#351a10]">×</button>
-                                              </td>
-                                            </tr>
-                                          )}
                                         </tbody>
                                       </table>
                                     </div>
-
-                                    {addingSizeSubcategoryId === subcategory.id ? (
-                                      <div className="flex flex-wrap items-center gap-3 border-t border-[#eadfd5] bg-[#fffaf5] px-5 py-3.5">
-                                        <p className="mr-auto text-xs text-neutral-500">Add the prices for this size directly in the row above.</p>
-                                        {subRows.length > 0 && (
-                                          <button
-                                            type="button"
-                                            onClick={() => copyPreviousSizePrices(subRows[subRows.length - 1].item, columns)}
-                                            className="rounded-lg border border-[#d9cabd] bg-white px-3.5 py-2 text-xs font-medium text-[#5b3423] transition hover:bg-[#fbf7f2]"
-                                          >
-                                            Copy previous size
-                                          </button>
-                                        )}
-                                        <button type="button" onClick={cancelInlineSize} className="rounded-lg px-3.5 py-2 text-xs font-medium text-neutral-600 hover:bg-white">Cancel</button>
-                                        <button
-                                          type="button"
-                                          disabled={saving}
-                                          onClick={() => void createInlineSize(category, subcategory, columns)}
-                                          className="rounded-lg bg-[#351a10] px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-[#472317] disabled:opacity-50"
-                                        >
-                                          {saving ? "Adding…" : "Add size"}
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <button
-                                        onClick={() => beginInlineSize(subcategory.id!, columns)}
-                                        className="flex w-full items-center gap-2 border-t border-dashed border-[#e6d9cd] px-5 py-4 text-sm font-medium text-[#9a5835] transition hover:bg-[#fffaf5]"
-                                      >
-                                        <Plus className="h-4 w-4" /> Add size
-                                      </button>
-                                    )}
                                   </>
                                 )}
                               </div>
@@ -1256,52 +1018,45 @@ export function PricingManagement({ token }: { token: string }) {
         </div>
       )}
 
-      {deleteTarget && <div className="fixed inset-0 z-50 flex justify-end bg-black/15" onMouseDown={event => { if (event.target === event.currentTarget) setDeleteTarget(null); }}>
-        <aside role="dialog" aria-modal="true" aria-labelledby="delete-pricing-title" className="flex h-full w-full max-w-sm flex-col border-l border-[#d9c8b9] bg-[#fffdf9] p-7 shadow-2xl">
-          <div className="flex items-start justify-between"><div className="rounded-full bg-[#f4eadc] p-4 text-[#8d4f31]"><Trash2 className="h-5 w-5" /></div><button aria-label="Close confirmation" onClick={() => setDeleteTarget(null)} className="text-2xl">×</button></div>
-          <h3 id="delete-pricing-title" className="mt-8 font-serif text-3xl">{deleteTarget.lengthName ? `Remove ${deleteTarget.lengthName} price?` : `Delete ${deleteTarget.row.item.name}?`}</h3>
-          <p className="mt-4 text-sm leading-7 text-neutral-600">{deleteTarget.lengthName
-            ? `This removes ${deleteTarget.lengthName} from ${deleteTarget.row.item.name} ${deleteTarget.row.subcategory.name} on the customer booking page.`
-            : `This removes ${deleteTarget.row.item.name} from customer booking. Existing appointments will remain unchanged.`}</p>
-          <div className="mt-auto space-y-3">
-            <button onClick={() => setDeleteTarget(null)} className="w-full rounded-lg border border-[#6b5548] px-4 py-3 text-sm font-medium">Keep option</button>
-            <button onClick={() => {
-              if (deleteTarget.lengthName) {
-                const { row, lengthName } = deleteTarget;
-                updateItem(row.item.id!, draft => ({ ...draft, lengthOptions: draft.lengthOptions?.filter(option => option.name !== lengthName) }));
-                setDeleteTarget(null);
-              } else void deleteService(deleteTarget.row.item);
-            }} className="w-full rounded-lg bg-[#351a10] px-4 py-3 text-sm font-medium text-white">{deleteTarget.lengthName ? "Delete option" : "Delete size/service"}</button>
-          </div>
-        </aside>
-      </div>}
-
       {addLengthTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#28170f]/25 p-4 backdrop-blur-[1px]" onMouseDown={event => { if (event.target === event.currentTarget) setAddLengthTarget(null); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="add-length-title" className="w-full max-w-md rounded-2xl border border-[#dfd1c4] bg-[#fffdf9] p-6 shadow-2xl">
+          <section role="dialog" aria-modal="true" aria-labelledby="add-length-title" className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-2xl border border-[#dfd1c4] bg-[#fffdf9] p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 id="add-length-title" className="font-serif text-3xl text-[#2d180f]">Add a length</h3>
-                <p className="mt-1 text-sm text-neutral-500">Add one customer-facing length to every size in {addLengthTarget.subcategoryName}.</p>
+                <p className="mt-1 text-sm text-neutral-500">Set the customer-facing price separately for every size in {addLengthTarget.subcategoryName}.</p>
               </div>
               <button type="button" aria-label="Close add length dialog" onClick={() => setAddLengthTarget(null)} className="rounded-lg p-2 text-neutral-500 hover:bg-[#f3ebe3]"><X className="h-5 w-5" /></button>
             </div>
-            <div className="mt-6 space-y-5">
+            <div className="mt-6 min-h-0 space-y-5 overflow-y-auto pr-1">
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#6b4b3c]">Length name</span>
                 <input autoFocus value={newLengthName} onChange={event => setNewLengthName(event.target.value)} placeholder="e.g. Mid-Back" className="w-full rounded-xl border border-[#d9cabd] bg-white px-4 py-3 outline-none focus:border-[#a46645] focus:ring-4 focus:ring-[#b7734d]/10" />
               </label>
-              <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#6b4b3c]">Starting price for every size</span>
-                <div className="flex rounded-xl border border-[#d9cabd] bg-white focus-within:border-[#a46645] focus-within:ring-4 focus-within:ring-[#b7734d]/10">
-                  <span className="px-4 py-3 text-neutral-500">$</span>
-                  <input inputMode="decimal" value={newLengthPrice} onChange={event => setNewLengthPrice(event.target.value)} onKeyDown={event => { if (event.key === "Enter") void submitAddLength(); }} placeholder="0.00" className="min-w-0 flex-1 bg-transparent py-3 pr-4 outline-none" />
+              <div>
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#6b4b3c]">Price by size</span>
+                <div className="divide-y divide-[#eee5dc] overflow-hidden rounded-xl border border-[#d9cabd] bg-white">
+                  {rows.filter(row => row.subcategory.id === addLengthTarget.subcategoryId && row.item.id).map(row => (
+                    <label key={row.item.id} className="flex items-center gap-4 px-4 py-3">
+                      <span className="min-w-0 flex-1 text-sm font-medium text-[#351a10]">{row.item.name}</span>
+                      <span className="text-sm text-neutral-400">$</span>
+                      <input
+                        aria-label={`${row.item.name} new length price`}
+                        inputMode="decimal"
+                        value={newLengthPrices[row.item.id!] ?? ""}
+                        onChange={event => setNewLengthPrices(previous => ({ ...previous, [row.item.id!]: event.target.value }))}
+                        onFocus={event => event.currentTarget.select()}
+                        placeholder="0.00"
+                        className="w-28 rounded-lg border border-[#e1d5c9] px-3 py-2 text-right text-sm outline-none focus:border-[#a46645] focus:ring-3 focus:ring-[#b7734d]/10"
+                      />
+                    </label>
+                  ))}
                 </div>
-              </label>
+              </div>
             </div>
             <div className="mt-7 flex justify-end gap-3">
               <button type="button" onClick={() => setAddLengthTarget(null)} className="rounded-xl border border-[#d9cabd] bg-white px-5 py-3 text-sm font-medium">Cancel</button>
-              <button type="button" disabled={saving} onClick={() => void submitAddLength()} className="rounded-xl bg-[#351a10] px-5 py-3 text-sm font-medium text-white disabled:opacity-60">{saving ? "Adding…" : "Add to all sizes"}</button>
+              <button type="button" disabled={saving} onClick={() => void submitAddLength()} className="rounded-xl bg-[#351a10] px-5 py-3 text-sm font-medium text-white disabled:opacity-60">{saving ? "Adding…" : "Add length and prices"}</button>
             </div>
           </section>
         </div>

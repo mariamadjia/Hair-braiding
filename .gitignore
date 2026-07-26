@@ -37,3 +37,15 @@ yarn-error.log*
 next-env.d.ts
 .env*
 *.zip
+.DS_Store
+app/.DS_Store
+/app
+/app/api
+public/.DS_Store
+lib/.DS_Store
+app/api/.DS_Store
+.DS_Store
+app/.DS_Store
+app/api/.DS_Store
+lib/.DS_Store
+public/.DS_Store
