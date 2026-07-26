@@ -21,7 +21,7 @@ export default function StickySaveBar({
     success,
     saveLabel = "Save Changes"
 }: StickySaveBarProps) {
-    if (!hasUnsavedChanges && !saving && !error && !success) {
+    if (!hasUnsavedChanges && !saving && !error) {
         return null;
     }
 
@@ -39,11 +39,6 @@ export default function StickySaveBar({
                         <div className="flex items-center gap-2 text-red-600">
                             <AlertCircle className="h-4 w-4" />
                             <span className="text-sm">{error}</span>
-                        </div>
-                    )}
-                    {success && (
-                        <div className="flex items-center gap-2 text-green-600">
-                            <span className="text-sm font-medium">Saved successfully!</span>
                         </div>
                     )}
                 </div>

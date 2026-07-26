@@ -305,33 +305,31 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
 
     return (
         <div className="space-y-6">
-            <header className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <h2 className="font-serif text-3xl text-[#2f1b12] sm:text-4xl">Weekly availability</h2>
-                    <div className="mt-2 flex flex-wrap items-center gap-3">
-                        <p className="text-sm text-neutral-600">Set the times customers can book.</p>
-                        <span className="inline-flex items-center gap-2 rounded-md border border-[#e4d3c2] bg-[#f8f0e6] px-3 py-1.5 text-xs font-medium text-[#4a2b1d]"><Clock className="h-3.5 w-3.5" />San Antonio Central Time</span>
-                    </div>
+                    <p className="mt-1 text-sm text-neutral-600">Set the times customers can book.</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#e4d3c2] bg-[#f8f0e6] px-3 text-xs font-medium text-[#4a2b1d]"><Clock className="h-3.5 w-3.5" />San Antonio Central Time</span>
                     <label className="relative">
                         <span className="sr-only">Preview a schedule template</span>
                         <LayoutTemplate className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4a2b1d]" />
-                        <select defaultValue="" onChange={event => { const template = TEMPLATES.find(item => item.name === event.target.value); if (template) setTemplatePreview(template); event.target.value = ""; }} className="min-h-11 appearance-none rounded-md border border-[#d9c3ae] bg-white pl-10 pr-9 text-sm font-medium text-[#3a241a] focus:outline-none focus:ring-2 focus:ring-[#7f4b2e]">
+                        <select defaultValue="" onChange={event => { const template = TEMPLATES.find(item => item.name === event.target.value); if (template) setTemplatePreview(template); event.target.value = ""; }} className="min-h-10 appearance-none rounded-md border border-[#d9c3ae] bg-white pl-10 pr-9 text-sm font-medium text-[#3a241a] focus:outline-none focus:ring-2 focus:ring-[#7f4b2e]">
                             <option value="" disabled>Templates</option>
                             {TEMPLATES.map(template => <option key={template.name} value={template.name}>{template.name}</option>)}
                         </select>
                         <ChevronRight className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 rotate-90 text-neutral-500" />
                     </label>
-                    <Button type="button" variant="outline" onClick={copyMonday} disabled={!schedule.length} className="min-h-11 border-[#d9c3ae] bg-white text-[#3a241a] hover:bg-[#fbf6f0]"><Copy className="mr-2 h-4 w-4" />Copy Monday to week</Button>
+                    <Button type="button" variant="outline" onClick={copyMonday} disabled={!schedule.length} className="min-h-10 border-[#d9c3ae] bg-white text-[#3a241a] hover:bg-[#fbf6f0]"><Copy className="mr-2 h-4 w-4" />Copy Monday to week</Button>
                 </div>
             </header>
 
             {error && <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error} {!schedule.length && <button onClick={loadSchedule} className="ml-2 font-semibold underline">Try again</button>}</div>}
             {success && <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">Availability saved. The customer calendar has been refreshed.</div>}
 
-            <section aria-labelledby="weekly-preview-title" className="rounded-xl border border-[#e8ddd2] bg-white p-4 shadow-[0_8px_25px_rgba(57,32,18,0.04)] sm:p-5">
-                <div className="mb-4"><h3 id="weekly-preview-title" className="font-serif text-xl text-[#352016]">Weekly overview</h3><p className="text-xs text-neutral-500">Business windows and customer starts per day</p></div>
+            <section aria-labelledby="weekly-preview-title" className="rounded-xl border border-[#e8ddd2] bg-white p-4 shadow-[0_8px_25px_rgba(57,32,18,0.04)]">
+                <div className="mb-3"><h3 id="weekly-preview-title" className="font-serif text-xl text-[#352016]">Weekly overview</h3><p className="text-xs text-neutral-500">Business windows and customer starts per day</p></div>
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">{schedule.map((day, index) => {
                     const starts = day.enabled ? generatedStarts(day) : [];
                     const label = DAYS[index]?.label || day.dayOfWeek;
@@ -341,12 +339,12 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
                         const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-day-preview]"));
                         const next = event.key === "ArrowRight" ? (index + 1) % buttons.length : (index - 1 + buttons.length) % buttons.length;
                         buttons[next]?.focus();
-                    }} className={`min-h-24 rounded-lg border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-emerald-700 ${expandedDay === day.dayOfWeek ? "border-emerald-500 bg-emerald-50/60 shadow-sm" : day.enabled ? "border-[#e8ddd2] bg-white hover:border-emerald-300" : "border-neutral-200 bg-neutral-50 text-neutral-400"}`}>
+                    }} className={`min-h-20 rounded-lg border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-emerald-700 ${expandedDay === day.dayOfWeek ? "border-[#83b99e] bg-[#f2faf5] shadow-sm" : day.enabled ? "border-[#e8ddd2] bg-white hover:border-[#a8cdb8]" : "border-neutral-200 bg-neutral-50 text-neutral-400"}`}>
                         <span className="text-xs font-semibold uppercase tracking-wide">{label.slice(0, 3)}</span>
-                        {day.enabled ? <><span className="mt-3 block text-xs font-medium text-neutral-800">{day.windows.map(window => `${displayTime(window.startTime)}–${displayTime(window.endTime)}`).join(", ")}</span><span className="mt-2 flex items-center gap-2 text-xs text-neutral-500"><span className="h-2 w-2 rounded-full bg-emerald-600" />{starts.length} starts</span></> : <span className="mt-4 block text-xs">Closed</span>}
+                        {day.enabled ? <><span className="mt-2 block text-xs font-medium text-neutral-800">{day.windows.map(window => `${displayTime(window.startTime)}–${displayTime(window.endTime)}`).join(", ")}</span><span className="mt-1.5 flex items-center gap-2 text-xs text-neutral-500"><span className="h-2 w-2 rounded-full bg-emerald-600" />{starts.length} starts</span></> : <span className="mt-3 block text-xs">Closed</span>}
                     </button>;
                 })}</div>
-                <div className="mt-5 border-t border-[#eee4da] pt-4">
+                <div className="mt-4 border-t border-[#eee4da] pt-3">
                     <button type="button" onClick={onManageBlockedDates} className="flex min-h-12 w-full items-center gap-3 rounded-lg px-2 text-left hover:bg-[#fbf7f2] focus:outline-none focus:ring-2 focus:ring-[#7f4b2e]">
                         <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#fbf1e6] text-[#8a4e2d]"><Ban className="h-4 w-4" /></span>
                         <span className="flex-1"><span className="block text-sm font-medium text-[#352016]">Blocked dates</span><span className="block text-xs text-neutral-500">Next 14 days · {blockedOccurrenceCount} blocked</span></span>

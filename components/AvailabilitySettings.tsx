@@ -86,15 +86,8 @@ export default function AvailabilitySettings() {
 
     return (
         <div className="mx-auto max-w-[1500px] p-4 sm:p-6 lg:p-8">
-            <div className="mb-8">
-                <h1 className="text-3xl font-light tracking-wide text-neutral-900 mb-2">
-                    Availability Settings
-                </h1>
-                <p className="text-neutral-600">Manage your business hours and blocked time slots</p>
-            </div>
-
             {/* Tabs */}
-            <div className="flex gap-2 mb-6 border-b border-neutral-200">
+            <div className="mb-5 flex gap-2 border-b border-neutral-200">
                 <button
                     onClick={() => handleTabChange('hours')}
                     className={cn(
@@ -134,7 +127,7 @@ export default function AvailabilitySettings() {
             </div>
 
             {/* Content */}
-            <div className="rounded-2xl border border-[#e8ddd2] bg-[#fffdfa] p-4 shadow-[0_18px_45px_rgba(57,32,18,0.05)] sm:p-6">
+            <div className="rounded-2xl border border-[#e8ddd2] bg-[#fffdfa] p-4 shadow-[0_18px_45px_rgba(57,32,18,0.05)] sm:p-5">
                 {activeTab === 'hours' && <AvailabilitySchedule key="hours" onManageBlockedDates={() => handleTabChange('blocked')} />}
                 {activeTab === 'blocked' && <BlockTimeModal key="blocked" />}
                 {activeTab === 'settings' && <AppointmentSettingsTab key="settings" />}
@@ -189,7 +182,7 @@ export default function AvailabilitySettings() {
                 hasUnsavedChanges={hasUnsavedChanges}
                 error={saveError}
                 success={saveSuccess}
-                saveLabel={activeTab === 'hours' ? 'Save Weekly Hours' : activeTab === 'blocked' ? 'Save Blocked Dates' : 'Save Booking Rules'}
+                saveLabel="Save changes"
             />
         </div>
     );
