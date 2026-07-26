@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { X, Send, Image as ImageIcon } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config/api';
+import { IMAGE_UPLOAD_ACCEPT, normalizeImageForUpload } from '@/lib/utils/imageUpload';
 
 export default function Chatbot() {
   const pathname = usePathname();
@@ -50,15 +51,21 @@ export default function Chatbot() {
     return null;
   }
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setPhoto(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const uploadFile = await normalizeImageForUpload(file);
+        setPhoto(uploadFile);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotoPreview(reader.result as string);
+        };
+        reader.readAsDataURL(uploadFile);
+      } catch (conversionError) {
+        setError(conversionError instanceof Error ? conversionError.message : 'Photo conversion failed.');
+        e.target.value = '';
+      }
     }
   };
 
@@ -314,7 +321,7 @@ export default function Chatbot() {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept="image/*"
+                      accept={IMAGE_UPLOAD_ACCEPT}
                       onChange={handlePhotoChange}
                       className="hidden"
                       id="photo-upload"

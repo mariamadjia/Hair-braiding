@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Armchair, CalendarDays, TrendingUp, Upload, X } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import FooterWrapper from '@/components/FooterWrapper';
+import { normalizeImageForUpload } from '@/lib/utils/imageUpload';
 
 const MAX_FILES = 3;
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
@@ -43,8 +44,19 @@ export default function JoinUs() {
     setFormData((previous) => ({ ...previous, [name]: value }));
   };
 
-  const validateFiles = (incoming: File[]) => {
-    const next = [...photos, ...incoming];
+  const validateFiles = async (incoming: File[]) => {
+    if (incoming.some((file) => file.size > 10 * 1024 * 1024)) {
+      setFileError('Each original photo must be 10 MB or smaller.');
+      return;
+    }
+    let converted: File[];
+    try {
+      converted = await Promise.all(incoming.map(normalizeImageForUpload));
+    } catch (error) {
+      setFileError(error instanceof Error ? error.message : 'One of the photos could not be converted.');
+      return;
+    }
+    const next = [...photos, ...converted];
     if (next.length > MAX_FILES) return `Upload no more than ${MAX_FILES} photos.`;
     if (next.some((file) => !ACCEPTED_TYPES.includes(file.type))) return 'Use JPG, PNG, or WebP photos only.';
     if (next.some((file) => file.size > MAX_FILE_BYTES)) return 'Each photo must be 2 MB or smaller.';
@@ -55,14 +67,14 @@ export default function JoinUs() {
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    validateFiles(Array.from(event.target.files || []));
+    void validateFiles(Array.from(event.target.files || []));
     event.target.value = '';
   };
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
-    validateFiles(Array.from(event.dataTransfer.files));
+    void validateFiles(Array.from(event.dataTransfer.files));
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -188,7 +200,7 @@ export default function JoinUs() {
                     <Upload aria-hidden="true" className="mb-2 h-6 w-6 text-[#9A5D42]" strokeWidth={1.5} />
                     <p className="text-xs font-medium">Drag and drop files here or click to browse</p>
                     <p className="mt-1 text-[10px] text-neutral-500">JPG, PNG or WebP · up to 3 photos · 4 MB total</p>
-                    <input ref={fileInputRef} className="sr-only" type="file" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={handleFileChange} />
+                    <input ref={fileInputRef} className="sr-only" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={handleFileChange} />
                   </div>
                   {fileError && <p role="alert" className="mt-2 text-xs text-red-700">{fileError}</p>}
                   {photos.length > 0 && (

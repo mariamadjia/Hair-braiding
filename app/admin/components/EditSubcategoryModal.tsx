@@ -426,7 +426,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                                 type="file"
                                 id="image-upload"
                                 multiple
-                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
                                 onChange={handleFileUpload}
                                 className="hidden"
                                 disabled={uploading || saving}

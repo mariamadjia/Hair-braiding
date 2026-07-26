@@ -2,9 +2,9 @@
  * File validation utilities for admin panel uploads
  */
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'];
 
 export interface FileValidationError {
   valid: false;
@@ -24,7 +24,7 @@ export function validateFileSize(file: File): FileValidationResult {
   if (file.size > MAX_FILE_SIZE) {
     return {
       valid: false,
-      error: `File size exceeds 5MB limit. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB.`
+      error: `File size exceeds 10MB limit. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB.`
     };
   }
   return { valid: true };
@@ -34,7 +34,8 @@ export function validateFileSize(file: File): FileValidationResult {
  * Validate file type
  */
 export function validateFileType(file: File): FileValidationResult {
-  if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+  const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+  if (!ALLOWED_FILE_TYPES.includes(file.type) && !ALLOWED_EXTENSIONS.includes(extension)) {
     return {
       valid: false,
       error: `Invalid file type. Allowed types: ${ALLOWED_EXTENSIONS.join(', ')}`

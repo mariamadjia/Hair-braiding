@@ -14,6 +14,7 @@ import {
   getDisplayImages,
   saveCategoryFlippingImages,
 } from "@/lib/api/categoryDisplayPhotos";
+import { IMAGE_UPLOAD_ACCEPT, normalizeImageForUpload } from "@/lib/utils/imageUpload";
 
 interface WelcomeItem {
   type: 'video' | 'image';
@@ -108,8 +109,9 @@ export function HomePageEditor() {
   };
 
   const validateImage = (file: File) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowed.includes(file.type)) return 'Only JPEG, PNG, and WebP images are supported.';
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', ''];
+    const isHeicName = /\.(heic|heif)$/i.test(file.name);
+    if (!allowed.includes(file.type) && !isHeicName) return 'Only JPEG, PNG, WebP, HEIC, and HEIF images are supported.';
     if (file.size > 10 * 1024 * 1024) return 'Image must be 10MB or smaller.';
     return '';
   };
@@ -563,9 +565,9 @@ export function HomePageEditor() {
     }
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      setStatusMessage('Invalid file type. Upload a JPEG, PNG, or WebP image.');
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif', ''];
+    if (!allowedTypes.includes(file.type) && !/\.(heic|heif)$/i.test(file.name)) {
+      setStatusMessage('Invalid file type. Upload a JPEG, PNG, WebP, HEIC, or HEIF image.');
       return;
     }
 
@@ -577,9 +579,18 @@ export function HomePageEditor() {
     }
 
     setUploading(true);
+    let uploadFile: File;
+    try {
+      uploadFile = await normalizeImageForUpload(file);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'HEIC image conversion failed.');
+      setUploading(false);
+      e.target.value = '';
+      return;
+    }
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('title', file.name);
+    formData.append('file', uploadFile);
+    formData.append('title', uploadFile.name);
     formData.append('isHero', 'true');
 
     try {
@@ -625,10 +636,10 @@ export function HomePageEditor() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
+      const uploadFile = await normalizeImageForUpload(file);
+      const formData = new FormData();
+      formData.append('file', uploadFile);
       const token = getAuthToken();
       const headers: HeadersInit = {};
       if (token) {
@@ -949,8 +960,9 @@ export function HomePageEditor() {
   const uploadBraidBookImage = async (styleId: number, file: File) => {
     setStatusMessage('Uploading Braid Book image…');
     try {
+      const uploadFile = await normalizeImageForUpload(file);
       const body = new FormData();
-      body.append('file', file);
+      body.append('file', uploadFile);
       const token = getAuthToken();
       body.append('title', `Braid Book style ${styleId}`);
       body.append('altText', `Braid Book style ${styleId}`);
@@ -1352,7 +1364,7 @@ export function HomePageEditor() {
                       </div>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept={IMAGE_UPLOAD_ACCEPT}
                         onChange={handleImageUpload}
                         className="hidden"
                         disabled={uploading || heroImages.length >= 5}
@@ -1652,7 +1664,7 @@ export function HomePageEditor() {
                       </div>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept={IMAGE_UPLOAD_ACCEPT}
                         className="hidden"
                         onChange={(e) => handleGalleryImageUpload(e, editingCollectionIndex)}
                       />

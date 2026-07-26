@@ -1164,7 +1164,7 @@ export default function FlipBook3D({
                 {editMode && activeSpreads[current]?.id === 0 && (
                   <label data-no-page-flip style={{ position: 'absolute', inset: 0, zIndex: 45, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,.14)', color: '#fff', cursor: 'pointer' }}>
                     <span style={{ padding: '10px 14px', background: 'rgba(45,31,26,.88)', fontSize: '.65rem', letterSpacing: '.1em', textTransform: 'uppercase' }}>Replace cover image</span>
-                    <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} onChange={(event) => {
+                    <input type="file" accept=".jpg,.jpeg,.png,.webp,.avif,.heic,.heif,image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} onChange={(event) => {
                       const file = event.target.files?.[0];
                       if (file) onImageFile?.(0, file);
                       event.target.value = '';
@@ -1188,7 +1188,7 @@ export default function FlipBook3D({
                       </span>
                       <input
                         type="file"
-                        accept="image/jpeg,image/png,image/webp,image/avif"
+                        accept=".jpg,.jpeg,.png,.webp,.avif,.heic,.heif,image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif"
                         style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
                         onChange={(event) => {
                           const file = event.target.files?.[0];

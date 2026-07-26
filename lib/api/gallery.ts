@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import { API_BASE_URL } from '../config/api';
 import { getAuthToken } from '../utils/auth';
+import { normalizeImageForUpload } from '../utils/imageUpload';
 
 export interface GalleryImage {
     id: number;
@@ -92,8 +93,9 @@ export const galleryApi = {
 
     // Upload image
     uploadImage: async (data: ImageUploadData, onProgress?: (progress: number) => void): Promise<GalleryImage> => {
+        const uploadFile = await normalizeImageForUpload(data.file);
         const formData = new FormData();
-        formData.append('file', data.file);
+        formData.append('file', uploadFile);
         
         if (data.title) formData.append('title', data.title);
         if (data.description) formData.append('description', data.description);

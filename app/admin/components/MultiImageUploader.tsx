@@ -105,7 +105,7 @@ export function MultiImageUploader({
                     <div className="text-xs text-neutral-600 dark:text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 font-medium">
                         {uploading ? "Compressing..." : "+ Add Photo"}
                     </div>
-                    <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" multiple className="hidden" onChange={handleFiles} disabled={uploading} />
+                    <input type="file" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif" multiple className="hidden" onChange={handleFiles} disabled={uploading} />
                 </label>
             </div>
             {error && <p className="text-xs text-red-600 dark:text-red-400 font-medium">{error}</p>}

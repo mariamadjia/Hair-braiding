@@ -1,6 +1,7 @@
 /**
  * Image compression utilities for admin panel uploads
  */
+import { normalizeImageForUpload } from "@/lib/utils/imageUpload";
 
 export interface CompressionOptions {
     maxWidth?: number;
@@ -23,6 +24,9 @@ export async function compressImage(
     file: File,
     options: CompressionOptions = DEFAULT_OPTIONS
 ): Promise<File> {
+    const normalizedFile = await normalizeImageForUpload(file);
+    file = normalizedFile;
+
     const {
         maxWidth = 1920,
         maxHeight = 1920,

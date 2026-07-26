@@ -2,6 +2,7 @@ import type { BookingItem, LengthOption } from "@/lib/booking-types";
 import { galleryApi } from "@/lib/api/gallery";
 import { getAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
+import { normalizeImageForUpload } from "@/lib/utils/imageUpload";
 
 export function slugify(s: string) {
     return s.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -84,6 +85,8 @@ export async function uploadFile(
   relationship: GalleryImageRelationship = {},
   useSimpleUpload: boolean = false
 ): Promise<string> {
+  file = await normalizeImageForUpload(file);
+
   // Validate file size
   if (file.size > MAX_FILE_SIZE) {
     throw new Error(`File size exceeds 10MB limit. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`);
