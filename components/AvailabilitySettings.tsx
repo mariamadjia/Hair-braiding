@@ -127,7 +127,7 @@ export default function AvailabilitySettings() {
             </div>
 
             {/* Content */}
-            <div className="rounded-2xl border border-[#e8ddd2] bg-[#fffdfa] p-4 shadow-[0_18px_45px_rgba(57,32,18,0.05)] sm:p-5">
+            <div className="rounded-2xl border border-[#e8ddd2] bg-white p-4 shadow-[0_18px_45px_rgba(57,32,18,0.05)] sm:p-5">
                 {activeTab === 'hours' && <AvailabilitySchedule key="hours" onManageBlockedDates={() => handleTabChange('blocked')} />}
                 {activeTab === 'blocked' && <BlockTimeModal key="blocked" />}
                 {activeTab === 'settings' && <AppointmentSettingsTab key="settings" />}
