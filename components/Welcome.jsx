@@ -4,25 +4,26 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Edit } from 'lucide-react';
+import LazyVideo from './LazyVideo';
 
 const defaultItems = [
   {
     type: 'video',
-    src: '/welcome/video1.MOV',
+    src: '/welcome/video1.m4v',
     label: 'Join us Today',
     alt: 'In-studio bookings',
     link: '/join-us'
   },
   {
     type: 'video',
-    src: '/welcome/video2.MOV',
+    src: '/welcome/video2.m4v',
     label: 'Book us now',
     alt: 'Book us now',
     link: '/services'
   },
   {
     type: 'video',
-    src: '/welcome/video4.MOV',
+    src: '/welcome/video4.m4v',
     label: 'Explore gallery',
     alt: 'Explore gallery',
     link: '/gallery'
@@ -72,13 +73,14 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                   <Link href={item.link}>
                     <div className="aspect-[3/5] bg-neutral-200 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
                       {item.type === 'video' ? (
-                        <video
+                        <LazyVideo
                           className="w-full h-full object-cover"
                           autoPlay={!reduceMotion}
+                          delayMs={index * 350}
                           loop
                           muted
                           playsInline
-                        ><source src={item.src} media="(min-width: 1024px)" /></video>
+                        ><source src={item.src} media="(min-width: 1024px)" /></LazyVideo>
                       ) : (
                         <img
                           src={item.src}
@@ -91,13 +93,14 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                 ) : (
                   <div className="aspect-[3/5] bg-neutral-200 overflow-hidden">
                     {item.type === 'video' ? (
-                      <video
+                      <LazyVideo
                         className="w-full h-full object-cover"
                         autoPlay={!reduceMotion}
+                        delayMs={index * 350}
                         loop
                         muted
                         playsInline
-                      ><source src={item.src} media="(min-width: 1024px)" /></video>
+                      ><source src={item.src} media="(min-width: 1024px)" /></LazyVideo>
                     ) : (
                       <img
                         src={item.src}
@@ -157,13 +160,13 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                 <Link href={items[0].link}>
                   <div className="aspect-[3/5] bg-neutral-200 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
                     {items[0].type === 'video' ? (
-                      <video
+                      <LazyVideo
                         className="w-full h-full object-cover"
                         autoPlay={!reduceMotion}
                         loop
                         muted
                         playsInline
-                      ><source src={items[0].src} media="(max-width: 1023px)" /></video>
+                      ><source src={items[0].src} media="(max-width: 1023px)" /></LazyVideo>
                     ) : (
                       <img
                         src={items[0].src}
@@ -176,13 +179,13 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
               ) : (
                 <div className="aspect-[3/5] bg-neutral-200 overflow-hidden">
                   {items[0].type === 'video' ? (
-                    <video
+                    <LazyVideo
                       className="w-full h-full object-cover"
                       autoPlay={!reduceMotion}
                       loop
                       muted
                       playsInline
-                    ><source src={items[0].src} media="(max-width: 1023px)" /></video>
+                    ><source src={items[0].src} media="(max-width: 1023px)" /></LazyVideo>
                   ) : (
                     <img
                       src={items[0].src}
@@ -251,13 +254,14 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                 <Link href={items[1].link}>
                   <div className="aspect-[3/5] bg-neutral-200 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
                     {items[1].type === 'video' ? (
-                      <video
+                      <LazyVideo
                         className="w-full h-full object-cover"
                         autoPlay={!reduceMotion}
+                        delayMs={350}
                         loop
                         muted
                         playsInline
-                      ><source src={items[1].src} media="(max-width: 1023px)" /></video>
+                      ><source src={items[1].src} media="(max-width: 1023px)" /></LazyVideo>
                     ) : (
                       <img
                         src={items[1].src}
@@ -270,13 +274,14 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
               ) : (
                 <div className="aspect-[3/5] bg-neutral-200 overflow-hidden">
                   {items[1].type === 'video' ? (
-                    <video
+                    <LazyVideo
                       className="w-full h-full object-cover"
                       autoPlay={!reduceMotion}
+                      delayMs={350}
                       loop
                       muted
                       playsInline
-                    ><source src={items[1].src} media="(max-width: 1023px)" /></video>
+                    ><source src={items[1].src} media="(max-width: 1023px)" /></LazyVideo>
                   ) : (
                     <img
                       src={items[1].src}
@@ -311,13 +316,14 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
                 <Link href={items[2].link}>
                   <div className="aspect-[3/5] bg-neutral-200 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
                     {items[2].type === 'video' ? (
-                      <video
+                      <LazyVideo
                         className="w-full h-full object-cover"
                         autoPlay={!reduceMotion}
+                        delayMs={700}
                         loop
                         muted
                         playsInline
-                      ><source src={items[2].src} media="(max-width: 1023px)" /></video>
+                      ><source src={items[2].src} media="(max-width: 1023px)" /></LazyVideo>
                     ) : (
                       <img
                         src={items[2].src}
@@ -330,13 +336,14 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
               ) : (
                 <div className="aspect-[3/5] bg-neutral-200 overflow-hidden">
                   {items[2].type === 'video' ? (
-                    <video
+                    <LazyVideo
                       className="w-full h-full object-cover"
                       autoPlay={!reduceMotion}
+                      delayMs={700}
                       loop
                       muted
                       playsInline
-                    ><source src={items[2].src} media="(max-width: 1023px)" /></video>
+                    ><source src={items[2].src} media="(max-width: 1023px)" /></LazyVideo>
                   ) : (
                     <img
                       src={items[2].src}

@@ -1,12 +1,13 @@
 'use client';
 
 import { useReducedMotion } from 'framer-motion';
+import LazyVideo from './LazyVideo';
 
 interface FooterProps {
-  videoSrc?: string;
+  videoSrc?: string | null;
 }
 
-export default function Footer({ videoSrc = '/Footer/IMG_2004.mov' }: FooterProps = {}) {
+export default function Footer({ videoSrc = null }: FooterProps = {}) {
   const reduceMotion = useReducedMotion();
   return (
     <footer className="bg-[#2C1810] text-white w-full">
@@ -21,15 +22,16 @@ export default function Footer({ videoSrc = '/Footer/IMG_2004.mov' }: FooterProp
         {/* Large Centered Video */}
         <div className="w-full max-w-xs mx-auto mb-8">
           <div className="aspect-[4/5] overflow-hidden">
-            <video
-              key={`mobile-${videoSrc}`}
-              className="w-full h-full object-cover"
-              style={{ objectPosition: 'center 30%' }}
-              autoPlay={!reduceMotion}
-              loop
-              muted
-              playsInline
-            ><source src={videoSrc} media="(max-width: 1023px)" /></video>
+            {videoSrc && (
+              <LazyVideo
+                key={`mobile-${videoSrc}`}
+                className="w-full h-full object-cover"
+                style={{ objectPosition: 'center 30%' }}
+                autoPlay={!reduceMotion}
+              >
+                <source src={videoSrc} media="(max-width: 1023px)" />
+              </LazyVideo>
+            )}
           </div>
         </div>
 
@@ -110,15 +112,16 @@ export default function Footer({ videoSrc = '/Footer/IMG_2004.mov' }: FooterProp
           {/* Right: Video */}
           <div>
             <div className="w-[300px] md:w-[380px] lg:w-[450px] aspect-[6/5] overflow-hidden">
-              <video
-                key={`desktop-${videoSrc}`}
-                className="w-full h-full object-cover"
-                style={{ objectPosition: 'center 30%' }}
-                autoPlay={!reduceMotion}
-                loop
-                muted
-                playsInline
-              ><source src={videoSrc} media="(min-width: 1024px)" /></video>
+              {videoSrc && (
+                <LazyVideo
+                  key={`desktop-${videoSrc}`}
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: 'center 30%' }}
+                  autoPlay={!reduceMotion}
+                >
+                  <source src={videoSrc} media="(min-width: 1024px)" />
+                </LazyVideo>
+              )}
             </div>
           </div>
         </div>

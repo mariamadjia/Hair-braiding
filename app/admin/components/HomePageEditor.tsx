@@ -60,7 +60,7 @@ export function HomePageEditor() {
   const [isGalleryEditOpen, setIsGalleryEditOpen] = useState(false);
   const [editingCollectionIndex, setEditingCollectionIndex] = useState<number | null>(null);
   const [galleryCollections, setGalleryCollections] = useState<GalleryCollection[]>([]);
-  const [footerVideoSrc, setFooterVideoSrc] = useState('/Footer/IMG_2004.mov');
+  const [footerVideoSrc, setFooterVideoSrc] = useState('/Footer/IMG_2004.m4v');
   const [isFooterVideoEditOpen, setIsFooterVideoEditOpen] = useState(false);
   const [footerVideoUploading, setFooterVideoUploading] = useState(false);
   const [braidBookStyles, setBraidBookStyles] = useState<BraidBookStyle[]>(
@@ -71,9 +71,9 @@ export function HomePageEditor() {
   const [savingBraidBook, setSavingBraidBook] = useState(false);
   const [expandedBraidStyle, setExpandedBraidStyle] = useState<number | null>(null);
   const [welcomeItems, setWelcomeItems] = useState<WelcomeItem[]>([
-    { type: 'video', src: '/welcome/video1.MOV', label: 'Join us Today', alt: 'In-studio bookings', link: '/join-us' },
-    { type: 'video', src: '/welcome/video2.MOV', label: 'Book us now', alt: 'Book us now', link: '/services' },
-    { type: 'video', src: '/welcome/video4.MOV', label: 'Explore gallery', alt: 'Explore gallery', link: '/gallery' }
+    { type: 'video', src: '/welcome/video1.m4v', label: 'Join us Today', alt: 'In-studio bookings', link: '/join-us' },
+    { type: 'video', src: '/welcome/video2.m4v', label: 'Book us now', alt: 'Book us now', link: '/services' },
+    { type: 'video', src: '/welcome/video4.m4v', label: 'Explore gallery', alt: 'Explore gallery', link: '/gallery' }
   ]);
   const [welcomeItemUploading, setWelcomeItemUploading] = useState(false);
   const [tempWelcomeItemSrc, setTempWelcomeItemSrc] = useState<string>('');
@@ -153,7 +153,7 @@ export function HomePageEditor() {
         : "";
     }
 
-    // Keep frontend public files unchanged, such as /welcome/video1.MOV
+    // Keep frontend public files unchanged, such as /welcome/video1.m4v
     return url;
   };
 

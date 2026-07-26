@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { API_BASE_URL } from "@/lib/config/api";
 import { getHomepageSettings } from "@/lib/homepage-settings";
 
-const DEFAULT_FOOTER_VIDEO = "/Footer/IMG_2004.mov";
+const DEFAULT_FOOTER_VIDEO = "/Footer/IMG_2004.m4v";
 
 function resolveMediaUrl(url?: string | null) {
   if (!url) {
@@ -36,9 +36,7 @@ function resolveMediaUrl(url?: string | null) {
 }
 
 export default function FooterWrapper() {
-  const [footerVideoSrc, setFooterVideoSrc] = useState(
-    DEFAULT_FOOTER_VIDEO
-  );
+  const [footerVideoSrc, setFooterVideoSrc] = useState<string | null>(null);
 
   useEffect(() => {
     const loadFooterVideo = async () => {
@@ -50,7 +48,7 @@ export default function FooterWrapper() {
         );
       } catch (error) {
         console.error("Failed to load Footer video:", error);
-        // Keep the local default Footer video.
+        setFooterVideoSrc(DEFAULT_FOOTER_VIDEO);
       }
     };
 

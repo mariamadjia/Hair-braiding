@@ -15,7 +15,12 @@ const DEFAULT_HERO_IMAGES = [
 export default function Hero({ videoSrc, useVideo, previewImages = /** @type {any} */ (null) }) {
   const [images, setImages] = useState(previewImages || DEFAULT_HERO_IMAGES);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [videoReady, setVideoReady] = useState(false);
   const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    setVideoReady(false);
+  }, [videoSrc]);
 
   useEffect(() => {
     if (previewImages) {
@@ -86,14 +91,32 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
         <div className="relative h-[400px] sm:h-[500px] md:flex-1 md:h-auto bg-[#F6F5F1] px-6 md:p-0 overflow-hidden">
           {useVideo && videoSrc ? (
             /* Background Video */
-            <video
-              src={videoSrc}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full max-w-md mx-auto object-cover md:absolute md:inset-0 md:max-w-none"
-            />
+            <>
+              {images[0] && (
+                <Image
+                  src={images[0]}
+                  alt=""
+                  fill
+                  priority
+                  sizes="(max-width: 767px) calc(100vw - 48px), 50vw"
+                  className={`object-cover transition-opacity duration-300 ${
+                    videoReady ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+              )}
+              <video
+                src={videoSrc}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                onCanPlay={() => setVideoReady(true)}
+                className={`relative w-full h-full max-w-md mx-auto object-cover transition-opacity duration-300 md:absolute md:inset-0 md:max-w-none ${
+                  videoReady ? "opacity-100" : "opacity-0"
+                }`}
+              />
+            </>
           ) : images.length > 0 ? (
             /* Image Carousel */
             <>
