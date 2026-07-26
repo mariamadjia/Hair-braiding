@@ -5,7 +5,12 @@ import { AlertCircle, BriefcaseBusiness, Check, ChevronDown, ChevronRight, Chevr
 import type { BookingCategory, BookingItem, CategoriesData } from "@/lib/booking-types";
 
 type Tab = "overview" | "matrix" | "deposits" | "history";
-type Row = { category: BookingCategory; subcategory: NonNullable<BookingCategory["subcategories"]>[number]; item: BookingItem };
+type Row = {
+  category: BookingCategory;
+  subcategory: NonNullable<BookingCategory["subcategories"]>[number];
+  groupKey: string;
+  item: BookingItem;
+};
 type Change = { id: number; createdAt: string; serviceName: string; action: string; summary: string; changedBy?: string; beforeValue?: string; afterValue?: string };
 
 const money = (value?: string) => {
@@ -54,7 +59,7 @@ export function PricingManagement({ token }: { token: string }) {
   const [collapsedSubcategories, setCollapsedSubcategories] = useState<Set<string>>(new Set());
   const [depositQuery, setDepositQuery] = useState("");
   const [depositCategory, setDepositCategory] = useState("all");
-  const [addLengthTarget, setAddLengthTarget] = useState<{ subcategoryId: number; subcategoryName: string } | null>(null);
+  const [addLengthTarget, setAddLengthTarget] = useState<{ groupKey: string; subcategoryName: string } | null>(null);
   const [newLengthName, setNewLengthName] = useState("");
   const [newLengthPrices, setNewLengthPrices] = useState<Record<number, string>>({});
   const [showPricingIssues, setShowPricingIssues] = useState(false);
@@ -93,11 +98,24 @@ export function PricingManagement({ token }: { token: string }) {
   useEffect(() => { void load(); }, [token]);
 
   const rows = useMemo<Row[]>(() => (data?.categories ?? []).flatMap(category => {
-    const direct = category.items?.length
-      ? [{ id: category.id, name: category.name, slug: `${category.slug}-services`, items: category.items }]
+    // Older backend payloads included subcategory services again in category.items.
+    // Exclude those duplicates so Pricing mirrors the Services hierarchy exactly.
+    const nestedItemIds = new Set(
+      (category.subcategories ?? []).flatMap(subcategory =>
+        (subcategory.items ?? []).map(item => item.id).filter((id): id is number => id != null)
+      )
+    );
+    const directItems = (category.items ?? []).filter(item => item.id == null || !nestedItemIds.has(item.id));
+    const direct = directItems.length
+      ? [{ id: category.id, name: category.name, slug: `${category.slug}-services`, items: directItems }]
       : [];
     return [...direct, ...(category.subcategories ?? [])].flatMap(subcategory =>
-      (subcategory.items ?? []).map(item => ({ category, subcategory, item: drafts[item.id ?? -1] ?? item }))
+      (subcategory.items ?? []).map(item => ({
+        category,
+        subcategory,
+        groupKey: `${category.slug}:${subcategory.slug}`,
+        item: drafts[item.id ?? -1] ?? item,
+      }))
     );
   }), [data, drafts]);
 
@@ -326,16 +344,15 @@ export function PricingManagement({ token }: { token: string }) {
     setSuccess(`Applied ${bulkMode === "percent" ? `${adjustment}%` : money(String(adjustment))} to ${targetRows.length} filtered services. Review the highlighted cells, then save.`);
   };
 
-  const addLengthColumn = (subcategoryId?: number, subcategoryName = "this style") => {
-    if (!subcategoryId) return;
+  const addLengthColumn = (groupKey: string, subcategoryName = "this style") => {
     if (dirtyIds.length) {
       setError("Save or discard your current price changes before adding a length.");
       return;
     }
-    const targets = rows.filter(row => row.subcategory.id === subcategoryId && row.item.id);
+    const targets = rows.filter(row => row.groupKey === groupKey && row.item.id);
     setNewLengthName("");
     setNewLengthPrices(Object.fromEntries(targets.map(row => [row.item.id!, ""])));
-    setAddLengthTarget({ subcategoryId, subcategoryName });
+    setAddLengthTarget({ groupKey, subcategoryName });
   };
 
   const submitAddLength = async () => {
@@ -345,7 +362,7 @@ export function PricingManagement({ token }: { token: string }) {
       setError("Enter a length name.");
       return;
     }
-    const targetRows = rows.filter(row => row.subcategory.id === addLengthTarget.subcategoryId && row.item.id);
+    const targetRows = rows.filter(row => row.groupKey === addLengthTarget.groupKey && row.item.id);
     if (!targetRows.length) {
       setError("This style has no sizes to update.");
       return;
@@ -637,6 +654,9 @@ export function PricingManagement({ token }: { token: string }) {
                 {data.categories.filter(category => visibleRows.some(row => row.category.slug === category.slug)).map(category => {
                   const categoryClosed = collapsedCategories.has(category.slug);
                   const categoryRows = visibleRows.filter(row => row.category.slug === category.slug);
+                  const categoryGroups = Array.from(
+                    new Map(categoryRows.map(row => [row.groupKey, row.subcategory])).values()
+                  );
                   const categoryKnotless = categoryRows.filter(row => row.item.foundationChoicesEnabled);
                   const knotlessAdjustments = Array.from(new Set(categoryKnotless.map(row => row.item.knotlessPriceAdjustment).filter(hasValidAdjustment)));
 
@@ -663,9 +683,9 @@ export function PricingManagement({ token }: { token: string }) {
 
                       {!categoryClosed && (
                         <div className="space-y-4 bg-white p-4 sm:p-5">
-                          {(category.subcategories ?? []).filter(subcategory => visibleRows.some(row => row.subcategory.id === subcategory.id)).map(subcategory => {
-                            const subRows = visibleRows.filter(row => row.subcategory.id === subcategory.id);
+                          {categoryGroups.map(subcategory => {
                             const subKey = `${category.slug}:${subcategory.slug}`;
+                            const subRows = visibleRows.filter(row => row.groupKey === subKey);
                             const subClosed = collapsedSubcategories.has(subKey);
                             const lengthNames = Array.from(new Set(subRows.flatMap(row => row.item.lengthOptions?.map(option => option.name || "") ?? []))).filter(Boolean);
                             const hasBaseOnly = subRows.some(row => !row.item.lengthOptions?.length);
@@ -689,7 +709,7 @@ export function PricingManagement({ token }: { token: string }) {
                                     {hasBaseOnly && <span className="mt-1 block text-[11px] text-[#8c6957]">Base price applies only to rows that do not offer length choices.</span>}
                                   </button>
 
-                                  <button onClick={() => addLengthColumn(subcategory.id, subcategory.name)} className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-[#9a5835] transition hover:bg-[#fbf1e8]">
+                                  <button onClick={() => addLengthColumn(subKey, subcategory.name)} className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-[#9a5835] transition hover:bg-[#fbf1e8]">
                                     <Plus className="h-4 w-4" /> Add length
                                   </button>
                                 </div>
@@ -1036,7 +1056,7 @@ export function PricingManagement({ token }: { token: string }) {
               <div>
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#6b4b3c]">Price by size</span>
                 <div className="divide-y divide-[#eee5dc] overflow-hidden rounded-xl border border-[#d9cabd] bg-white">
-                  {rows.filter(row => row.subcategory.id === addLengthTarget.subcategoryId && row.item.id).map(row => (
+                  {rows.filter(row => row.groupKey === addLengthTarget.groupKey && row.item.id).map(row => (
                     <label key={row.item.id} className="flex items-center gap-4 px-4 py-3">
                       <span className="min-w-0 flex-1 text-sm font-medium text-[#351a10]">{row.item.name}</span>
                       <span className="text-sm text-neutral-400">$</span>
