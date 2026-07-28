@@ -54,7 +54,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
   }, [images.length, reduceMotion]);
 
   return (
-    <section className="flex flex-col md:flex-row md:min-h-[85vh] relative">
+    <section className="relative flex flex-col overflow-hidden bg-[#F8F5EF] md:min-h-[calc(100vh-84px)] md:flex-row">
       {/* Mobile & Desktop Layout */}
       <div className="flex flex-col md:flex-1 md:grid md:grid-cols-2">
         {/* Text Content */}
@@ -62,15 +62,16 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
           initial={reduceMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: "easeOut" }}
-          className="bg-[#F6F5F1] flex items-center justify-center px-6 pt-24 pb-10 md:py-0 md:px-16 lg:px-24"
+          className="relative z-10 flex items-center justify-center bg-[radial-gradient(circle_at_25%_45%,#fff_0%,#faf7f1_48%,#f1ebe2_100%)] px-7 pb-12 pt-20 md:justify-start md:px-12 md:py-16 lg:px-[10vw]"
         >
-          <div className="w-full max-w-lg text-center">
+          <div className="w-full max-w-xl text-center md:text-left">
             {/* Headline */}
-            <div className="mb-8">
-              <h1 className="text-[52px] sm:text-[64px] md:text-[80px] lg:text-[96px] font-[family-name:var(--font-allura)] font-normal leading-[1.1] text-[#2C1810] mb-4">
+            <div className="mb-9">
+              <h1 className="mb-5 text-[58px] font-[family-name:var(--font-allura)] font-normal leading-[1.02] text-[#2C1810] sm:text-[70px] md:text-[76px] lg:text-[94px] xl:text-[108px]">
                 AH Braiding
               </h1>
-              <p className="text-[18px] sm:text-[20px] md:text-[20px] lg:text-[24px] font-serif italic font-light tracking-wide text-neutral-700">
+              <div className="mx-auto mb-7 h-px w-12 bg-[#2C1810]/70 md:mx-0" aria-hidden="true" />
+              <p className="font-serif text-[18px] font-light italic tracking-wide text-[#4B413B] sm:text-[20px] lg:text-[23px]">
                 The Art of Elegant Braiding
               </p>
             </div>
@@ -79,16 +80,17 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
             <div className="hidden md:block">
               <Link
                 href="/services"
-                className="inline-block border-b-2 border-neutral-900 pb-1 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-70"
+                className="group inline-flex min-h-14 items-center gap-7 bg-[#2C1810] px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#FFFDF8] shadow-[0_12px_28px_rgba(44,24,16,0.16)] transition-all hover:-translate-y-0.5 hover:bg-[#3A2117] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2C1810]"
               >
-                Book an Appointment
+                <span>Book an Appointment</span>
+                <span aria-hidden="true" className="text-base transition-transform group-hover:translate-x-1">→</span>
               </Link>
             </div>
           </div>
         </motion.div>
 
         {/* Media Section - Video or Image Carousel */}
-        <div className="relative h-[400px] sm:h-[500px] md:flex-1 md:h-auto bg-[#F6F5F1] px-6 md:p-0 overflow-hidden">
+        <div className="relative h-[430px] overflow-hidden bg-[#F6F5F1] px-5 sm:h-[540px] md:h-auto md:flex-1 md:p-0">
           {useVideo && videoSrc ? (
             /* Background Video */
             <>
@@ -135,7 +137,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
                     fill
                     priority={currentImageIndex === 0}
                     sizes="(max-width: 767px) calc(100vw - 48px), 50vw"
-                    className="object-cover"
+                    className="object-cover object-center"
                   />
                 </motion.div>
               </AnimatePresence>
@@ -164,19 +166,20 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
       </div>
       
       {/* CTA - Mobile only (below image) */}
-      <div className="md:hidden bg-[#F6F5F1] flex items-center justify-center py-6">
+      <div className="flex items-center justify-center bg-[#F8F5EF] py-7 md:hidden">
         <Link
           href="/services"
-          className="inline-block border-b-2 border-neutral-900 pb-1 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-70"
+          className="inline-flex min-h-13 items-center gap-5 bg-[#2C1810] px-7 py-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#FFFDF8] shadow-[0_10px_24px_rgba(44,24,16,0.14)]"
         >
-          Book an Appointment
+          <span>Book an Appointment</span>
+          <span aria-hidden="true">→</span>
         </Link>
       </div>
       
       {/* Vertical separator line in the middle */}
-      <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px overflow-hidden">
+      <div className="absolute bottom-0 left-1/2 top-0 hidden w-px overflow-hidden md:block">
         <motion.div
-          className="w-full h-full bg-[#2C1810] origin-top"
+          className="h-full w-full origin-top bg-[#2C1810]/25"
           initial={reduceMotion ? false : { scaleY: 0 }}
           animate={{ scaleY: 1 }}
           transition={{ duration: 1.5, ease: "easeOut" }}
@@ -184,7 +187,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
       </div>
       
       {/* Horizontal separator line at the bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-[#2C1810]"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-[#2C1810]/25"></div>
     </section>
   );
 }
