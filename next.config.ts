@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
     // for this one local endpoint.
     localPatterns: [
       {
+        pathname: '/api/gallery/image/**',
+        search: '',
+      },
+      {
         pathname: '/api/proxy-image',
       },
       {
