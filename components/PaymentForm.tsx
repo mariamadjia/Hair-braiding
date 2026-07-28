@@ -121,9 +121,17 @@ export default function PaymentForm({
                 },
               },
               wallets: {
-                applePay: "auto",
-                googlePay: "auto",
+                applePay: "never",
+                googlePay: "never",
               },
+              paymentMethodOrder: [
+                "card",
+                "affirm",
+                "afterpay_clearpay",
+                "cashapp",
+                "klarna",
+                "link",
+              ],
               terms: {
                 card: "never",
               },
