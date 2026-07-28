@@ -9,6 +9,79 @@
   100% { transform: rotateY(-180deg); }
 }
 
+@media (max-width: 640px) {
+  .braid-book-cover-content,
+  .braid-book-end-content {
+    max-width: 100% !important;
+    padding: 0 5px !important;
+    overflow: hidden;
+  }
+
+  .braid-book-cover-title {
+    max-width: 100%;
+    margin-bottom: 10px !important;
+    font-size: clamp(0.95rem, 4.8vw, 1.25rem) !important;
+    line-height: 1.08 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .braid-book-cover-subtitle {
+    margin: 0 0 10px !important;
+    font-size: 0.46rem !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .braid-book-cover-divider {
+    width: 36px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .braid-book-cover-description {
+    margin: 0 0 4px !important;
+    font-size: clamp(0.58rem, 2.7vw, 0.7rem) !important;
+    line-height: 1.45 !important;
+    overflow-wrap: break-word;
+  }
+
+  .braid-book-cover-footer {
+    margin-top: 10px !important;
+    font-size: 0.43rem !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .braid-book-end-title {
+    max-width: 100%;
+    margin-bottom: 6px !important;
+    font-size: clamp(0.9rem, 4.5vw, 1.15rem) !important;
+    line-height: 1.1 !important;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .braid-book-end-subtitle {
+    margin: 0 0 10px !important;
+    font-size: 0.45rem !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0.08em !important;
+    text-align: center;
+  }
+
+  .braid-book-end-ritual {
+    margin-bottom: 6px !important;
+    font-size: clamp(0.52rem, 2.35vw, 0.62rem) !important;
+    line-height: 1.35 !important;
+  }
+
+  .braid-book-end-footer {
+    margin-top: 8px !important;
+    font-size: 0.45rem !important;
+    line-height: 1.3 !important;
+    text-align: center;
+  }
+}
+
 /* Restored original single-page mobile Braid Book layout. */
 .braid-book-mobile {
   display: none;

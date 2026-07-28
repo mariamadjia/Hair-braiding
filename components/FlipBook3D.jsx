@@ -42,16 +42,16 @@ const CoverSVG = ({ image = BRAID_BOOK_COVER.image }) => (
 );
 
 const CoverContent = ({ cover, editMode = false, onChange = null }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', maxWidth: 320, margin: '0 auto', padding: '0 20px' }}>
-    {editMode ? <input aria-label="Cover title" value={cover.title} onChange={(event) => onChange?.('title', event.target.value)} style={{ width: '100%', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(1.5rem,4vw,3.2rem)', color: T.heading, fontStyle: 'italic' }} /> :
-      <div style={{ fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(2.2rem,4.5vw,3.2rem)', color: T.heading, marginBottom: 20, lineHeight: 1, fontWeight: 300, letterSpacing: '-0.03em', fontStyle: 'italic' }}>{cover.title}</div>}
-    {editMode ? <input aria-label="Cover subtitle" value={cover.subtitle} onChange={(event) => onChange?.('subtitle', event.target.value)} style={{ width: '100%', margin: '12px 0', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', color: T.accent, fontSize: '0.68rem', letterSpacing: '0.16em', textTransform: 'uppercase' }} /> :
-      <div style={{ fontSize: '0.68rem', color: T.accent, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 24 }}>{cover.subtitle}</div>}
-    <div style={{ width: 60, height: 1, background: `linear-gradient(to right, transparent, ${T.accent}, transparent)`, marginBottom: 20 }}/>
-    {editMode ? <textarea aria-label="Cover description" value={cover.description} onChange={(event) => onChange?.('description', event.target.value)} rows={5} style={{ width: '100%', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', color: T.body, textAlign: 'center', fontSize: 'clamp(.65rem,1.4vw,.95rem)', lineHeight: 1.5 }} /> :
-      <p style={{ fontSize: 'clamp(0.88rem,1.6vw,1.05rem)', color: T.body, lineHeight: 1.8, marginBottom: 8, fontWeight: 300, fontStyle: 'italic' }}>{cover.description}</p>}
-    {editMode ? <input aria-label="Cover footer" value={cover.footer} onChange={(event) => onChange?.('footer', event.target.value)} style={{ width: '100%', marginTop: 14, border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', color: T.bodyLight, fontSize: '0.62rem', letterSpacing: '0.13em', textTransform: 'uppercase' }} /> :
-      <p style={{ fontSize: '0.72rem', color: T.bodyLight, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 500, marginTop: 20, opacity: 0.8 }}>{cover.footer}</p>}
+  <div className="braid-book-cover-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', maxWidth: 320, margin: '0 auto', padding: '0 20px' }}>
+    {editMode ? <input className="braid-book-cover-title" aria-label="Cover title" value={cover.title} onChange={(event) => onChange?.('title', event.target.value)} style={{ width: '100%', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(1.5rem,4vw,3.2rem)', color: T.heading, fontStyle: 'italic' }} /> :
+      <div className="braid-book-cover-title" style={{ fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(2.2rem,4.5vw,3.2rem)', color: T.heading, marginBottom: 20, lineHeight: 1, fontWeight: 300, letterSpacing: '-0.03em', fontStyle: 'italic' }}>{cover.title}</div>}
+    {editMode ? <input className="braid-book-cover-subtitle" aria-label="Cover subtitle" value={cover.subtitle} onChange={(event) => onChange?.('subtitle', event.target.value)} style={{ width: '100%', margin: '12px 0', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', color: T.accent, fontSize: '0.68rem', letterSpacing: '0.16em', textTransform: 'uppercase' }} /> :
+      <div className="braid-book-cover-subtitle" style={{ fontSize: '0.68rem', color: T.accent, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 24 }}>{cover.subtitle}</div>}
+    <div className="braid-book-cover-divider" style={{ width: 60, height: 1, background: `linear-gradient(to right, transparent, ${T.accent}, transparent)`, marginBottom: 20 }}/>
+    {editMode ? <textarea className="braid-book-cover-description" aria-label="Cover description" value={cover.description} onChange={(event) => onChange?.('description', event.target.value)} rows={5} style={{ width: '100%', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', color: T.body, textAlign: 'center', fontSize: 'clamp(.65rem,1.4vw,.95rem)', lineHeight: 1.5 }} /> :
+      <p className="braid-book-cover-description" style={{ fontSize: 'clamp(0.88rem,1.6vw,1.05rem)', color: T.body, lineHeight: 1.8, marginBottom: 8, fontWeight: 300, fontStyle: 'italic' }}>{cover.description}</p>}
+    {editMode ? <input className="braid-book-cover-footer" aria-label="Cover footer" value={cover.footer} onChange={(event) => onChange?.('footer', event.target.value)} style={{ width: '100%', marginTop: 14, border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', color: T.bodyLight, fontSize: '0.62rem', letterSpacing: '0.13em', textTransform: 'uppercase' }} /> :
+      <p className="braid-book-cover-footer" style={{ fontSize: '0.72rem', color: T.bodyLight, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 500, marginTop: 20, opacity: 0.8 }}>{cover.footer}</p>}
   </div>
 );
 
@@ -80,20 +80,20 @@ const BackCoverSVG = ({ endPage = BRAID_BOOK_END_PAGE }) => (
 const EndPageContent = ({ endPage, editMode = false, onChange = null }) => {
   const rituals = endPage.rituals || BRAID_BOOK_CARE_RITUALS;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', maxWidth: 320, margin: '0 auto', padding: '0 20px' }}>
-      {editMode ? <input aria-label="Care page title" value={endPage.title} onChange={(event) => onChange?.('title', event.target.value)} style={{ width: '100%', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(1rem,3vw,2.2rem)', color: T.heading }} /> :
-        <div style={{ fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(1.6rem,3.2vw,2.2rem)', color: T.heading, marginBottom: 12, fontWeight: 300, fontStyle: 'italic' }}>{endPage.title}</div>}
-      {editMode ? <input aria-label="Care page subtitle" value={endPage.subtitle} onChange={(event) => onChange?.('subtitle', event.target.value)} style={{ width: '100%', margin: '8px 0 14px', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', color: T.accent, fontSize: '.65rem', letterSpacing: '.16em', textTransform: 'uppercase' }} /> :
-        <div style={{ fontSize: '0.68rem', color: T.accent, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 28 }}>{endPage.subtitle}</div>}
+    <div className="braid-book-end-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', maxWidth: 320, margin: '0 auto', padding: '0 20px' }}>
+      {editMode ? <input className="braid-book-end-title" aria-label="Care page title" value={endPage.title} onChange={(event) => onChange?.('title', event.target.value)} style={{ width: '100%', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(1rem,3vw,2.2rem)', color: T.heading }} /> :
+        <div className="braid-book-end-title" style={{ fontFamily: 'var(--font-playfair,Georgia,serif)', fontSize: 'clamp(1.6rem,3.2vw,2.2rem)', color: T.heading, marginBottom: 12, fontWeight: 300, fontStyle: 'italic' }}>{endPage.title}</div>}
+      {editMode ? <input className="braid-book-end-subtitle" aria-label="Care page subtitle" value={endPage.subtitle} onChange={(event) => onChange?.('subtitle', event.target.value)} style={{ width: '100%', margin: '8px 0 14px', border: '1px dashed rgba(200,113,74,.55)', background: 'transparent', textAlign: 'center', color: T.accent, fontSize: '.65rem', letterSpacing: '.16em', textTransform: 'uppercase' }} /> :
+        <div className="braid-book-end-subtitle" style={{ fontSize: '0.68rem', color: T.accent, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 28 }}>{endPage.subtitle}</div>}
       {rituals.map(([verb, detail], index) => (
         editMode ? <div key={`ritual-${index}`} style={{ display: 'grid', gridTemplateColumns: '30% 1fr', gap: 5, width: '100%', marginBottom: 8 }}>
           <input aria-label={`Ritual ${index + 1} heading`} value={verb} onChange={(event) => { const next = rituals.map((item) => [...item]); next[index][0] = event.target.value; onChange?.('rituals', next); }} style={{ minWidth: 0, border: '1px dashed rgba(200,113,74,.4)', background: 'transparent', color: T.accent, fontSize: '.62rem', fontWeight: 700 }} />
           <input aria-label={`Ritual ${index + 1} detail`} value={detail} onChange={(event) => { const next = rituals.map((item) => [...item]); next[index][1] = event.target.value; onChange?.('rituals', next); }} style={{ minWidth: 0, border: '1px dashed rgba(200,113,74,.4)', background: 'transparent', color: T.body, fontSize: '.62rem' }} />
         </div> :
-        <p key={`ritual-${index}`} style={{ fontSize: 'clamp(0.78rem,1.45vw,0.92rem)', color: T.body, lineHeight: 1.8, marginBottom: 14, textAlign: 'left', width: '100%', fontWeight: 300 }}><strong style={{ color: T.accent }}>{verb}</strong> <span style={{ fontStyle: 'italic' }}>{detail}</span></p>
+        <p className="braid-book-end-ritual" key={`ritual-${index}`} style={{ fontSize: 'clamp(0.78rem,1.45vw,0.92rem)', color: T.body, lineHeight: 1.8, marginBottom: 14, textAlign: 'left', width: '100%', fontWeight: 300 }}><strong style={{ color: T.accent }}>{verb}</strong> <span style={{ fontStyle: 'italic' }}>{detail}</span></p>
       ))}
       {editMode ? <input aria-label="Care page footer" value={endPage.footer} onChange={(event) => onChange?.('footer', event.target.value)} style={{ width: '100%', marginTop: 12, border: '1px dashed rgba(200,113,74,.4)', background: 'transparent', textAlign: 'center', color: T.bodyLight, fontSize: '.65rem' }} /> :
-        <p style={{ marginTop: 24, fontSize: '0.72rem', color: T.bodyLight, fontStyle: 'italic' }}>{endPage.footer}</p>}
+        <p className="braid-book-end-footer" style={{ marginTop: 24, fontSize: '0.72rem', color: T.bodyLight, fontStyle: 'italic' }}>{endPage.footer}</p>}
     </div>
   );
 };
