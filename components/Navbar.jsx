@@ -2,18 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-
-  const navLinkClass = (href) =>
-    `relative py-2 transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 ${
-      pathname === href
-        ? "after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:bg-[#d5b074]"
-        : ""
-    }`;
 
   useEffect(() => {
     if (!open) return;
@@ -38,20 +29,13 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop navigation */}
-          <div className="hidden items-center gap-9 md:flex">
-            <nav className="flex items-center gap-7 text-[12px] uppercase tracking-[0.18em] font-medium">
-              <Link className={navLinkClass("/")} href="/">Home</Link>
-              <Link className={navLinkClass("/gallery")} href="/gallery">Gallery</Link>
-              <Link className={navLinkClass("/services")} href="/services">Services</Link>
-              <Link className={navLinkClass("/contact")} href="/contact">Contact</Link>
-            </nav>
-            <Link
-              href="/services"
-              className="rounded-[5px] border border-[#e9dcc8]/70 bg-[#f6ecdd] px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2C1810] transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-            >
-              Book Now
-            </Link>
-          </div>
+          <nav className="hidden md:flex items-center gap-6 text-[13px] uppercase tracking-[0.18em] font-medium">
+            <Link className="hover:opacity-70 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-4" href="/">Home</Link>
+            <Link className="hover:opacity-70 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-4" href="/gallery">Gallery</Link>
+            <Link className="hover:opacity-70 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-4" href="/services">Services</Link>
+            {/* <a className="hover:opacity-70 transition-opacity" href="/shop">Shop</a> */}
+            <Link className="hover:opacity-70 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-4" href="/contact">Contact</Link>
+          </nav>
 
           {/* Hamburger */}
           <button
@@ -76,7 +60,6 @@ export default function Navbar() {
             <Link className="min-h-11 px-2 py-3 focus-visible:outline-2" href="/gallery" onClick={() => setOpen(false)}>Gallery</Link>
             <Link className="min-h-11 px-2 py-3 focus-visible:outline-2" href="/services" onClick={() => setOpen(false)}>Services</Link>
             <Link className="min-h-11 px-2 py-3 focus-visible:outline-2" href="/contact" onClick={() => setOpen(false)}>Contact</Link>
-            <Link className="mt-2 min-h-11 rounded-sm bg-[#f6ecdd] px-4 py-3 text-center font-semibold text-[#2C1810] focus-visible:outline-2" href="/services" onClick={() => setOpen(false)}>Book Now</Link>
           </nav>
         </div>
       )}
