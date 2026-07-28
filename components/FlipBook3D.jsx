@@ -921,7 +921,7 @@ export default function FlipBook3D({
   const Header = () => (
     <>
       <div style={{ fontSize: '1.2rem', marginBottom: 16, opacity: 0.7 }}>✦</div>
-      <h2 style={{
+      <h2 className="braid-book-heading" style={{
         fontFamily: 'var(--font-playfair,Georgia,serif)',
         fontSize: 'clamp(2.6rem,5.5vw,4.2rem)',
         color: T.title,
@@ -1014,7 +1014,8 @@ export default function FlipBook3D({
 
       `}</style>
 
-      <section 
+      <section
+        className="braid-book-section"
         style={{ 
           background: T.bgSection, 
           padding: '60px 20px 50px', 

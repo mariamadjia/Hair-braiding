@@ -15,6 +15,20 @@
 }
 
 @media (max-width: 640px) {
+  .braid-book-section {
+    padding: 40px 16px 36px !important;
+  }
+
+  .braid-book-heading {
+    width: 100%;
+    max-width: calc(100vw - 32px);
+    margin-bottom: 12px !important;
+    font-size: clamp(2rem, 10vw, 2.65rem) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.025em !important;
+    text-wrap: balance;
+  }
+
   .braid-book-desktop {
     display: none !important;
   }
@@ -85,6 +99,12 @@
     letter-spacing: 0.12em;
     font-size: 0.68rem;
     font-weight: 600;
+  }
+
+  @media (max-width: 370px) {
+    .braid-book-heading {
+      font-size: 1.9rem !important;
+    }
   }
 
   .braid-book-nav {
