@@ -92,7 +92,7 @@ export function EditorPanel({
         <div className="min-w-0 flex-1">
             <div className={fullWidth
                 ? "w-full"
-                : "mx-auto w-full max-w-7xl px-4 py-4 sm:px-8 sm:py-6"
+                : "mx-auto max-w-4xl px-4 py-4 sm:px-8 sm:py-6"
             }>{node}</div>
         </div>
     );
@@ -154,5 +154,5 @@ export function EditorPanel({
         return wrapEditor(<div className="p-4 text-neutral-500">Loading subcategory...</div>);
     }
 
-    return wrapEditor(<SubcategoryEditor cat={cat} sub={sub} token={token} headers={headers} mutate={mutate} setSelection={setSelection} onUpdate={onUpdate} data={data} onSubcategoryUpdate={onSubcategoryUpdate} />);
+    return wrapEditor(<SubcategoryEditor cat={cat} sub={sub} token={token} headers={headers} mutate={mutate} setSelection={setSelection} onUpdate={onUpdate} data={data} onSubcategoryUpdate={onSubcategoryUpdate} />, true);
 }

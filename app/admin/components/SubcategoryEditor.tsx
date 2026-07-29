@@ -523,7 +523,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const totalLengths = items.reduce((acc, i) => acc + (i.lengthOptions?.length ?? 0), 0);
 
     return (
-        <div className="space-y-4">
+        <div className="w-full space-y-7 px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
             {/* Banners */}
             {saveSuccess && (
                 <div role="status" className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-800 dark:text-green-200 text-sm">
