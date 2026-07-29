@@ -89,7 +89,7 @@ export function EditorPanel({
     };
 
     const wrapEditor = (node: React.ReactNode, fullWidth = false) => (
-        <div className="flex-1 min-w-0 overflow-y-auto">
+        <div className="min-w-0 flex-1">
             <div className={fullWidth
                 ? "w-full"
                 : "mx-auto max-w-4xl px-4 py-4 sm:px-8 sm:py-6"

@@ -668,7 +668,7 @@ export default function AdminPage() {
 
     return (
         <ThemeProvider>
-            <div className="h-screen flex bg-neutral-50 dark:bg-neutral-900 transition-colors">
+            <div className={`${currentSection === "categories" ? "min-h-dvh" : "h-dvh"} flex bg-neutral-50 transition-colors dark:bg-neutral-900`}>
                 {/* Sidebar */}
                 <AdminSidebar
                     currentSection={currentSection}
@@ -678,7 +678,7 @@ export default function AdminPage() {
                 />
 
             {/* Main content area */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className={`flex min-w-0 flex-1 flex-col ${currentSection === "categories" ? "min-h-dvh" : "overflow-hidden"}`}>
                 {/* Top bar */}
                 {currentSection !== "categories" && <div className="h-16 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shrink-0 flex items-center justify-between px-6">
                     <div className="flex items-center gap-3">
@@ -715,7 +715,7 @@ export default function AdminPage() {
                 )}
 
                 {currentSection === "categories" && (
-                    <div className="flex-1 flex overflow-hidden bg-[#f7f5f2] dark:bg-neutral-900">
+                    <div className="flex flex-1 bg-[#f7f5f2] dark:bg-neutral-900">
                         {isLoadingSummaries ? (
                             <div className="flex-1 px-8 py-6 space-y-2">
                                 {[1,2,3,4].map(i => (

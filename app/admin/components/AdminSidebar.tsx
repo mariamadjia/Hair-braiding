@@ -87,7 +87,7 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
 
     return (
         <div 
-            className={`h-screen bg-white dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 flex flex-col transition-all duration-300 ${
+            className={`sticky top-0 h-dvh shrink-0 bg-white dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 flex flex-col transition-all duration-300 ${
                 isCollapsed ? "w-16" : "w-64"
             }`}
         >
