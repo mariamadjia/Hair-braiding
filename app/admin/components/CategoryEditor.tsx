@@ -6,7 +6,7 @@ import type { GalleryImage } from "@/lib/types/gallery";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
-import { ChevronRight, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronRight, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle, GripVertical } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
@@ -41,6 +41,8 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     const [saving, setSaving] = useState(false);
     const [loadingCategory, setLoadingCategory] = useState(false);
     const [reorderingSubcategories, setReorderingSubcategories] = useState(false);
+    const [draggedSubcategoryIndex, setDraggedSubcategoryIndex] = useState<number | null>(null);
+    const [subcategoryDropIndex, setSubcategoryDropIndex] = useState<number | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [subSummaries, setSubSummaries] = useState<SubcategorySummary[]>([]);
@@ -306,9 +308,9 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         }
     };
 
-    const moveSubcategory = async (index: number, direction: -1 | 1) => {
-        const target = index + direction;
+    const moveSubcategory = async (index: number, target: number) => {
         if (
+            index === target ||
             target < 0 ||
             target >= subSummaries.length ||
             reorderingSubcategories
@@ -318,7 +320,8 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
 
         const previous = [...subSummaries];
         const reordered = [...subSummaries];
-        [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+        const [movedSubcategory] = reordered.splice(index, 1);
+        reordered.splice(target, 0, movedSubcategory);
 
         const subcategoryIds = reordered
             .map((subcategory) => subcategory.id)
@@ -517,7 +520,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     </div>
                 )}
 
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                     {isLoadingSubcategorySummaries ? (
                         <div className="space-y-2">
                             {[1,2,3].map(i => (
@@ -529,48 +532,66 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     ) : (
                         subSummaries.map((sub, index) => (
                             <div 
-                                key={sub.id || sub.slug} 
-                                className="flex min-h-20 items-center gap-4 rounded-lg border border-neutral-200 px-4 py-3 transition-colors hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900/40"
+                                key={sub.id || sub.slug}
+                                draggable={!reorderingSubcategories}
+                                onDragStart={(event) => {
+                                    setDraggedSubcategoryIndex(index);
+                                    setSubcategoryDropIndex(index);
+                                    event.dataTransfer.effectAllowed = "move";
+                                    event.dataTransfer.setData("text/plain", String(index));
+                                }}
+                                onDragEnter={() => {
+                                    if (draggedSubcategoryIndex !== null && draggedSubcategoryIndex !== index) {
+                                        setSubcategoryDropIndex(index);
+                                    }
+                                }}
+                                onDragOver={(event) => {
+                                    event.preventDefault();
+                                    event.dataTransfer.dropEffect = "move";
+                                }}
+                                onDrop={(event) => {
+                                    event.preventDefault();
+                                    const fromIndex = draggedSubcategoryIndex;
+                                    setDraggedSubcategoryIndex(null);
+                                    setSubcategoryDropIndex(null);
+                                    if (fromIndex !== null && fromIndex !== index) {
+                                        void moveSubcategory(fromIndex, index);
+                                    }
+                                }}
+                                onDragEnd={() => {
+                                    setDraggedSubcategoryIndex(null);
+                                    setSubcategoryDropIndex(null);
+                                }}
+                                className={`grid min-h-16 cursor-grab grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border px-4 py-2.5 transition-all active:cursor-grabbing sm:gap-4 sm:px-5 ${
+                                    draggedSubcategoryIndex === index
+                                        ? "border-neutral-400 bg-neutral-50 opacity-60 shadow-sm dark:border-neutral-500 dark:bg-neutral-900/60"
+                                        : subcategoryDropIndex === index
+                                            ? "border-neutral-500 bg-neutral-50 shadow-sm dark:border-neutral-400 dark:bg-neutral-900/40"
+                                            : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:border-neutral-600 dark:hover:bg-neutral-900/40"
+                                }`}
                             >
-                                <div className="flex-shrink-0">
-                                    <FileText className="h-5 w-5 text-neutral-500" />
+                                <div className="flex h-8 w-5 items-center justify-center text-neutral-400" aria-hidden="true">
+                                    <GripVertical className="h-5 w-5" />
                                 </div>
+                                <span className="w-7 text-sm tabular-nums text-neutral-400" aria-hidden="true">
+                                    {String(index + 1).padStart(2, "0")}
+                                </span>
                                 <button 
                                     type="button" 
                                     onClick={async () => {
                                         await onLoadSubcategoryDetail(sub.slug, token);
                                         setSelection({ type: "subcategory", catSlug: cat.slug, subSlug: sub.slug });
                                     }} 
-                                    className="min-w-0 flex-1 text-left"
+                                    className="min-w-0 text-left"
                                 >
-                                    <div className="truncate text-base font-semibold text-neutral-950 dark:text-white">
+                                    <div className="truncate text-[15px] font-semibold leading-5 text-neutral-950 dark:text-white">
                                         {sub.name}
                                     </div>
-                                    <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                                    <div className="mt-0.5 text-xs leading-4 text-neutral-500 dark:text-neutral-400">
                                         Click to edit
                                     </div>
                                 </button>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    <button
-                                        type="button"
-                                        onClick={() => void moveSubcategory(index, -1)}
-                                        disabled={index === 0 || reorderingSubcategories}
-                                        className="p-2 rounded-sm border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-30"
-                                        aria-label={`Move ${sub.name} up`}
-                                        title="Move up"
-                                    >
-                                        <ArrowUp className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => void moveSubcategory(index, 1)}
-                                        disabled={index === subSummaries.length - 1 || reorderingSubcategories}
-                                        className="p-2 rounded-sm border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-30"
-                                        aria-label={`Move ${sub.name} down`}
-                                        title="Move down"
-                                    >
-                                        <ArrowDown className="w-4 h-4" />
-                                    </button>
+                                <div className="flex flex-shrink-0 items-center gap-2">
                                     <button 
                                         type="button" 
                                         onClick={async () => {
