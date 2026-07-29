@@ -1,15 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { CategorySummary } from "@/lib/booking-types";
-import { btnP, btnS, btnD } from "../constants";
-import { GripVertical, FolderTree, Trash2, AlertCircle } from "lucide-react";
+import { btnP } from "../constants";
+import { AlertCircle, Clock3, EllipsisVertical, GripVertical, Pencil, Scissors, Search, Trash2 } from "lucide-react";
 import { NewCategoryWizard } from "./NewCategoryWizard";
 
 type Selection =
     | { type: "root" }
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
+
+const relativeTime = (value?: string) => {
+    if (!value) return "Updated recently";
+
+    const timestamp = new Date(value).getTime();
+    if (!Number.isFinite(timestamp)) return "Updated recently";
+
+    const elapsedDays = Math.max(0, Math.floor((Date.now() - timestamp) / 86_400_000));
+    if (elapsedDays === 0) return "Updated today";
+    if (elapsedDays === 1) return "Updated 1 day ago";
+    if (elapsedDays < 7) return `Updated ${elapsedDays} days ago`;
+
+    const weeks = Math.floor(elapsedDays / 7);
+    if (weeks < 5) return `Updated ${weeks} ${weeks === 1 ? "week" : "weeks"} ago`;
+
+    const months = Math.floor(elapsedDays / 30);
+    if (months < 12) return `Updated ${months} ${months === 1 ? "month" : "months"} ago`;
+
+    const years = Math.floor(elapsedDays / 365);
+    return `Updated ${years} ${years === 1 ? "year" : "years"} ago`;
+};
 
 export function RootEditor({ categorySummaries, headers, mutate, setSelection, onCategoryCreated, onCategoryDeleted, onCategorySummariesRefresh, token }: {
     categorySummaries: CategorySummary[];
@@ -22,9 +43,19 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
     token: string;
 }) {
     const [adding, setAdding] = useState(false);
-    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+    const [draggedSlug, setDraggedSlug] = useState<string | null>(null);
+    const [dragOverSlug, setDragOverSlug] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [query, setQuery] = useState("");
+    const [openMenuSlug, setOpenMenuSlug] = useState<string | null>(null);
+
+    const visibleCategories = useMemo(() => {
+        const normalizedQuery = query.trim().toLocaleLowerCase();
+        if (!normalizedQuery) return categorySummaries;
+        return categorySummaries.filter((category) =>
+            category.name.toLocaleLowerCase().includes(normalizedQuery)
+        );
+    }, [categorySummaries, query]);
 
     const handleWizardDone = (summary: CategorySummary) => {
         onCategoryCreated?.(summary);
@@ -42,29 +73,34 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
         }
     };
 
-    const handleDragStart = (e: React.DragEvent, index: number) => {
-        setDraggedIndex(index);
+    const handleDragStart = (e: React.DragEvent, slug: string) => {
+        setDraggedSlug(slug);
+        e.dataTransfer.setData("text/plain", slug);
         e.dataTransfer.effectAllowed = "move";
     };
 
-    const handleDragOver = (e: React.DragEvent, index: number) => {
+    const handleDragOver = (e: React.DragEvent, slug: string) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
-        setDragOverIndex(index);
+        setDragOverSlug(slug);
     };
 
     const handleDragLeave = () => {
-        setDragOverIndex(null);
+        setDragOverSlug(null);
     };
 
-    const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
+    const handleDrop = async (e: React.DragEvent, dropSlug: string) => {
         e.preventDefault();
-        
-        if (draggedIndex === null || draggedIndex === dropIndex) {
-            setDraggedIndex(null);
-            setDragOverIndex(null);
+
+        if (!draggedSlug || draggedSlug === dropSlug) {
+            setDraggedSlug(null);
+            setDragOverSlug(null);
             return;
         }
+
+        const draggedIndex = categorySummaries.findIndex((category) => category.slug === draggedSlug);
+        const dropIndex = categorySummaries.findIndex((category) => category.slug === dropSlug);
+        if (draggedIndex < 0 || dropIndex < 0) return;
 
         const reorderedSummaries = [...categorySummaries];
         const [draggedItem] = reorderedSummaries.splice(draggedIndex, 1);
@@ -105,28 +141,31 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
             setErrorMsg('Failed to reorder categories. Please try again.');
         }
 
-        setDraggedIndex(null);
-        setDragOverIndex(null);
+        setDraggedSlug(null);
+        setDragOverSlug(null);
     };
 
     const handleDragEnd = () => {
-        setDraggedIndex(null);
-        setDragOverIndex(null);
+        setDraggedSlug(null);
+        setDragOverSlug(null);
     };
 
     return (
-        <div className="space-y-4">
+        <div className="w-full space-y-5 px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
             {errorMsg && (
-                <div className="flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-sm text-red-700 dark:text-red-300 text-sm">
+                <div className="flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     <span className="flex-1">{errorMsg}</span>
-                    <button type="button" onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-600">×</button>
+                    <button type="button" onClick={() => setErrorMsg(null)} className="text-neutral-500 hover:text-neutral-950 dark:hover:text-white">×</button>
                 </div>
             )}
-            <div className="flex items-center justify-between">
-                <h2 className="text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Categories</h2>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 className="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white">Service categories</h2>
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Organize the styles your clients can book.</p>
+                </div>
                 {!adding && (
-                    <button type="button" onClick={() => setAdding(true)} className={btnP}>+ Add</button>
+                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-10 rounded-lg px-4 py-2 text-xs normal-case tracking-normal`}>+ Add category</button>
                 )}
             </div>
 
@@ -140,29 +179,46 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                 />
             )}
 
-            <div className="space-y-2">
-                {categorySummaries.map((cat, index) => {
+            <div>
+                <p className="mb-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">Drag to reorder</p>
+                <div className="overflow-visible rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+                    <div className="border-b border-neutral-200 p-4 dark:border-neutral-700">
+                        <label className="relative block max-w-sm">
+                            <span className="sr-only">Search categories</span>
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                            <input
+                                type="search"
+                                value={query}
+                                onChange={(event) => setQuery(event.target.value)}
+                                placeholder="Search categories…"
+                                className="h-10 w-full rounded-lg border border-neutral-300 bg-white pl-10 pr-3 text-sm text-neutral-950 outline-none transition focus:border-neutral-950 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:focus:border-white"
+                            />
+                        </label>
+                    </div>
+                    <div className="divide-y divide-neutral-200 dark:divide-neutral-700">
+                {visibleCategories.map((cat) => {
                     return (
                         <div 
                             key={cat.slug} 
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, index)}
-                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDragOver={(e) => handleDragOver(e, cat.slug)}
                             onDragLeave={handleDragLeave}
-                            onDrop={(e) => handleDrop(e, index)}
-                            onDragEnd={handleDragEnd}
-                            className={`flex items-center gap-3 p-3 rounded-sm border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 group cursor-move transition-all ${
-                                draggedIndex === index ? 'opacity-50' : ''
+                            onDrop={(e) => handleDrop(e, cat.slug)}
+                            className={`group relative flex min-h-20 items-center gap-3 px-4 py-3 transition-all hover:bg-neutral-50 dark:hover:bg-neutral-900/40 ${
+                                draggedSlug === cat.slug ? 'z-10 scale-[1.005] bg-white opacity-70 shadow-lg dark:bg-neutral-800' : ''
                             } ${
-                                dragOverIndex === index && draggedIndex !== index ? 'border-t-2 border-blue-400' : ''
+                                dragOverSlug === cat.slug && draggedSlug !== cat.slug ? 'before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-neutral-950 dark:before:bg-white' : ''
                             }`}
                         >
-                            <GripVertical className="w-4 h-4 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                            
-                            {/* Category Icon */}
-                            <div className="flex-shrink-0">
-                                <FolderTree className="w-5 h-5 text-blue-500" />
-                            </div>
+                            <button
+                                type="button"
+                                draggable
+                                onDragStart={(event) => handleDragStart(event, cat.slug)}
+                                onDragEnd={handleDragEnd}
+                                className="flex h-10 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700 active:cursor-grabbing dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                                aria-label={`Drag to reorder ${cat.name}`}
+                            >
+                                <GripVertical className="h-5 w-5" />
+                            </button>
                             
                             {/* Category Info */}
                             <button 
@@ -172,36 +228,67 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                                     // load only lightweight subcategory summaries.
                                     setSelection({ type: "category", catSlug: cat.slug });
                                 }} 
-                                className="flex-1 text-left min-w-0"
+                                className="min-w-0 flex-1 text-left"
                             >
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-neutral-900 dark:text-white truncate">
-                                        {cat.name}
+                                <span className="block truncate text-base font-semibold text-neutral-950 dark:text-white">{cat.name}</span>
+                                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                                    <span className="inline-flex items-center gap-1.5">
+                                        <Scissors className="h-3.5 w-3.5" aria-hidden="true" />
+                                        {cat.styleCount ?? 0} {(cat.styleCount ?? 0) === 1 ? "style" : "styles"}
+                                    </span>
+                                    <span aria-hidden="true">•</span>
+                                    <span className="inline-flex items-center gap-1.5">
+                                        <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                                        {relativeTime(cat.updatedAt)}
                                     </span>
                                 </div>
                             </button>
                             
                             {/* Actions */}
                             <div className="flex items-center gap-2 flex-shrink-0">
-                                <button 
+                                <button
                                     type="button" 
                                     onClick={() => setSelection({ type: "category", catSlug: cat.slug })} 
-                                    className={btnS}
+                                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
+                                    aria-label={`Edit ${cat.name}`}
                                 >
-                                    Edit
+                                    <Pencil className="h-4 w-4" />
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => del(cat.slug, cat.name)}
-                                    className={btnD}
-                                    title={`Delete ${cat.name}`}
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setOpenMenuSlug((current) => current === cat.slug ? null : cat.slug)}
+                                        className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
+                                        aria-label={`More actions for ${cat.name}`}
+                                        aria-expanded={openMenuSlug === cat.slug}
+                                    >
+                                        <EllipsisVertical className="h-4 w-4" />
+                                    </button>
+                                    {openMenuSlug === cat.slug && (
+                                        <div className="absolute right-0 top-11 z-20 w-40 rounded-lg border border-neutral-200 bg-white p-1 shadow-xl dark:border-neutral-600 dark:bg-neutral-800">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setOpenMenuSlug(null);
+                                                    void del(cat.slug, cat.name);
+                                                }}
+                                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-700"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                                Delete
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     );
                 })}
+                    {visibleCategories.length === 0 && (
+                        <p className="px-4 py-10 text-center text-sm text-neutral-500">No categories match “{query}”.</p>
+                    )}
+                    </div>
+                </div>
             </div>
         </div>
     );

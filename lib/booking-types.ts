@@ -3,6 +3,8 @@ export type CategorySummary = {
     name: string;
     slug: string;
     displayOrder?: number;
+    styleCount?: number;
+    updatedAt?: string;
 };
 
 export type SubcategorySummary = {
