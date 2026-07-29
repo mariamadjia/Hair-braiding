@@ -72,6 +72,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [bulkFoundationEnabled, setBulkFoundationEnabled] = useState(false);
+    const [bulkUseAdjustment, setBulkUseAdjustment] = useState(false);
     const [bulkFoundationAdjustment, setBulkFoundationAdjustment] = useState("0");
     const [applyingFoundations, setApplyingFoundations] = useState(false);
 
@@ -87,7 +88,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         setBulkFoundationEnabled(allFoundationsEnabled);
         if (allFoundationsEnabled) {
             const adjustments = new Set(nextItems.map(item => item.knotlessPriceAdjustment || "0"));
-            if (adjustments.size === 1) setBulkFoundationAdjustment(adjustments.values().next().value ?? "0");
+            const sharedAdjustment = adjustments.size === 1 ? adjustments.values().next().value ?? "0" : "0";
+            const allUseAdjustmentMode = nextItems.every(item => (item.knotlessPricingMode ?? "ADJUSTMENT") === "ADJUSTMENT");
+            setBulkFoundationAdjustment(sharedAdjustment);
+            setBulkUseAdjustment(allUseAdjustmentMode && Number(sharedAdjustment) > 0);
+        } else {
+            setBulkUseAdjustment(false);
         }
         // Seed gallery images from the already-loaded subcategory detail (no extra fetch)
         const preloaded = (sub.galleryImages ?? []) as GalleryImage[];
@@ -410,8 +416,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         if (!persistedItems.length || applyingFoundations || saving) return;
         const pricePattern = /^\d+(?:\.\d{1,2})?$/;
         const adjustment = bulkFoundationAdjustment.trim();
-        if (bulkFoundationEnabled && !pricePattern.test(adjustment)) {
-            setSaveError("Enter a valid Knotless adjustment before applying it to all sizes.");
+        if (bulkFoundationEnabled && bulkUseAdjustment
+                && (!pricePattern.test(adjustment) || Number(adjustment) <= 0)) {
+            setSaveError("Enter a Knotless adjustment greater than $0 before applying it to all sizes.");
             return;
         }
 
@@ -421,7 +428,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             const updatedItems = persistedItems.map(item => ({
                 ...item,
                 foundationChoicesEnabled: bulkFoundationEnabled,
-                knotlessPriceAdjustment: bulkFoundationEnabled ? adjustment : "0",
+                knotlessPriceAdjustment: bulkFoundationEnabled && bulkUseAdjustment ? adjustment : "0",
                 knotlessPricingMode: "ADJUSTMENT" as const,
             }));
             await Promise.all(updatedItems.map(item =>
@@ -686,9 +693,55 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                 </div>
                             </fieldset>
 
-                            {bulkFoundationEnabled && <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-center"><div><p className="text-sm font-semibold text-neutral-950 dark:text-white">Knotless price adjustment</p><p className="mt-1 text-xs text-neutral-500">Added to every existing length price.</p></div><label><span className="sr-only">Knotless adjustment for all sizes</span><span className="flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white focus-within:border-neutral-950 focus-within:ring-2 focus-within:ring-neutral-950/15 dark:border-neutral-600 dark:bg-neutral-900"><span className="border-r border-neutral-200 px-3 text-sm font-medium text-neutral-500 dark:border-neutral-700">$</span><input aria-label="Knotless adjustment for all sizes" inputMode="decimal" value={bulkFoundationAdjustment} onChange={event => setBulkFoundationAdjustment(event.target.value.replace(/[^0-9.]/g, ""))} className="min-w-0 flex-1 bg-transparent px-3 py-2 text-base font-semibold outline-none" /></span></label></div>}
+                            {bulkFoundationEnabled && (
+                                <div className="space-y-4">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <p className="text-sm font-semibold text-neutral-950 dark:text-white">Add a Knotless price adjustment?</p>
+                                        <div className="grid min-w-48 grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-600">
+                                            <button type="button" onClick={() => setBulkUseAdjustment(false)} aria-pressed={!bulkUseAdjustment} className={`min-h-10 px-5 text-sm font-semibold transition ${!bulkUseAdjustment ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>No</button>
+                                            <button type="button" onClick={() => setBulkUseAdjustment(true)} aria-pressed={bulkUseAdjustment} className={`min-h-10 border-l border-neutral-300 px-5 text-sm font-semibold transition dark:border-neutral-600 ${bulkUseAdjustment ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>Yes</button>
+                                        </div>
+                                    </div>
+                                    {bulkUseAdjustment && (
+                                        <div className="grid gap-3 border-t border-neutral-200 pt-4 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-center dark:border-neutral-800">
+                                            <div>
+                                                <p className="text-sm font-semibold text-neutral-950 dark:text-white">Knotless adjustment for all sizes <span aria-hidden="true">*</span></p>
+                                                <p className="mt-1 text-xs text-neutral-500">Added to every existing length price.</p>
+                                            </div>
+                                            <label>
+                                                <span className="sr-only">Knotless adjustment for all sizes</span>
+                                                <span className="flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white focus-within:border-neutral-950 focus-within:ring-2 focus-within:ring-neutral-950/15 dark:border-neutral-600 dark:bg-neutral-900">
+                                                    <span className="border-r border-neutral-200 px-3 text-sm font-medium text-neutral-500 dark:border-neutral-700">$</span>
+                                                    <input required aria-label="Knotless adjustment for all sizes" inputMode="decimal" value={bulkFoundationAdjustment} onChange={event => setBulkFoundationAdjustment(event.target.value.replace(/[^0-9.]/g, ""))} className="min-w-0 flex-1 bg-transparent px-3 py-2 text-base font-semibold outline-none" />
+                                                </span>
+                                            </label>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                            <div className="flex flex-col gap-3 border-t border-neutral-200 pt-5 sm:flex-row sm:items-center sm:justify-between dark:border-neutral-800"><p className="text-xs text-neutral-500">{bulkFoundationEnabled ? <>All {items.length} sizes will offer Regular pricing and Knotless at <strong className="text-neutral-800 dark:text-neutral-200">+${bulkFoundationAdjustment || "0"}</strong>.</> : <>Foundation selection will be removed from all {items.length} sizes.</>}</p><button type="button" onClick={() => void applyFoundationToAllSizes()} disabled={applyingFoundations || saving || !items.some(item => item.id)} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-neutral-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200">{applyingFoundations && <Loader2 className="h-4 w-4 animate-spin" />}{applyingFoundations ? "Applying to all sizes…" : `Apply to all ${items.length} sizes`}</button></div>
+                            <div className="flex flex-col gap-3 border-t border-neutral-200 pt-5 sm:flex-row sm:items-center sm:justify-between dark:border-neutral-800">
+                                <p className="text-xs text-neutral-500">
+                                    {!bulkFoundationEnabled
+                                        ? <>Foundation selection will be removed from all {items.length} sizes.</>
+                                        : bulkUseAdjustment
+                                            ? <>Add <strong className="text-neutral-800 dark:text-neutral-200">${bulkFoundationAdjustment || "0"}</strong> to every Regular length price across all {items.length} sizes.</>
+                                            : <>Knotless will use the same prices as Regular across all {items.length} sizes.</>}
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => void applyFoundationToAllSizes()}
+                                    disabled={applyingFoundations || saving || !items.some(item => item.id) || (bulkFoundationEnabled && bulkUseAdjustment && (!/^\d+(?:\.\d{1,2})?$/.test(bulkFoundationAdjustment.trim()) || Number(bulkFoundationAdjustment) <= 0))}
+                                    className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-neutral-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+                                >
+                                    {applyingFoundations && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    {applyingFoundations
+                                        ? "Applying to all sizes…"
+                                        : bulkFoundationEnabled && bulkUseAdjustment
+                                            ? `Apply +$${bulkFoundationAdjustment || "0"} to ${items.length} sizes`
+                                            : `Apply to all ${items.length} sizes`}
+                                </button>
+                            </div>
                         </div>
                     </section>}
                     {addingItem && (
