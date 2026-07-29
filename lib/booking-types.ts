@@ -20,6 +20,7 @@ export type LengthOption = {
     displayOrder?: number;
     name?: string;
     price?: string;
+    knotlessPrice?: string;
     notes?: string;
     imageUrl?: string;
 };
@@ -42,6 +43,7 @@ export type BookingItem = {
     displayOrder?: number;
     foundationChoicesEnabled?: boolean;
     knotlessPriceAdjustment?: string;
+    knotlessPricingMode?: "ADJUSTMENT" | "SEPARATE";
     depositOverrideCents?: number | null;
 };
 

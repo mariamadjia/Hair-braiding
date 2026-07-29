@@ -9,11 +9,11 @@ export function slugify(s: string) {
 }
 
 export function emptyItem(): BookingItem {
-    return { name: "", price: "", description: "", lengthOptions: [], foundationChoicesEnabled: false, knotlessPriceAdjustment: "0" };
+    return { name: "", price: "", description: "", lengthOptions: [], foundationChoicesEnabled: false, knotlessPriceAdjustment: "0", knotlessPricingMode: "ADJUSTMENT" };
 }
 
 export function emptyLengthOption(): LengthOption {
-    return { name: "", price: "$", notes: "$50.00 deposit required" };
+    return { name: "", price: "$", knotlessPrice: "", notes: "$50.00 deposit required" };
 }
 
 export function formatPrice(price: number | string | undefined): string {

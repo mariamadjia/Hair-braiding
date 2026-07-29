@@ -23,7 +23,8 @@ type AuthoritativeService = {
     hairTextures?: string[];
     foundationChoicesEnabled?: boolean;
     knotlessPriceAdjustment?: string;
-    lengthOptions?: Array<{ id: number; name?: string; price?: string; imageUrl?: string }>;
+    knotlessPricingMode?: "ADJUSTMENT" | "SEPARATE";
+    lengthOptions?: Array<{ id: number; name?: string; price?: string; knotlessPrice?: string; imageUrl?: string }>;
 };
 type BookingQuote = {
     servicePrice: string;
@@ -57,8 +58,10 @@ function CheckoutContent() {
     const serviceName = authoritativeService?.name || "";
     const lengthLabel = selectedOption?.name || "";
     const foundation = searchParams.get("foundation") || "";
-    const basePrice = selectedOption?.price || authoritativeService?.price || "";
-    const fallbackPrice = foundation === "KNOTLESS"
+    const basePrice = foundation === "KNOTLESS" && authoritativeService?.knotlessPricingMode === "SEPARATE"
+        ? selectedOption?.knotlessPrice || ""
+        : selectedOption?.price || authoritativeService?.price || "";
+    const fallbackPrice = foundation === "KNOTLESS" && authoritativeService?.knotlessPricingMode !== "SEPARATE"
         ? String(Number(basePrice.replace(/[^0-9.]/g, "")) + Number((authoritativeService?.knotlessPriceAdjustment || "0").replace(/[^0-9.]/g, "")))
         : basePrice;
     const price = quote?.servicePrice ?? fallbackPrice;

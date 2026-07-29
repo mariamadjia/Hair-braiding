@@ -36,6 +36,15 @@ function itemPriceLabel(item: BookingItem): string {
     return minimum === maximum ? formatPrice(minimum) : `${formatPrice(minimum)} - ${formatPrice(maximum)}`;
 }
 
+function optionPrice(item: BookingItem, option: NonNullable<BookingItem["lengthOptions"]>[number], foundation: "REGULAR" | "KNOTLESS" | null) {
+    const regular = Number((option.price || "0").replace(/[^0-9.]/g, "")) || 0;
+    if (foundation !== "KNOTLESS") return regular;
+    if (item.knotlessPricingMode === "SEPARATE") {
+        return Number((option.knotlessPrice || "0").replace(/[^0-9.]/g, "")) || 0;
+    }
+    return regular + (Number((item.knotlessPriceAdjustment || "0").replace(/[^0-9.]/g, "")) || 0);
+}
+
 export default function SubcategoryPageClient({ category, subcategory }: { category: BookingCategory; subcategory: BookingSubcategory }) {
     const router = useRouter();
 
@@ -373,7 +382,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                         </div>
 
                         <div className="relative flex-1 space-y-2 overflow-y-auto px-6 py-4 md:px-8 scrollbar-hide">
-                            {selectedItem.foundationChoicesEnabled && <div className="mb-5 space-y-3 border-b border-neutral-200 pb-5"><p className="text-sm font-medium text-neutral-900">Choose your braid foundation.</p><div className="grid grid-cols-2 gap-3">{([['REGULAR', 'Regular'], ['KNOTLESS', 'Knotless']] as const).map(([value, label]) => { const selected = selectedFoundation === value; return <button key={value} type="button" onClick={() => setSelectedFoundation(value)} className={`min-h-16 rounded-lg border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2 ${selected ? 'border-[#2C1810] bg-[#FAF7F2]' : 'border-neutral-200 hover:border-neutral-400'}`}><span className="flex items-center gap-2 text-sm font-semibold"><span className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${selected ? 'border-[#2C1810] bg-[#2C1810] text-white' : 'border-neutral-300'}`}>{selected ? '✓' : ''}</span>{label}</span>{value === 'KNOTLESS' && <span className="mt-1 block pl-6 text-xs text-neutral-600">+{formatPrice(selectedItem.knotlessPriceAdjustment || '0')}</span>}</button>; })}</div>{selectedFoundation && <p className="text-xs text-neutral-600">{selectedFoundation === 'KNOTLESS' ? 'Knotless' : 'Regular'} selected · Prices updated</p>}</div>}
+                            {selectedItem.foundationChoicesEnabled && <div className="mb-5 space-y-3 border-b border-neutral-200 pb-5"><p className="text-sm font-medium text-neutral-900">Choose your braid foundation.</p><div className="grid grid-cols-2 gap-3">{([['REGULAR', 'Regular'], ['KNOTLESS', 'Knotless']] as const).map(([value, label]) => { const selected = selectedFoundation === value; return <button key={value} type="button" onClick={() => setSelectedFoundation(value)} className={`min-h-16 rounded-lg border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2 ${selected ? 'border-[#2C1810] bg-[#FAF7F2]' : 'border-neutral-200 hover:border-neutral-400'}`}><span className="flex items-center gap-2 text-sm font-semibold"><span className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${selected ? 'border-[#2C1810] bg-[#2C1810] text-white' : 'border-neutral-300'}`}>{selected ? '✓' : ''}</span>{label}</span>{value === 'KNOTLESS' && <span className="mt-1 block pl-6 text-xs text-neutral-600">{selectedItem.knotlessPricingMode === "SEPARATE" ? "Individual prices" : `+${formatPrice(selectedItem.knotlessPriceAdjustment || '0')}`}</span>}</button>; })}</div>{selectedFoundation && <p className="text-xs text-neutral-600">{selectedFoundation === 'KNOTLESS' ? 'Knotless' : 'Regular'} selected · Prices updated</p>}</div>}
                             {lengthOptions.map((option, idx) => {
                                 const optionKey = option.id?.toString() ?? `option-${idx}`;
                                 const isSelected = selectedLength === optionKey;
@@ -408,7 +417,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                                     )}
                                                 </div>
                                             </div>
-                                            {option.price && <span className="text-base font-medium text-neutral-900">{formatPrice(Number(option.price.replace(/[^0-9.]/g, '')) + (selectedFoundation === 'KNOTLESS' ? Number((selectedItem.knotlessPriceAdjustment || '0').replace(/[^0-9.]/g, '')) : 0))}</span>}
+                                            {option.price && <span className="text-base font-medium text-neutral-900">{formatPrice(optionPrice(selectedItem, option, selectedFoundation))}</span>}
                                         </button>
                                         {isSelected && selectedItem?.hairTextures?.length ? (
                                             <div className="pl-9 pr-4">
@@ -445,7 +454,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
 
                         <div className="relative shrink-0 border-t border-neutral-200 bg-white p-4 shadow-[0_-12px_24px_rgba(0,0,0,0.08)] md:px-8">
                             <Button type="button" disabled={!selectedLength || (selectedItem.foundationChoicesEnabled ? !selectedFoundation : false) || (selectedItem.hairTextures?.length ? !selectedTexture : false)} onClick={handleModalSelect} className="w-full rounded-lg bg-[#2C1810] py-3 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#1a0f0a] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500 disabled:hover:bg-neutral-300">
-                                Book Now{selectedLengthOption?.price ? ` · ${formatPrice(Number(selectedLengthOption.price.replace(/[^0-9.]/g, '')) + (selectedFoundation === 'KNOTLESS' ? Number((selectedItem.knotlessPriceAdjustment || '0').replace(/[^0-9.]/g, '')) : 0))}` : ""}
+                                Book Now{selectedLengthOption?.price ? ` · ${formatPrice(optionPrice(selectedItem, selectedLengthOption, selectedFoundation))}` : ""}
                             </Button>
                         </div>
                         {showLengthGuide && <LengthGuideOverlay onClose={() => setShowLengthGuide(false)} />}

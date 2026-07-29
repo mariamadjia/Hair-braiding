@@ -15,6 +15,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
     const [dirty, setDirty] = useState(false);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [pricingTab, setPricingTab] = useState<"REGULAR" | "KNOTLESS">("REGULAR");
     const photos = item.sizePhotos ?? [];
 
     useEffect(() => {
@@ -32,6 +33,24 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
     }, [item, dirty, saving]);
 
     const set = (field: keyof BookingItem, value: unknown) => { setItem(previous => ({ ...previous, [field]: value })); setDirty(true); setError(null); };
+    const setKnotlessMode = (mode: "ADJUSTMENT" | "SEPARATE") => {
+        setItem(previous => {
+            const adjustment = Number((previous.knotlessPriceAdjustment || "0").replace(/[^0-9.]/g, "")) || 0;
+            return {
+                ...previous,
+                knotlessPricingMode: mode,
+                lengthOptions: mode === "SEPARATE"
+                    ? (previous.lengthOptions ?? []).map(option => ({
+                        ...option,
+                        knotlessPrice: option.knotlessPrice?.replace(/^\$+/, "")
+                            || String((Number((option.price || "0").replace(/[^0-9.]/g, "")) || 0) + adjustment),
+                    }))
+                    : previous.lengthOptions,
+            };
+        });
+        setDirty(true);
+        setError(null);
+    };
 
     const handleSave = async () => {
         if (!item.name.trim() || saving || uploading) return;
@@ -73,7 +92,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                     <div><legend className="text-sm font-semibold text-neutral-900 dark:text-white">Braid foundation</legend><p className="mt-1 text-xs text-neutral-500">Optionally let customers choose Regular or Knotless before selecting a length.</p></div>
                     <label className="inline-flex cursor-pointer items-center gap-2"><span className="sr-only">Offer braid foundation choices</span><input type="checkbox" className="peer sr-only" checked={Boolean(item.foundationChoicesEnabled)} onChange={event => set("foundationChoicesEnabled", event.target.checked)} /><span aria-hidden="true" className="relative h-6 w-11 rounded-full bg-neutral-300 transition peer-checked:bg-[#2C1810] peer-focus-visible:ring-2 peer-focus-visible:ring-[#2C1810] peer-focus-visible:ring-offset-2 after:absolute after:left-1 after:top-1 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5" /></label>
                 </div>
-                {item.foundationChoicesEnabled && <div className="mt-4 rounded-lg bg-[#FAF7F2] p-4"><div className="grid gap-3 sm:grid-cols-2"><div className="rounded-md border border-neutral-200 bg-white p-3"><p className="text-sm font-medium">Regular</p><p className="mt-1 text-xs text-neutral-500">Uses the current length prices.</p></div><label className="rounded-md border border-neutral-200 bg-white p-3"><span className="text-sm font-medium">Knotless price adjustment</span><span className="mt-1 block text-xs text-neutral-500">Added to every length price.</span><span className="mt-3 flex items-center rounded-md border border-neutral-300 bg-white focus-within:ring-2 focus-within:ring-[#2C1810]"><span className="pl-3 text-sm text-neutral-500">$</span><input aria-label="Knotless price adjustment" inputMode="decimal" className="w-full bg-transparent px-2 py-2 text-sm outline-none" value={(item.knotlessPriceAdjustment ?? "0").replace("$", "")} onChange={event => set("knotlessPriceAdjustment", event.target.value.replace(/[^0-9.]/g, ""))} /></span></label></div><p className="mt-3 text-xs text-neutral-600">Customer preview: Regular uses the prices below; Knotless adds {`$${item.knotlessPriceAdjustment || "0"}`}.</p></div>}
+                {item.foundationChoicesEnabled && <p className="mt-4 text-xs text-neutral-500">Regular and Knotless pricing can be managed separately below.</p>}
             </fieldset>
 
             <fieldset><legend className={lbl}>Photos for this size</legend><div className="flex flex-wrap gap-2">
@@ -81,7 +100,72 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                 {photos.map((photo, index) => <div key={`${photo}-${index}`} className="group relative"><img src={toProxyUrl(photo)} alt={`Size photo ${index + 1}`} className="h-16 w-16 rounded-lg border object-cover" /><button type="button" aria-label={`Remove size photo ${index + 1}`} onClick={() => set("sizePhotos", photos.filter((_, photoIndex) => photoIndex !== index))} className="absolute -right-1 -top-1 rounded-full bg-red-600 p-1 text-white opacity-100 focus:ring-2 focus:ring-red-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"><X className="h-3 w-3" /></button></div>)}
             </div></fieldset>
 
-            <LengthOptionsEditor options={item.lengthOptions ?? []} onChange={options => set("lengthOptions", options)} />
+            {item.foundationChoicesEnabled ? (
+                <section className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
+                    <div className="flex border-b border-neutral-200 dark:border-neutral-700">
+                        {(["REGULAR", "KNOTLESS"] as const).map(tab => (
+                            <button
+                                key={tab}
+                                type="button"
+                                onClick={() => setPricingTab(tab)}
+                                className={`min-h-12 flex-1 border-b-2 px-4 text-sm font-semibold transition ${
+                                    pricingTab === tab
+                                        ? "border-neutral-950 text-neutral-950 dark:border-white dark:text-white"
+                                        : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                                }`}
+                            >
+                                {tab === "REGULAR" ? "Regular" : "Knotless"}
+                                <span className="ml-2 rounded-md bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800">
+                                    {(item.lengthOptions ?? []).length} lengths
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="space-y-4 p-4">
+                        {pricingTab === "REGULAR" ? (
+                            <LengthOptionsEditor
+                                options={item.lengthOptions ?? []}
+                                onChange={options => set("lengthOptions", options)}
+                                title="Regular length prices"
+                            />
+                        ) : (
+                            <>
+                                <fieldset>
+                                    <legend className="mb-2 text-sm font-semibold text-neutral-950 dark:text-white">Knotless pricing method</legend>
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                        <button type="button" aria-pressed={(item.knotlessPricingMode ?? "ADJUSTMENT") === "ADJUSTMENT"} onClick={() => setKnotlessMode("ADJUSTMENT")} className={`flex min-h-14 items-center gap-3 rounded-lg border px-4 text-left text-sm ${(item.knotlessPricingMode ?? "ADJUSTMENT") === "ADJUSTMENT" ? "border-neutral-950 bg-neutral-50 dark:border-white dark:bg-neutral-800" : "border-neutral-200 dark:border-neutral-700"}`}><span className={`h-4 w-4 rounded-full border-4 ${(item.knotlessPricingMode ?? "ADJUSTMENT") === "ADJUSTMENT" ? "border-neutral-950 dark:border-white" : "border-neutral-300"}`} /><span><span className="block font-semibold">Price adjustment</span><span className="text-xs text-neutral-500">Add one amount to every Regular price.</span></span></button>
+                                        <button type="button" aria-pressed={item.knotlessPricingMode === "SEPARATE"} onClick={() => setKnotlessMode("SEPARATE")} className={`flex min-h-14 items-center gap-3 rounded-lg border px-4 text-left text-sm ${item.knotlessPricingMode === "SEPARATE" ? "border-neutral-950 bg-neutral-50 dark:border-white dark:bg-neutral-800" : "border-neutral-200 dark:border-neutral-700"}`}><span className={`h-4 w-4 rounded-full border-4 ${item.knotlessPricingMode === "SEPARATE" ? "border-neutral-950 dark:border-white" : "border-neutral-300"}`} /><span><span className="block font-semibold">Set separate prices</span><span className="text-xs text-neutral-500">Edit each Knotless length independently.</span></span></button>
+                                    </div>
+                                </fieldset>
+                                {(item.knotlessPricingMode ?? "ADJUSTMENT") === "ADJUSTMENT" ? (
+                                    <div className="space-y-4">
+                                        <label className="grid gap-3 rounded-lg border border-neutral-200 p-4 sm:grid-cols-[minmax(0,1fr)_10rem] sm:items-center dark:border-neutral-700"><span><span className="block text-sm font-semibold">Knotless price adjustment</span><span className="mt-1 block text-xs text-neutral-500">Added to every length price.</span></span><span className="flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-900"><span className="border-r border-neutral-200 px-3 text-neutral-500 dark:border-neutral-700">$</span><input aria-label="Knotless price adjustment" inputMode="decimal" className="min-w-0 flex-1 bg-transparent px-3 outline-none" value={(item.knotlessPriceAdjustment ?? "0").replace("$", "")} onChange={event => set("knotlessPriceAdjustment", event.target.value.replace(/[^0-9.]/g, ""))} /></span></label>
+                                        <div>
+                                            <p className="mb-2 text-xs text-neutral-500">Calculated preview from Regular prices + ${item.knotlessPriceAdjustment || "0"}.</p>
+                                            <div className="space-y-2">
+                                                {(item.lengthOptions ?? []).map((option, index) => {
+                                                    const calculated = (Number((option.price || "0").replace(/[^0-9.]/g, "")) || 0) + (Number((item.knotlessPriceAdjustment || "0").replace(/[^0-9.]/g, "")) || 0);
+                                                    return <div key={option.id ?? index} className="grid grid-cols-[minmax(0,1fr)_7rem] items-center rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm dark:border-neutral-700 dark:bg-neutral-800/50"><span>{option.name}</span><span className="text-right font-semibold">${calculated}</span></div>;
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <LengthOptionsEditor
+                                        options={item.lengthOptions ?? []}
+                                        onChange={options => set("lengthOptions", options)}
+                                        priceField="knotlessPrice"
+                                        title="Knotless length prices"
+                                        editStructure={false}
+                                    />
+                                )}
+                            </>
+                        )}
+                    </div>
+                </section>
+            ) : (
+                <LengthOptionsEditor options={item.lengthOptions ?? []} onChange={options => set("lengthOptions", options)} />
+            )}
 
             <div className="-mx-4 flex items-center justify-between gap-3 border-t bg-white px-4 pb-0 pt-4 dark:bg-neutral-900"><span className="hidden text-xs text-neutral-500 sm:block">Save shortcut: Ctrl/⌘ + Enter</span><div className="ml-auto flex gap-2"><button type="button" onClick={handleCancel} className={btnS} disabled={saving}>Cancel</button><button type="submit" className={`${btnP} inline-flex min-w-24 items-center justify-center gap-2`} disabled={!dirty || !item.name.trim() || saving || uploading}>{saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{saving ? "Saving…" : "Save service"}</button></div></div>
         </form>

@@ -343,12 +343,17 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         const pricePattern = /^\$?\d+(?:\.\d{1,2})?$/;
         if (!item.price?.trim() && options.length === 0) throw new Error("Add a price or at least one length option.");
         if (item.price?.trim() && !pricePattern.test(item.price.trim())) throw new Error("Enter a valid non-negative price.");
-        if (item.foundationChoicesEnabled && !pricePattern.test((item.knotlessPriceAdjustment || "").trim())) {
+        if (item.foundationChoicesEnabled && (item.knotlessPricingMode ?? "ADJUSTMENT") === "ADJUSTMENT"
+                && !pricePattern.test((item.knotlessPriceAdjustment || "").trim())) {
             throw new Error("Enter a valid Knotless price adjustment.");
         }
         const normalizedNames = options.map(option => option.name?.trim().toLowerCase() ?? "");
         if (options.some(option => !option.name?.trim() || !option.price?.trim() || !pricePattern.test(option.price.trim()))) {
             throw new Error("Every length option needs a name and a valid price.");
+        }
+        if (item.foundationChoicesEnabled && item.knotlessPricingMode === "SEPARATE"
+                && options.some(option => !option.knotlessPrice?.trim() || !pricePattern.test(option.knotlessPrice.trim()))) {
+            throw new Error("Every length option needs a valid Knotless price.");
         }
         if (new Set(normalizedNames).size !== normalizedNames.length) throw new Error("Length option names must be unique.");
         setSaving(true);
@@ -417,6 +422,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 ...item,
                 foundationChoicesEnabled: bulkFoundationEnabled,
                 knotlessPriceAdjustment: bulkFoundationEnabled ? adjustment : "0",
+                knotlessPricingMode: "ADJUSTMENT" as const,
             }));
             await Promise.all(updatedItems.map(item =>
                 mutate("PUT", `${base}/items`, { item, itemId: item.id, subcategoryId: sub.id })
