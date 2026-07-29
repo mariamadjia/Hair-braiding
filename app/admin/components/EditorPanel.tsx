@@ -92,7 +92,7 @@ export function EditorPanel({
         <div className="min-w-0 flex-1">
             <div className={fullWidth
                 ? "w-full"
-                : "mx-auto max-w-4xl px-4 py-4 sm:px-8 sm:py-6"
+                : "mx-auto w-full max-w-7xl px-4 py-4 sm:px-8 sm:py-6"
             }>{node}</div>
         </div>
     );
