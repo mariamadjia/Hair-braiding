@@ -35,6 +35,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         (cat.flippingImages ?? []).map(toProxyUrl)
     );
     const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+    const [directServiceCount, setDirectServiceCount] = useState(cat.directServiceCount ?? 0);
     const [dirty, setDirty] = useState(false);
     const [addingSub, setAddingSub] = useState(false);
     const [newSubName, setNewSubName] = useState("");
@@ -49,6 +50,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         setName(cat.name); 
         setNameError("");
         setImages((cat.flippingImages ?? []).map(toProxyUrl));
+        setDirectServiceCount(cat.directServiceCount ?? 0);
         setDirty(false); 
 
         // Fetch the full category detail from the admin endpoint so we always
@@ -79,6 +81,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 });
                 setImages(proxiedImages);
                 setGalleryImages((detail.galleryImages ?? []) as GalleryImage[]);
+                setDirectServiceCount(detail.directServiceCount ?? 0);
             } catch (error) {
                 console.error('[CategoryEditor] Failed to fetch category detail:', error);
             } finally {
@@ -367,8 +370,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         }
     };
 
-    const directServices = cat.items?.length ?? 0;
-
     return (
         <div className="w-full space-y-7 px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
             {loadingCategory && (
@@ -414,7 +415,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                         <span className="text-base font-semibold text-neutral-950 dark:text-white">Direct Services</span>
                     <span className="text-neutral-300 dark:text-neutral-600">•</span>
                     <span className="text-base text-neutral-500 dark:text-neutral-400">
-                        {directServices} total {directServices === 1 ? "service" : "services"}
+                        {directServiceCount} total {directServiceCount === 1 ? "service" : "services"}
                     </span>
                     </div>
                 </div>

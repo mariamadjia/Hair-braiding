@@ -76,6 +76,7 @@ export type BookingCategory = {
     image?: string;
     flippingImages?: string[];
     displayOrder?: number;
+    directServiceCount?: number;
     items?: BookingItem[];
     subcategories?: BookingSubcategory[];
 };
