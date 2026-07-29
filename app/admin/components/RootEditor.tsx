@@ -85,6 +85,10 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
     };
 
     const handleDragStart = (e: React.DragEvent, slug: string) => {
+        if ((e.target as HTMLElement).closest('[data-no-drag="true"]')) {
+            e.preventDefault();
+            return;
+        }
         setDraggedSlug(slug);
         e.dataTransfer.setData("text/plain", slug);
         e.dataTransfer.effectAllowed = "move";
@@ -231,26 +235,21 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                     return (
                         <div 
                             key={cat.slug} 
+                            draggable={sortOrder === "custom"}
+                            onDragStart={(event) => handleDragStart(event, cat.slug)}
+                            onDragEnd={handleDragEnd}
                             onDragOver={(e) => handleDragOver(e, cat.slug)}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, cat.slug)}
-                            className={`group relative flex min-h-20 items-center gap-3 rounded-xl border border-[#e7e3dd] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(35,28,22,0.04)] transition-all hover:border-neutral-300 hover:shadow-[0_5px_16px_rgba(35,28,22,0.07)] dark:border-neutral-700 dark:bg-neutral-900/20 ${
+                            className={`group relative flex min-h-20 items-center gap-3 rounded-xl border border-[#e7e3dd] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(35,28,22,0.04)] transition-all hover:border-neutral-300 hover:shadow-[0_5px_16px_rgba(35,28,22,0.07)] dark:border-neutral-700 dark:bg-neutral-900/20 ${sortOrder === "custom" ? "cursor-grab active:cursor-grabbing" : ""} ${
                                 draggedSlug === cat.slug ? 'z-10 scale-[1.005] bg-white opacity-70 shadow-lg dark:bg-neutral-800' : ''
                             } ${
                                 dragOverSlug === cat.slug && draggedSlug !== cat.slug ? 'before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-neutral-950 dark:before:bg-white' : ''
                             }`}
                         >
-                            <button
-                                type="button"
-                                draggable={sortOrder === "custom"}
-                                onDragStart={(event) => handleDragStart(event, cat.slug)}
-                                onDragEnd={handleDragEnd}
-                                disabled={sortOrder !== "custom"}
-                                className="flex h-10 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700 active:cursor-grabbing disabled:cursor-default disabled:opacity-30 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
-                                aria-label={`Drag to reorder ${cat.name}`}
-                            >
+                            <span className={`flex h-10 w-8 shrink-0 touch-none items-center justify-center text-neutral-400 ${sortOrder !== "custom" ? "opacity-30" : ""}`} aria-hidden="true">
                                 <GripVertical className="h-5 w-5" />
-                            </button>
+                            </span>
 
                             <span className="w-8 shrink-0 text-sm tabular-nums text-neutral-400" aria-hidden="true">
                                 {String(index + 1).padStart(2, "0")}
@@ -284,6 +283,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 <button
                                     type="button" 
+                                    data-no-drag="true"
                                     onClick={() => setSelection({ type: "category", catSlug: cat.slug })} 
                                     className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
                                     aria-label={`Edit ${cat.name}`}
@@ -293,6 +293,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                                 <div className="relative">
                                     <button
                                         type="button"
+                                        data-no-drag="true"
                                         onClick={() => setOpenMenuSlug((current) => current === cat.slug ? null : cat.slug)}
                                         className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
                                         aria-label={`More actions for ${cat.name}`}
@@ -304,6 +305,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                                         <div className="absolute right-0 top-11 z-20 w-40 rounded-lg border border-neutral-200 bg-white p-1 shadow-xl dark:border-neutral-600 dark:bg-neutral-800">
                                             <button
                                                 type="button"
+                                                data-no-drag="true"
                                                 onClick={() => {
                                                     setOpenMenuSlug(null);
                                                     void del(cat.slug, cat.name);
