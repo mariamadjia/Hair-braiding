@@ -47,28 +47,26 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
     const [dragOverSlug, setDragOverSlug] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [query, setQuery] = useState("");
+    const [sortOrder, setSortOrder] = useState<"custom" | "newest" | "oldest" | "name">("custom");
     const [openMenuSlug, setOpenMenuSlug] = useState<string | null>(null);
 
     const visibleCategories = useMemo(() => {
         const normalizedQuery = query.trim().toLocaleLowerCase();
-        if (!normalizedQuery) return categorySummaries;
-        return categorySummaries.filter((category) =>
+        const filtered = normalizedQuery ? categorySummaries.filter((category) =>
             category.name.toLocaleLowerCase().includes(normalizedQuery)
-        );
-    }, [categorySummaries, query]);
+        ) : [...categorySummaries];
 
-    const totalStyles = useMemo(
-        () => categorySummaries.reduce((total, category) => total + (category.styleCount ?? 0), 0),
-        [categorySummaries]
-    );
-
-    const mostBooked = useMemo(
-        () => categorySummaries.reduce<CategorySummary | null>((leader, category) => {
-            if (!leader || (category.bookingCount ?? 0) > (leader.bookingCount ?? 0)) return category;
-            return leader;
-        }, null),
-        [categorySummaries]
-    );
+        return filtered.sort((left, right) => {
+            if (sortOrder === "name") return left.name.localeCompare(right.name);
+            if (sortOrder === "newest") {
+                return new Date(right.updatedAt ?? 0).getTime() - new Date(left.updatedAt ?? 0).getTime();
+            }
+            if (sortOrder === "oldest") {
+                return new Date(left.updatedAt ?? 0).getTime() - new Date(right.updatedAt ?? 0).getTime();
+            }
+            return (left.displayOrder ?? 0) - (right.displayOrder ?? 0);
+        });
+    }, [categorySummaries, query, sortOrder]);
 
     const handleWizardDone = (summary: CategorySummary) => {
         onCategoryCreated?.(summary);
@@ -164,7 +162,8 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
     };
 
     return (
-        <div className="w-full space-y-5 px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
+        <div className="w-full px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
+            <div className="space-y-7 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-8 dark:border-neutral-700 dark:bg-neutral-800">
             {errorMsg && (
                 <div className="flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -174,27 +173,12 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
             )}
             <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 className="font-serif text-4xl font-semibold tracking-tight text-neutral-950 sm:text-5xl dark:text-white">Services</h2>
-                    <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">Organize the styles your clients can book.</p>
+                    <h2 className="font-serif text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl dark:text-white">Service Categories</h2>
+                    <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">Organize and manage your braiding service categories.</p>
                 </div>
                 {!adding && (
                     <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-12 rounded-lg px-5 py-3 text-sm normal-case tracking-normal`}>+ Add category</button>
                 )}
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-                <div className="rounded-xl border border-neutral-200 bg-white px-6 py-7 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-                    <p className="text-3xl font-semibold text-neutral-950 dark:text-white">{categorySummaries.length}</p>
-                    <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Categories</p>
-                </div>
-                <div className="rounded-xl border border-neutral-200 bg-white px-6 py-7 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-                    <p className="text-3xl font-semibold text-neutral-950 dark:text-white">{totalStyles}</p>
-                    <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Services</p>
-                </div>
-                <div className="rounded-xl border border-neutral-200 bg-white px-6 py-7 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Most booked</p>
-                    <p className="mt-2 truncate text-2xl font-semibold text-neutral-950 dark:text-white">{mostBooked?.name ?? "—"}</p>
-                </div>
             </div>
 
             {adding && (
@@ -207,11 +191,9 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                 />
             )}
 
-            <div>
-                <p className="mb-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">Drag to reorder</p>
-                <div className="overflow-visible rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-                    <div className="border-b border-neutral-200 p-4 dark:border-neutral-700">
-                        <label className="relative block max-w-sm">
+            <div className="space-y-5">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <label className="relative block w-full max-w-md">
                             <span className="sr-only">Search categories</span>
                             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                             <input
@@ -219,11 +201,32 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                                 value={query}
                                 onChange={(event) => setQuery(event.target.value)}
                                 placeholder="Search categories…"
-                                className="h-10 w-full rounded-lg border border-neutral-300 bg-white pl-10 pr-3 text-sm text-neutral-950 outline-none transition focus:border-neutral-950 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:focus:border-white"
+                                className="h-12 w-full rounded-lg border border-neutral-300 bg-white pl-10 pr-3 text-sm text-neutral-950 outline-none transition focus:border-neutral-950 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:focus:border-white"
                             />
                         </label>
+                        <div className="flex items-center gap-3">
+                            <label className="sr-only" htmlFor="category-filter">Category filter</label>
+                            <select id="category-filter" className="h-12 rounded-lg border border-neutral-300 bg-white px-4 text-sm text-neutral-800 outline-none dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100" defaultValue="all">
+                                <option value="all">All Categories</option>
+                            </select>
+                            <label className="sr-only" htmlFor="category-sort">Sort categories</label>
+                            <select
+                                id="category-sort"
+                                value={sortOrder}
+                                onChange={(event) => setSortOrder(event.target.value as typeof sortOrder)}
+                                className="h-12 rounded-lg border border-neutral-300 bg-white px-4 text-sm text-neutral-800 outline-none dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
+                            >
+                                <option value="custom">Custom order</option>
+                                <option value="newest">Newest first</option>
+                                <option value="oldest">Oldest first</option>
+                                <option value="name">Name A–Z</option>
+                            </select>
+                        </div>
                     </div>
-                    <div className="divide-y divide-neutral-200 dark:divide-neutral-700">
+                    <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                        {sortOrder === "custom" ? "Drag to reorder" : "Choose Custom order to reorder categories"}
+                    </p>
+                    <div className="space-y-3">
                 {visibleCategories.map((cat) => {
                     return (
                         <div 
@@ -231,7 +234,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                             onDragOver={(e) => handleDragOver(e, cat.slug)}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, cat.slug)}
-                            className={`group relative flex min-h-20 items-center gap-3 px-4 py-3 transition-all hover:bg-neutral-50 dark:hover:bg-neutral-900/40 ${
+                            className={`group relative flex min-h-24 items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900/20 ${
                                 draggedSlug === cat.slug ? 'z-10 scale-[1.005] bg-white opacity-70 shadow-lg dark:bg-neutral-800' : ''
                             } ${
                                 dragOverSlug === cat.slug && draggedSlug !== cat.slug ? 'before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-neutral-950 dark:before:bg-white' : ''
@@ -239,10 +242,11 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                         >
                             <button
                                 type="button"
-                                draggable
+                                draggable={sortOrder === "custom"}
                                 onDragStart={(event) => handleDragStart(event, cat.slug)}
                                 onDragEnd={handleDragEnd}
-                                className="flex h-10 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700 active:cursor-grabbing dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                                disabled={sortOrder !== "custom"}
+                                className="flex h-10 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700 active:cursor-grabbing disabled:cursor-default disabled:opacity-30 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
                                 aria-label={`Drag to reorder ${cat.name}`}
                             >
                                 <GripVertical className="h-5 w-5" />
@@ -313,8 +317,12 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                     );
                 })}
                     {visibleCategories.length === 0 && (
-                        <p className="px-4 py-10 text-center text-sm text-neutral-500">No categories match “{query}”.</p>
+                        <p className="rounded-xl border border-neutral-200 px-4 py-10 text-center text-sm text-neutral-500 dark:border-neutral-700">No categories match “{query}”.</p>
                     )}
+                    </div>
+                    <div className="flex items-center justify-between border-t border-neutral-200 pt-5 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+                        <span>Showing {visibleCategories.length ? 1 : 0} to {visibleCategories.length} of {categorySummaries.length} categories</span>
+                        <span className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-neutral-200 px-3 font-medium text-neutral-900 dark:border-neutral-700 dark:text-white">1</span>
                     </div>
                 </div>
             </div>
