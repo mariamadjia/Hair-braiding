@@ -12,6 +12,7 @@ export function MultiImageUploader({
   categoryId,
   subcategoryId,
   serviceItemId,
+  large = false,
   onChange,
 }: {
   images: string[];
@@ -19,6 +20,7 @@ export function MultiImageUploader({
   categoryId?: number;
   subcategoryId?: number;
   serviceItemId?: number;
+  large?: boolean;
   onChange: (urls: string[]) => void;
 }) {
     const [uploading, setUploading] = useState(false);
@@ -84,26 +86,26 @@ export function MultiImageUploader({
             <div className="flex flex-wrap gap-3">
                 {images.map((url, i) => (
                     <div key={i} className="relative shrink-0 group">
-                        <img src={url} alt={`photo ${i + 1}`} className="h-24 w-24 object-cover border-2 border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm hover:shadow-md transition-shadow" />
+                        <img src={url} alt={`photo ${i + 1}`} className={`${large ? "h-40 w-40 sm:h-48 sm:w-48" : "h-24 w-24"} rounded-xl border border-neutral-200 object-cover shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700`} />
                         <button 
                             type="button" 
                             onClick={() => remove(i)} 
-                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100"
+                            className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-950 text-sm text-white opacity-0 shadow-md transition-all hover:bg-neutral-700 group-hover:opacity-100"
                             title="Remove photo"
                         >
                             ×
                         </button>
                     </div>
                 ))}
-                <label className="cursor-pointer h-24 w-24 flex items-center justify-center text-center border-2 border-dashed border-neutral-300 dark:border-neutral-600 hover:border-blue-500 dark:hover:border-blue-400 rounded-lg bg-neutral-50 dark:bg-neutral-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group relative">
+                <label className={`${large ? "h-40 w-40 sm:h-48 sm:w-48" : "h-24 w-24"} group relative flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 text-center transition-all hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800 dark:hover:border-white dark:hover:bg-neutral-700`}>
                     {uploading && (
                         <div className="absolute inset-0 bg-white/80 dark:bg-neutral-800/80 flex flex-col items-center justify-center rounded-lg">
-                            <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">{uploadProgress}%</span>
+                            <div className="mb-2 h-12 w-12 animate-spin rounded-full border-2 border-neutral-950 border-t-transparent dark:border-white dark:border-t-transparent"></div>
+                            <span className="text-xs font-medium text-neutral-700 dark:text-neutral-200">{uploadProgress}%</span>
                         </div>
                     )}
-                    <div className="text-xs text-neutral-600 dark:text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 font-medium">
-                        {uploading ? "Compressing..." : "+ Add Photo"}
+                    <div className="text-sm font-medium text-neutral-600 group-hover:text-neutral-950 dark:text-neutral-400 dark:group-hover:text-white">
+                        {uploading ? "Compressing..." : <><span className="mb-2 block text-3xl font-light">+</span>Add Photo</>}
                     </div>
                     <input type="file" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif" multiple className="hidden" onChange={handleFiles} disabled={uploading} />
                 </label>

@@ -6,7 +6,7 @@ import type { GalleryImage } from "@/lib/types/gallery";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
-import { ChevronRight, FolderTree, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronRight, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
@@ -367,11 +367,10 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         }
     };
 
-    const totalServices = (cat.subcategories ?? []).reduce((acc, sub) => acc + (sub.items?.length || 0), 0);
-    const hasSubcategories = (cat.subcategories ?? []).length > 0;
+    const directServices = cat.items?.length ?? 0;
 
     return (
-        <div className="space-y-5">
+        <div className="w-full space-y-7 px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
             {loadingCategory && (
                 <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neutral-900"></div>
@@ -395,39 +394,34 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             )}
 
             {/* Breadcrumb Navigation */}
-            <nav className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+            <nav className="flex items-center gap-3 text-base text-neutral-500 dark:text-neutral-400" aria-label="Breadcrumb">
                 <button 
                     type="button" 
                     onClick={() => guardedSetSelection({ type: "root" })} 
-                    className="hover:text-neutral-900 dark:hover:text-white transition-colors"
+                    className="font-medium transition-colors hover:text-neutral-950 dark:hover:text-white"
                 >
                     All Categories
                 </button>
-                <ChevronRight className="w-4 h-4" />
-                <span className="text-neutral-900 dark:text-white font-medium">{cat.name}</span>
+                <ChevronRight className="h-5 w-5" />
+                <span className="font-semibold text-neutral-950 dark:text-white">{cat.name}</span>
             </nav>
 
             {/* Category Stats */}
-            <div className="bg-neutral-50 dark:bg-neutral-800 rounded-sm p-4 border border-neutral-200 dark:border-neutral-700">
-                <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                        {hasSubcategories ? (
-                            <FolderTree className="w-4 h-4 text-blue-500" />
-                        ) : (
-                            <FileText className="w-4 h-4 text-green-500" />
-                        )}
-                        <span className="text-neutral-600 dark:text-neutral-400">
-                            {hasSubcategories ? 'Has Subcategories' : 'Direct Services'}
-                        </span>
-                    </div>
+            <div className="rounded-xl border border-neutral-200 bg-white px-6 py-7 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+                <div className="flex items-center gap-5 text-sm">
+                    <FileText className="h-6 w-6 text-neutral-700 dark:text-neutral-200" />
+                    <div className="flex items-center gap-5">
+                        <span className="text-base font-semibold text-neutral-950 dark:text-white">Direct Services</span>
                     <span className="text-neutral-300 dark:text-neutral-600">•</span>
-                    <span className="text-neutral-600 dark:text-neutral-400">
-                        {totalServices} total services
+                    <span className="text-base text-neutral-500 dark:text-neutral-400">
+                        {directServices} total {directServices === 1 ? "service" : "services"}
                     </span>
+                    </div>
                 </div>
             </div>
 
-            <div className="space-y-4">
+            <section className="space-y-6 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7 dark:border-neutral-700 dark:bg-neutral-800">
+                <h3 className="text-xl font-semibold text-neutral-950 dark:text-white">Category Details</h3>
                 {loadingCategory ? (
                     <div className="space-y-4">
                         <div className="h-10 bg-neutral-200 dark:bg-neutral-700 rounded-sm animate-pulse"></div>
@@ -439,9 +433,9 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 ) : (
                     <>
                         <div>
-                            <label className={lbl}>Category Name</label>
+                            <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">Category Name</label>
                             <input 
-                                className={`${inp} ${nameError ? "border-red-400" : ""}`} 
+                                className={`${inp} min-h-12 rounded-lg ${nameError ? "border-neutral-950" : ""}`}
                                 value={name} 
                                 onChange={(e) => handleNameChange(e.target.value)} 
                             />
@@ -451,22 +445,23 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                     {nameError}
                                 </p>
                             )}
-                            <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
                                 Choose a clear, descriptive name for your category (e.g., "Box Braids")
                             </p>
                         </div>
                 
                 {/* Gallery Photos Section */}
-                <div className="border border-neutral-200 dark:border-neutral-700 rounded-sm p-4 bg-neutral-50 dark:bg-neutral-800">
-                    <div className="flex items-center gap-2 mb-3">
-                        <h3 className="text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Gallery Photos</h3>
-                        <span className="text-[10px] font-medium uppercase tracking-widest bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-sm">Required 3–5</span>
+                <div className="border-t border-neutral-200 pt-6 dark:border-neutral-700">
+                    <div className="mb-5 flex items-center gap-3">
+                        <h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Gallery Photos</h3>
+                        <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">Required 3–5</span>
                     </div>
                     
                     <MultiImageUploader
                         images={images}
                         token={token}
                         categoryId={cat.id}
+                        large
                         onChange={(urls: string[]) => { setImages(urls); setDirty(true); setErrorMessage(null); }}
                     />
                     
@@ -474,13 +469,13 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     <div className="mt-3 flex items-center gap-2 text-sm">
                         {images.length >= 3 && images.length <= 5 ? (
                             <>
-                                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" aria-hidden />
-                                <span className="text-green-700 dark:text-green-300">{images.length} photo{images.length > 1 ? 's' : ''} uploaded</span>
+                                <CheckCircle className="h-4 w-4 text-neutral-700 dark:text-neutral-300" aria-hidden />
+                                <span className="text-neutral-700 dark:text-neutral-300">{images.length} photo{images.length > 1 ? 's' : ''} uploaded</span>
                             </>
                         ) : (
                             <>
-                                <AlertTriangle className="w-4 h-4 text-amber-500" aria-hidden />
-                                <span className="text-amber-700 dark:text-amber-400">
+                                <AlertTriangle className="h-4 w-4 text-neutral-700 dark:text-neutral-300" aria-hidden />
+                                <span className="text-neutral-700 dark:text-neutral-300">
                                     {images.length === 0
                                         ? 'No photos yet — upload 3 to 5'
                                         : images.length < 3
@@ -492,22 +487,24 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     </div>
                 </div>
 
-                <button
-                    type="button"
-                    onClick={save}
-                    className={btnP}
-                    disabled={images.length < 3 || images.length > 5 || saving || nameError !== ""}
-                >
-                    {saving ? 'Saving...' : 'Save changes'}
-                </button>
+                <div className="flex justify-end">
+                    <button
+                        type="button"
+                        onClick={save}
+                        className={`${btnP} min-h-11 rounded-lg px-6 py-2.5 text-sm normal-case tracking-normal`}
+                        disabled={images.length < 3 || images.length > 5 || saving || nameError !== ""}
+                    >
+                        {saving ? 'Saving...' : 'Save changes'}
+                    </button>
+                </div>
                 </>
                 )}
-            </div>
+            </section>
 
-            <div className="border-t border-neutral-100 dark:border-neutral-700 pt-4 space-y-3">
+            <section className="space-y-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7 dark:border-neutral-700 dark:bg-neutral-800">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Subcategories</h3>
-                    <button type="button" onClick={() => setAddingSub(true)} className={btnP}>+ Add</button>
+                    <h3 className="text-xl font-semibold text-neutral-950 dark:text-white">Subcategories</h3>
+                    <button type="button" onClick={() => setAddingSub(true)} className={`${btnP} min-h-10 rounded-lg px-4 py-2 text-xs`}>+ Add</button>
                 </div>
 
                 {addingSub && (
@@ -533,10 +530,10 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                         subSummaries.map((sub, index) => (
                             <div 
                                 key={sub.id || sub.slug} 
-                                className="flex items-center gap-3 p-3 rounded-sm border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                                className="flex min-h-20 items-center gap-4 rounded-lg border border-neutral-200 px-4 py-3 transition-colors hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900/40"
                             >
                                 <div className="flex-shrink-0">
-                                    <FileText className="w-4 h-4 text-purple-500" />
+                                    <FileText className="h-5 w-5 text-neutral-500" />
                                 </div>
                                 <button 
                                     type="button" 
@@ -544,9 +541,9 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                         await onLoadSubcategoryDetail(sub.slug, token);
                                         setSelection({ type: "subcategory", catSlug: cat.slug, subSlug: sub.slug });
                                     }} 
-                                    className="flex-1 text-left min-w-0"
+                                    className="min-w-0 flex-1 text-left"
                                 >
-                                    <div className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                                    <div className="truncate text-base font-semibold text-neutral-950 dark:text-white">
                                         {sub.name}
                                     </div>
                                     <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
@@ -587,7 +584,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                     <button
                                         type="button"
                                         onClick={() => delSub(sub.slug, sub.name, sub.id)}
-                                        className={btnD}
+                                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
                                         title={`Delete ${sub.name}`}
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
@@ -597,7 +594,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                         ))
                     )}
                 </div>
-            </div>
+            </section>
         </div>
     );
 }

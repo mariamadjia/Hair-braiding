@@ -136,7 +136,7 @@ export function EditorPanel({
             onSubcategoryCreated={onSubcategoryCreated}
             onSubcategoryDeleted={onSubcategoryDeleted}
             onSubcategorySummariesRefresh={onSubcategorySummariesRefresh}
-        />);
+        />, true);
     }
 
     const sub = subcategoryDetailsCache.get(selection.subSlug);
