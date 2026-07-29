@@ -667,65 +667,53 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                     <button type="button" onClick={() => { setAddingItem(true); setEditingId(null); }} className="flex min-h-10 items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"><Plus className="h-3.5 w-3.5" />Add size</button>
                 </div>
                 <div className="space-y-3 p-4 sm:p-5">
-                    {items.length > 0 && <section aria-labelledby="bulk-foundation-title" className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-900 sm:p-6">
+                    {items.length > 0 && <section aria-labelledby="bulk-foundation-title" className="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900 sm:p-5">
                         <div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <h4 id="bulk-foundation-title" className="text-base font-semibold text-neutral-950 dark:text-white">Braid foundation</h4>
-                                <span className="rounded-md border border-neutral-200 px-2 py-1 text-[11px] font-medium text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">Applies to all {items.length} sizes</span>
+                                <span className="rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">{items.length} sizes</span>
                             </div>
-                            <p className="mt-1.5 text-sm text-neutral-500">Set the foundation choice once for every size in {sub.name}.</p>
+                            <p className="mt-1 text-sm text-neutral-500">Set the foundation choice for every size in {sub.name}.</p>
                         </div>
 
-                        <div className="mt-5 space-y-5 border-t border-neutral-200 pt-5 dark:border-neutral-800">
-                            <fieldset>
-                                <legend className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-500">Customer options</legend>
-                                <div className="space-y-2">
-                                    <button type="button" aria-pressed={!bulkFoundationEnabled} onClick={() => setBulkFoundationEnabled(false)} className={`grid min-h-14 w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-lg border px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-neutral-950 focus:ring-offset-2 sm:grid-cols-[auto_minmax(12rem,1fr)_minmax(15rem,1fr)] ${!bulkFoundationEnabled ? "border-neutral-950 bg-neutral-50 dark:border-white dark:bg-neutral-800/70" : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}>
-                                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${!bulkFoundationEnabled ? "border-neutral-950 dark:border-white" : "border-neutral-300 dark:border-neutral-600"}`}>{!bulkFoundationEnabled && <span className="h-2 w-2 rounded-full bg-neutral-950 dark:bg-white" />}</span>
-                                        <span className="text-sm font-semibold text-neutral-950 dark:text-white">No foundation choice</span>
-                                        <span className="col-start-2 text-xs text-neutral-500 sm:col-start-3">Customers go directly to length selection.</span>
-                                    </button>
-                                    <button type="button" aria-pressed={bulkFoundationEnabled} onClick={() => setBulkFoundationEnabled(true)} className={`grid min-h-14 w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-lg border px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-neutral-950 focus:ring-offset-2 sm:grid-cols-[auto_minmax(12rem,1fr)_minmax(15rem,1fr)] ${bulkFoundationEnabled ? "border-neutral-950 bg-neutral-50 dark:border-white dark:bg-neutral-800/70" : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}>
-                                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${bulkFoundationEnabled ? "border-neutral-950 dark:border-white" : "border-neutral-300 dark:border-neutral-600"}`}>{bulkFoundationEnabled && <span className="h-2 w-2 rounded-full bg-neutral-950 dark:bg-white" />}</span>
-                                        <span className="text-sm font-semibold text-neutral-950 dark:text-white">Regular and Knotless</span>
-                                        <span className="col-start-2 text-xs text-neutral-500 sm:col-start-3">Customers choose a foundation before length.</span>
-                                    </button>
+                        <div className="mt-4 divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+                            <fieldset className="grid gap-3 py-4 sm:grid-cols-[minmax(9rem,1fr)_minmax(24rem,1.45fr)] sm:items-center">
+                                <legend className="sr-only">Customer choice</legend>
+                                <p className="text-sm font-semibold text-neutral-950 dark:text-white">Customer choice</p>
+                                <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-600">
+                                    <button type="button" aria-pressed={!bulkFoundationEnabled} onClick={() => setBulkFoundationEnabled(false)} className={`min-h-10 px-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 ${!bulkFoundationEnabled ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>No foundation</button>
+                                    <button type="button" aria-pressed={bulkFoundationEnabled} onClick={() => setBulkFoundationEnabled(true)} className={`min-h-10 border-l border-neutral-300 px-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 dark:border-neutral-600 ${bulkFoundationEnabled ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>Regular + Knotless</button>
                                 </div>
                             </fieldset>
 
                             {bulkFoundationEnabled && (
-                                <div className="space-y-4">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <p className="text-sm font-semibold text-neutral-950 dark:text-white">Add a Knotless price adjustment?</p>
-                                        <div className="grid min-w-48 grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-600">
+                                <div className={`grid gap-3 py-4 sm:items-center ${bulkUseAdjustment ? "sm:grid-cols-[minmax(9rem,1fr)_auto_12rem]" : "sm:grid-cols-[minmax(9rem,1fr)_auto]"}`}>
+                                    <div>
+                                        <p className="text-sm font-semibold text-neutral-950 dark:text-white">Knotless adjustment</p>
+                                        <p className="mt-0.5 text-xs text-neutral-500">Add to every Regular length price.</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-600">
                                             <button type="button" onClick={() => setBulkUseAdjustment(false)} aria-pressed={!bulkUseAdjustment} className={`min-h-10 px-5 text-sm font-semibold transition ${!bulkUseAdjustment ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>No</button>
                                             <button type="button" onClick={() => setBulkUseAdjustment(true)} aria-pressed={bulkUseAdjustment} className={`min-h-10 border-l border-neutral-300 px-5 text-sm font-semibold transition dark:border-neutral-600 ${bulkUseAdjustment ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>Yes</button>
-                                        </div>
                                     </div>
                                     {bulkUseAdjustment && (
-                                        <div className="grid gap-3 border-t border-neutral-200 pt-4 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-center dark:border-neutral-800">
-                                            <div>
-                                                <p className="text-sm font-semibold text-neutral-950 dark:text-white">Knotless adjustment for all sizes <span aria-hidden="true">*</span></p>
-                                                <p className="mt-1 text-xs text-neutral-500">Added to every existing length price.</p>
-                                            </div>
-                                            <label>
-                                                <span className="sr-only">Knotless adjustment for all sizes</span>
-                                                <span className="flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white focus-within:border-neutral-950 focus-within:ring-2 focus-within:ring-neutral-950/15 dark:border-neutral-600 dark:bg-neutral-900">
-                                                    <span className="border-r border-neutral-200 px-3 text-sm font-medium text-neutral-500 dark:border-neutral-700">$</span>
-                                                    <input required aria-label="Knotless adjustment for all sizes" inputMode="decimal" value={bulkFoundationAdjustment} onChange={event => setBulkFoundationAdjustment(event.target.value.replace(/[^0-9.]/g, ""))} className="min-w-0 flex-1 bg-transparent px-3 py-2 text-base font-semibold outline-none" />
-                                                </span>
-                                            </label>
-                                        </div>
+                                        <label>
+                                            <span className="sr-only">Knotless adjustment for all sizes</span>
+                                            <span className="flex min-h-10 items-center rounded-lg border border-neutral-300 bg-white focus-within:border-neutral-950 focus-within:ring-2 focus-within:ring-neutral-950/15 dark:border-neutral-600 dark:bg-neutral-900">
+                                                <span className="border-r border-neutral-200 px-3 text-sm font-medium text-neutral-500 dark:border-neutral-700">$</span>
+                                                <input required aria-label="Knotless adjustment for all sizes" inputMode="decimal" value={bulkFoundationAdjustment} onChange={event => setBulkFoundationAdjustment(event.target.value.replace(/[^0-9.]/g, ""))} className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm font-semibold outline-none" />
+                                            </span>
+                                        </label>
                                     )}
                                 </div>
                             )}
-
-                            <div className="flex flex-col gap-3 border-t border-neutral-200 pt-5 sm:flex-row sm:items-center sm:justify-between dark:border-neutral-800">
+                        </div>
+                            <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="text-xs text-neutral-500">
                                     {!bulkFoundationEnabled
                                         ? <>Foundation selection will be removed from all {items.length} sizes.</>
                                         : bulkUseAdjustment
-                                            ? <>Add <strong className="text-neutral-800 dark:text-neutral-200">${bulkFoundationAdjustment || "0"}</strong> to every Regular length price across all {items.length} sizes.</>
+                                            ? <><strong className="text-neutral-800 dark:text-neutral-200">+${bulkFoundationAdjustment || "0"}</strong> across all {items.length} sizes</>
                                             : <>Knotless will use the same prices as Regular across all {items.length} sizes.</>}
                                 </p>
                                 <button
@@ -735,14 +723,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                     className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-neutral-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
                                 >
                                     {applyingFoundations && <Loader2 className="h-4 w-4 animate-spin" />}
-                                    {applyingFoundations
-                                        ? "Applying to all sizes…"
-                                        : bulkFoundationEnabled && bulkUseAdjustment
-                                            ? `Apply +$${bulkFoundationAdjustment || "0"} to ${items.length} sizes`
-                                            : `Apply to all ${items.length} sizes`}
+                                    {applyingFoundations ? "Applying to all sizes…" : `Apply to ${items.length} sizes`}
                                 </button>
                             </div>
-                        </div>
                     </section>}
                     {addingItem && (
                         <div className="rounded-lg border-2 border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-900/10 p-4">
