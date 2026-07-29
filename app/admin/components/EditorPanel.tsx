@@ -88,9 +88,12 @@ export function EditorPanel({
         return result;
     };
 
-    const wrapEditor = (node: React.ReactNode) => (
+    const wrapEditor = (node: React.ReactNode, fullWidth = false) => (
         <div className="flex-1 min-w-0 overflow-y-auto">
-            <div className="mx-auto max-w-4xl px-4 py-4 sm:px-8 sm:py-6">{node}</div>
+            <div className={fullWidth
+                ? "w-full"
+                : "mx-auto max-w-4xl px-4 py-4 sm:px-8 sm:py-6"
+            }>{node}</div>
         </div>
     );
 
@@ -104,7 +107,7 @@ export function EditorPanel({
             onCategoryCreated={onCategoryCreated}
             onCategoryDeleted={onCategoryDeleted}
             onCategorySummariesRefresh={onCategorySummariesRefresh}
-        />);
+        />, true);
     }
 
     // Prefer full category data (includes flippingImages) over the lightweight summary.
