@@ -163,7 +163,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
 
     return (
         <div className="w-full bg-[#f7f5f2] px-4 py-5 sm:px-6 lg:px-10 lg:py-8 dark:bg-neutral-900">
-            <div className="space-y-7 rounded-2xl border border-[#e8e3dc] bg-[#fcfbf9] p-5 shadow-sm sm:p-8 dark:border-neutral-700 dark:bg-neutral-800">
+            <div className="space-y-5 rounded-2xl border border-[#e8e3dc] bg-[#fcfbf9] p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
             {errorMsg && (
                 <div className="flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -171,13 +171,13 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                     <button type="button" onClick={() => setErrorMsg(null)} className="text-neutral-500 hover:text-neutral-950 dark:hover:text-white">×</button>
                 </div>
             )}
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 className="font-serif text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl dark:text-white">Service Categories</h2>
-                    <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">Organize and manage your braiding service categories.</p>
+                    <h2 className="font-serif text-3xl font-semibold tracking-tight text-neutral-950 dark:text-white">Service Categories</h2>
+                    <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">Organize and manage your braiding service categories.</p>
                 </div>
                 {!adding && (
-                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-12 rounded-lg px-5 py-3 text-sm normal-case tracking-normal`}>+ Add category</button>
+                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-11 rounded-lg px-5 py-2.5 text-sm normal-case tracking-normal`}>+ Add category</button>
                 )}
             </div>
 
@@ -191,8 +191,8 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                 />
             )}
 
-            <div className="space-y-5">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-4">
+                    <div className="flex flex-col gap-3 border-b border-[#e8e3dc] pb-5 lg:flex-row lg:items-center lg:justify-between dark:border-neutral-700">
                         <label className="relative block w-full max-w-md">
                             <span className="sr-only">Search categories</span>
                             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
@@ -201,12 +201,12 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                                 value={query}
                                 onChange={(event) => setQuery(event.target.value)}
                                 placeholder="Search categories…"
-                                className="h-12 w-full rounded-lg border border-neutral-300 bg-white pl-10 pr-3 text-sm text-neutral-950 outline-none transition focus:border-neutral-950 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:focus:border-white"
+                                className="h-11 w-full rounded-lg border border-neutral-300 bg-white pl-10 pr-3 text-sm text-neutral-950 outline-none transition focus:border-neutral-950 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:focus:border-white"
                             />
                         </label>
                         <div className="flex items-center gap-3">
                             <label className="sr-only" htmlFor="category-filter">Category filter</label>
-                            <select id="category-filter" className="h-12 rounded-lg border border-neutral-300 bg-white px-4 text-sm text-neutral-800 outline-none dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100" defaultValue="all">
+                            <select id="category-filter" className="h-11 rounded-lg border border-neutral-300 bg-white px-4 text-sm text-neutral-800 outline-none dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100" defaultValue="all">
                                 <option value="all">All Categories</option>
                             </select>
                             <label className="sr-only" htmlFor="category-sort">Sort categories</label>
@@ -214,7 +214,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                                 id="category-sort"
                                 value={sortOrder}
                                 onChange={(event) => setSortOrder(event.target.value as typeof sortOrder)}
-                                className="h-12 rounded-lg border border-neutral-300 bg-white px-4 text-sm text-neutral-800 outline-none dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
+                                className="h-11 rounded-lg border border-neutral-300 bg-white px-4 text-sm text-neutral-800 outline-none dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
                             >
                                 <option value="custom">Custom order</option>
                                 <option value="newest">Newest first</option>
@@ -226,15 +226,15 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                     <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
                         {sortOrder === "custom" ? "Drag to reorder" : "Choose Custom order to reorder categories"}
                     </p>
-                    <div className="space-y-3">
-                {visibleCategories.map((cat) => {
+                    <div className="space-y-2">
+                {visibleCategories.map((cat, index) => {
                     return (
                         <div 
                             key={cat.slug} 
                             onDragOver={(e) => handleDragOver(e, cat.slug)}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, cat.slug)}
-                            className={`group relative flex min-h-24 items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900/20 ${
+                            className={`group relative flex min-h-20 items-center gap-3 rounded-xl border border-[#e7e3dd] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(35,28,22,0.04)] transition-all hover:border-neutral-300 hover:shadow-[0_5px_16px_rgba(35,28,22,0.07)] dark:border-neutral-700 dark:bg-neutral-900/20 ${
                                 draggedSlug === cat.slug ? 'z-10 scale-[1.005] bg-white opacity-70 shadow-lg dark:bg-neutral-800' : ''
                             } ${
                                 dragOverSlug === cat.slug && draggedSlug !== cat.slug ? 'before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-neutral-950 dark:before:bg-white' : ''
@@ -251,6 +251,10 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                             >
                                 <GripVertical className="h-5 w-5" />
                             </button>
+
+                            <span className="w-8 shrink-0 text-sm tabular-nums text-neutral-400" aria-hidden="true">
+                                {String(index + 1).padStart(2, "0")}
+                            </span>
                             
                             {/* Category Info */}
                             <button 
@@ -319,10 +323,6 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                     {visibleCategories.length === 0 && (
                         <p className="rounded-xl border border-neutral-200 px-4 py-10 text-center text-sm text-neutral-500 dark:border-neutral-700">No categories match “{query}”.</p>
                     )}
-                    </div>
-                    <div className="flex items-center justify-between border-t border-neutral-200 pt-5 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
-                        <span>Showing {visibleCategories.length ? 1 : 0} to {visibleCategories.length} of {categorySummaries.length} categories</span>
-                        <span className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-neutral-200 px-3 font-medium text-neutral-900 dark:border-neutral-700 dark:text-white">1</span>
                     </div>
                 </div>
             </div>
