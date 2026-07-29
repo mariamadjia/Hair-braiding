@@ -162,8 +162,8 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
     };
 
     return (
-        <div className="w-full px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
-            <div className="space-y-7 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-8 dark:border-neutral-700 dark:bg-neutral-800">
+        <div className="w-full bg-[#f7f5f2] px-4 py-5 sm:px-6 lg:px-10 lg:py-8 dark:bg-neutral-900">
+            <div className="space-y-7 rounded-2xl border border-[#e8e3dc] bg-[#fcfbf9] p-5 shadow-sm sm:p-8 dark:border-neutral-700 dark:bg-neutral-800">
             {errorMsg && (
                 <div className="flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />

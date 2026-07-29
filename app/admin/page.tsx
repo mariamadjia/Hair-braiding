@@ -715,7 +715,7 @@ export default function AdminPage() {
                 )}
 
                 {currentSection === "categories" && (
-                    <div className="flex-1 flex overflow-hidden bg-neutral-50 dark:bg-neutral-900">
+                    <div className="flex-1 flex overflow-hidden bg-[#f7f5f2] dark:bg-neutral-900">
                         {isLoadingSummaries ? (
                             <div className="flex-1 px-8 py-6 space-y-2">
                                 {[1,2,3,4].map(i => (
