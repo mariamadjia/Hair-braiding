@@ -636,19 +636,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 </div>
             </div>
 
-            {/* Sizes card */}
-            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-5 py-4 dark:border-neutral-800 sm:px-6">
-                    <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Sizes</h3>
-                        {items.length > 0 && (
-                            <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-neutral-100 px-1.5 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">{items.length}</span>
-                        )}
-                    </div>
-                    <button type="button" onClick={() => { setAddingItem(true); setEditingId(null); }} className="flex min-h-10 items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"><Plus className="h-3.5 w-3.5" />Add size</button>
-                </div>
-                <div className="space-y-3 p-4 sm:p-5">
-                    {items.length > 0 && <section aria-labelledby="bulk-foundation-title" className="rounded-xl border border-neutral-200 bg-neutral-50/40 p-4 dark:border-neutral-700 dark:bg-neutral-800/30 sm:p-5">
+            {/* Settings shared by every size */}
+            {items.length > 0 && <section aria-labelledby="bulk-foundation-title" className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-900 sm:p-6">
                         <div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <h4 id="bulk-foundation-title" className="text-base font-semibold text-neutral-950 dark:text-white">Settings for all sizes</h4>
@@ -706,7 +695,20 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                     {applyingFoundations ? "Applying to all sizes…" : `Apply to ${items.length} sizes`}
                                 </button>
                             </div>
-                    </section>}
+            </section>}
+
+            {/* Sizes card */}
+            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-5 py-4 dark:border-neutral-800 sm:px-6">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Sizes</h3>
+                        {items.length > 0 && (
+                            <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-neutral-100 px-1.5 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">{items.length}</span>
+                        )}
+                    </div>
+                    <button type="button" onClick={() => { setAddingItem(true); setEditingId(null); }} className="flex min-h-10 items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"><Plus className="h-3.5 w-3.5" />Add size</button>
+                </div>
+                <div className="space-y-3 p-4 sm:p-5">
                     {addingItem && (
                         <div className="rounded-lg border-2 border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-900/10 p-4">
                             <ItemForm
@@ -822,6 +824,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                 </div>
                             ))}
                         </div>
+                    )}
+                    {items.length > 1 && !addingItem && (
+                        <p className="pt-1 text-xs text-neutral-500">Drag rows to reorder</p>
                     )}
                 </div>
             </div>
