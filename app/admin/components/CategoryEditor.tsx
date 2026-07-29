@@ -6,7 +6,7 @@ import type { GalleryImage } from "@/lib/types/gallery";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
-import { ChevronRight, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle, GripVertical } from "lucide-react";
+import { ChevronRight, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle, EllipsisVertical, GripVertical, Pencil } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
@@ -43,6 +43,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     const [reorderingSubcategories, setReorderingSubcategories] = useState(false);
     const [draggedSubcategoryIndex, setDraggedSubcategoryIndex] = useState<number | null>(null);
     const [subcategoryDropIndex, setSubcategoryDropIndex] = useState<number | null>(null);
+    const [openSubcategoryMenuSlug, setOpenSubcategoryMenuSlug] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [subSummaries, setSubSummaries] = useState<SubcategorySummary[]>([]);
@@ -593,23 +594,48 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                 </button>
                                 <div className="flex flex-shrink-0 items-center gap-2">
                                     <button 
-                                        type="button" 
+                                        type="button"
+                                        draggable={false}
+                                        data-no-drag="true"
                                         onClick={async () => {
                                             await onLoadSubcategoryDetail(sub.slug, token);
                                             setSelection({ type: "subcategory", catSlug: cat.slug, subSlug: sub.slug });
-                                        }} 
-                                        className={btnS}
+                                        }}
+                                        className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
+                                        aria-label={`Edit ${sub.name}`}
                                     >
-                                        Edit
+                                        <Pencil className="h-4 w-4" />
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => delSub(sub.slug, sub.name, sub.id)}
-                                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
-                                        title={`Delete ${sub.name}`}
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            draggable={false}
+                                            data-no-drag="true"
+                                            onClick={() => setOpenSubcategoryMenuSlug((current) => current === sub.slug ? null : sub.slug)}
+                                            className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
+                                            aria-label={`More actions for ${sub.name}`}
+                                            aria-expanded={openSubcategoryMenuSlug === sub.slug}
+                                        >
+                                            <EllipsisVertical className="h-4 w-4" />
+                                        </button>
+                                        {openSubcategoryMenuSlug === sub.slug && (
+                                            <div className="absolute right-0 top-11 z-20 w-40 rounded-lg border border-neutral-200 bg-white p-1 shadow-xl dark:border-neutral-600 dark:bg-neutral-800">
+                                                <button
+                                                    type="button"
+                                                    draggable={false}
+                                                    data-no-drag="true"
+                                                    onClick={() => {
+                                                        setOpenSubcategoryMenuSlug(null);
+                                                        void delSub(sub.slug, sub.name, sub.id);
+                                                    }}
+                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-700"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))
