@@ -8,7 +8,7 @@ import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ItemForm } from "./ItemForm";
-import { ArrowDown, ArrowUp, ChevronRight, Package, Plus, Edit3, Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { ChevronRight, Package, Plus, Trash2, CheckCircle, AlertCircle, Loader2, GripVertical } from "lucide-react";
 import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
 
@@ -75,6 +75,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [bulkUseAdjustment, setBulkUseAdjustment] = useState(false);
     const [bulkFoundationAdjustment, setBulkFoundationAdjustment] = useState("0");
     const [applyingFoundations, setApplyingFoundations] = useState(false);
+    const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
 
@@ -485,13 +486,15 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         });
     };
 
-    const reorderItem = async (itemId: number, offset: number) => {
+    const reorderItemTo = async (itemId: number, targetItemId: number) => {
         const ordered = sortItemsBySize(items).map(entry => entry.item);
         const index = ordered.findIndex(item => item.id === itemId);
-        const target = index + offset;
-        if (index < 0 || target < 0 || target >= ordered.length) return;
-        [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
-        setItems(ordered.map((item, displayOrder) => ({ ...item, displayOrder })));
+        const target = ordered.findIndex(item => item.id === targetItemId);
+        if (index < 0 || target < 0 || index === target) return;
+        const [movedItem] = ordered.splice(index, 1);
+        ordered.splice(target, 0, movedItem);
+        const reorderedItems = ordered.map((item, displayOrder) => ({ ...item, displayOrder }));
+        setItems(reorderedItems);
         setSaving(true); setSaveError(null);
         try {
             const response = await fetch("/api/admin/services/reorder", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ serviceIds: ordered.map(item => item.id) }) });
@@ -545,52 +548,36 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 <span className="text-neutral-900 dark:text-white font-semibold">{sub.name}</span>
             </nav>
 
-            {/* Hero header card */}
-            <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden">
-                <div className="flex items-stretch gap-0">
-                    {/* Cover photo */}
-                    <div className="w-32 flex-shrink-0 relative bg-neutral-100 dark:bg-neutral-800">
-                        {coverPhoto ? (
-                            <img src={coverPhoto} alt={sub.name} className="w-full h-full object-cover" style={{ minHeight: 96 }} />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center" style={{ minHeight: 96 }}>
-                                <Package className="w-8 h-8 text-neutral-300 dark:text-neutral-600" />
-                            </div>
-                        )}
-                    </div>
-                    {/* Info */}
-                    <div className="flex-1 px-5 py-4 flex flex-col justify-between">
-                        <div>
-                            <p className="text-[10px] font-medium uppercase tracking-widest text-violet-500 mb-0.5">{cat.name}</p>
-                            <h2 className="text-xl font-bold text-neutral-900 dark:text-white">{sub.name}</h2>
+            {/* Compact header and details card */}
+            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
+                <div className="p-5 sm:p-6">
+                    <div className="flex items-center gap-5">
+                        <div className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-800">
+                            {coverPhoto ? (
+                                <img src={coverPhoto} alt={sub.name} className="h-full w-full object-cover" />
+                            ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                    <Package className="h-8 w-8 text-neutral-300 dark:text-neutral-600" />
+                                </div>
+                            )}
                         </div>
-                        <div className="flex items-center gap-3 mt-3 flex-wrap">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 text-xs font-medium border border-violet-100 dark:border-violet-800">
-                                <Package className="w-3 h-3" />
-                                {items.length} {items.length === 1 ? 'size' : 'sizes'}
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-medium border border-neutral-200 dark:border-neutral-700">
-                                {totalLengths} {totalLengths === 1 ? 'length option' : 'length options'}
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-medium border border-neutral-200 dark:border-neutral-700">
-                                {galleryImages.length} {galleryImages.length === 1 ? 'photo' : 'photos'}
-                            </span>
+                        <div className="min-w-0">
+                            <h2 className="truncate text-2xl font-semibold text-neutral-950 dark:text-white">{sub.name}</h2>
+                            <p className="mt-2 text-sm text-neutral-500">
+                                {items.length} {items.length === 1 ? "size" : "sizes"}
+                                <span className="px-2" aria-hidden="true">·</span>
+                                {totalLengths} {totalLengths === 1 ? "length option" : "length options"}
+                                <span className="px-2" aria-hidden="true">·</span>
+                                {galleryImages.length} {galleryImages.length === 1 ? "photo" : "photos"}
+                            </p>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Details card */}
-            <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden">
-                <div className="px-5 py-3.5 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/60 flex items-center gap-2">
-                    <Edit3 className="w-3.5 h-3.5 text-violet-500" />
-                    <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-600 dark:text-neutral-300">Details</h3>
-                </div>
-                <div className="p-5 space-y-5">
+                    <div className="mt-5 space-y-5 border-t border-neutral-200 pt-5 dark:border-neutral-800">
                     <div>
-                        <label className="block text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mb-1.5">Subcategory Name</label>
+                        <label className="mb-1.5 block text-sm font-medium text-neutral-800 dark:text-neutral-200">Subcategory name</label>
                         <input
-                            className="w-full border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-2.5 text-sm text-neutral-900 dark:text-white bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 transition-all"
+                            className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 transition focus:border-neutral-950 focus:outline-none focus:ring-2 focus:ring-neutral-950/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                             value={name}
                             onChange={(e) => { setName(e.target.value); setDirty(true); }}
                             placeholder="e.g., Knotless, Goddess Braids"
@@ -599,30 +586,23 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
                     {/* Gallery photos */}
                     <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="text-xs font-medium uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
-                                Gallery Photos
-                                {galleryImages.length > 0 && (
-                                    <span className="ml-2 normal-case text-violet-600 dark:text-violet-400 font-semibold">{galleryImages.length}</span>
-                                )}
-                            </label>
-                        </div>
+                        <p className="mb-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">Gallery photos <span className="ml-1 text-neutral-400">{galleryImages.length}</span></p>
                         {loadingGallery ? (
                             <div className="flex gap-2">
-                                {[1,2,3].map(i => <div key={i} className="w-20 h-20 rounded-lg bg-neutral-100 dark:bg-neutral-800 animate-pulse" />)}
+                                {[1,2,3].map(i => <div key={i} className="h-24 w-24 animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-800" />)}
                             </div>
                         ) : (
                             <div className="flex flex-wrap gap-2">
                                 {galleryImages.map((img, i) => (
-                                    <div key={img.id} className="relative group w-20 h-20 rounded-lg overflow-hidden border-2 border-neutral-200 dark:border-neutral-700 shadow-sm hover:shadow-md transition-shadow">
+                                    <div key={img.id} className="group relative h-24 w-24 overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
                                         {i === 0 && (
-                                            <span className="absolute top-1 left-1 z-10 text-[9px] font-bold uppercase bg-violet-600 text-white px-1.5 py-0.5 rounded-sm">Cover</span>
+                                            <span className="absolute left-1.5 top-1.5 z-10 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white">Cover</span>
                                         )}
                                         <img src={toProxyUrl(img.imageUrl)} alt={img.title || `Photo ${i+1}`} className="w-full h-full object-cover" />
                                         <button
                                             type="button"
                                             onClick={() => deleteGalleryImage(img.id)}
-                                            className="absolute top-1 right-1 w-5 h-5 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                                            className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/75 text-white opacity-100 transition hover:bg-black sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                                             title="Remove"
                                             aria-label={`Remove ${img.title || `photo ${i + 1}`}`}
                                         >
@@ -630,27 +610,28 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                                             </svg>
                                         </button>
-                                        {i !== 0 && <button type="button" onClick={() => void setCoverPhoto(img.id)} className="absolute bottom-1 left-1 right-1 rounded bg-black/70 px-1 py-1 text-[9px] font-semibold text-white opacity-100 focus:ring-2 focus:ring-violet-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">Set cover</button>}
+                                        {i !== 0 && <button type="button" onClick={() => void setCoverPhoto(img.id)} className="absolute bottom-1.5 left-1.5 right-1.5 rounded bg-black/75 px-1 py-1 text-[9px] font-semibold text-white opacity-100 focus:ring-2 focus:ring-neutral-950 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">Set cover</button>}
                                     </div>
                                 ))}
-                                <label className="w-20 h-20 border-2 border-dashed border-violet-200 dark:border-violet-800 rounded-lg flex flex-col items-center justify-center text-violet-400 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all cursor-pointer">
+                                <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-neutral-300 text-neutral-500 transition hover:border-neutral-500 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800">
                                     <Plus className="w-5 h-5 mb-0.5" />
-                                    <span className="text-[10px] font-medium">Add</span>
+                                    <span className="text-[10px] font-medium">Add photo</span>
                                     <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { uploadGalleryImage(f); e.target.value = ''; } }} />
                                 </label>
                             </div>
                         )}
                     </div>
 
-                    <div className="pt-1">
+                    <div className="flex justify-end pt-1">
                         <button
                             type="button"
                             onClick={save}
                             disabled={!dirty || saving}
-                            className="w-full py-2.5 text-sm font-semibold rounded-lg bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="min-h-10 rounded-lg bg-neutral-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
                         >
-                            {saving ? 'Saving…' : 'Save Changes'}
+                            {saving ? 'Saving…' : 'Save changes'}
                         </button>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -667,13 +648,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                     <button type="button" onClick={() => { setAddingItem(true); setEditingId(null); }} className="flex min-h-10 items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"><Plus className="h-3.5 w-3.5" />Add size</button>
                 </div>
                 <div className="space-y-3 p-4 sm:p-5">
-                    {items.length > 0 && <section aria-labelledby="bulk-foundation-title" className="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900 sm:p-5">
+                    {items.length > 0 && <section aria-labelledby="bulk-foundation-title" className="rounded-xl border border-neutral-200 bg-neutral-50/40 p-4 dark:border-neutral-700 dark:bg-neutral-800/30 sm:p-5">
                         <div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <h4 id="bulk-foundation-title" className="text-base font-semibold text-neutral-950 dark:text-white">Braid foundation</h4>
+                                <h4 id="bulk-foundation-title" className="text-base font-semibold text-neutral-950 dark:text-white">Settings for all sizes</h4>
                                 <span className="rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">{items.length} sizes</span>
                             </div>
-                            <p className="mt-1 text-sm text-neutral-500">Set the foundation choice for every size in {sub.name}.</p>
                         </div>
 
                         <div className="mt-4 divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
@@ -750,7 +730,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {sortItemsBySize(items).map(({ item, originalIdx }, orderedIndex, orderedEntries) => (
+                            {sortItemsBySize(items).map(({ item, originalIdx }, orderedIndex) => (
                                 <div key={item.id ?? `new-${originalIdx}`}>
                                     {editingId === item.id ? (
                                         <div className="rounded-lg border-2 border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-900/10 p-4">
@@ -764,36 +744,38 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                             />
                                         </div>
                                     ) : (
-                                        <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-hidden hover:border-violet-200 dark:hover:border-violet-800 hover:shadow-sm transition-all">
-                                            <div className="group flex items-center gap-3 px-4 py-3">
-                                                {item.image && (
-                                                    <img src={item.image} alt={item.name} className="w-14 h-14 flex-shrink-0 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-sm" />
-                                                )}
-                                                <button type="button" onClick={() => toggleExpand(item.id)} aria-expanded={item.id ? expandedItems.has(item.id) : false} className="flex-1 min-w-0 text-left focus:outline-none focus:ring-2 focus:ring-violet-400">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-semibold text-neutral-900 dark:text-white">{item.name}</span>
-                                                        {item.lengthOptions?.length ? (
-                                                            <span className="text-[10px] font-bold px-1.5 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full">
-                                                                {item.lengthOptions.length} {item.lengthOptions.length === 1 ? 'length' : 'lengths'}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full">No lengths</span>
-                                                        )}
-                                                        {item.foundationChoicesEnabled && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full">Regular + Knotless</span>}
-                                                    </div>
-                                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{servicePriceLabel(item)} · {item.sizePhotos?.length ?? 0} photos</p>
+                                        <div
+                                            draggable={Boolean(item.id) && !saving}
+                                            onDragStart={() => item.id && setDraggedItemId(item.id)}
+                                            onDragEnd={() => setDraggedItemId(null)}
+                                            onDragOver={(event) => {
+                                                if (draggedItemId && draggedItemId !== item.id) event.preventDefault();
+                                            }}
+                                            onDrop={(event) => {
+                                                event.preventDefault();
+                                                if (draggedItemId && item.id && draggedItemId !== item.id) {
+                                                    void reorderItemTo(draggedItemId, item.id);
+                                                }
+                                                setDraggedItemId(null);
+                                            }}
+                                            className={`overflow-hidden rounded-lg border bg-white transition dark:bg-neutral-900 ${draggedItemId === item.id ? "border-neutral-400 opacity-60 dark:border-neutral-500" : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}
+                                        >
+                                            <div className="group grid min-h-16 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5 sm:grid-cols-[auto_auto_minmax(8rem,0.8fr)_minmax(10rem,1fr)_minmax(7rem,0.55fr)_auto]">
+                                                <span className="cursor-grab text-neutral-400 active:cursor-grabbing" aria-label={`Drag ${item.name} to reorder`}>
+                                                    <GripVertical className="h-5 w-5" aria-hidden="true" />
+                                                </span>
+                                                <span className="w-5 text-center text-xs font-semibold text-neutral-500">{orderedIndex + 1}</span>
+                                                <button type="button" onClick={() => toggleExpand(item.id)} aria-expanded={item.id ? expandedItems.has(item.id) : false} className="min-w-0 text-left focus:outline-none focus:ring-2 focus:ring-neutral-950">
+                                                    <span className="block truncate text-sm font-semibold text-neutral-950 dark:text-white">{item.name}</span>
                                                 </button>
-                                                <div className="flex items-center gap-1 flex-shrink-0">
-                                                    <button type="button" disabled={orderedIndex === 0 || saving} onClick={() => item.id && void reorderItem(item.id, -1)} aria-label={`Move ${item.name} up`} className="p-2 hover:bg-neutral-100 rounded-lg disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
-                                                    <button type="button" disabled={orderedIndex === orderedEntries.length - 1 || saving} onClick={() => item.id && void reorderItem(item.id, 1)} aria-label={`Move ${item.name} down`} className="p-2 hover:bg-neutral-100 rounded-lg disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button>
-                                                    <button type="button" onClick={() => toggleExpand(item.id)} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors" title={item.id && expandedItems.has(item.id) ? "Collapse" : "Expand"}>
-                                                        {item.id && expandedItems.has(item.id) ? <ChevronUp className="w-4 h-4 text-neutral-400" /> : <ChevronDown className="w-4 h-4 text-neutral-400" />}
-                                                    </button>
-                                                    <button type="button" onClick={() => { setEditingId(item.id ?? null); setAddingItem(false); }} aria-label={`Edit ${item.name}`} className="p-2 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors opacity-100 focus:ring-2 focus:ring-violet-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" title="Edit">
-                                                        <Edit3 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
-                                                    </button>
-                                                    <button type="button" disabled={saving} onClick={() => deleteItem(item.id)} aria-label={`Delete ${item.name}`} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-100 focus:ring-2 focus:ring-red-400 disabled:opacity-40 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" title="Delete">
-                                                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                                                <span className="col-start-3 text-xs text-neutral-500 sm:col-start-4">
+                                                    {item.lengthOptions?.length ?? 0} {(item.lengthOptions?.length ?? 0) === 1 ? "length" : "lengths"} · {item.sizePhotos?.length ?? 0} {(item.sizePhotos?.length ?? 0) === 1 ? "photo" : "photos"}
+                                                </span>
+                                                <span className="col-start-3 text-xs font-medium text-neutral-700 dark:text-neutral-300 sm:col-start-5">{servicePriceLabel(item)}</span>
+                                                <div className="col-start-4 row-span-2 row-start-1 flex items-center gap-2 sm:col-start-6 sm:row-span-1">
+                                                    <button type="button" onClick={() => { setEditingId(item.id ?? null); setAddingItem(false); }} aria-label={`Edit ${item.name}`} className="min-h-9 rounded-lg border border-neutral-300 px-3 text-xs font-semibold text-neutral-700 transition hover:border-neutral-500 hover:bg-neutral-50 focus:ring-2 focus:ring-neutral-950 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-800">Edit</button>
+                                                    <button type="button" disabled={saving} onClick={() => deleteItem(item.id)} aria-label={`Delete ${item.name}`} className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-300 text-neutral-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 focus:ring-2 focus:ring-red-400 disabled:opacity-40 dark:border-neutral-600 dark:hover:bg-red-950/30" title="Delete">
+                                                        <Trash2 className="h-4 w-4" />
                                                     </button>
                                                 </div>
                                             </div>
