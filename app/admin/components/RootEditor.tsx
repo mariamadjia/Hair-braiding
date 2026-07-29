@@ -57,6 +57,19 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
         );
     }, [categorySummaries, query]);
 
+    const totalStyles = useMemo(
+        () => categorySummaries.reduce((total, category) => total + (category.styleCount ?? 0), 0),
+        [categorySummaries]
+    );
+
+    const mostBooked = useMemo(
+        () => categorySummaries.reduce<CategorySummary | null>((leader, category) => {
+            if (!leader || (category.bookingCount ?? 0) > (leader.bookingCount ?? 0)) return category;
+            return leader;
+        }, null),
+        [categorySummaries]
+    );
+
     const handleWizardDone = (summary: CategorySummary) => {
         onCategoryCreated?.(summary);
         setAdding(false);
@@ -159,14 +172,29 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                     <button type="button" onClick={() => setErrorMsg(null)} className="text-neutral-500 hover:text-neutral-950 dark:hover:text-white">×</button>
                 </div>
             )}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 className="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white">Service categories</h2>
-                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Organize the styles your clients can book.</p>
+                    <h2 className="font-serif text-4xl font-semibold tracking-tight text-neutral-950 sm:text-5xl dark:text-white">Services</h2>
+                    <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">Organize the styles your clients can book.</p>
                 </div>
                 {!adding && (
-                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-10 rounded-lg px-4 py-2 text-xs normal-case tracking-normal`}>+ Add category</button>
+                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-12 rounded-lg px-5 py-3 text-sm normal-case tracking-normal`}>+ Add category</button>
                 )}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-xl border border-neutral-200 bg-white px-6 py-7 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+                    <p className="text-3xl font-semibold text-neutral-950 dark:text-white">{categorySummaries.length}</p>
+                    <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Categories</p>
+                </div>
+                <div className="rounded-xl border border-neutral-200 bg-white px-6 py-7 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+                    <p className="text-3xl font-semibold text-neutral-950 dark:text-white">{totalStyles}</p>
+                    <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Services</p>
+                </div>
+                <div className="rounded-xl border border-neutral-200 bg-white px-6 py-7 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Most booked</p>
+                    <p className="mt-2 truncate text-2xl font-semibold text-neutral-950 dark:text-white">{mostBooked?.name ?? "—"}</p>
+                </div>
             </div>
 
             {adding && (

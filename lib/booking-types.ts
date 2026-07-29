@@ -4,6 +4,7 @@ export type CategorySummary = {
     slug: string;
     displayOrder?: number;
     styleCount?: number;
+    bookingCount?: number;
     updatedAt?: string;
 };
 
