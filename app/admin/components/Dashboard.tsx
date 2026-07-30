@@ -115,15 +115,16 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
         }).length;
         const captured = (item: Appointment) =>
             item.paymentStatus === "CAPTURED" || item.paymentStatus === "SUCCEEDED" || item.status === "COMPLETED";
+        const depositDollars = (item: Appointment) => (item.depositAmount ?? 0) / 100;
         const weekRevenue = appointments
             .filter((item) => new Date(item.appointmentDateTime) >= weekStart && captured(item))
-            .reduce((sum, item) => sum + (item.depositAmount ?? 0), 0);
+            .reduce((sum, item) => sum + depositDollars(item), 0);
         const previousWeekRevenue = appointments
             .filter((item) => {
                 const date = new Date(item.appointmentDateTime);
                 return date >= previousWeekStart && date < weekStart && captured(item);
             })
-            .reduce((sum, item) => sum + (item.depositAmount ?? 0), 0);
+            .reduce((sum, item) => sum + depositDollars(item), 0);
         const monthAppointments = appointments.filter((item) => new Date(item.appointmentDateTime) >= monthStart);
         const previousMonthAppointments = appointments.filter((item) => {
             const date = new Date(item.appointmentDateTime);
@@ -146,7 +147,7 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
             const name = serviceName(item);
             const current = popularCounts.get(name) ?? { bookings: 0, capturedDeposits: 0 };
             current.bookings += 1;
-            if (captured(item)) current.capturedDeposits += item.depositAmount ?? 0;
+            if (captured(item)) current.capturedDeposits += depositDollars(item);
             popularCounts.set(name, current);
         });
 
