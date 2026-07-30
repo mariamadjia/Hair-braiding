@@ -340,6 +340,26 @@ export default function GalleryPage({
     selectedSubcategories.length > 0 ||
     sortOrder !== 'featured';
 
+  const activeFilterCount =
+    (selectedFilter !== 'All' ? 1 : 0) + selectedSubcategories.length;
+
+  const activeFilterChips = [
+    ...(selectedFilter !== 'All'
+      ? [{ id: 'category', label: selectedFilter, onRemove: () => setSelectedFilter('All') }]
+      : []),
+    ...selectedSubcategories.map((subcategoryId) => {
+      const [categoryLink, queryString = ''] = subcategoryId.split('?');
+      const subcategorySlug = queryString.replace('style=', '');
+      const category = galleryCategories.find((item) => item.link === categoryLink);
+      const subcategory = category?.subcategoryData.find((item) => item.slug === subcategorySlug);
+      return {
+        id: subcategoryId,
+        label: subcategory?.name || subcategorySlug,
+        onRemove: () => toggleSubcategory(categoryLink, subcategorySlug),
+      };
+    }),
+  ];
+
   const renderFilters = () => (
     <>
       <div className="relative border-b border-[#E4D3C4] pb-6 text-center">
@@ -466,7 +486,61 @@ export default function GalleryPage({
 
             {/* Right Content - Search and Gallery */}
             <div className="min-w-0 flex-1">
-              <div className="mb-8 flex flex-col gap-4">
+              <div className="mb-6 lg:hidden">
+                <div className="flex items-center gap-2">
+                  <div className="relative min-w-0 flex-1">
+                    <label htmlFor="gallery-search-mobile" className="sr-only">Search gallery styles</label>
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B6864]" size={18} />
+                    <input
+                      id="gallery-search-mobile"
+                      type="text"
+                      placeholder="Search styles"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      className="h-12 w-full rounded-[2px] border border-[#D8D5CF] bg-[#FFFDFC]/85 py-3 pl-11 pr-4 text-sm text-[#2C1810] outline-none transition-colors placeholder:text-[#8F8A84] focus:border-[#2C1810] focus:bg-white"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setMobileFiltersOpen(true)}
+                    className="relative flex h-12 flex-shrink-0 items-center justify-center gap-2 rounded-[2px] border border-[#D8D5CF] bg-[#FFFDFC]/85 px-4 text-[11px] font-semibold text-[#2C1810] transition-colors hover:border-[#2C1810]"
+                    aria-label={`Filter gallery${activeFilterCount ? `, ${activeFilterCount} active` : ''}`}
+                  >
+                    <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                    <span>Filter</span>
+                    {activeFilterCount > 0 && (
+                      <span className="absolute -right-1.5 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-[#E8E5DF] px-1 text-[10px] font-semibold text-[#2C1810]">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                <div className="mt-4 flex min-h-9 items-center justify-between gap-3">
+                  <p className="flex-shrink-0 text-xs text-[#6B6864]" aria-live="polite">
+                    {displayItems.length} {displayItems.length === 1 ? 'style' : 'styles'}
+                  </p>
+                  {activeFilterChips.length > 0 && (
+                    <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
+                      {activeFilterChips.map((chip) => (
+                        <button
+                          key={chip.id}
+                          type="button"
+                          onClick={chip.onRemove}
+                          className="flex h-9 flex-shrink-0 items-center gap-2 rounded-[2px] border border-[#D8D5CF] bg-[#FFFDFC]/85 px-3 text-[11px] text-[#2C1810]"
+                          aria-label={`Remove ${chip.label} filter`}
+                        >
+                          <span>{chip.label}</span>
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-8 hidden gap-4 lg:flex lg:flex-col">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <div className="relative w-full xl:max-w-3xl">
                   <label htmlFor="gallery-search" className="sr-only">Search gallery styles</label>
@@ -481,9 +555,6 @@ export default function GalleryPage({
                   />
                   </div>
                   <div className="flex gap-3">
-                    <button type="button" onClick={() => setMobileFiltersOpen(true)} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-[3px] border border-[#D8C2B1] bg-[#FFFDFC]/80 px-4 text-xs font-semibold uppercase tracking-wider text-[#2C1810] lg:hidden">
-                      <SlidersHorizontal className="h-4 w-4" /> Filter & Sort
-                    </button>
                     <label className="flex min-h-12 items-center gap-4 border-b border-[#B8754E] px-2 text-[10px] text-[#7C685C]">
                       <span className="whitespace-nowrap font-semibold uppercase tracking-[0.18em]">Sort by</span>
                       <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} className="bg-transparent pr-1 text-xs font-medium uppercase tracking-[0.1em] text-[#2C1810] outline-none">
@@ -700,16 +771,9 @@ export default function GalleryPage({
           <div className="fixed inset-0 z-50 flex items-end bg-black/45 lg:hidden" role="dialog" aria-modal="true" aria-labelledby="mobile-gallery-filters" onMouseDown={(event) => { if (event.target === event.currentTarget) setMobileFiltersOpen(false); }}>
             <div className="max-h-[88vh] w-full overflow-y-auto rounded-t-[24px] bg-white px-5 pb-7 pt-5 shadow-2xl">
               <div className="mb-4 flex items-center justify-between">
-                <h2 id="mobile-gallery-filters" className="font-serif text-2xl text-[#2C1810]">Filter & Sort</h2>
+                <h2 id="mobile-gallery-filters" className="font-serif text-2xl text-[#2C1810]">Filter</h2>
                 <button type="button" onClick={() => setMobileFiltersOpen(false)} className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100" aria-label="Close filters"><X className="h-5 w-5" /></button>
               </div>
-              <label className="mb-5 block text-xs font-semibold uppercase tracking-wider text-neutral-600">
-                Sort by
-                <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} className="mt-2 min-h-12 w-full rounded-lg border border-neutral-200 bg-white px-4 text-sm font-normal normal-case tracking-normal text-[#2C1810]">
-                  <option value="featured">Featured</option>
-                  <option value="newest">Newest</option>
-                </select>
-              </label>
               {renderFilters()}
               <button type="button" onClick={() => setMobileFiltersOpen(false)} className="sticky bottom-0 mt-6 min-h-12 w-full rounded-lg bg-[#2C1810] px-5 text-xs font-semibold uppercase tracking-[0.15em] text-white">
                 Show {displayItems.length} results
