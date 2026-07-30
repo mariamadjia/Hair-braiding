@@ -1372,10 +1372,11 @@ export default function FlipBook3D({
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      transform: 'translateZ(14px)',
-                      borderRadius: '12px',
-                      background: '#0a0a0a',
-                      boxShadow: '0 28px 70px rgba(0,0,0,0.58), inset -5px 0 8px rgba(255,255,255,0.04), inset 3px 0 5px rgba(0,0,0,0.48)',
+                      transform: 'translateZ(23px)',
+                      border: '3px solid #e8e1d7',
+                      borderRadius: '18px 12px 12px 18px',
+                      background: '#f5f1ea',
+                      boxShadow: '0 34px 80px rgba(47,31,24,0.34), inset -5px 0 8px rgba(255,255,255,0.46), inset 3px 0 7px rgba(83,62,49,0.13)',
                       overflow: 'hidden',
                       backfaceVisibility: 'hidden',
                       WebkitBackfaceVisibility: 'hidden',
@@ -1391,6 +1392,8 @@ export default function FlipBook3D({
                         backgroundSize: 'cover',
                       }}
                     />
+                    <div style={{ position: 'absolute', top: 0, bottom: 0, left: 11, width: 2, background: 'linear-gradient(to right,rgba(92,69,54,.18),rgba(255,255,255,.55),rgba(92,69,54,.12))', opacity: 0.8 }} />
+                    <div style={{ position: 'absolute', top: 0, bottom: 0, left: 18, width: 1, background: 'rgba(82,60,47,.16)' }} />
                   </div>
 
                   {/* Back cover keeps the object visible through the rear half of the turn. */}
@@ -1398,13 +1401,14 @@ export default function FlipBook3D({
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      transform: 'rotateY(180deg) translateZ(14px)',
-                      borderRadius: '12px',
-                      background: '#0a0a0a',
+                      transform: 'rotateY(180deg) translateZ(23px)',
+                      border: '3px solid #e8e1d7',
+                      borderRadius: '12px 18px 18px 12px',
+                      background: '#f5f1ea',
                       overflow: 'hidden',
                       backfaceVisibility: 'hidden',
                       WebkitBackfaceVisibility: 'hidden',
-                      boxShadow: '0 28px 70px rgba(0,0,0,0.5)',
+                      boxShadow: '0 34px 80px rgba(47,31,24,0.3), inset 4px 0 7px rgba(83,62,49,0.12)',
                     }}
                   >
                     <div
@@ -1417,21 +1421,23 @@ export default function FlipBook3D({
                         backgroundSize: 'cover',
                       }}
                     />
+                    <div style={{ position: 'absolute', top: 0, bottom: 0, right: 11, width: 2, background: 'linear-gradient(to right,rgba(92,69,54,.16),rgba(255,255,255,.5),rgba(92,69,54,.12))', opacity: 0.8 }} />
+                    <div style={{ position: 'absolute', top: 0, bottom: 0, right: 18, width: 1, background: 'rgba(82,60,47,.14)' }} />
                   </div>
 
                   {/* Page block creates visible depth instead of a flat rotating card. */}
                   <div
                     style={{
                       position: 'absolute',
-                      top: 14,
-                      right: -14,
-                      bottom: 14,
-                      width: 28,
+                      top: 18,
+                      right: -23,
+                      bottom: 18,
+                      width: 46,
                       transform: 'rotateY(90deg)',
                       transformOrigin: 'center center',
-                      borderRadius: '2px 7px 7px 2px',
-                      background: 'repeating-linear-gradient(to bottom,#f4f0e9 0 2px,#d7d0c7 2px 3px)',
-                      boxShadow: 'inset 7px 0 8px rgba(0,0,0,.22), inset -2px 0 3px rgba(255,255,255,.4)',
+                      borderRadius: '3px 9px 9px 3px',
+                      background: 'repeating-linear-gradient(to bottom,#fbf7ef 0 2px,#ded4c7 2px 3px)',
+                      boxShadow: 'inset 10px 0 11px rgba(75,52,40,.22), inset -3px 0 4px rgba(255,255,255,.72)',
                     }}
                   />
 
@@ -1440,44 +1446,64 @@ export default function FlipBook3D({
                     style={{
                       position: 'absolute',
                       top: 0,
-                      left: -14,
+                      left: -23,
                       bottom: 0,
-                      width: 28,
+                      width: 46,
                       transform: 'rotateY(-90deg)',
                       transformOrigin: 'center center',
-                      borderRadius: '10px 3px 3px 10px',
-                      background: 'linear-gradient(to right,#16110f 0%,#3b2a23 28%,#201713 68%,#0d0a09 100%)',
-                      boxShadow: 'inset 5px 0 7px rgba(255,255,255,.08), inset -6px 0 8px rgba(0,0,0,.5)',
+                      borderRadius: '16px 4px 4px 16px',
+                      background: 'linear-gradient(to right,#24150f 0%,#4c2d20 24%,#352016 65%,#1b100c 100%)',
+                      boxShadow: 'inset 8px 0 9px rgba(255,255,255,.1), inset -9px 0 11px rgba(0,0,0,.48)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
                     }}
-                  />
+                  >
+                    <span
+                      style={{
+                        writingMode: 'vertical-rl',
+                        transform: 'rotate(180deg)',
+                        color: '#d5a84c',
+                        fontFamily: 'var(--font-playfair,Georgia,serif)',
+                        fontSize: 'clamp(.58rem,1.4vw,.86rem)',
+                        letterSpacing: '0.13em',
+                        textTransform: 'uppercase',
+                        textShadow: '0 1px 1px rgba(0,0,0,.5)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      The Braid Book
+                    </span>
+                  </div>
 
                   {/* Top and bottom edges complete the hardcover volume. */}
                   <div
                     style={{
                       position: 'absolute',
-                      top: -14,
-                      left: 10,
-                      right: 10,
-                      height: 28,
+                      top: -23,
+                      left: 14,
+                      right: 14,
+                      height: 46,
                       transform: 'rotateX(90deg)',
                       transformOrigin: 'center center',
-                      borderRadius: '8px 8px 2px 2px',
-                      background: 'linear-gradient(to bottom,#241a16,#0e0b09)',
-                      boxShadow: 'inset 0 -5px 7px rgba(0,0,0,.38)',
+                      borderRadius: '12px 12px 3px 3px',
+                      background: 'linear-gradient(to bottom,#f8f3eb 0 16%,#d8ccbd 17% 84%,#f6f0e7 85%)',
+                      boxShadow: 'inset 0 -7px 9px rgba(76,53,41,.24)',
                     }}
                   />
                   <div
                     style={{
                       position: 'absolute',
-                      bottom: -14,
-                      left: 10,
-                      right: 10,
-                      height: 28,
+                      bottom: -23,
+                      left: 14,
+                      right: 14,
+                      height: 46,
                       transform: 'rotateX(-90deg)',
                       transformOrigin: 'center center',
-                      borderRadius: '2px 2px 8px 8px',
-                      background: 'linear-gradient(to top,#17110e,#33241e)',
-                      boxShadow: 'inset 0 5px 7px rgba(0,0,0,.38)',
+                      borderRadius: '3px 3px 12px 12px',
+                      background: 'linear-gradient(to top,#f8f3eb 0 16%,#d8ccbd 17% 84%,#f6f0e7 85%)',
+                      boxShadow: 'inset 0 7px 9px rgba(76,53,41,.24)',
                     }}
                   />
                 </div>
