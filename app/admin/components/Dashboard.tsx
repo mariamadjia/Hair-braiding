@@ -20,6 +20,7 @@ type Appointment = {
     id: number;
     customer?: { id?: number; firstName?: string; lastName?: string };
     service?: { name?: string };
+    styleName?: string;
     selectedService?: string;
     appointmentDateTime: string;
     status: string;
@@ -48,7 +49,7 @@ const shiftDays = (date: Date, days: number) => {
 const customerName = (appointment: Appointment) =>
     [appointment.customer?.firstName, appointment.customer?.lastName].filter(Boolean).join(" ") || "Customer";
 const serviceName = (appointment: Appointment) =>
-    appointment.selectedService || appointment.service?.name || "Service not specified";
+    appointment.styleName || appointment.selectedService || appointment.service?.name || "Service not specified";
 const percentChange = (current: number, previous: number) =>
     previous === 0 ? (current > 0 ? 100 : 0) : Math.round(((current - previous) / previous) * 100);
 
