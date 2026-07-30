@@ -686,6 +686,7 @@ export default function FlipBook3D({
   const [scrollRotationProgress, setScrollRotationProgress] = useState(0);
   const sectionRef = useRef(null);
   const scrollFrameRef = useRef(null);
+  const hasPlayedScrollSequenceRef = useRef(false);
   const touchX = useRef(0);
   const touchY = useRef(0);
   const prevCurrentRef = useRef(0);
@@ -716,31 +717,40 @@ export default function FlipBook3D({
       return;
     }
 
-    const updateScrollProgress = () => {
-      scrollFrameRef.current = null;
-      const section = sectionRef.current;
-      if (!section) return;
+    const section = sectionRef.current;
+    if (!section) return;
 
-      const rect = section.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const start = viewportHeight * 0.88;
-      const distance = rect.height + viewportHeight * 0.76;
-      const progress = Math.min(1, Math.max(0, (start - rect.top) / distance));
-      setScrollRotationProgress(progress);
+    const playSequence = () => {
+      if (hasPlayedScrollSequenceRef.current) return;
+      hasPlayedScrollSequenceRef.current = true;
+
+      const duration = 3800;
+      const startedAt = window.performance.now();
+      const animate = (now) => {
+        const progress = Math.min(1, (now - startedAt) / duration);
+        setScrollRotationProgress(progress);
+        if (progress < 1) {
+          scrollFrameRef.current = window.requestAnimationFrame(animate);
+        } else {
+          scrollFrameRef.current = null;
+        }
+      };
+      scrollFrameRef.current = window.requestAnimationFrame(animate);
     };
 
-    const requestProgressUpdate = () => {
-      if (scrollFrameRef.current !== null) return;
-      scrollFrameRef.current = window.requestAnimationFrame(updateScrollProgress);
-    };
-
-    updateScrollProgress();
-    window.addEventListener('scroll', requestProgressUpdate, { passive: true });
-    window.addEventListener('resize', requestProgressUpdate);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          playSequence();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(section);
 
     return () => {
-      window.removeEventListener('scroll', requestProgressUpdate);
-      window.removeEventListener('resize', requestProgressUpdate);
+      observer.disconnect();
       if (scrollFrameRef.current !== null) {
         window.cancelAnimationFrame(scrollFrameRef.current);
       }
