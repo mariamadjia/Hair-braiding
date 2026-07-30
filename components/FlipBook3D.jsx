@@ -684,6 +684,7 @@ export default function FlipBook3D({
   const [showFlipPage, setShowFlipPage] = useState(false);
   const [flipDirection, setFlipDirection] = useState(1);
   const [scrollRotationProgress, setScrollRotationProgress] = useState(0);
+  const [isCompactBookViewport, setIsCompactBookViewport] = useState(false);
   const sectionRef = useRef(null);
   const scrollFrameRef = useRef(null);
   const hasPlayedScrollSequenceRef = useRef(false);
@@ -710,6 +711,14 @@ export default function FlipBook3D({
   }, []);
 
   useEffect(() => clearFlipTimers, [clearFlipTimers]);
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 640px)');
+    const updateViewport = () => setIsCompactBookViewport(query.matches);
+    updateViewport();
+    query.addEventListener('change', updateViewport);
+    return () => query.removeEventListener('change', updateViewport);
+  }, []);
 
   useEffect(() => {
     if (editMode || reduceMotion) {
@@ -767,6 +776,10 @@ export default function FlipBook3D({
     ? 1
     : Math.min(1, Math.max(0, (scrollRotationProgress - 0.7) / 0.3));
   const bookOpeningEase = bookOpeningProgress * bookOpeningProgress * (3 - 2 * bookOpeningProgress);
+  const closedBookScale = isCompactBookViewport ? 1.22 : 1.46;
+  const closedBookDepth = isCompactBookViewport ? 24 : 46;
+  const closedBookHalfDepth = closedBookDepth / 2;
+  const closedBookEdgeInset = isCompactBookViewport ? 9 : 18;
 
   useEffect(() => {
     if (editMode) {
@@ -1073,6 +1086,17 @@ export default function FlipBook3D({
         }
         .page-sheen { animation: sheenMove 0.75s cubic-bezier(0.5, 0, 0.3, 1) forwards; }
 
+        @media (max-width: 640px) {
+          .braid-book-section {
+            padding: 42px 12px 38px !important;
+          }
+          .braid-book-stage {
+            width: calc(100vw - 28px) !important;
+            height: clamp(240px, 68vw, 330px) !important;
+            min-height: 240px !important;
+          }
+        }
+
       `}</style>
 
       <section
@@ -1360,7 +1384,7 @@ export default function FlipBook3D({
                     position: 'absolute',
                     inset: 0,
                     transformOrigin: bookOpeningProgress > 0 ? 'left center' : 'center center',
-                    transform: `scale(${1.46 - 0.46 * bookOpeningEase}) rotateY(${360 * closedBookRotationEase - 180 * bookOpeningEase}deg)`,
+                    transform: `scale(${closedBookScale - (closedBookScale - 1) * bookOpeningEase}) rotateY(${360 * closedBookRotationEase - 180 * bookOpeningEase}deg)`,
                     transition: 'transform-origin 0s',
                     willChange: 'transform',
                     borderRadius: '12px',
@@ -1372,7 +1396,7 @@ export default function FlipBook3D({
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      transform: 'translateZ(23px)',
+                      transform: `translateZ(${closedBookHalfDepth}px)`,
                       border: '3px solid #e8e1d7',
                       borderRadius: '18px 12px 12px 18px',
                       background: '#f5f1ea',
@@ -1401,7 +1425,7 @@ export default function FlipBook3D({
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      transform: 'rotateY(180deg) translateZ(23px)',
+                      transform: `rotateY(180deg) translateZ(${closedBookHalfDepth}px)`,
                       border: '3px solid #e8e1d7',
                       borderRadius: '12px 18px 18px 12px',
                       background: '#f5f1ea',
@@ -1429,10 +1453,10 @@ export default function FlipBook3D({
                   <div
                     style={{
                       position: 'absolute',
-                      top: 18,
-                      right: -23,
-                      bottom: 18,
-                      width: 46,
+                      top: closedBookEdgeInset,
+                      right: -closedBookHalfDepth,
+                      bottom: closedBookEdgeInset,
+                      width: closedBookDepth,
                       transform: 'rotateY(90deg)',
                       transformOrigin: 'center center',
                       borderRadius: '3px 9px 9px 3px',
@@ -1446,9 +1470,9 @@ export default function FlipBook3D({
                     style={{
                       position: 'absolute',
                       top: 0,
-                      left: -23,
+                      left: -closedBookHalfDepth,
                       bottom: 0,
-                      width: 46,
+                      width: closedBookDepth,
                       transform: 'rotateY(-90deg)',
                       transformOrigin: 'center center',
                       borderRadius: '16px 4px 4px 16px',
@@ -1481,10 +1505,10 @@ export default function FlipBook3D({
                   <div
                     style={{
                       position: 'absolute',
-                      top: -23,
-                      left: 14,
-                      right: 14,
-                      height: 46,
+                      top: -closedBookHalfDepth,
+                      left: closedBookEdgeInset,
+                      right: closedBookEdgeInset,
+                      height: closedBookDepth,
                       transform: 'rotateX(90deg)',
                       transformOrigin: 'center center',
                       borderRadius: '12px 12px 3px 3px',
@@ -1495,10 +1519,10 @@ export default function FlipBook3D({
                   <div
                     style={{
                       position: 'absolute',
-                      bottom: -23,
-                      left: 14,
-                      right: 14,
-                      height: 46,
+                      bottom: -closedBookHalfDepth,
+                      left: closedBookEdgeInset,
+                      right: closedBookEdgeInset,
+                      height: closedBookDepth,
                       transform: 'rotateX(-90deg)',
                       transformOrigin: 'center center',
                       borderRadius: '3px 3px 12px 12px',
