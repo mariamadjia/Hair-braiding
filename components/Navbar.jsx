@@ -18,12 +18,12 @@ export default function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-50 bg-[#2C1810] text-white border-b border-white/20">
-        <div className="flex h-[70px] items-center justify-between px-8 lg:px-12">
+        <div className="flex h-14 items-center justify-between px-6 md:h-[70px] md:px-8 lg:px-12">
 
           {/* Brand */}
           <Link
             href="/"
-            className="text-[14px] uppercase tracking-[0.25em] font-semibold"
+            className="text-[12px] uppercase tracking-[0.22em] font-semibold md:text-[14px] md:tracking-[0.25em]"
           >
             By Ah Braiding
           </Link>
@@ -40,21 +40,21 @@ export default function Navbar() {
           {/* Hamburger */}
           <button
             onClick={() => setOpen(!open)}
-            className="flex h-11 w-11 md:hidden flex-col items-center justify-center gap-[5px] focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="flex h-10 w-10 md:hidden flex-col items-center justify-center gap-1 focus-visible:outline-2 focus-visible:outline-offset-2"
             aria-label={open ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={open}
             aria-controls="mobile-navigation"
           >
-            <span className="block h-[2px] w-7 bg-white"></span>
-            <span className="block h-[2px] w-7 bg-white"></span>
-            <span className="block h-[2px] w-7 bg-white"></span>
+            <span className="block h-[2px] w-6 bg-white"></span>
+            <span className="block h-[2px] w-6 bg-white"></span>
+            <span className="block h-[2px] w-6 bg-white"></span>
           </button>
         </div>
       </header>
 
       {/* Mobile Menu */}
       {open && (
-        <div id="mobile-navigation" className="fixed inset-x-0 top-[70px] z-40 bg-[#2C1810] text-white shadow-xl md:hidden">
+        <div id="mobile-navigation" className="fixed inset-x-0 top-14 z-40 bg-[#2C1810] text-white shadow-xl md:hidden">
           <nav className="flex flex-col gap-2 px-6 py-6 text-[14px] uppercase tracking-[0.22em]">
             <Link className="min-h-11 px-2 py-3 focus-visible:outline-2" href="/" onClick={() => setOpen(false)}>Home</Link>
             <Link className="min-h-11 px-2 py-3 focus-visible:outline-2" href="/gallery" onClick={() => setOpen(false)}>Gallery</Link>
