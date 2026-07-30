@@ -150,8 +150,15 @@ export default function CategoryPageTemplate({
                 <X size={18} />
               </button>
 
+              <div className="border-b border-[#D8D5CF] px-6 pb-5 pt-6 pr-16 lg:hidden">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#6B6864]">{categoryName} Styles</p>
+                <h2 className="mt-3 font-serif text-[30px] leading-[1.05] tracking-[-0.02em] text-[#2C1810] sm:text-[32px]">
+                  {selectedCategory.name}
+                </h2>
+              </div>
+
               <div className="border-b border-[#D8D5CF] p-5 pb-0 lg:border-b-0 lg:border-r lg:border-[#E3D4C8] lg:p-8">
-                <div className="relative aspect-[69/100] overflow-hidden bg-[#E8E5DF] lg:aspect-[5/4] lg:rounded-[3px] lg:bg-[#E8DED4]">
+                <div className="relative mx-auto aspect-[3/4] w-[78%] overflow-hidden bg-[#E8E5DF] lg:mx-0 lg:aspect-[5/4] lg:w-full lg:rounded-[3px] lg:bg-[#E8DED4]">
                   <img src={selectedCategory.images[currentImageIndex]} alt={`${selectedCategory.name} ${currentImageIndex + 1}`} className="h-full w-full object-cover lg:object-contain" />
 
                   {selectedCategory.images.length > 1 && (
@@ -193,11 +200,7 @@ export default function CategoryPageTemplate({
               </div>
 
               <div className="flex flex-col px-5 pb-5 pt-6 lg:hidden">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#6B6864]">{categoryName} Styles</p>
-                <h2 className="mt-3 font-serif text-[30px] leading-[1.05] tracking-[-0.02em] text-[#2C1810] sm:text-[32px]">
-                  {selectedCategory.name}
-                </h2>
-                <button onClick={() => router.push(`/booking/${categorySlug}/${selectedCategory.slug}`)} className="mx-auto mt-8 min-h-12 w-full max-w-[240px] bg-[#2C1810] px-8 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#45271B] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2">
+                <button onClick={() => router.push(`/booking/${categorySlug}/${selectedCategory.slug}`)} className="mx-auto min-h-12 w-full max-w-[240px] bg-[#2C1810] px-8 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#45271B] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2">
                   Book This Style
                 </button>
               </div>
