@@ -752,26 +752,16 @@ export default function FlipBook3D({
       return 'translateY(0) scale(1) rotateX(5deg) rotateY(0deg)';
     }
 
-    const standEnd = 0.22;
-    const rotateEnd = 0.78;
-    let rotateX = 68;
+    const rotateEnd = 0.7;
+    let rotateX = 5;
     let rotateY = 0;
-    let scale = 0.9;
-    let translateY = 34;
+    let scale = 1;
+    let translateY = 0;
 
-    if (scrollRotationProgress < standEnd) {
-      const phase = scrollRotationProgress / standEnd;
-      const eased = 1 - Math.pow(1 - phase, 3);
-      rotateX = 68 + (5 - 68) * eased;
-      scale = 0.9 + 0.1 * eased;
-      translateY = 34 * (1 - eased);
-    } else if (scrollRotationProgress < rotateEnd) {
-      const phase = (scrollRotationProgress - standEnd) / (rotateEnd - standEnd);
+    if (scrollRotationProgress < rotateEnd) {
+      const phase = scrollRotationProgress / rotateEnd;
       const eased = phase * phase * (3 - 2 * phase);
-      rotateX = 5;
       rotateY = 360 * eased;
-      scale = 1;
-      translateY = 0;
     } else {
       const phase = (scrollRotationProgress - rotateEnd) / (1 - rotateEnd);
       const eased = phase * phase * (3 - 2 * phase);
@@ -790,7 +780,7 @@ export default function FlipBook3D({
 
   const bookOpeningProgress = editMode || reduceMotion
     ? 1
-    : Math.min(1, Math.max(0, (scrollRotationProgress - 0.78) / 0.22));
+    : Math.min(1, Math.max(0, (scrollRotationProgress - 0.7) / 0.3));
   const bookOpeningEase = bookOpeningProgress * bookOpeningProgress * (3 - 2 * bookOpeningProgress);
 
   useEffect(() => {
