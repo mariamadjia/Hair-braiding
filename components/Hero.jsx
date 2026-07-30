@@ -67,7 +67,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
           <div className="w-full max-w-lg text-center">
             {/* Headline */}
             <div className="mb-2 md:mb-8">
-              <h1 className="mx-auto max-w-[340px] text-[30px] font-semibold uppercase leading-[1.05] tracking-[-0.02em] text-[#2C1810] sm:text-[38px] md:hidden">
+              <h1 className="mx-auto max-w-[310px] text-[26px] font-semibold uppercase leading-[1.02] tracking-[-0.015em] text-[#2C1810] sm:max-w-[360px] sm:text-[32px] md:hidden">
                 A premium braiding experience in San Antonio, Texas.
               </h1>
               <h1 className="hidden text-[80px] font-[family-name:var(--font-allura)] font-normal leading-[1.1] text-[#2C1810] md:mb-4 md:block lg:text-[96px]">
