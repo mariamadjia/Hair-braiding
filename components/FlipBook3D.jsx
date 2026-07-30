@@ -758,36 +758,11 @@ export default function FlipBook3D({
   }, [editMode, reduceMotion]);
 
   const getBookScrollTransform = () => {
-    if (editMode || reduceMotion) {
-      return 'translateY(0) scale(1) rotateX(5deg) rotateY(0deg)';
-    }
-
-    const rotateEnd = 0.7;
-    let rotateX = 5;
-    let rotateY = 0;
-    let scale = 1;
-    let translateY = 0;
-
-    if (scrollRotationProgress < rotateEnd) {
-      const phase = scrollRotationProgress / rotateEnd;
-      const eased = phase * phase * (3 - 2 * phase);
-      rotateY = 360 * eased;
-    } else {
-      const phase = (scrollRotationProgress - rotateEnd) / (1 - rotateEnd);
-      const eased = phase * phase * (3 - 2 * phase);
-      rotateX = 5 + (68 - 5) * eased;
-      rotateY = 360;
-      scale = 1 - 0.1 * eased;
-      translateY = 34 * eased;
-    }
-
-    const openingProgress = Math.min(1, Math.max(0, (scrollRotationProgress - rotateEnd) / (1 - rotateEnd)));
-    const openingEase = openingProgress * openingProgress * (3 - 2 * openingProgress);
-    const centerClosedBook = -25 * (1 - openingEase);
-
-    return `translateX(${centerClosedBook}%) translateY(${translateY}px) scale(${scale}) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    return 'rotateX(5deg)';
   };
 
+  const closedBookRotationProgress = Math.min(1, scrollRotationProgress / 0.7);
+  const closedBookRotationEase = closedBookRotationProgress * closedBookRotationProgress * (3 - 2 * closedBookRotationProgress);
   const bookOpeningProgress = editMode || reduceMotion
     ? 1
     : Math.min(1, Math.max(0, (scrollRotationProgress - 0.7) / 0.3));
@@ -1364,68 +1339,124 @@ export default function FlipBook3D({
               </div>
             </div>
 
-            {/* Closed cover shown during the scroll-driven rise and rotation. */}
+            {/* A separate closed 3D book rotates, then opens into the existing flipbook. */}
             {!editMode && !reduceMotion && bookOpeningProgress < 1 && (
               <div
                 aria-hidden="true"
                 style={{
                   position: 'absolute',
                   top: 0,
-                  left: '50%',
+                  left: `${25 + 25 * bookOpeningEase}%`,
                   width: '50%',
                   height: '100%',
                   zIndex: 500,
-                  transformOrigin: 'left center',
                   transformStyle: 'preserve-3d',
-                  transform: `rotateY(${-180 * bookOpeningEase}deg)`,
-                  opacity: 1 - Math.max(0, (bookOpeningProgress - 0.88) / 0.12),
                   pointerEvents: 'auto',
-                  borderRadius: '12px',
-                  background: '#0a0a0a',
-                  boxShadow: '0 28px 70px rgba(0,0,0,0.62), 8px 0 16px rgba(0,0,0,0.28)',
-                  overflow: 'hidden',
-                  backfaceVisibility: 'hidden',
-                  WebkitBackfaceVisibility: 'hidden',
+                  willChange: 'left',
                 }}
               >
-                <CoverSVG image={(cover || BRAID_BOOK_COVER).image} />
                 <div
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    paddingTop: '11%',
-                    pointerEvents: 'none',
-                    background: 'linear-gradient(to bottom,rgba(0,0,0,.62),transparent 32%)',
+                    transformOrigin: bookOpeningProgress > 0 ? 'left center' : 'center center',
+                    transform: `rotateY(${360 * closedBookRotationEase - 180 * bookOpeningEase}deg)`,
+                    transition: 'transform-origin 0s',
+                    willChange: 'transform',
+                    borderRadius: '12px',
+                    transformStyle: 'preserve-3d',
                   }}
                 >
-                  <span
+                  {/* Front cover */}
+                  <div
                     style={{
-                      color: '#f4eee8',
-                      fontFamily: 'var(--font-playfair,Georgia,serif)',
-                      fontSize: 'clamp(1rem,2.3vw,1.8rem)',
-                      fontStyle: 'italic',
-                      letterSpacing: '-0.02em',
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '12px',
+                      background: '#0a0a0a',
+                      boxShadow: '0 28px 70px rgba(0,0,0,0.58), 8px 0 16px rgba(0,0,0,0.22)',
+                      overflow: 'hidden',
+                      backfaceVisibility: 'hidden',
+                      WebkitBackfaceVisibility: 'hidden',
                     }}
                   >
-                    {(cover || BRAID_BOOK_COVER).title}
-                  </span>
+                    <CoverSVG image={(cover || BRAID_BOOK_COVER).image} />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'flex-start',
+                        paddingTop: '11%',
+                        pointerEvents: 'none',
+                        background: 'linear-gradient(to bottom,rgba(0,0,0,.62),transparent 32%)',
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: '#f4eee8',
+                          fontFamily: 'var(--font-playfair,Georgia,serif)',
+                          fontSize: 'clamp(1rem,2.3vw,1.8rem)',
+                          fontStyle: 'italic',
+                          letterSpacing: '-0.02em',
+                        }}
+                      >
+                        {(cover || BRAID_BOOK_COVER).title}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Back cover keeps the object visible through the rear half of the turn. */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      transform: 'rotateY(180deg) translateZ(2px)',
+                      borderRadius: '12px',
+                      background: '#0a0a0a',
+                      overflow: 'hidden',
+                      backfaceVisibility: 'hidden',
+                      WebkitBackfaceVisibility: 'hidden',
+                      boxShadow: '0 28px 70px rgba(0,0,0,0.5)',
+                    }}
+                  >
+                    <BackCoverSVG endPage={endPage || BRAID_BOOK_END_PAGE} />
+                  </div>
+
+                  {/* Page block creates visible depth instead of a flat rotating card. */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 10,
+                      right: -9,
+                      bottom: 10,
+                      width: 12,
+                      transform: 'rotateY(90deg)',
+                      transformOrigin: 'left center',
+                      borderRadius: '0 4px 4px 0',
+                      background: 'repeating-linear-gradient(to bottom,#f0ece5 0 2px,#d6d0c7 2px 3px)',
+                      boxShadow: '3px 0 8px rgba(0,0,0,.25)',
+                    }}
+                  />
+
+                  {/* Spine edge visible when the book turns sideways. */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: -8,
+                      bottom: 0,
+                      width: 16,
+                      transform: 'rotateY(-90deg)',
+                      transformOrigin: 'right center',
+                      borderRadius: '8px 0 0 8px',
+                      background: T.spine,
+                      boxShadow: '-3px 0 8px rgba(0,0,0,.32)',
+                    }}
+                  />
                 </div>
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: -10,
-                    bottom: 8,
-                    width: 12,
-                    borderRadius: '0 5px 5px 0',
-                    background: 'repeating-linear-gradient(to bottom,#f0ece5 0 2px,#d6d0c7 2px 3px)',
-                    boxShadow: '3px 0 8px rgba(0,0,0,.25)',
-                  }}
-                />
               </div>
             )}
 
