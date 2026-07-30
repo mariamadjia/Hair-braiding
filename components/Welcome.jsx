@@ -127,7 +127,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
         </div>
 
         {/* Mobile: compact editorial layout with alternating media and actions */}
-        <div className="space-y-10 lg:hidden">
+        <div className="space-y-16 lg:hidden">
           {/* Intro Text */}
           <div className="px-1 text-center">
             <h2 className="mb-4 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900">
@@ -140,7 +140,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
 
           {items.map((item, index) => {
             const media = (
-              <div className="relative overflow-hidden bg-neutral-200 aspect-[3/5]">
+              <div className="relative aspect-[4/5] overflow-hidden bg-neutral-200">
                 {editMode && (
                   <button
                     onClick={(event) => {
@@ -184,12 +184,12 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
             const action = item.link ? (
               <Link
                 href={item.link}
-                className="inline-block max-w-[9rem] text-center text-[10px] font-medium uppercase leading-[1.55] tracking-[0.22em] text-neutral-900 transition-opacity hover:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-4 sm:text-[11px]"
+                className="inline-block max-w-[9rem] text-left font-mono text-[12px] font-medium uppercase leading-[1.55] tracking-[0.16em] text-[#2C1810] transition-opacity hover:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-4 sm:text-[13px]"
               >
                 {item.label}
               </Link>
             ) : (
-              <p className="max-w-[9rem] text-center text-[10px] font-medium uppercase leading-[1.55] tracking-[0.22em] text-neutral-900 sm:text-[11px]">
+              <p className="max-w-[9rem] text-left font-mono text-[12px] font-medium uppercase leading-[1.55] tracking-[0.16em] text-[#2C1810] sm:text-[13px]">
                 {item.label}
               </p>
             );
@@ -197,10 +197,10 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
             return (
               <motion.div
                 key={`${item.src}-${index}`}
-                className={`grid items-center gap-4 ${
+                className={`-mx-6 grid items-center gap-0 md:-mx-8 ${
                   index % 2 === 0
-                    ? "grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)]"
-                    : "grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]"
+                    ? "grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]"
+                    : "grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
                 }`}
                 initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
