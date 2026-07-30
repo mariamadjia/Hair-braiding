@@ -1381,13 +1381,15 @@ export default function FlipBook3D({
                       WebkitBackfaceVisibility: 'hidden',
                     }}
                   >
-                    <Image
-                      src="/braid-book/adjias-front-cover.png"
-                      alt=""
-                      fill
-                      priority
-                      sizes="(max-width: 768px) 72vw, 450px"
-                      style={{ objectFit: 'cover' }}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        backgroundImage: 'url("/braid-book/adjias-front-cover.png")',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundSize: 'cover',
+                      }}
                     />
                   </div>
 
