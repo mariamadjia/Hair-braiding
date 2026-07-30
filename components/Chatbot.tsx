@@ -171,7 +171,7 @@ export default function Chatbot() {
             setShowWelcome(true);
             setShowPrompt(false);
           }}
-          className="fixed bottom-6 right-6 z-50 bg-gradient-to-br from-[#2C1810] to-[#4a3828] text-white p-4 rounded-full shadow-lg hover:shadow-2xl hover:scale-110 transition-all duration-200"
+          className="fixed bottom-6 right-6 z-50 hidden bg-gradient-to-br from-[#2C1810] to-[#4a3828] p-4 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:shadow-2xl sm:block rounded-full"
           aria-label="Open chat"
         >
           <Send className="h-6 w-6" />
@@ -181,7 +181,7 @@ export default function Chatbot() {
   }
 
   return (
-    <div key={isMounted ? 'mounted' : 'unmounted'} className="fixed bottom-6 right-6 z-50 w-full max-w-md mx-6 sm:mx-0">
+    <div key={isMounted ? 'mounted' : 'unmounted'} className="fixed bottom-6 right-6 z-50 hidden w-full max-w-md mx-6 sm:mx-0 sm:block">
       <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl overflow-hidden border border-neutral-200 dark:border-neutral-700">
         {/* Header */}
         <div className="bg-gradient-to-br from-[#2C1810] via-[#3d2416] to-[#4a3828] text-white p-5">
