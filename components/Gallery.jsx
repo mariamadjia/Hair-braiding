@@ -213,11 +213,10 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
                     }}
                   >
                     <div
-                      className="h-full w-full transition-[transform,opacity] duration-500"
+                      className="w-full h-full transition-transform duration-600"
                       style={{
                         transformStyle: 'preserve-3d',
-                        transform: isFlipping[itemKey] ? 'rotateY(12deg) scale(0.985)' : 'rotateY(0deg) scale(1)',
-                        opacity: isFlipping[itemKey] ? 0.35 : 1,
+                        transform: isFlipping[itemKey] ? 'rotateY(90deg)' : 'rotateY(0deg)',
                       }}
                     >
                       {item.images && item.images.length > 0 && item.images[currentIndex] && !failedImages.has(item.images[currentIndex]) ? (
