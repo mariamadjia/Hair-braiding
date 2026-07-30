@@ -62,12 +62,12 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
           initial={reduceMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: "easeOut" }}
-          className="bg-[#F6F5F1] flex items-center justify-center px-6 pb-8 pt-20 md:py-0 md:px-16 lg:px-24"
+          className="bg-[#F6F5F1] flex items-center justify-center px-6 pb-6 pt-28 md:py-0 md:px-16 lg:px-24"
         >
           <div className="w-full max-w-lg text-center">
             {/* Headline */}
             <div className="mb-2 md:mb-8">
-              <h1 className="mx-auto max-w-[390px] text-[34px] font-semibold uppercase leading-[1.08] tracking-[-0.02em] text-[#2C1810] sm:text-[42px] md:hidden">
+              <h1 className="mx-auto max-w-[340px] text-[30px] font-semibold uppercase leading-[1.05] tracking-[-0.02em] text-[#2C1810] sm:text-[38px] md:hidden">
                 A premium braiding experience in San Antonio, Texas.
               </h1>
               <h1 className="hidden text-[80px] font-[family-name:var(--font-allura)] font-normal leading-[1.1] text-[#2C1810] md:mb-4 md:block lg:text-[96px]">
@@ -91,7 +91,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
         </motion.div>
 
         {/* Media Section - Video or Image Carousel */}
-        <div className="relative h-[400px] sm:h-[500px] md:flex-1 md:h-auto bg-[#F6F5F1] px-6 md:p-0 overflow-hidden">
+        <div className="relative h-[400px] sm:h-[500px] md:flex-1 md:h-auto bg-[#F6F5F1] md:p-0 overflow-hidden">
           {useVideo && videoSrc ? (
             /* Background Video */
             <>
@@ -126,7 +126,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
               <AnimatePresence initial={false} mode="sync">
                 <motion.div
                   key={currentImageIndex}
-                  className="absolute inset-x-6 inset-y-0 max-w-md mx-auto md:inset-0 md:max-w-none"
+                  className="absolute inset-x-[14%] inset-y-0 mx-auto md:inset-0 md:max-w-none"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -167,7 +167,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
       </div>
       
       {/* CTA - Mobile only (below image) */}
-      <div className="md:hidden bg-[#F6F5F1] flex items-center justify-center py-6">
+      <div className="md:hidden bg-[#F6F5F1] flex items-center justify-center pb-20 pt-10">
         <Link
           href="/services"
           className="inline-block border-b-2 border-neutral-900 pb-1 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-70"
