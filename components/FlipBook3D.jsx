@@ -1385,7 +1385,7 @@ export default function FlipBook3D({
                       style={{
                         position: 'absolute',
                         inset: 0,
-                        backgroundImage: 'url("/braid-book/adjias-front-cover.png")',
+                        backgroundImage: 'url("/braid-book/the-braid-book-cover.png")',
                         backgroundPosition: 'center',
                         backgroundRepeat: 'no-repeat',
                         backgroundSize: 'cover',
