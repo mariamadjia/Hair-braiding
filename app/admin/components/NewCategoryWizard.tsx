@@ -34,10 +34,10 @@ export function NewCategoryWizard(props: WizardProps) {
 
   return (
     <div className="border border-neutral-200 dark:border-neutral-700 rounded-2xl bg-white dark:bg-neutral-900 shadow-md max-w-4xl w-full mx-auto">
-      <div className="px-8 pt-8">
+      <div className="px-4 pt-5 sm:px-8 sm:pt-8">
         <WizardProgressBar step={step} />
       </div>
-      <div className="px-8 pb-8">
+      <div className="px-4 pb-5 sm:px-8 sm:pb-8">
         {step === 0 && (
           <div className="space-y-5">
             <div>
@@ -49,7 +49,7 @@ export function NewCategoryWizard(props: WizardProps) {
               <label htmlFor="cat-name" className={lbl}>Category Name <span className="text-red-500" aria-hidden>*</span></label>
               <input
                 id="cat-name"
-                className={`${inp} ${catNameError ? "border-red-400" : "focus:border-violet-500"}`}
+                className={`${inp} ${catNameError ? "border-red-400" : "focus:border-neutral-950 focus-visible:ring-2 focus-visible:ring-neutral-950/15"}`}
                 value={catName}
                 onChange={(event) => { setCatName(event.target.value); setCatNameError(""); }}
                 onKeyDown={(event) => event.key === "Enter" && handleStep0Next()}
@@ -79,13 +79,13 @@ export function NewCategoryWizard(props: WizardProps) {
                 {imageFiles.map((file, index) => (
                   <div key={index} className="relative shrink-0 group">
                     <img src={getImageObjectUrl(file)} alt={`photo ${index + 1}`} className="h-24 w-24 object-cover border-2 border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm" />
-                    <button type="button" onClick={() => removeCategoryPhoto(index)} className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all">×</button>
+                    <button type="button" aria-label={`Remove category photo ${index + 1}`} onClick={() => removeCategoryPhoto(index)} className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-sm text-white opacity-100 shadow-md transition hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">×</button>
                   </div>
                 ))}
                 {Array.from({ length: imageFiles.length >= 5 ? 0 : Math.max(1, 3 - imageFiles.length) }, (_, slot) => (
-                  <label key={slot} tabIndex={0} aria-label={`Add category photo ${slot + 1}`} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.currentTarget.querySelector("input")?.click(); } }} className="cursor-pointer h-24 w-24 flex flex-col items-center justify-center gap-1 text-center border-2 border-dashed border-neutral-300 dark:border-neutral-600 hover:border-violet-500 rounded-lg bg-neutral-50 dark:bg-neutral-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all group focus:outline-none focus:ring-2 focus:ring-violet-400">
-                    <Plus className="w-5 h-5 text-neutral-400 group-hover:text-violet-500" aria-hidden />
-                    <span className="text-xs text-neutral-500 group-hover:text-violet-600 font-medium">Add Photo</span>
+                  <label key={slot} tabIndex={0} aria-label={`Add category photo ${slot + 1}`} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.currentTarget.querySelector("input")?.click(); } }} className="group flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50 text-center transition hover:border-neutral-500 hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-950 dark:border-neutral-600 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:focus:ring-white">
+                    <Plus className="h-5 w-5 text-neutral-500" aria-hidden />
+                    <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">Add photo</span>
                     <input type="file" accept="image/*" className="hidden" onChange={(event) => { addCategoryPhoto(event.target.files?.[0]); event.currentTarget.value = ""; }} />
                   </label>
                 ))}
@@ -106,7 +106,7 @@ export function NewCategoryWizard(props: WizardProps) {
         {step === 3 && (
           <div className="space-y-5 text-center py-4">
             <div className="flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-violet-50 dark:bg-violet-900/20 border-2 border-violet-200 dark:border-violet-800 flex items-center justify-center"><CheckCircle className="w-8 h-8 text-violet-600 dark:text-violet-400" aria-hidden /></div>
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800"><CheckCircle className="h-8 w-8 text-neutral-700 dark:text-neutral-200" aria-hidden /></div>
             </div>
             <div>
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">"{createdCat?.name}" is ready</h2>
@@ -118,7 +118,7 @@ export function NewCategoryWizard(props: WizardProps) {
               </p>
             </div>
             <div className="flex items-center justify-center pt-2 border-t border-neutral-100 dark:border-neutral-700">
-              <button type="button" onClick={finishWizard} className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">Back to list</button>
+              <button type="button" onClick={finishWizard} className="flex items-center gap-2 rounded-lg bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200">Back to list</button>
             </div>
           </div>
         )}

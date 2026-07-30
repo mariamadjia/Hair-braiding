@@ -508,7 +508,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             <section className="space-y-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7 dark:border-neutral-700 dark:bg-neutral-800">
                 <div className="flex items-center justify-between">
                     <h3 className="text-xl font-semibold text-neutral-950 dark:text-white">Subcategories</h3>
-                    <button type="button" onClick={() => setAddingSub(true)} className={`${btnP} min-h-10 rounded-lg px-4 py-2 text-xs`}>+ Add</button>
+                    <button type="button" onClick={() => setAddingSub(true)} className={`${btnP} min-h-10 rounded-lg px-4 py-2 text-xs normal-case tracking-normal`}>+ Add subcategory</button>
                 </div>
 
                 {addingSub && (
@@ -529,7 +529,11 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                             ))}
                         </div>
                     ) : subSummaries.length === 0 ? (
-                        <div className="p-3 text-sm text-neutral-500">No subcategories yet</div>
+                        <div className="rounded-lg border border-dashed border-neutral-300 px-4 py-10 text-center dark:border-neutral-700">
+                            <p className="text-sm font-semibold text-neutral-900 dark:text-white">No subcategories yet</p>
+                            <p className="mt-1 text-xs text-neutral-500">Add the first style offered in this category.</p>
+                            <button type="button" onClick={() => setAddingSub(true)} className={`${btnP} mt-4 min-h-10 rounded-lg px-4 py-2 text-xs normal-case tracking-normal`}>+ Add subcategory</button>
+                        </div>
                     ) : (
                         subSummaries.map((sub, index) => (
                             <div 
@@ -571,10 +575,21 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                             : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:border-neutral-600 dark:hover:bg-neutral-900/40"
                                 }`}
                             >
-                                <div className="flex h-8 w-5 items-center justify-center text-neutral-400" aria-hidden="true">
+                                <button
+                                    type="button"
+                                    draggable={false}
+                                    data-no-drag="true"
+                                    onKeyDown={(event) => {
+                                        if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                                        event.preventDefault();
+                                        void moveSubcategory(index, index + (event.key === "ArrowUp" ? -1 : 1));
+                                    }}
+                                    className="flex h-8 w-5 items-center justify-center rounded text-neutral-500 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
+                                    aria-label={`Reorder ${sub.name}. Use Arrow Up or Arrow Down to move it.`}
+                                >
                                     <GripVertical className="h-5 w-5" />
-                                </div>
-                                <span className="w-7 text-sm tabular-nums text-neutral-400" aria-hidden="true">
+                                </button>
+                                <span className="w-7 text-sm tabular-nums text-neutral-500" aria-hidden="true">
                                     {String(index + 1).padStart(2, "0")}
                                 </span>
                                 <button 

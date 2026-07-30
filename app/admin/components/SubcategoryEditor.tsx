@@ -74,6 +74,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [bulkFoundationEnabled, setBulkFoundationEnabled] = useState(false);
     const [bulkUseAdjustment, setBulkUseAdjustment] = useState(false);
     const [bulkFoundationAdjustment, setBulkFoundationAdjustment] = useState("0");
+    const [bulkSettingsDirty, setBulkSettingsDirty] = useState(false);
     const [applyingFoundations, setApplyingFoundations] = useState(false);
     const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
 
@@ -96,6 +97,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         } else {
             setBulkUseAdjustment(false);
         }
+        setBulkSettingsDirty(false);
         // Seed gallery images from the already-loaded subcategory detail (no extra fetch)
         const preloaded = (sub.galleryImages ?? []) as GalleryImage[];
         setGalleryImages(preloaded);
@@ -105,6 +107,14 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             setImages(sub.images ?? []);
         }
     }, [sub.slug, sub.galleryImages, sub.items]);
+
+    useEffect(() => {
+        const beforeUnload = (event: BeforeUnloadEvent) => {
+            if (dirty || bulkSettingsDirty) event.preventDefault();
+        };
+        window.addEventListener("beforeunload", beforeUnload);
+        return () => window.removeEventListener("beforeunload", beforeUnload);
+    }, [dirty, bulkSettingsDirty]);
 
     // When cache refreshes after a POST, sync real backend IDs into local items state
     useEffect(() => {
@@ -281,7 +291,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             setSaveError("Please wait for the current operation to complete.");
             return;
         }
-        if (dirty && !confirm('You have unsaved changes. Leave without saving?')) return;
+        if ((dirty || bulkSettingsDirty) && !confirm('You have unsaved changes. Leave without saving?')) return;
         setSelection(next);
     };
 
@@ -441,6 +451,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             }));
             const freshSub = await onSubcategoryUpdate?.(sub.slug);
             if (freshSub?.items) setItems(freshSub.items);
+            setBulkSettingsDirty(false);
             setSaveSuccess(`Foundation choices ${bulkFoundationEnabled ? "applied to" : "removed from"} all ${updatedItems.length} sizes.`);
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) {
@@ -541,9 +552,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
             {/* Breadcrumb */}
             <nav className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400">
-                <button type="button" onClick={() => guardedSetSelection({ type: "root" })} className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors">All Categories</button>
+                <button type="button" onClick={() => guardedSetSelection({ type: "root" })} className="transition-colors hover:text-neutral-950 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:hover:text-white dark:focus-visible:ring-white">All Categories</button>
                 <ChevronRight className="w-3.5 h-3.5" />
-                <button type="button" onClick={() => guardedSetSelection({ type: "category", catSlug: cat.slug })} className="hover:text-violet-600 dark:hover:text-violet-400 transition-colors">{cat.name}</button>
+                <button type="button" onClick={() => guardedSetSelection({ type: "category", catSlug: cat.slug })} className="transition-colors hover:text-neutral-950 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:hover:text-white dark:focus-visible:ring-white">{cat.name}</button>
                 <ChevronRight className="w-3.5 h-3.5" />
                 <span className="text-neutral-900 dark:text-white font-semibold">{sub.name}</span>
             </nav>
@@ -642,6 +653,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                             <div className="flex flex-wrap items-center gap-2">
                                 <h4 id="bulk-foundation-title" className="text-base font-semibold text-neutral-950 dark:text-white">Settings for all sizes</h4>
                                 <span className="rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">{items.length} sizes</span>
+                                {bulkSettingsDirty && <span className="rounded-md border border-neutral-300 px-2 py-1 text-[11px] font-medium text-neutral-700 dark:border-neutral-600 dark:text-neutral-200">Unsaved changes</span>}
                             </div>
                         </div>
 
@@ -650,8 +662,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                 <legend className="sr-only">Customer choice</legend>
                                 <p className="text-sm font-semibold text-neutral-950 dark:text-white">Customer choice</p>
                                 <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-600">
-                                    <button type="button" aria-pressed={!bulkFoundationEnabled} onClick={() => setBulkFoundationEnabled(false)} className={`min-h-10 px-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 ${!bulkFoundationEnabled ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>No foundation</button>
-                                    <button type="button" aria-pressed={bulkFoundationEnabled} onClick={() => setBulkFoundationEnabled(true)} className={`min-h-10 border-l border-neutral-300 px-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 dark:border-neutral-600 ${bulkFoundationEnabled ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>Regular + Knotless</button>
+                                    <button type="button" aria-pressed={!bulkFoundationEnabled} onClick={() => { setBulkFoundationEnabled(false); setBulkSettingsDirty(true); }} className={`min-h-10 px-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 ${!bulkFoundationEnabled ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>No foundation</button>
+                                    <button type="button" aria-pressed={bulkFoundationEnabled} onClick={() => { setBulkFoundationEnabled(true); setBulkSettingsDirty(true); }} className={`min-h-10 border-l border-neutral-300 px-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 dark:border-neutral-600 ${bulkFoundationEnabled ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>Regular + Knotless</button>
                                 </div>
                             </fieldset>
 
@@ -662,15 +674,15 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                         <p className="mt-0.5 text-xs text-neutral-500">Add to every Regular length price.</p>
                                     </div>
                                     <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-600">
-                                            <button type="button" onClick={() => setBulkUseAdjustment(false)} aria-pressed={!bulkUseAdjustment} className={`min-h-10 px-5 text-sm font-semibold transition ${!bulkUseAdjustment ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>No</button>
-                                            <button type="button" onClick={() => setBulkUseAdjustment(true)} aria-pressed={bulkUseAdjustment} className={`min-h-10 border-l border-neutral-300 px-5 text-sm font-semibold transition dark:border-neutral-600 ${bulkUseAdjustment ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>Yes</button>
+                                            <button type="button" onClick={() => { setBulkUseAdjustment(false); setBulkSettingsDirty(true); }} aria-pressed={!bulkUseAdjustment} className={`min-h-10 px-5 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 ${!bulkUseAdjustment ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>No</button>
+                                            <button type="button" onClick={() => { setBulkUseAdjustment(true); setBulkSettingsDirty(true); }} aria-pressed={bulkUseAdjustment} className={`min-h-10 border-l border-neutral-300 px-5 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 dark:border-neutral-600 ${bulkUseAdjustment ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>Yes</button>
                                     </div>
                                     {bulkUseAdjustment && (
                                         <label>
                                             <span className="sr-only">Knotless adjustment for all sizes</span>
                                             <span className="flex min-h-10 items-center rounded-lg border border-neutral-300 bg-white focus-within:border-neutral-950 focus-within:ring-2 focus-within:ring-neutral-950/15 dark:border-neutral-600 dark:bg-neutral-900">
                                                 <span className="border-r border-neutral-200 px-3 text-sm font-medium text-neutral-500 dark:border-neutral-700">$</span>
-                                                <input required aria-label="Knotless adjustment for all sizes" inputMode="decimal" value={bulkFoundationAdjustment} onChange={event => setBulkFoundationAdjustment(event.target.value.replace(/[^0-9.]/g, ""))} className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm font-semibold outline-none" />
+                                                <input required aria-label="Knotless adjustment for all sizes" inputMode="decimal" value={bulkFoundationAdjustment} onChange={event => { setBulkFoundationAdjustment(event.target.value.replace(/[^0-9.]/g, "")); setBulkSettingsDirty(true); }} className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm font-semibold outline-none" />
                                             </span>
                                         </label>
                                     )}
@@ -688,7 +700,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                 <button
                                     type="button"
                                     onClick={() => void applyFoundationToAllSizes()}
-                                    disabled={applyingFoundations || saving || !items.some(item => item.id) || (bulkFoundationEnabled && bulkUseAdjustment && (!/^\d+(?:\.\d{1,2})?$/.test(bulkFoundationAdjustment.trim()) || Number(bulkFoundationAdjustment) <= 0))}
+                                    disabled={!bulkSettingsDirty || applyingFoundations || saving || !items.some(item => item.id) || (bulkFoundationEnabled && bulkUseAdjustment && (!/^\d+(?:\.\d{1,2})?$/.test(bulkFoundationAdjustment.trim()) || Number(bulkFoundationAdjustment) <= 0))}
                                     className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-neutral-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
                                 >
                                     {applyingFoundations && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -710,7 +722,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 </div>
                 <div className="space-y-3 p-4 sm:p-5">
                     {addingItem && (
-                        <div className="rounded-lg border-2 border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-900/10 p-4">
+                        <div className="rounded-lg border border-neutral-300 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800/40">
                             <ItemForm
                                 initial={emptyItem()}
                                 token={token}
@@ -723,19 +735,20 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                     )}
 
                     {items.length === 0 && !addingItem ? (
-                        <div className="text-center py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl">
-                            <div className="w-12 h-12 rounded-full bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center mx-auto mb-3">
-                                <Package className="w-6 h-6 text-violet-400" />
+                        <div className="rounded-xl border border-dashed border-neutral-300 py-12 text-center dark:border-neutral-700">
+                            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
+                                <Package className="h-6 w-6 text-neutral-500" />
                             </div>
                             <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">No sizes yet</p>
                             <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">Click <strong>Add Size</strong> above to get started</p>
+                            <button type="button" onClick={() => { setAddingItem(true); setEditingId(null); }} className="mt-4 min-h-10 rounded-lg bg-neutral-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200">+ Add size</button>
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {sortItemsBySize(items).map(({ item, originalIdx }, orderedIndex) => (
+                            {sortItemsBySize(items).map(({ item, originalIdx }, orderedIndex, orderedEntries) => (
                                 <div key={item.id ?? `new-${originalIdx}`}>
                                     {editingId === item.id ? (
-                                        <div className="rounded-lg border-2 border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-900/10 p-4">
+                                        <div className="rounded-lg border border-neutral-300 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800/40">
                                             <ItemForm
                                                 initial={item}
                                                 token={token}
@@ -763,9 +776,20 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                             className={`overflow-hidden rounded-lg border bg-white transition dark:bg-neutral-900 ${draggedItemId === item.id ? "border-neutral-400 opacity-60 dark:border-neutral-500" : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}
                                         >
                                             <div className="group grid min-h-16 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5 sm:grid-cols-[auto_auto_minmax(8rem,0.8fr)_minmax(10rem,1fr)_minmax(7rem,0.55fr)_auto]">
-                                                <span className="cursor-grab text-neutral-400 active:cursor-grabbing" aria-label={`Drag ${item.name} to reorder`}>
+                                                <button
+                                                    type="button"
+                                                    onKeyDown={(event) => {
+                                                        if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                                                        event.preventDefault();
+                                                        const targetIndex = orderedIndex + (event.key === "ArrowUp" ? -1 : 1);
+                                                        const targetId = orderedEntries[targetIndex]?.item.id;
+                                                        if (item.id && targetId) void reorderItemTo(item.id, targetId);
+                                                    }}
+                                                    className="cursor-grab rounded text-neutral-500 focus-visible:ring-2 focus-visible:ring-neutral-950 active:cursor-grabbing dark:focus-visible:ring-white"
+                                                    aria-label={`Reorder ${item.name}. Use Arrow Up or Arrow Down to move it.`}
+                                                >
                                                     <GripVertical className="h-5 w-5" aria-hidden="true" />
-                                                </span>
+                                                </button>
                                                 <span className="w-5 text-center text-xs font-semibold text-neutral-500">{orderedIndex + 1}</span>
                                                 <button type="button" onClick={() => toggleExpand(item.id)} aria-expanded={item.id ? expandedItems.has(item.id) : false} className="min-w-0 text-left focus:outline-none focus:ring-2 focus:ring-neutral-950">
                                                     <span className="block truncate text-sm font-semibold text-neutral-950 dark:text-white">{item.name}</span>
@@ -811,7 +835,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                                     )}
                                                                     <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate">{option.name}</span>
                                                                 </div>
-                                                                <span className="text-sm font-semibold text-violet-700 dark:text-violet-300 flex-shrink-0 ml-3">{formatPrice(option.price)}</span>
+                                                                <span className="ml-3 flex-shrink-0 text-sm font-semibold text-neutral-800 dark:text-neutral-200">{formatPrice(option.price)}</span>
                                                             </div>
                                                         ))}
                                                     </div>

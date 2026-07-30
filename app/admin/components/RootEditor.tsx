@@ -49,6 +49,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
     const [query, setQuery] = useState("");
     const [sortOrder, setSortOrder] = useState<"custom" | "newest" | "oldest" | "name">("custom");
     const [openMenuSlug, setOpenMenuSlug] = useState<string | null>(null);
+    const [reorderStatus, setReorderStatus] = useState<string | null>(null);
 
     const visibleCategories = useMemo(() => {
         const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -104,24 +105,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
         setDragOverSlug(null);
     };
 
-    const handleDrop = async (e: React.DragEvent, dropSlug: string) => {
-        e.preventDefault();
-
-        if (!draggedSlug || draggedSlug === dropSlug) {
-            setDraggedSlug(null);
-            setDragOverSlug(null);
-            return;
-        }
-
-        const draggedIndex = categorySummaries.findIndex((category) => category.slug === draggedSlug);
-        const dropIndex = categorySummaries.findIndex((category) => category.slug === dropSlug);
-        if (draggedIndex < 0 || dropIndex < 0) return;
-
-        const reorderedSummaries = [...categorySummaries];
-        const [draggedItem] = reorderedSummaries.splice(draggedIndex, 1);
-        reorderedSummaries.splice(dropIndex, 0, draggedItem);
-
-        // Update display order for each category
+    const persistCategoryOrder = async (reorderedSummaries: CategorySummary[]) => {
         try {
             const categoryIds = reorderedSummaries
                 .map(cat => cat.id)
@@ -151,13 +135,45 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
             } else {
                 await mutate("GET", "");
             }
+            setReorderStatus("Category order updated.");
+            setTimeout(() => setReorderStatus(null), 3000);
         } catch (error) {
             console.error('Failed to reorder categories:', error);
             setErrorMsg('Failed to reorder categories. Please try again.');
         }
+    };
+
+    const handleDrop = async (e: React.DragEvent, dropSlug: string) => {
+        e.preventDefault();
+
+        if (!draggedSlug || draggedSlug === dropSlug) {
+            setDraggedSlug(null);
+            setDragOverSlug(null);
+            return;
+        }
+
+        const draggedIndex = categorySummaries.findIndex((category) => category.slug === draggedSlug);
+        const dropIndex = categorySummaries.findIndex((category) => category.slug === dropSlug);
+        if (draggedIndex < 0 || dropIndex < 0) return;
+
+        const reorderedSummaries = [...categorySummaries];
+        const [draggedItem] = reorderedSummaries.splice(draggedIndex, 1);
+        reorderedSummaries.splice(dropIndex, 0, draggedItem);
+        await persistCategoryOrder(reorderedSummaries);
 
         setDraggedSlug(null);
         setDragOverSlug(null);
+    };
+
+    const moveCategory = async (slug: string, offset: number) => {
+        const reorderedSummaries = [...categorySummaries].sort((left, right) =>
+            (left.displayOrder ?? 0) - (right.displayOrder ?? 0)
+        );
+        const index = reorderedSummaries.findIndex(category => category.slug === slug);
+        const target = index + offset;
+        if (index < 0 || target < 0 || target >= reorderedSummaries.length) return;
+        [reorderedSummaries[index], reorderedSummaries[target]] = [reorderedSummaries[target], reorderedSummaries[index]];
+        await persistCategoryOrder(reorderedSummaries);
     };
 
     const handleDragEnd = () => {
@@ -169,11 +185,14 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
         <div className="w-full bg-[#f7f5f2] px-4 py-5 sm:px-6 lg:px-10 lg:py-8 dark:bg-neutral-900">
             <div className="space-y-5 rounded-2xl border border-[#e8e3dc] bg-[#fcfbf9] p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
             {errorMsg && (
-                <div className="flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">
+                <div role="alert" className="flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     <span className="flex-1">{errorMsg}</span>
                     <button type="button" onClick={() => setErrorMsg(null)} className="text-neutral-500 hover:text-neutral-950 dark:hover:text-white">×</button>
                 </div>
+            )}
+            {reorderStatus && (
+                <div role="status" aria-live="polite" className="sr-only">{reorderStatus}</div>
             )}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -208,17 +227,13 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                                 className="h-11 w-full rounded-lg border border-neutral-300 bg-white pl-10 pr-3 text-sm text-neutral-950 outline-none transition focus:border-neutral-950 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:focus:border-white"
                             />
                         </label>
-                        <div className="flex items-center gap-3">
-                            <label className="sr-only" htmlFor="category-filter">Category filter</label>
-                            <select id="category-filter" className="h-11 rounded-lg border border-neutral-300 bg-white px-4 text-sm text-neutral-800 outline-none dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100" defaultValue="all">
-                                <option value="all">All Categories</option>
-                            </select>
+                        <div className="flex w-full items-center gap-3 lg:w-auto">
                             <label className="sr-only" htmlFor="category-sort">Sort categories</label>
                             <select
                                 id="category-sort"
                                 value={sortOrder}
                                 onChange={(event) => setSortOrder(event.target.value as typeof sortOrder)}
-                                className="h-11 rounded-lg border border-neutral-300 bg-white px-4 text-sm text-neutral-800 outline-none dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100"
+                                className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-4 text-sm text-neutral-800 outline-none transition focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100 dark:focus-visible:ring-white lg:w-auto"
                             >
                                 <option value="custom">Custom order</option>
                                 <option value="newest">Newest first</option>
@@ -247,13 +262,27 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                                 dragOverSlug === cat.slug && draggedSlug !== cat.slug ? 'before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-neutral-950 dark:before:bg-white' : ''
                             }`}
                         >
-                            <span className={`flex h-10 w-8 shrink-0 touch-none items-center justify-center text-neutral-400 ${sortOrder !== "custom" ? "opacity-30" : ""}`} aria-hidden="true">
-                                <GripVertical className="h-5 w-5" />
-                            </span>
-
-                            <span className="w-8 shrink-0 text-sm tabular-nums text-neutral-400" aria-hidden="true">
-                                {String(index + 1).padStart(2, "0")}
-                            </span>
+                            {sortOrder === "custom" && (
+                                <>
+                                    <button
+                                        type="button"
+                                        data-no-drag="true"
+                                        onKeyDown={(event) => {
+                                            if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                                                event.preventDefault();
+                                                void moveCategory(cat.slug, event.key === "ArrowUp" ? -1 : 1);
+                                            }
+                                        }}
+                                        className="flex h-10 w-8 shrink-0 touch-none items-center justify-center rounded text-neutral-500 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
+                                        aria-label={`Reorder ${cat.name}. Use Arrow Up or Arrow Down to move it.`}
+                                    >
+                                        <GripVertical className="h-5 w-5" aria-hidden="true" />
+                                    </button>
+                                    <span className="w-8 shrink-0 text-sm tabular-nums text-neutral-500" aria-hidden="true">
+                                        {String(index + 1).padStart(2, "0")}
+                                    </span>
+                                </>
+                            )}
                             
                             {/* Category Info */}
                             <button 
@@ -269,7 +298,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
                                     <span className="inline-flex items-center gap-1.5">
                                         <Scissors className="h-3.5 w-3.5" aria-hidden="true" />
-                                        {cat.styleCount ?? 0} {(cat.styleCount ?? 0) === 1 ? "style" : "styles"}
+                                        {cat.styleCount ?? 0} {(cat.styleCount ?? 0) === 1 ? "subcategory" : "subcategories"}
                                     </span>
                                     <span aria-hidden="true">•</span>
                                     <span className="inline-flex items-center gap-1.5">
@@ -323,7 +352,18 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                     );
                 })}
                     {visibleCategories.length === 0 && (
-                        <p className="rounded-xl border border-neutral-200 px-4 py-10 text-center text-sm text-neutral-500 dark:border-neutral-700">No categories match “{query}”.</p>
+                        query.trim() ? (
+                            <div className="rounded-xl border border-neutral-200 px-4 py-10 text-center dark:border-neutral-700">
+                                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">No categories match “{query}”.</p>
+                                <button type="button" onClick={() => setQuery("")} className="mt-3 rounded-lg border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-500 hover:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-800">Clear search</button>
+                            </div>
+                        ) : (
+                            <div className="rounded-xl border border-dashed border-neutral-300 px-4 py-12 text-center dark:border-neutral-700">
+                                <p className="text-base font-semibold text-neutral-900 dark:text-white">No categories yet</p>
+                                <p className="mt-1 text-sm text-neutral-500">Create your first category to start organizing services.</p>
+                                <button type="button" onClick={() => setAdding(true)} className={`${btnP} mt-4 min-h-10 rounded-lg px-4 py-2 text-sm normal-case tracking-normal`}>+ Add category</button>
+                            </div>
+                        )
                     )}
                     </div>
                 </div>
