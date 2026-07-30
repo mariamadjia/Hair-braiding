@@ -184,7 +184,7 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
             const action = item.link ? (
               <Link
                 href={item.link}
-                className="inline-block max-w-[9rem] border-b border-neutral-900 pb-1 text-center text-[10px] font-medium uppercase leading-[1.55] tracking-[0.22em] text-neutral-900 transition-opacity hover:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-4 sm:text-[11px]"
+                className="inline-block max-w-[9rem] text-center text-[10px] font-medium uppercase leading-[1.55] tracking-[0.22em] text-neutral-900 transition-opacity hover:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-4 sm:text-[11px]"
               >
                 {item.label}
               </Link>
@@ -197,7 +197,11 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
             return (
               <motion.div
                 key={`${item.src}-${index}`}
-                className="grid grid-cols-2 items-center gap-5"
+                className={`grid items-center gap-4 ${
+                  index % 2 === 0
+                    ? "grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)]"
+                    : "grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]"
+                }`}
                 initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.25 }}
