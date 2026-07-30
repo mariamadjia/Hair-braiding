@@ -683,6 +683,9 @@ export default function FlipBook3D({
   const [isFlipping, setIsFlipping] = useState(false);
   const [showFlipPage, setShowFlipPage] = useState(false);
   const [flipDirection, setFlipDirection] = useState(1);
+  const [scrollRotationProgress, setScrollRotationProgress] = useState(0);
+  const sectionRef = useRef(null);
+  const scrollFrameRef = useRef(null);
   const touchX = useRef(0);
   const touchY = useRef(0);
   const prevCurrentRef = useRef(0);
@@ -706,6 +709,80 @@ export default function FlipBook3D({
   }, []);
 
   useEffect(() => clearFlipTimers, [clearFlipTimers]);
+
+  useEffect(() => {
+    if (editMode || reduceMotion) {
+      setScrollRotationProgress(0.35);
+      return;
+    }
+
+    const updateScrollProgress = () => {
+      scrollFrameRef.current = null;
+      const section = sectionRef.current;
+      if (!section) return;
+
+      const rect = section.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const start = viewportHeight * 0.88;
+      const distance = rect.height + viewportHeight * 0.76;
+      const progress = Math.min(1, Math.max(0, (start - rect.top) / distance));
+      setScrollRotationProgress(progress);
+    };
+
+    const requestProgressUpdate = () => {
+      if (scrollFrameRef.current !== null) return;
+      scrollFrameRef.current = window.requestAnimationFrame(updateScrollProgress);
+    };
+
+    updateScrollProgress();
+    window.addEventListener('scroll', requestProgressUpdate, { passive: true });
+    window.addEventListener('resize', requestProgressUpdate);
+
+    return () => {
+      window.removeEventListener('scroll', requestProgressUpdate);
+      window.removeEventListener('resize', requestProgressUpdate);
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+      }
+    };
+  }, [editMode, reduceMotion]);
+
+  const getBookScrollTransform = () => {
+    if (editMode || reduceMotion) {
+      return 'translateY(0) scale(1) rotateX(5deg) rotateY(0deg)';
+    }
+
+    const standEnd = 0.22;
+    const rotateEnd = 0.78;
+    let rotateX = 68;
+    let rotateY = 0;
+    let scale = 0.9;
+    let translateY = 34;
+
+    if (scrollRotationProgress < standEnd) {
+      const phase = scrollRotationProgress / standEnd;
+      const eased = 1 - Math.pow(1 - phase, 3);
+      rotateX = 68 + (5 - 68) * eased;
+      scale = 0.9 + 0.1 * eased;
+      translateY = 34 * (1 - eased);
+    } else if (scrollRotationProgress < rotateEnd) {
+      const phase = (scrollRotationProgress - standEnd) / (rotateEnd - standEnd);
+      const eased = phase * phase * (3 - 2 * phase);
+      rotateX = 5;
+      rotateY = 360 * eased;
+      scale = 1;
+      translateY = 0;
+    } else {
+      const phase = (scrollRotationProgress - rotateEnd) / (1 - rotateEnd);
+      const eased = phase * phase * (3 - 2 * phase);
+      rotateX = 5 + (68 - 5) * eased;
+      rotateY = 360;
+      scale = 1 - 0.1 * eased;
+      translateY = 34 * eased;
+    }
+
+    return `translateY(${translateY}px) scale(${scale}) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  };
 
   useEffect(() => {
     if (editMode) {
@@ -1015,6 +1092,7 @@ export default function FlipBook3D({
       `}</style>
 
       <section
+        ref={sectionRef}
         className="braid-book-section"
         style={{ 
           background: T.bgSection, 
@@ -1060,8 +1138,10 @@ export default function FlipBook3D({
               height: '100%', 
               position: 'relative', 
               transformStyle: 'preserve-3d',
-              transform: 'rotateX(5deg)',
-              transition: 'transform 0.3s ease',
+              transform: getBookScrollTransform(),
+              transformOrigin: 'center bottom',
+              transition: editMode || reduceMotion ? 'transform 0.3s ease' : 'none',
+              willChange: editMode || reduceMotion ? 'auto' : 'transform',
             }}
           >
             {/* Page thickness layers - right side */}
