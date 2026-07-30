@@ -257,19 +257,6 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
                           <ChevronRight size={20} />
                         </button>
                         
-                        {/* Image Indicators */}
-                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                          {item.images.map((_, imgIndex) => (
-                            <div
-                              key={imgIndex}
-                              className={`h-1.5 rounded-full transition-all duration-300 ${
-                                imgIndex === currentIndex 
-                                  ? 'w-5 bg-white' 
-                                  : 'w-1.5 bg-white/70'
-                              }`}
-                            />
-                          ))}
-                        </div>
                       </>
                     )}
                   </div>
