@@ -1372,9 +1372,10 @@ export default function FlipBook3D({
                     style={{
                       position: 'absolute',
                       inset: 0,
+                      transform: 'translateZ(14px)',
                       borderRadius: '12px',
                       background: '#0a0a0a',
-                      boxShadow: '0 28px 70px rgba(0,0,0,0.58), 8px 0 16px rgba(0,0,0,0.22)',
+                      boxShadow: '0 28px 70px rgba(0,0,0,0.58), inset -5px 0 8px rgba(255,255,255,0.04), inset 3px 0 5px rgba(0,0,0,0.48)',
                       overflow: 'hidden',
                       backfaceVisibility: 'hidden',
                       WebkitBackfaceVisibility: 'hidden',
@@ -1413,7 +1414,7 @@ export default function FlipBook3D({
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      transform: 'rotateY(180deg) translateZ(2px)',
+                      transform: 'rotateY(180deg) translateZ(14px)',
                       borderRadius: '12px',
                       background: '#0a0a0a',
                       overflow: 'hidden',
@@ -1429,15 +1430,15 @@ export default function FlipBook3D({
                   <div
                     style={{
                       position: 'absolute',
-                      top: 10,
-                      right: -9,
-                      bottom: 10,
-                      width: 12,
+                      top: 14,
+                      right: -14,
+                      bottom: 14,
+                      width: 28,
                       transform: 'rotateY(90deg)',
-                      transformOrigin: 'left center',
-                      borderRadius: '0 4px 4px 0',
-                      background: 'repeating-linear-gradient(to bottom,#f0ece5 0 2px,#d6d0c7 2px 3px)',
-                      boxShadow: '3px 0 8px rgba(0,0,0,.25)',
+                      transformOrigin: 'center center',
+                      borderRadius: '2px 7px 7px 2px',
+                      background: 'repeating-linear-gradient(to bottom,#f4f0e9 0 2px,#d7d0c7 2px 3px)',
+                      boxShadow: 'inset 7px 0 8px rgba(0,0,0,.22), inset -2px 0 3px rgba(255,255,255,.4)',
                     }}
                   />
 
@@ -1446,14 +1447,44 @@ export default function FlipBook3D({
                     style={{
                       position: 'absolute',
                       top: 0,
-                      left: -8,
+                      left: -14,
                       bottom: 0,
-                      width: 16,
+                      width: 28,
                       transform: 'rotateY(-90deg)',
-                      transformOrigin: 'right center',
-                      borderRadius: '8px 0 0 8px',
-                      background: T.spine,
-                      boxShadow: '-3px 0 8px rgba(0,0,0,.32)',
+                      transformOrigin: 'center center',
+                      borderRadius: '10px 3px 3px 10px',
+                      background: 'linear-gradient(to right,#16110f 0%,#3b2a23 28%,#201713 68%,#0d0a09 100%)',
+                      boxShadow: 'inset 5px 0 7px rgba(255,255,255,.08), inset -6px 0 8px rgba(0,0,0,.5)',
+                    }}
+                  />
+
+                  {/* Top and bottom edges complete the hardcover volume. */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: -14,
+                      left: 10,
+                      right: 10,
+                      height: 28,
+                      transform: 'rotateX(90deg)',
+                      transformOrigin: 'center center',
+                      borderRadius: '8px 8px 2px 2px',
+                      background: 'linear-gradient(to bottom,#241a16,#0e0b09)',
+                      boxShadow: 'inset 0 -5px 7px rgba(0,0,0,.38)',
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: -14,
+                      left: 10,
+                      right: 10,
+                      height: 28,
+                      transform: 'rotateX(-90deg)',
+                      transformOrigin: 'center center',
+                      borderRadius: '2px 2px 8px 8px',
+                      background: 'linear-gradient(to top,#17110e,#33241e)',
+                      boxShadow: 'inset 0 5px 7px rgba(0,0,0,.38)',
                     }}
                   />
                 </div>
