@@ -709,7 +709,11 @@ export default function AdminPage() {
                 {currentSection === "dashboard" && (
                     <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
                         <Suspense fallback={<div className="p-12 text-neutral-500">Loading dashboard…</div>}>
-                            <Dashboard />
+                            <Dashboard
+                                token={token}
+                                categorySummaries={categorySummaries}
+                                onNavigate={handleSectionChange}
+                            />
                         </Suspense>
                     </div>
                 )}
