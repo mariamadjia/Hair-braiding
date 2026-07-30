@@ -5,6 +5,7 @@ import type { CategoriesData, CategorySummary, SubcategorySummary } from "@/lib/
 import { EditorPanel } from "./components/EditorPanel";
 import { PreviewCategoryDetail, PreviewSubcategoryDetail } from "./components/PreviewComponents";
 import { AdminSidebar } from "./components/AdminSidebar";
+import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeProvider } from "./context/ThemeContext";
 import { authApi } from "@/lib/api/auth";
 import type { CustomerListState } from "@/components/CustomerTable";
@@ -703,6 +704,7 @@ export default function AdminPage() {
                             <span className="text-sm text-neutral-400">{categories.length} categories</span>
                         )}
                     </div>
+                    <NotificationBell token={token} onNavigate={handleSectionChange} />
                 </div>
 
                 {/* Content based on section */}
