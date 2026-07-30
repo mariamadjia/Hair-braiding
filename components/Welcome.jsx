@@ -40,11 +40,11 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
         {/* Desktop: Side by side layout */}
         <div className="hidden lg:grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left: Text Content */}
-          <div className="max-w-lg">
-            <h2 className="text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 mb-4">
+          <div className="max-w-lg font-[family-name:var(--font-montserrat)]">
+            <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-900">
               Welcome to AH Braiding.
             </h2>
-            <p className="text-[15px] md:text-[16px] leading-relaxed text-neutral-700 font-light">
+            <p className="text-[15px] font-normal leading-[1.75] text-neutral-700 md:text-[16px]">
               More than braids—AH Braiding is a San Antonio space for self-expression, beauty, culture, and confidence. Choose your style, review pricing and deposit details, then request an available time.
             </p>
           </div>
@@ -129,12 +129,12 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
         {/* Mobile: compact editorial layout with alternating media and actions */}
         <div className="space-y-16 lg:hidden">
           {/* Intro Text */}
-          <div className="px-1 text-center">
-            <h2 className="mb-4 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900">
+          <div className="px-1 text-center font-[family-name:var(--font-montserrat)]">
+            <h2 className="mb-4 text-[12px] font-semibold uppercase tracking-[0.24em] text-neutral-900">
               Welcome to AH Braiding.
             </h2>
-            <p className="mx-auto max-w-[34rem] text-[14px] font-light leading-[1.7] text-neutral-700 sm:text-[15px]">
-              More than braids—AH Braiding is a San Antonio space for self-expression, beauty, culture, and confidence.
+            <p className="mx-auto max-w-[34rem] text-[14px] font-normal leading-[1.75] text-neutral-700 sm:text-[15px]">
+              More than braids—AH Braiding is a San Antonio space for self-expression, beauty, culture, and confidence. Choose your style, review pricing and deposit details, then request an available time.
             </p>
           </div>
 

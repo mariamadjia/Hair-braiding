@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Oswald, Allura, Playfair_Display } from "next/font/google";
+import { Geist, Geist_Mono, Oswald, Allura, Playfair_Display, Montserrat } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import Chatbot from "@/components/Chatbot";
@@ -31,6 +31,12 @@ const playfair = Playfair_Display({
   subsets: ["latin"],
   weight: ["400", "700"],
   style: ["normal", "italic"],
+});
+
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
+  subsets: ["latin"],
+  weight: ["400", "600"],
 });
 
 export const metadata: Metadata = {
@@ -69,7 +75,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${oswald.variable} ${allura.variable} ${playfair.variable} antialiased bg-[#F6F5F1]`}
+        className={`${geistSans.variable} ${geistMono.variable} ${oswald.variable} ${allura.variable} ${playfair.variable} ${montserrat.variable} antialiased bg-[#F6F5F1]`}
       >
         <Providers>
           {children}
