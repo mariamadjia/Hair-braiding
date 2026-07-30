@@ -170,7 +170,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
       <div className="md:hidden bg-[#F6F5F1] flex items-center justify-center pb-20 pt-10">
         <Link
           href="/services"
-          className="inline-block border-b-2 border-neutral-900 pb-1 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 transition-opacity hover:opacity-70"
+          className="inline-block border-b-2 border-[#2C1810] pb-1.5 text-[17px] font-medium uppercase leading-none tracking-[0.19em] text-[#2C1810] transition-opacity hover:opacity-70 sm:text-[18px]"
         >
           Book an Appointment
         </Link>
