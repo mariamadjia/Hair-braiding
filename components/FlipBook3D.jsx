@@ -1381,32 +1381,14 @@ export default function FlipBook3D({
                       WebkitBackfaceVisibility: 'hidden',
                     }}
                   >
-                    <CoverSVG image={(cover || BRAID_BOOK_COVER).image} />
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'flex-start',
-                        paddingTop: '11%',
-                        pointerEvents: 'none',
-                        background: 'linear-gradient(to bottom,rgba(0,0,0,.62),transparent 32%)',
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: '#f4eee8',
-                          fontFamily: 'var(--font-playfair,Georgia,serif)',
-                          fontSize: 'clamp(1rem,2.3vw,1.8rem)',
-                          fontStyle: 'italic',
-                          letterSpacing: '-0.02em',
-                        }}
-                      >
-                        {(cover || BRAID_BOOK_COVER).title}
-                      </span>
-                    </div>
+                    <Image
+                      src="/braid-book/adjias-front-cover.png"
+                      alt=""
+                      fill
+                      priority
+                      sizes="(max-width: 768px) 72vw, 450px"
+                      style={{ objectFit: 'cover' }}
+                    />
                   </div>
 
                   {/* Back cover keeps the object visible through the rear half of the turn. */}
