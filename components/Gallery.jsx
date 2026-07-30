@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useReducedMotion } from 'framer-motion';
@@ -119,15 +120,22 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
       <section className="bg-[#F6F5F1] py-10 md:py-14 relative">
         <div className="absolute top-0 left-0 right-0 h-px bg-[#2C1810]"></div>
         <div className="container mx-auto px-6 md:px-8 lg:px-12">
-          <div className="text-center mb-6 md:mb-10">
-            <h2 className="text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 mb-2">
+          <div className="mb-8 text-center md:mb-10">
+            <h2 className="mb-2 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900">
               Gallery
             </h2>
             <p className="text-[20px] md:text-[28px] font-light text-neutral-900">
               Our Work Collection
             </p>
           </div>
-          <div className="text-center text-neutral-500">Loading...</div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-4 md:gap-6" aria-label="Loading gallery">
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item}>
+                <div className="aspect-[4/5] animate-pulse border border-[#2C1810] bg-neutral-200 md:border-2 md:p-4" />
+                <div className="mx-auto mt-3 h-3 w-2/3 animate-pulse bg-neutral-200" />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     );
@@ -140,8 +148,8 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
       
       <div className="container mx-auto px-6 md:px-8 lg:px-12">
         {/* Section Header */}
-        <div className="text-center mb-6 md:mb-10">
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 mb-2">
+        <div className="mb-8 text-center md:mb-10">
+          <h2 className="mb-2 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900">
             Gallery
           </h2>
           <p className="text-[20px] md:text-[28px] font-light text-neutral-900">
@@ -163,7 +171,7 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
         )}
 
         {/* Gallery Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-4 md:gap-6">
           {collections.map((item, index) => {
             const itemKey = item.id ?? item.slug;
             const currentIndex = Math.min(currentImageIndex[itemKey] || 0, item.images.length - 1);
@@ -190,7 +198,7 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
                 }}
               >
                 {/* Image Container with Border */}
-                <div className="border-2 border-black p-4 mb-3 relative">
+                <div className="relative mb-2 border border-[#2C1810] p-1.5 md:mb-3 md:border-2 md:border-black md:p-4">
                   <div 
                     className="aspect-[4/5] bg-neutral-200 overflow-hidden relative"
                     style={{ perspective: '1000px' }}
@@ -205,10 +213,11 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
                     }}
                   >
                     <div
-                      className="w-full h-full transition-transform duration-600"
+                      className="h-full w-full transition-[transform,opacity] duration-500"
                       style={{
                         transformStyle: 'preserve-3d',
-                        transform: isFlipping[itemKey] ? 'rotateY(90deg)' : 'rotateY(0deg)',
+                        transform: isFlipping[itemKey] ? 'rotateY(12deg) scale(0.985)' : 'rotateY(0deg) scale(1)',
+                        opacity: isFlipping[itemKey] ? 0.35 : 1,
                       }}
                     >
                       {item.images && item.images.length > 0 && item.images[currentIndex] && !failedImages.has(item.images[currentIndex]) ? (
@@ -256,8 +265,8 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
                               key={imgIndex}
                               className={`h-1.5 rounded-full transition-all duration-300 ${
                                 imgIndex === currentIndex 
-                                  ? 'w-6 bg-white' 
-                                  : 'w-1.5 bg-white/50'
+                                  ? 'w-5 bg-white' 
+                                  : 'w-1.5 bg-white/70'
                               }`}
                             />
                           ))}
@@ -268,8 +277,8 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
                 </div>
 
                 {/* Title - Outside Border */}
-                <div className="text-center mt-1">
-                  <h3 className="text-[11px] md:text-[13px] uppercase tracking-[0.25em] text-neutral-900 font-semibold">
+                <div className="mt-1 text-center">
+                  <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-900 sm:text-[11px] md:text-[13px] md:tracking-[0.25em]">
                     {item.title}
                   </h3>
                 </div>
@@ -277,6 +286,17 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
             );
           })}
         </div>
+
+        {collections.length > 0 && (
+          <div className="mt-12 text-center md:mt-14">
+            <Link
+              href="/gallery"
+              className="inline-block border-b border-[#2C1810] pb-1 text-[10px] font-medium uppercase tracking-[0.24em] text-[#2C1810] transition-opacity hover:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-4 md:text-[11px]"
+            >
+              View Full Gallery
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
