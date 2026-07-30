@@ -149,37 +149,37 @@ export default function CategoryPageTemplate({
         {isModalOpen && selectedCategory && (
           <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-0 lg:p-6" role="dialog" aria-modal="true" aria-label={`${selectedCategory.name} photo viewer`} onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
             <div className="relative min-h-[100dvh] w-full overflow-x-hidden bg-[#F6F5F1] lg:my-auto lg:grid lg:min-h-0 lg:max-w-7xl lg:overflow-hidden lg:rounded-[5px] lg:border lg:border-[#D4BDAA] lg:bg-[#F8F1E8] lg:shadow-[0_30px_90px_rgba(0,0,0,0.45)] lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
-              <button onClick={closeModal} className="absolute right-4 top-4 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-colors hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white lg:right-6 lg:top-6 lg:h-11 lg:w-11 lg:border lg:border-[#B8754E] lg:bg-[#FBF6EF]/95 lg:text-[#2C1810] lg:hover:bg-white lg:focus:ring-[#B8754E] lg:focus:ring-offset-2" aria-label="Close gallery viewer">
-                <X size={20} />
+              <button onClick={closeModal} className="absolute right-3 top-3 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white lg:right-6 lg:top-6 lg:h-11 lg:w-11 lg:border lg:border-[#B8754E] lg:bg-[#FBF6EF]/95 lg:text-[#2C1810] lg:hover:bg-white lg:focus:ring-[#B8754E] lg:focus:ring-offset-2" aria-label="Close gallery viewer">
+                <X size={18} />
               </button>
 
               <div className="border-b border-[#D8D5CF] lg:border-b-0 lg:border-r lg:border-[#E3D4C8] lg:p-8">
-                <div className="relative h-[62dvh] overflow-hidden bg-black lg:h-auto lg:aspect-[5/4] lg:rounded-[3px] lg:bg-[#E8DED4]">
-                  <img src={selectedCategory.images[currentImageIndex]} alt={`${selectedCategory.name} ${currentImageIndex + 1}`} className="h-full w-full object-contain" />
+                <div className="relative h-[52dvh] min-h-[360px] max-h-[560px] overflow-hidden bg-[#E8E5DF] lg:h-auto lg:min-h-0 lg:max-h-none lg:aspect-[5/4] lg:rounded-[3px] lg:bg-[#E8DED4]">
+                  <img src={selectedCategory.images[currentImageIndex]} alt={`${selectedCategory.name} ${currentImageIndex + 1}`} className="h-full w-full object-cover lg:object-contain" />
 
                   {selectedCategory.images.length > 1 && (
                     <>
-                      <button onClick={handlePrevImage} className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/65 focus:outline-none focus:ring-2 focus:ring-white lg:left-5 lg:h-11 lg:w-11 lg:border lg:border-[#B8754E] lg:bg-[#FBF6EF]/90 lg:text-[#B0633E] lg:hover:bg-white" aria-label="Previous image">
-                        <ChevronLeft size={22} />
+                      <button onClick={handlePrevImage} className="absolute left-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/65 focus:outline-none focus:ring-2 focus:ring-white lg:left-5 lg:h-11 lg:w-11 lg:border lg:border-[#B8754E] lg:bg-[#FBF6EF]/90 lg:text-[#B0633E] lg:hover:bg-white" aria-label="Previous image">
+                        <ChevronLeft size={20} />
                       </button>
-                      <button onClick={handleNextImage} className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/65 focus:outline-none focus:ring-2 focus:ring-white lg:right-5 lg:h-11 lg:w-11 lg:border lg:border-[#B8754E] lg:bg-[#FBF6EF]/90 lg:text-[#B0633E] lg:hover:bg-white" aria-label="Next image">
-                        <ChevronRight size={22} />
+                      <button onClick={handleNextImage} className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/65 focus:outline-none focus:ring-2 focus:ring-white lg:right-5 lg:h-11 lg:w-11 lg:border lg:border-[#B8754E] lg:bg-[#FBF6EF]/90 lg:text-[#B0633E] lg:hover:bg-white" aria-label="Next image">
+                        <ChevronRight size={20} />
                       </button>
                     </>
                   )}
                 </div>
 
-                <div className="px-5 py-4 lg:mt-4 lg:flex lg:min-h-16 lg:items-center lg:justify-between lg:gap-4 lg:px-0 lg:py-0">
+                <div className="px-4 py-2.5 lg:mt-4 lg:flex lg:min-h-16 lg:items-center lg:justify-between lg:gap-4 lg:px-0 lg:py-0">
                   <div className="flex items-center justify-between lg:hidden">
                     <button
                       type="button"
                       onClick={() => setShowMobileThumbnails((current) => !current)}
-                      className="min-h-11 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2C1810]"
+                      className="min-h-10 text-[9px] font-semibold uppercase tracking-[0.17em] text-[#2C1810]"
                       aria-expanded={showMobileThumbnails}
                     >
                       {showMobileThumbnails ? 'Hide thumbnails' : 'View thumbnails'}
                     </button>
-                    <p className="text-xs tracking-[0.12em] text-[#6B6864]">
+                    <p className="text-[11px] tracking-[0.1em] text-[#6B6864]">
                       {currentImageIndex + 1} of {selectedCategory.images.length}
                     </p>
                   </div>
@@ -216,15 +216,15 @@ export default function CategoryPageTemplate({
                 </div>
               </div>
 
-              <div className="flex flex-col px-6 pb-32 pt-7 lg:hidden">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#6B6864]">{categoryName} Styles</p>
-                <h2 className="mt-3 font-serif text-[34px] leading-[1.02] tracking-[-0.025em] text-[#2C1810] sm:text-4xl">
+              <div className="flex flex-col px-5 pb-24 pt-5 lg:hidden">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#6B6864]">{categoryName} Styles</p>
+                <h2 className="mt-2.5 font-serif text-[29px] leading-[1.05] tracking-[-0.02em] text-[#2C1810] sm:text-[32px]">
                   {selectedCategory.name}
                 </h2>
               </div>
 
-              <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[#D8D5CF] bg-[#F6F5F1]/95 px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur lg:hidden">
-                <button onClick={() => router.push(`/booking/${categorySlug}/${selectedCategory.slug}`)} className="min-h-12 w-full bg-[#2C1810] px-8 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#45271B] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2">
+              <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[#D8D5CF] bg-[#F6F5F1]/95 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
+                <button onClick={() => router.push(`/booking/${categorySlug}/${selectedCategory.slug}`)} className="min-h-11 w-full bg-[#2C1810] px-8 text-[10px] font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#45271B] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2">
                   Book This Style
                 </button>
               </div>
