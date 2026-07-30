@@ -1360,7 +1360,7 @@ export default function FlipBook3D({
                     position: 'absolute',
                     inset: 0,
                     transformOrigin: bookOpeningProgress > 0 ? 'left center' : 'center center',
-                    transform: `scale(${1.3 - 0.3 * bookOpeningEase}) rotateY(${360 * closedBookRotationEase - 180 * bookOpeningEase}deg)`,
+                    transform: `scale(${1.46 - 0.46 * bookOpeningEase}) rotateY(${360 * closedBookRotationEase - 180 * bookOpeningEase}deg)`,
                     transition: 'transform-origin 0s',
                     willChange: 'transform',
                     borderRadius: '12px',
