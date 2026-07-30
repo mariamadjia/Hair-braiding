@@ -1407,7 +1407,16 @@ export default function FlipBook3D({
                       boxShadow: '0 28px 70px rgba(0,0,0,0.5)',
                     }}
                   >
-                    <BackCoverSVG endPage={endPage || BRAID_BOOK_END_PAGE} />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        backgroundImage: 'url("/braid-book/the-braid-book-back-cover.png")',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundSize: 'cover',
+                      }}
+                    />
                   </div>
 
                   {/* Page block creates visible depth instead of a flat rotating card. */}
