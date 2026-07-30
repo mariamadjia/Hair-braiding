@@ -680,7 +680,7 @@ export default function AdminPage() {
             {/* Main content area */}
             <div className={`flex min-w-0 flex-1 flex-col ${currentSection === "categories" ? "min-h-dvh" : "overflow-hidden"}`}>
                 {/* Top bar */}
-                {currentSection !== "categories" && <div className="h-16 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shrink-0 flex items-center justify-between px-6">
+                <div className="h-16 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shrink-0 flex items-center justify-between px-6">
                     <div className="flex items-center gap-3">
                         <h1 className="text-lg font-medium text-neutral-900 dark:text-white">
                             {({
@@ -703,7 +703,7 @@ export default function AdminPage() {
                             <span className="text-sm text-neutral-400">{categories.length} categories</span>
                         )}
                     </div>
-                </div>}
+                </div>
 
                 {/* Content based on section */}
                 {currentSection === "dashboard" && (
