@@ -10,14 +10,14 @@ const defaultItems = [
   {
     type: 'video',
     src: '/welcome/video1.m4v',
-    label: 'Join us Today',
+    label: 'Join our team',
     alt: 'In-studio bookings',
     link: '/join-us'
   },
   {
     type: 'video',
     src: '/welcome/video2.m4v',
-    label: 'Book us now',
+    label: 'Book an appointment',
     alt: 'Book us now',
     link: '/services'
   },
@@ -126,252 +126,88 @@ export default function Welcome({ items: propItems = defaultItems, editMode = fa
           </div>
         </div>
 
-        {/* Mobile: Stacked layout with alternating image-text */}
-        <div className="lg:hidden space-y-12">
+        {/* Mobile: compact editorial layout with alternating media and actions */}
+        <div className="space-y-10 lg:hidden">
           {/* Intro Text */}
-          <div className="text-center px-4">
-            <h2 className="text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900 mb-4">
+          <div className="px-1 text-center">
+            <h2 className="mb-4 text-[11px] font-medium uppercase tracking-[0.3em] text-neutral-900">
               Welcome to AH Braiding.
             </h2>
-            <p className="text-[15px] leading-relaxed text-neutral-700 font-light max-w-md mx-auto">
-              More than braids—AH Braiding is a San Antonio space for self-expression, beauty, culture, and confidence. Choose your style, review pricing and deposit details, then request an available time.
+            <p className="mx-auto max-w-[34rem] text-[14px] font-light leading-[1.7] text-neutral-700 sm:text-[15px]">
+              More than braids—AH Braiding is a San Antonio space for self-expression, beauty, culture, and confidence.
             </p>
           </div>
 
-          {/* First: Media Left, Text Right */}
-          <motion.div
-            className="grid grid-cols-2 gap-6 items-center"
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.8, delay: 0 * 0.35, ease: "easeOut" }}
-          >
-            <div className="relative">
-              {editMode && (
-                <button
-                  onClick={() => onEditItem && onEditItem(0)}
-                  className="absolute top-2 right-2 z-10 p-2 bg-neutral-900 text-white rounded-full shadow-lg hover:bg-neutral-800 transition-colors"
-                  title={`Edit ${items[0]?.label}`}
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-              )}
-              {items[0].link ? (
-                <Link href={items[0].link}>
-                  <div className="aspect-[3/5] bg-neutral-200 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
-                    {items[0].type === 'video' ? (
-                      <LazyVideo
-                        className="w-full h-full object-cover"
-                        autoPlay={!reduceMotion}
-                        loop
-                        muted
-                        playsInline
-                      ><source src={items[0].src} media="(max-width: 1023px)" /></LazyVideo>
-                    ) : (
-                      <img
-                        src={items[0].src}
-                        alt={items[0].alt}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                </Link>
-              ) : (
-                <div className="aspect-[3/5] bg-neutral-200 overflow-hidden">
-                  {items[0].type === 'video' ? (
-                    <LazyVideo
-                      className="w-full h-full object-cover"
-                      autoPlay={!reduceMotion}
-                      loop
-                      muted
-                      playsInline
-                    ><source src={items[0].src} media="(max-width: 1023px)" /></LazyVideo>
-                  ) : (
-                    <img
-                      src={items[0].src}
-                      alt={items[0].alt}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center justify-center">
-              {items[0].link ? (
-                <Link href={items[0].link}>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-neutral-900 leading-tight cursor-pointer hover:underline">
-                    {items[0].label.split(' ').map((word, i) => (
-                      <span key={i}>{word}<br /></span>
-                    ))}
-                  </p>
-                </Link>
-              ) : (
-                <p className="text-[11px] uppercase tracking-[0.2em] text-neutral-900 leading-tight">
-                  {items[0].label.split(' ').map((word, i) => (
-                    <span key={i}>{word}<br /></span>
-                  ))}
-                </p>
-              )}
-            </div>
-          </motion.div>
+          {items.map((item, index) => {
+            const media = (
+              <div className="relative overflow-hidden bg-neutral-200 aspect-[3/5]">
+                {editMode && (
+                  <button
+                    onClick={(event) => {
+                      event.preventDefault();
+                      onEditItem && onEditItem(index);
+                    }}
+                    className="absolute right-2 top-2 z-10 rounded-full bg-neutral-900 p-2 text-white shadow-lg transition-colors hover:bg-neutral-800"
+                    title={`Edit ${item.label}`}
+                    aria-label={`Edit ${item.label}`}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                )}
+                {item.type === 'video' ? (
+                  <LazyVideo
+                    className="h-full w-full object-cover"
+                    autoPlay={!reduceMotion}
+                    delayMs={index * 350}
+                    loop
+                    muted
+                    playsInline
+                  >
+                    <source src={item.src} media="(max-width: 1023px)" />
+                  </LazyVideo>
+                ) : (
+                  <img src={item.src} alt={item.alt} className="h-full w-full object-cover" />
+                )}
+              </div>
+            );
 
-          {/* Second: Text Left, Media Right */}
-          <motion.div
-            className="grid grid-cols-2 gap-6 items-center"
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.8, delay: 1 * 0.35, ease: "easeOut" }}
-          >
-            <div className="flex items-center justify-center">
-              {items[1].link ? (
-                <Link href={items[1].link}>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-neutral-900 leading-tight cursor-pointer hover:underline">
-                    {items[1].label.split(' ').map((word, i) => (
-                      <span key={i}>{word}<br /></span>
-                    ))}
-                  </p>
-                </Link>
-              ) : (
-                <p className="text-[11px] uppercase tracking-[0.2em] text-neutral-900 leading-tight">
-                  {items[1].label.split(' ').map((word, i) => (
-                    <span key={i}>{word}<br /></span>
-                  ))}
-                </p>
-              )}
-            </div>
-            <div className="relative">
-              {editMode && (
-                <button
-                  onClick={() => onEditItem && onEditItem(1)}
-                  className="absolute top-2 right-2 z-10 p-2 bg-neutral-900 text-white rounded-full shadow-lg hover:bg-neutral-800 transition-colors"
-                  title={`Edit ${items[1]?.label}`}
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-              )}
-              {items[1].link ? (
-                <Link href={items[1].link}>
-                  <div className="aspect-[3/5] bg-neutral-200 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
-                    {items[1].type === 'video' ? (
-                      <LazyVideo
-                        className="w-full h-full object-cover"
-                        autoPlay={!reduceMotion}
-                        delayMs={350}
-                        loop
-                        muted
-                        playsInline
-                      ><source src={items[1].src} media="(max-width: 1023px)" /></LazyVideo>
-                    ) : (
-                      <img
-                        src={items[1].src}
-                        alt={items[1].alt}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                </Link>
-              ) : (
-                <div className="aspect-[3/5] bg-neutral-200 overflow-hidden">
-                  {items[1].type === 'video' ? (
-                    <LazyVideo
-                      className="w-full h-full object-cover"
-                      autoPlay={!reduceMotion}
-                      delayMs={350}
-                      loop
-                      muted
-                      playsInline
-                    ><source src={items[1].src} media="(max-width: 1023px)" /></LazyVideo>
-                  ) : (
-                    <img
-                      src={items[1].src}
-                      alt={items[1].alt}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          </motion.div>
+            const mediaColumn = item.link ? (
+              <Link
+                href={item.link}
+                aria-label={item.label}
+                className="block transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4"
+              >
+                {media}
+              </Link>
+            ) : media;
 
-          {/* Third: Media Left, Text Right */}
-          <motion.div
-            className="grid grid-cols-2 gap-6 items-center"
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.8, delay: 2 * 0.35, ease: "easeOut" }}
-          >
-            <div className="relative">
-              {editMode && (
-                <button
-                  onClick={() => onEditItem && onEditItem(2)}
-                  className="absolute top-2 right-2 z-10 p-2 bg-neutral-900 text-white rounded-full shadow-lg hover:bg-neutral-800 transition-colors"
-                  title={`Edit ${items[2]?.label}`}
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-              )}
-              {items[2].link ? (
-                <Link href={items[2].link}>
-                  <div className="aspect-[3/5] bg-neutral-200 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
-                    {items[2].type === 'video' ? (
-                      <LazyVideo
-                        className="w-full h-full object-cover"
-                        autoPlay={!reduceMotion}
-                        delayMs={700}
-                        loop
-                        muted
-                        playsInline
-                      ><source src={items[2].src} media="(max-width: 1023px)" /></LazyVideo>
-                    ) : (
-                      <img
-                        src={items[2].src}
-                        alt={items[2].alt}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                </Link>
-              ) : (
-                <div className="aspect-[3/5] bg-neutral-200 overflow-hidden">
-                  {items[2].type === 'video' ? (
-                    <LazyVideo
-                      className="w-full h-full object-cover"
-                      autoPlay={!reduceMotion}
-                      delayMs={700}
-                      loop
-                      muted
-                      playsInline
-                    ><source src={items[2].src} media="(max-width: 1023px)" /></LazyVideo>
-                  ) : (
-                    <img
-                      src={items[2].src}
-                      alt={items[2].alt}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center justify-center">
-              {items[2].link ? (
-                <Link href={items[2].link}>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-neutral-900 leading-tight cursor-pointer hover:underline">
-                    {items[2].label.split(' ').map((word, i) => (
-                      <span key={i}>{word}<br /></span>
-                    ))}
-                  </p>
-                </Link>
-              ) : (
-                <p className="text-[11px] uppercase tracking-[0.2em] text-neutral-900 leading-tight">
-                  {items[2].label.split(' ').map((word, i) => (
-                    <span key={i}>{word}<br /></span>
-                  ))}
-                </p>
-              )}
-            </div>
-          </motion.div>
+            const action = item.link ? (
+              <Link
+                href={item.link}
+                className="inline-block max-w-[9rem] border-b border-neutral-900 pb-1 text-center text-[10px] font-medium uppercase leading-[1.55] tracking-[0.22em] text-neutral-900 transition-opacity hover:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-4 sm:text-[11px]"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <p className="max-w-[9rem] text-center text-[10px] font-medium uppercase leading-[1.55] tracking-[0.22em] text-neutral-900 sm:text-[11px]">
+                {item.label}
+              </p>
+            );
+
+            return (
+              <motion.div
+                key={`${item.src}-${index}`}
+                className="grid grid-cols-2 items-center gap-5"
+                initial={{ opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.65, delay: index * 0.12, ease: "easeOut" }}
+              >
+                <div className={index % 2 === 0 ? "order-1" : "order-2"}>{mediaColumn}</div>
+                <div className={`flex items-center justify-center ${index % 2 === 0 ? "order-2" : "order-1"}`}>{action}</div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>
