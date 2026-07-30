@@ -62,15 +62,18 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
           initial={reduceMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: "easeOut" }}
-          className="bg-[#F6F5F1] flex items-center justify-center px-6 pt-24 pb-10 md:py-0 md:px-16 lg:px-24"
+          className="bg-[#F6F5F1] flex items-center justify-center px-6 pb-8 pt-20 md:py-0 md:px-16 lg:px-24"
         >
           <div className="w-full max-w-lg text-center">
             {/* Headline */}
-            <div className="mb-8">
-              <h1 className="text-[52px] sm:text-[64px] md:text-[80px] lg:text-[96px] font-[family-name:var(--font-allura)] font-normal leading-[1.1] text-[#2C1810] mb-4">
+            <div className="mb-2 md:mb-8">
+              <h1 className="mx-auto max-w-[390px] text-[34px] font-semibold uppercase leading-[1.08] tracking-[-0.02em] text-[#2C1810] sm:text-[42px] md:hidden">
+                A premium braiding experience in San Antonio, Texas.
+              </h1>
+              <h1 className="hidden text-[80px] font-[family-name:var(--font-allura)] font-normal leading-[1.1] text-[#2C1810] md:mb-4 md:block lg:text-[96px]">
                 AH Braiding
               </h1>
-              <p className="text-[18px] sm:text-[20px] md:text-[20px] lg:text-[24px] font-serif italic font-light tracking-wide text-neutral-700">
+              <p className="hidden text-[20px] font-serif italic font-light tracking-wide text-neutral-700 md:block lg:text-[24px]">
                 The Art of Elegant Braiding
               </p>
             </div>
