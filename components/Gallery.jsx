@@ -125,7 +125,7 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
               Gallery
             </h2>
             <p className="text-[20px] md:text-[28px] font-light text-neutral-900">
-              Our Work Collection
+              Our Top Collection
             </p>
           </div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-4 md:gap-6" aria-label="Loading gallery">
@@ -153,7 +153,7 @@ export default function Gallery({ previewCollections = /** @type {any} */ (null)
             Gallery
           </h2>
           <p className="text-[20px] md:text-[28px] font-light text-neutral-900">
-            Our Work Collection
+            Our Top Collection
           </p>
         </div>
 
