@@ -504,7 +504,7 @@ export default function GalleryPage({
                 </div>
               )}
               {loading && (
-                <div role="status" aria-label="Loading gallery" className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div role="status" aria-label="Loading gallery" className="grid grid-cols-2 gap-x-3 gap-y-6 md:gap-6 xl:grid-cols-3">
                   {[0, 1, 2, 3, 4, 5].map((item) => (
                     <div key={item} className="animate-pulse">
                       <div className="aspect-[4/5] border-2 border-neutral-200 bg-neutral-200" />
@@ -513,7 +513,7 @@ export default function GalleryPage({
                   ))}
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:gap-6 xl:grid-cols-3">
                 {displayItems.map((item, index) => {
                   const itemKey = item.id ? `${item.type}-${item.id}` : item.link || `item-${index}`;
                   const isSubcategory = selectedSubcategories.length > 0 || item.type === 'subcategory';
@@ -613,7 +613,7 @@ export default function GalleryPage({
                       )}
 
                       {/* Image Container with Border */}
-                      <div className={`border-2 border-black p-4 mb-3 hover:border-neutral-600 transition-colors relative overflow-hidden ${isSelected ? 'ring-4 ring-blue-500' : ''}`}>
+                      <div className={`relative mb-2 overflow-hidden border border-[#2C1810] p-1.5 transition-colors hover:border-neutral-600 md:mb-3 md:border-2 md:border-black md:p-4 ${isSelected ? 'ring-4 ring-blue-500' : ''}`}>
                         <div 
                           className="aspect-[4/5] bg-neutral-200 overflow-hidden relative"
                           style={{ perspective: '1000px' }}
@@ -630,7 +630,7 @@ export default function GalleryPage({
                                 src={currentImage}
                                 alt={item.title}
                                 fill
-                                sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
+                                sizes="(max-width: 767px) 50vw, (max-width: 1279px) 50vw, 33vw"
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 style={{ backfaceVisibility: 'hidden' }}
                                 onError={() => setFailedImages((previous) => new Set(previous).add(currentImage))}
@@ -652,16 +652,16 @@ export default function GalleryPage({
 
                       {/* Title and Button */}
                       <div className="text-center mt-1">
-                        <h3 className={`uppercase tracking-[0.25em] text-neutral-900 font-semibold mb-3 ${
+                        <h3 className={`uppercase tracking-[0.2em] md:tracking-[0.25em] text-neutral-900 font-semibold mb-3 ${
                           isSubcategory 
-                            ? 'text-[11px] md:text-[13px] underline decoration-1 underline-offset-4 hover:decoration-2 transition-all' 
-                            : 'text-[13px] md:text-[15px] mb-2'
+                            ? 'text-[10px] md:text-[13px] underline decoration-1 underline-offset-4 hover:decoration-2 transition-all' 
+                            : 'text-[11px] md:text-[15px] mb-2'
                         }`}>
                           {item.title}
                         </h3>
                         
                         {!isSubcategory && (
-                          <p className="text-xs text-neutral-600 mb-4">
+                          <p className="mb-4 hidden text-xs text-neutral-600 sm:block">
                             {item.description}
                           </p>
                         )}
@@ -676,7 +676,7 @@ export default function GalleryPage({
                               router.push(isSubcategory && item.bookingLink ? item.bookingLink : item.link);
                             }
                           }}
-                          className="inline-block bg-[#2C1810] text-white px-4 py-2 text-[10px] md:text-xs uppercase tracking-wider font-semibold hover:bg-[#1a0f0a] transition-colors"
+                          className="inline-block bg-[#2C1810] px-3 py-2 text-[9px] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#1a0f0a] md:px-4 md:text-xs"
                         >
                           {isSubcategory ? 'Book Now' : 'Explore'}
                         </button>
