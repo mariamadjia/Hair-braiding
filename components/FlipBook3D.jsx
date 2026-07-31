@@ -1822,23 +1822,25 @@ export default function FlipBook3D({
 
           {currentStyleLink && !isFlipping && !editMode && (
             <>
-              <span style={{
-                position: 'absolute',
-                left: '60%',
-                right: '10%',
-                bottom: isCompactBookViewport ? 48 : 82,
-                zIndex: 1000,
-                color: T.heading,
-                fontSize: isCompactBookViewport ? '0.38rem' : '0.56rem',
-                fontWeight: 700,
-                letterSpacing: '0.18em',
-                lineHeight: 1,
-                textAlign: 'center',
-                textTransform: 'uppercase',
-                pointerEvents: 'none',
-              }}>
-                Love this look?
-              </span>
+              {!isCompactBookViewport && (
+                <span style={{
+                  position: 'absolute',
+                  left: '60%',
+                  right: '10%',
+                  bottom: 82,
+                  zIndex: 1000,
+                  color: T.heading,
+                  fontSize: '0.56rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.18em',
+                  lineHeight: 1,
+                  textAlign: 'center',
+                  textTransform: 'uppercase',
+                  pointerEvents: 'none',
+                }}>
+                  Love this look?
+                </span>
+              )}
               <a
               href={currentStyleLink}
               aria-label={`Select ${activeSpreads[current].name} for booking`}
