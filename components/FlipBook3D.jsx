@@ -471,6 +471,136 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
     </div>
   );
 
+  if (mobile && !editMode) {
+    const mobileCareTips = preserveTips.slice(0, 3);
+
+    return (
+      <div style={{
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
+        color: T.body,
+      }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) auto',
+          alignItems: 'baseline',
+          gap: 8,
+          paddingBottom: 7,
+          borderBottom: `1px solid ${T.accentDim}`,
+        }}>
+          <h3 style={{
+            margin: 0,
+            minWidth: 0,
+            fontFamily: 'var(--font-playfair,Georgia,serif)',
+            fontSize: '0.9rem',
+            lineHeight: 1,
+            fontWeight: 500,
+            letterSpacing: '-0.02em',
+            color: T.heading,
+          }}>
+            {s.name}
+          </h3>
+          <span style={{
+            color: T.accent,
+            fontFamily: 'var(--font-playfair,Georgia,serif)',
+            fontSize: '0.58rem',
+            lineHeight: 1,
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+          }}>
+            {s.wearTime}
+          </span>
+        </div>
+
+        {bestFor.length > 0 && (
+          <div style={{ paddingTop: 8 }}>
+            <div style={{
+              marginBottom: 4,
+              color: T.accent,
+              fontSize: '0.4rem',
+              lineHeight: 1,
+              fontWeight: 700,
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+            }}>
+              The Look
+            </div>
+            <div style={{
+              color: T.body,
+              fontSize: '0.48rem',
+              lineHeight: 1.35,
+              letterSpacing: '0.035em',
+            }}>
+              {bestFor.join(' · ')}
+            </div>
+          </div>
+        )}
+
+        <div style={{
+          position: 'relative',
+          zIndex: 1,
+          marginTop: 12,
+          padding: '10px 11px 9px',
+          borderRadius: 8,
+          background: 'rgba(238, 224, 205, 0.48)',
+        }}>
+          <div style={{
+            marginBottom: 7,
+            color: T.accent,
+            fontSize: '0.43rem',
+            lineHeight: 1,
+            fontWeight: 700,
+            letterSpacing: '0.16em',
+            textTransform: 'uppercase',
+          }}>
+            Care Notes
+          </div>
+          <div style={{ display: 'grid', gap: 6 }}>
+            {mobileCareTips.map((tip, index) => (
+              <div key={`mobile-care-${index}`} style={{
+                display: 'grid',
+                gridTemplateColumns: '10px minmax(0, 1fr)',
+                gap: 5,
+                alignItems: 'start',
+              }}>
+                <span aria-hidden="true" style={{
+                  width: 7,
+                  height: 1,
+                  marginTop: 5,
+                  background: T.accent,
+                }} />
+                <span style={{
+                  color: T.body,
+                  fontSize: '0.47rem',
+                  lineHeight: 1.25,
+                  fontWeight: 400,
+                }}>
+                  {tip}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div aria-hidden="true" style={{
+          position: 'absolute',
+          right: -18,
+          bottom: 24,
+          width: 92,
+          height: 92,
+          border: '7px solid rgba(200, 113, 74, 0.055)',
+          borderRadius: '50%',
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{ flex: 1, minHeight: 44 }} />
+      </div>
+    );
+  }
+
   return (
     <div style={{
       display: 'grid',
@@ -1674,7 +1804,27 @@ export default function FlipBook3D({
           </div>
 
           {currentStyleLink && !isFlipping && !editMode && (
-            <a
+            <>
+              {isCompactBookViewport && (
+                <span style={{
+                  position: 'absolute',
+                  left: '62%',
+                  right: '5%',
+                  bottom: 48,
+                  zIndex: 1000,
+                  color: T.accent,
+                  fontSize: '0.38rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.16em',
+                  lineHeight: 1,
+                  textAlign: 'center',
+                  textTransform: 'uppercase',
+                  pointerEvents: 'none',
+                }}>
+                  Ready for this look?
+                </span>
+              )}
+              <a
               href={currentStyleLink}
               aria-label={`Select ${activeSpreads[current].name} for booking`}
               data-no-page-flip
@@ -1713,7 +1863,8 @@ export default function FlipBook3D({
               }}
             >
               Select This Style
-            </a>
+              </a>
+            </>
           )}
 
           {editMode && onEditStyle && activeSpreads[current]?.id >= 1 && activeSpreads[current]?.id <= 8 && !isFlipping && (
