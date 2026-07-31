@@ -471,8 +471,8 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
     </div>
   );
 
-  if (mobile && !editMode) {
-    const mobileCareTips = preserveTips.slice(0, 3);
+  if (!editMode) {
+    const editorialCareTips = preserveTips.slice(0, 3);
 
     return (
       <div style={{
@@ -484,99 +484,126 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
         color: T.body,
       }}>
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) auto',
-          alignItems: 'baseline',
-          gap: 8,
-          paddingBottom: 7,
-          borderBottom: `1px solid ${T.accentDim}`,
+          position: 'relative',
+          minHeight: mobile ? 112 : 'clamp(190px, 32vw, 270px)',
+          marginTop: mobile ? -12 : -32,
+          marginRight: mobile ? -12 : -32,
+          marginLeft: mobile ? -18 : -44,
+          padding: mobile ? '16px 14px 24px 18px' : 'clamp(28px, 5vw, 44px) clamp(24px, 4vw, 38px) clamp(42px, 7vw, 64px)',
+          overflow: 'hidden',
+          background: 'linear-gradient(145deg, #2a1a14 0%, #1f1511 100%)',
+          clipPath: 'polygon(0 0, 100% 0, 100% 84%, 0 100%)',
         }}>
-          <h3 style={{
-            margin: 0,
-            minWidth: 0,
-            fontFamily: 'var(--font-playfair,Georgia,serif)',
-            fontSize: '0.9rem',
+          <div aria-hidden="true" style={{
+            position: 'absolute',
+            left: mobile ? -18 : -32,
+            bottom: mobile ? -36 : -66,
+            width: mobile ? 92 : 178,
+            height: mobile ? 92 : 178,
+            border: `${mobile ? 8 : 14}px solid rgba(194, 119, 72, 0.13)`,
+            borderRadius: '50%',
+          }} />
+          <div style={{
+            position: 'relative',
+            zIndex: 1,
+            marginBottom: mobile ? 8 : 14,
+            color: '#c57a49',
+            fontSize: mobile ? '0.4rem' : 'clamp(0.52rem, 1vw, 0.66rem)',
             lineHeight: 1,
-            fontWeight: 500,
-            letterSpacing: '-0.02em',
-            color: T.heading,
+            fontWeight: 700,
+            letterSpacing: '0.25em',
+            textTransform: 'uppercase',
+          }}>
+            Signature Style
+          </div>
+          <h3 style={{
+            position: 'relative',
+            zIndex: 1,
+            margin: 0,
+            maxWidth: '92%',
+            fontFamily: 'var(--font-playfair,Georgia,serif)',
+            fontSize: mobile ? '1.28rem' : 'clamp(2rem, 5vw, 3.35rem)',
+            lineHeight: 0.88,
+            fontWeight: 400,
+            letterSpacing: '-0.035em',
+            color: '#fff8ed',
           }}>
             {s.name}
           </h3>
           <span style={{
-            color: T.accent,
-            fontFamily: 'var(--font-playfair,Georgia,serif)',
-            fontSize: '0.58rem',
+            position: 'relative',
+            zIndex: 1,
+            display: 'inline-flex',
+            marginTop: mobile ? 9 : 18,
+            padding: mobile ? '4px 7px' : '7px 12px',
+            border: '1px solid rgba(197, 122, 73, 0.9)',
+            borderRadius: 3,
+            color: '#c98556',
+            fontSize: mobile ? '0.43rem' : 'clamp(0.56rem, 1.1vw, 0.72rem)',
             lineHeight: 1,
-            fontWeight: 600,
+            fontWeight: 700,
+            letterSpacing: '0.14em',
             whiteSpace: 'nowrap',
+            textTransform: 'uppercase',
           }}>
             {s.wearTime}
           </span>
         </div>
 
         {bestFor.length > 0 && (
-          <div style={{ paddingTop: 8 }}>
-            <div style={{
-              marginBottom: 4,
-              color: T.accent,
-              fontSize: '0.4rem',
-              lineHeight: 1,
-              fontWeight: 700,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-            }}>
-              The Look
-            </div>
+          <div style={{ paddingTop: mobile ? 8 : 18 }}>
             <div style={{
               color: T.body,
-              fontSize: '0.48rem',
-              lineHeight: 1.35,
-              letterSpacing: '0.035em',
+              fontSize: mobile ? '0.46rem' : 'clamp(0.62rem, 1.25vw, 0.8rem)',
+              lineHeight: 1.4,
+              letterSpacing: '0.025em',
             }}>
               {bestFor.join(' · ')}
             </div>
+            <div style={{
+              width: mobile ? 28 : 48,
+              height: 1,
+              marginTop: mobile ? 7 : 13,
+              background: '#c57a49',
+            }} />
           </div>
         )}
 
         <div style={{
           position: 'relative',
           zIndex: 1,
-          marginTop: 12,
-          width: '88%',
-          padding: '9px 10px 8px',
-          borderRadius: 6,
-          background: 'rgba(238, 224, 205, 0.48)',
+          marginTop: mobile ? 11 : 22,
         }}>
           <div style={{
-            marginBottom: 7,
+            marginBottom: mobile ? 7 : 13,
             color: T.accent,
-            fontSize: '0.43rem',
+            fontSize: mobile ? '0.43rem' : 'clamp(0.58rem, 1.15vw, 0.74rem)',
             lineHeight: 1,
             fontWeight: 700,
-            letterSpacing: '0.16em',
+            letterSpacing: '0.22em',
             textTransform: 'uppercase',
           }}>
-            Care Notes
+            Keep It Beautiful
           </div>
-          <div style={{ display: 'grid', gap: 6 }}>
-            {mobileCareTips.map((tip, index) => (
-              <div key={`mobile-care-${index}`} style={{
+          <div style={{ display: 'grid', gap: mobile ? 6 : 11 }}>
+            {editorialCareTips.map((tip, index) => (
+              <div key={`editorial-care-${index}`} style={{
                 display: 'grid',
-                gridTemplateColumns: '10px minmax(0, 1fr)',
-                gap: 5,
+                gridTemplateColumns: mobile ? '8px minmax(0, 1fr)' : '12px minmax(0, 1fr)',
+                gap: mobile ? 5 : 9,
                 alignItems: 'start',
               }}>
                 <span aria-hidden="true" style={{
-                  width: 7,
-                  height: 1,
-                  marginTop: 5,
-                  background: T.accent,
+                  width: mobile ? 4 : 6,
+                  height: mobile ? 4 : 6,
+                  marginTop: mobile ? 3 : 5,
+                  borderRadius: '50%',
+                  background: '#bd7042',
                 }} />
                 <span style={{
                   color: T.body,
-                  fontSize: '0.47rem',
-                  lineHeight: 1.25,
+                  fontSize: mobile ? '0.45rem' : 'clamp(0.58rem, 1.2vw, 0.76rem)',
+                  lineHeight: 1.28,
                   fontWeight: 400,
                 }}>
                   {tip}
@@ -586,18 +613,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
           </div>
         </div>
 
-        <div aria-hidden="true" style={{
-          position: 'absolute',
-          right: -24,
-          bottom: 34,
-          width: 72,
-          height: 72,
-          border: '5px solid rgba(200, 113, 74, 0.04)',
-          borderRadius: '50%',
-          pointerEvents: 'none',
-        }} />
-
-        <div style={{ flex: 1, minHeight: 44 }} />
+        <div style={{ flex: 1, minHeight: mobile ? 48 : 72 }} />
       </div>
     );
   }
@@ -1806,39 +1822,37 @@ export default function FlipBook3D({
 
           {currentStyleLink && !isFlipping && !editMode && (
             <>
-              {isCompactBookViewport && (
-                <span style={{
-                  position: 'absolute',
-                  left: '60%',
-                  right: '10%',
-                  bottom: 48,
-                  zIndex: 1000,
-                  color: T.accent,
-                  fontSize: '0.38rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.16em',
-                  lineHeight: 1,
-                  textAlign: 'center',
-                  textTransform: 'uppercase',
-                  pointerEvents: 'none',
-                }}>
-                  Ready for this look?
-                </span>
-              )}
+              <span style={{
+                position: 'absolute',
+                left: '60%',
+                right: '10%',
+                bottom: isCompactBookViewport ? 48 : 82,
+                zIndex: 1000,
+                color: T.heading,
+                fontSize: isCompactBookViewport ? '0.38rem' : '0.56rem',
+                fontWeight: 700,
+                letterSpacing: '0.18em',
+                lineHeight: 1,
+                textAlign: 'center',
+                textTransform: 'uppercase',
+                pointerEvents: 'none',
+              }}>
+                Love this look?
+              </span>
               <a
               href={currentStyleLink}
               aria-label={`Select ${activeSpreads[current].name} for booking`}
               data-no-page-flip
               style={{
                 position: 'absolute',
-	                left: isCompactBookViewport ? '60%' : `calc(50% + ${pagePaddingGutter})`,
-                right: isCompactBookViewport ? '10%' : 'auto',
-                bottom: isCompactBookViewport ? 14 : 'clamp(28px, 5vw, 46px)',
+	                left: '60%',
+                right: '10%',
+                bottom: isCompactBookViewport ? 14 : 28,
                 zIndex: 1000,
-                background: T.btnBg,
-                color: T.btnText,
-                border: `1px solid ${T.heading}`,
-                borderRadius: 2,
+                background: 'linear-gradient(135deg, #ad5d32, #c77440)',
+                color: '#fffaf3',
+                border: '1px solid #9d512c',
+                borderRadius: 3,
                 padding: isCompactBookViewport ? '8px 10px' : 'clamp(9px, 2vw, 11px) clamp(14px, 3vw, 18px)',
                 fontSize: isCompactBookViewport ? '0.46rem' : 'clamp(0.58rem, 1.3vw, 0.66rem)',
                 fontWeight: 600,
@@ -1853,13 +1867,13 @@ export default function FlipBook3D({
                 pointerEvents: 'auto',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = T.accent;
-                e.currentTarget.style.borderColor = T.accent;
+                e.currentTarget.style.background = '#8f4729';
+                e.currentTarget.style.borderColor = '#8f4729';
                 e.currentTarget.style.transform = 'translateY(-1px)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = T.btnBg;
-                e.currentTarget.style.borderColor = T.heading;
+                e.currentTarget.style.background = 'linear-gradient(135deg, #ad5d32, #c77440)';
+                e.currentTarget.style.borderColor = '#9d512c';
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
