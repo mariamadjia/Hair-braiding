@@ -543,8 +543,9 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
           position: 'relative',
           zIndex: 1,
           marginTop: 12,
-          padding: '10px 11px 9px',
-          borderRadius: 8,
+          width: '88%',
+          padding: '9px 10px 8px',
+          borderRadius: 6,
           background: 'rgba(238, 224, 205, 0.48)',
         }}>
           <div style={{
@@ -587,11 +588,11 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
 
         <div aria-hidden="true" style={{
           position: 'absolute',
-          right: -18,
-          bottom: 24,
-          width: 92,
-          height: 92,
-          border: '7px solid rgba(200, 113, 74, 0.055)',
+          right: -24,
+          bottom: 34,
+          width: 72,
+          height: 72,
+          border: '5px solid rgba(200, 113, 74, 0.04)',
           borderRadius: '50%',
           pointerEvents: 'none',
         }} />
@@ -1808,8 +1809,8 @@ export default function FlipBook3D({
               {isCompactBookViewport && (
                 <span style={{
                   position: 'absolute',
-                  left: '62%',
-                  right: '5%',
+                  left: '60%',
+                  right: '10%',
                   bottom: 48,
                   zIndex: 1000,
                   color: T.accent,
@@ -1830,8 +1831,8 @@ export default function FlipBook3D({
               data-no-page-flip
               style={{
                 position: 'absolute',
-	                left: isCompactBookViewport ? '62%' : `calc(50% + ${pagePaddingGutter})`,
-                right: isCompactBookViewport ? '5%' : 'auto',
+	                left: isCompactBookViewport ? '60%' : `calc(50% + ${pagePaddingGutter})`,
+                right: isCompactBookViewport ? '10%' : 'auto',
                 bottom: isCompactBookViewport ? 14 : 'clamp(28px, 5vw, 46px)',
                 zIndex: 1000,
                 background: T.btnBg,
