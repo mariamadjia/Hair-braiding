@@ -776,7 +776,7 @@ export default function FlipBook3D({
     ? 1
     : Math.min(1, Math.max(0, (scrollRotationProgress - 0.7) / 0.3));
   const bookOpeningEase = bookOpeningProgress * bookOpeningProgress * (3 - 2 * bookOpeningProgress);
-  const closedBookScale = isCompactBookViewport ? 1.22 : 1.46;
+  const closedBookScale = isCompactBookViewport ? 1.22 : 1.02;
   const closedBookDepth = isCompactBookViewport ? 24 : 46;
   const closedBookHalfDepth = closedBookDepth / 2;
   const closedBookEdgeInset = isCompactBookViewport ? 9 : 18;
