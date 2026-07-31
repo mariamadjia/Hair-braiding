@@ -1240,8 +1240,8 @@ export default function FlipBook3D({
           }
           .braid-book-stage {
             width: calc(100vw - 28px) !important;
-            height: clamp(240px, 68vw, 330px) !important;
-            min-height: 240px !important;
+            height: clamp(265px, 74vw, 350px) !important;
+            min-height: 265px !important;
           }
         }
 
