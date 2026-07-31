@@ -575,17 +575,19 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
           zIndex: 1,
           marginTop: mobile ? 20 : 22,
         }}>
-          <div style={{
-            marginBottom: mobile ? 12 : 13,
-            color: T.accent,
-            fontSize: mobile ? '0.5rem' : 'clamp(0.58rem, 1.15vw, 0.74rem)',
-            lineHeight: 1,
-            fontWeight: 700,
-            letterSpacing: mobile ? '0.24em' : '0.22em',
-            textTransform: 'uppercase',
-          }}>
-            Keep It Beautiful
-          </div>
+          {!mobile && (
+            <div style={{
+              marginBottom: 13,
+              color: T.accent,
+              fontSize: 'clamp(0.58rem, 1.15vw, 0.74rem)',
+              lineHeight: 1,
+              fontWeight: 700,
+              letterSpacing: '0.22em',
+              textTransform: 'uppercase',
+            }}>
+              Keep It Beautiful
+            </div>
+          )}
           <div style={{ display: 'grid', gap: mobile ? 10 : 11 }}>
             {editorialCareTips.map((tip, index) => (
               <div key={`editorial-care-${index}`} style={{
