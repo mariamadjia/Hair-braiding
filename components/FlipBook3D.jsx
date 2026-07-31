@@ -554,9 +554,11 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
           <div style={{ paddingTop: mobile ? 8 : 18 }}>
             <div style={{
               color: T.body,
+              fontFamily: '"Barlow Condensed", sans-serif',
               fontSize: mobile ? '0.46rem' : 'clamp(0.62rem, 1.25vw, 0.8rem)',
               lineHeight: 1.4,
-              letterSpacing: '0.025em',
+              fontWeight: 400,
+              letterSpacing: '0.01em',
             }}>
               {bestFor.join(' · ')}
             </div>
@@ -577,10 +579,11 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
           <div style={{
             marginBottom: mobile ? 7 : 13,
             color: T.accent,
+            fontFamily: '"Barlow Condensed", sans-serif',
             fontSize: mobile ? '0.43rem' : 'clamp(0.58rem, 1.15vw, 0.74rem)',
-            lineHeight: 1,
-            fontWeight: 700,
-            letterSpacing: '0.22em',
+            lineHeight: 1.2,
+            fontWeight: 600,
+            letterSpacing: '0.25em',
             textTransform: 'uppercase',
           }}>
             Keep It Beautiful
@@ -602,9 +605,11 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
                 }} />
                 <span style={{
                   color: T.body,
+                  fontFamily: '"Barlow Condensed", sans-serif',
                   fontSize: mobile ? '0.45rem' : 'clamp(0.58rem, 1.2vw, 0.76rem)',
-                  lineHeight: 1.28,
+                  lineHeight: 1.45,
                   fontWeight: 400,
+                  letterSpacing: '0.01em',
                 }}>
                   {tip}
                 </span>
@@ -1822,23 +1827,26 @@ export default function FlipBook3D({
 
           {currentStyleLink && !isFlipping && !editMode && (
             <>
-              <span style={{
-                position: 'absolute',
-                left: '60%',
-                right: '10%',
-                bottom: isCompactBookViewport ? 48 : 82,
-                zIndex: 1000,
-                color: T.heading,
-                fontSize: isCompactBookViewport ? '0.38rem' : '0.56rem',
-                fontWeight: 700,
-                letterSpacing: '0.18em',
-                lineHeight: 1,
-                textAlign: 'center',
-                textTransform: 'uppercase',
-                pointerEvents: 'none',
-              }}>
-                Love this look?
-              </span>
+              {!isCompactBookViewport && (
+                <span style={{
+                  position: 'absolute',
+                  left: '60%',
+                  right: '10%',
+                  bottom: 82,
+                  zIndex: 1000,
+                  color: T.heading,
+                  fontFamily: '"Barlow Condensed", sans-serif',
+                  fontSize: '0.6rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.2em',
+                  lineHeight: 1.2,
+                  textAlign: 'center',
+                  textTransform: 'uppercase',
+                  pointerEvents: 'none',
+                }}>
+                  Love this look?
+                </span>
+              )}
               <a
               href={currentStyleLink}
               aria-label={`Select ${activeSpreads[current].name} for booking`}
@@ -1855,6 +1863,7 @@ export default function FlipBook3D({
                 borderRadius: 3,
                 padding: isCompactBookViewport ? '8px 10px' : 'clamp(9px, 2vw, 11px) clamp(14px, 3vw, 18px)',
                 fontSize: isCompactBookViewport ? '0.46rem' : 'clamp(0.58rem, 1.3vw, 0.66rem)',
+                fontFamily: '"Barlow Condensed", sans-serif',
                 fontWeight: 600,
                 letterSpacing: '0.12em',
                 lineHeight: 1,
