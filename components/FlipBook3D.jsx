@@ -554,16 +554,17 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
           <div style={{ paddingTop: mobile ? 8 : 18 }}>
             <div style={{
               color: T.body,
-              fontSize: mobile ? '0.46rem' : 'clamp(0.62rem, 1.25vw, 0.8rem)',
+              fontSize: mobile ? '0.5rem' : 'clamp(0.62rem, 1.25vw, 0.8rem)',
               lineHeight: 1.4,
-              letterSpacing: '0.025em',
+              letterSpacing: mobile ? '0.01em' : '0.025em',
+              whiteSpace: mobile ? 'nowrap' : 'normal',
             }}>
               {bestFor.join(' · ')}
             </div>
             <div style={{
-              width: mobile ? 28 : 48,
+              width: mobile ? 34 : 48,
               height: 1,
-              marginTop: mobile ? 7 : 13,
+              marginTop: mobile ? 12 : 13,
               background: '#c57a49',
             }} />
           </div>
@@ -572,38 +573,38 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
         <div style={{
           position: 'relative',
           zIndex: 1,
-          marginTop: mobile ? 11 : 22,
+          marginTop: mobile ? 20 : 22,
         }}>
           <div style={{
-            marginBottom: mobile ? 7 : 13,
+            marginBottom: mobile ? 12 : 13,
             color: T.accent,
-            fontSize: mobile ? '0.43rem' : 'clamp(0.58rem, 1.15vw, 0.74rem)',
+            fontSize: mobile ? '0.5rem' : 'clamp(0.58rem, 1.15vw, 0.74rem)',
             lineHeight: 1,
             fontWeight: 700,
-            letterSpacing: '0.22em',
+            letterSpacing: mobile ? '0.24em' : '0.22em',
             textTransform: 'uppercase',
           }}>
             Keep It Beautiful
           </div>
-          <div style={{ display: 'grid', gap: mobile ? 6 : 11 }}>
+          <div style={{ display: 'grid', gap: mobile ? 10 : 11 }}>
             {editorialCareTips.map((tip, index) => (
               <div key={`editorial-care-${index}`} style={{
                 display: 'grid',
-                gridTemplateColumns: mobile ? '8px minmax(0, 1fr)' : '12px minmax(0, 1fr)',
-                gap: mobile ? 5 : 9,
+                gridTemplateColumns: mobile ? '11px minmax(0, 1fr)' : '12px minmax(0, 1fr)',
+                gap: mobile ? 7 : 9,
                 alignItems: 'start',
               }}>
                 <span aria-hidden="true" style={{
-                  width: mobile ? 4 : 6,
-                  height: mobile ? 4 : 6,
-                  marginTop: mobile ? 3 : 5,
+                  width: mobile ? 5 : 6,
+                  height: mobile ? 5 : 6,
+                  marginTop: mobile ? 4 : 5,
                   borderRadius: '50%',
                   background: '#bd7042',
                 }} />
                 <span style={{
                   color: T.body,
-                  fontSize: mobile ? '0.45rem' : 'clamp(0.58rem, 1.2vw, 0.76rem)',
-                  lineHeight: 1.28,
+                  fontSize: mobile ? '0.52rem' : 'clamp(0.58rem, 1.2vw, 0.76rem)',
+                  lineHeight: mobile ? 1.35 : 1.28,
                   fontWeight: 400,
                 }}>
                   {tip}
