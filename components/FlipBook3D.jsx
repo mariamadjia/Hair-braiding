@@ -508,7 +508,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
             zIndex: 1,
             marginBottom: mobile ? 8 : 14,
             color: '#c57a49',
-            fontSize: mobile ? '0.5rem' : 'clamp(0.52rem, 1vw, 0.66rem)',
+            fontSize: mobile ? '0.4rem' : 'clamp(0.52rem, 1vw, 0.66rem)',
             lineHeight: 1,
             fontWeight: 700,
             letterSpacing: '0.25em',
@@ -539,7 +539,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
             border: '1px solid rgba(197, 122, 73, 0.9)',
             borderRadius: 3,
             color: '#c98556',
-            fontSize: mobile ? '0.54rem' : 'clamp(0.56rem, 1.1vw, 0.72rem)',
+            fontSize: mobile ? '0.43rem' : 'clamp(0.56rem, 1.1vw, 0.72rem)',
             lineHeight: 1,
             fontWeight: 700,
             letterSpacing: '0.14em',
@@ -555,7 +555,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
             <div style={{
             color: T.body,
             fontFamily: '"Barlow Condensed", sans-serif',
-              fontSize: mobile ? '0.64rem' : 'clamp(0.62rem, 1.25vw, 0.8rem)',
+              fontSize: mobile ? '0.46rem' : 'clamp(0.62rem, 1.25vw, 0.8rem)',
               lineHeight: 1.4,
               fontWeight: 400,
               letterSpacing: '0.01em',
@@ -580,7 +580,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
             marginBottom: mobile ? 7 : 13,
             color: T.accent,
             fontFamily: '"Barlow Condensed", sans-serif',
-            fontSize: mobile ? '0.6rem' : 'clamp(0.58rem, 1.15vw, 0.74rem)',
+            fontSize: mobile ? '0.43rem' : 'clamp(0.58rem, 1.15vw, 0.74rem)',
             lineHeight: 1.2,
             fontWeight: 600,
             letterSpacing: '0.25em',
@@ -606,7 +606,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
                 <span style={{
                   color: T.body,
                   fontFamily: '"Barlow Condensed", sans-serif',
-                  fontSize: mobile ? '0.66rem' : 'clamp(0.58rem, 1.2vw, 0.76rem)',
+                  fontSize: mobile ? '0.45rem' : 'clamp(0.58rem, 1.2vw, 0.76rem)',
                   lineHeight: 1.45,
                   fontWeight: 400,
                   letterSpacing: '0.01em',
@@ -1244,8 +1244,8 @@ export default function FlipBook3D({
           }
           .braid-book-stage {
             width: calc(100vw - 28px) !important;
-            height: clamp(280px, 78vw, 350px) !important;
-            min-height: 280px !important;
+            height: clamp(240px, 68vw, 330px) !important;
+            min-height: 240px !important;
           }
         }
 
@@ -1862,7 +1862,7 @@ export default function FlipBook3D({
                 border: '1px solid #9d512c',
                 borderRadius: 3,
                 padding: isCompactBookViewport ? '8px 10px' : 'clamp(9px, 2vw, 11px) clamp(14px, 3vw, 18px)',
-                fontSize: isCompactBookViewport ? '0.62rem' : 'clamp(0.58rem, 1.3vw, 0.66rem)',
+                fontSize: isCompactBookViewport ? '0.46rem' : 'clamp(0.58rem, 1.3vw, 0.66rem)',
                 fontFamily: '"Barlow Condensed", sans-serif',
                 fontWeight: 600,
                 letterSpacing: '0.12em',
