@@ -390,22 +390,22 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
   const bestFor = care.bestFor || (s.quote ? [s.quote] : []);
   const bestForContent = bestFor.length > 0 && (
     <div style={{
-      paddingTop: 'clamp(1px, 0.5vw, 4px)'
+      paddingTop: mobile ? 0 : 'clamp(1px, 0.5vw, 4px)'
     }}>
       <div style={{
-        fontSize: mobile ? '0.72rem' : 'clamp(0.44rem, 1vw, 0.55rem)',
+        fontSize: mobile ? '0.44rem' : 'clamp(0.44rem, 1vw, 0.55rem)',
         letterSpacing: '0.12em',
         textTransform: 'uppercase',
         color: T.accent,
         fontWeight: 700,
-        marginBottom: 5
+        marginBottom: mobile ? 3 : 5
       }}>
         Best For
       </div>
       <div style={{
         display: 'flex',
         flexWrap: 'wrap',
-        gap: 'clamp(5px, 1.2vw, 8px)'
+        gap: mobile ? 4 : 'clamp(5px, 1.2vw, 8px)'
       }}>
         {bestFor.map((tag, index) => (
           <span
@@ -426,13 +426,13 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
             style={{
             display: 'inline-flex',
             alignItems: 'center',
-            minHeight: 'clamp(20px, 3.5vw, 27px)',
-            padding: '0 clamp(6px, 1.7vw, 11px)',
+            minHeight: mobile ? 18 : 'clamp(20px, 3.5vw, 27px)',
+            padding: mobile ? '0 6px' : '0 clamp(6px, 1.7vw, 11px)',
             border: `1px solid ${T.accentDim}`,
             borderRadius: 999,
             background: T.rightPage,
             color: T.heading,
-            fontSize: mobile ? '0.72rem' : 'clamp(0.48rem, 1.2vw, 0.62rem)',
+            fontSize: mobile ? '0.46rem' : 'clamp(0.48rem, 1.2vw, 0.62rem)',
             lineHeight: 1,
             fontWeight: 500,
             letterSpacing: '0.02em',
@@ -476,7 +476,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
       display: 'grid',
       gridTemplateRows: 'auto auto auto 1fr auto',
       height: '100%',
-      gap: 'clamp(6px, 1.7vw, 15px)'
+      gap: mobile ? 4 : 'clamp(6px, 1.7vw, 15px)'
     }}>
       <div>
         {editMode ? <input
@@ -488,14 +488,14 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
             border: '1px dashed rgba(200,113,74,0.55)',
             background: 'rgba(255,255,255,0.65)',
             fontFamily: 'var(--font-playfair,Georgia,serif)',
-            fontSize: mobile ? '1.8rem' : 'clamp(1rem, 4vw, 2.25rem)',
+            fontSize: mobile ? '0.9rem' : 'clamp(1rem, 4vw, 2.25rem)',
             color: T.heading,
             lineHeight: 1.05,
             fontWeight: 500,
           }}
         /> : <h3 style={{
           fontFamily: 'var(--font-playfair,Georgia,serif)',
-          fontSize: mobile ? '1.8rem' : 'clamp(1rem, 4vw, 2.25rem)',
+          fontSize: mobile ? '0.9rem' : 'clamp(1rem, 4vw, 2.25rem)',
           color: T.heading,
           margin: 0,
           lineHeight: 1.05,
@@ -507,13 +507,13 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'auto 1fr',
-        gap: 'clamp(8px, 2vw, 18px)',
+        gap: mobile ? 7 : 'clamp(8px, 2vw, 18px)',
         alignItems: 'end',
-        paddingBottom: 'clamp(6px, 1.8vw, 14px)',
+        paddingBottom: mobile ? 4 : 'clamp(6px, 1.8vw, 14px)',
         borderBottom: `1px solid ${T.accentDim}`
       }}>
         <div style={{
-          fontSize: mobile ? '0.72rem' : 'clamp(0.44rem, 1vw, 0.55rem)',
+          fontSize: mobile ? '0.44rem' : 'clamp(0.44rem, 1vw, 0.55rem)',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           color: T.accent,
@@ -529,7 +529,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
         /> : <div style={{
           fontFamily: 'var(--font-playfair,Georgia,serif)',
           color: T.heading,
-          fontSize: mobile ? '1rem' : 'clamp(0.75rem, 2vw, 1.05rem)',
+          fontSize: mobile ? '0.65rem' : 'clamp(0.75rem, 2vw, 1.05rem)',
           fontWeight: 600,
           lineHeight: 1
         }}>
@@ -541,24 +541,24 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
 
       <div>
         <div style={{
-          fontSize: mobile ? '0.72rem' : 'clamp(0.48rem, 1.1vw, 0.6rem)',
+          fontSize: mobile ? '0.44rem' : 'clamp(0.48rem, 1.1vw, 0.6rem)',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           color: T.accent,
           fontWeight: 700,
-          marginBottom: 'clamp(6px, 1.8vw, 14px)'
+          marginBottom: mobile ? 4 : 'clamp(6px, 1.8vw, 14px)'
         }}>
           Preserve Your Hair
         </div>
         <div style={{
           display: 'grid',
-          gap: 'clamp(5px, 1.5vw, 11px)'
+          gap: mobile ? 3 : 'clamp(5px, 1.5vw, 11px)'
         }}>
           {preserveTips.map((tip, i) => (
             <div key={`care-tip-${i}`} style={{
               display: 'grid',
-              gridTemplateColumns: 'clamp(16px, 3vw, 26px) 1fr',
-              gap: 'clamp(6px, 1.6vw, 12px)',
+              gridTemplateColumns: mobile ? '15px 1fr' : 'clamp(16px, 3vw, 26px) 1fr',
+              gap: mobile ? 4 : 'clamp(6px, 1.6vw, 12px)',
               alignItems: 'start',
               position: 'relative',
               paddingRight: editMode ? 16 : 0
@@ -566,7 +566,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
               <span style={{
                 color: T.accent,
                 fontFamily: 'var(--font-playfair,Georgia,serif)',
-                fontSize: mobile ? '0.9rem' : 'clamp(0.62rem, 1.7vw, 0.92rem)',
+                fontSize: mobile ? '0.58rem' : 'clamp(0.62rem, 1.7vw, 0.92rem)',
                 lineHeight: 1.15
               }}>
                 {String(i + 1).padStart(2, '0')}
@@ -582,8 +582,8 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
                 style={{ width: '100%', border: '1px dashed rgba(200,113,74,0.4)', background: 'rgba(255,255,255,0.6)', color: T.body, fontSize: 'clamp(0.52rem, 1.55vw, 0.75rem)', lineHeight: 1.3 }}
               /> : <span style={{
                 color: T.body,
-                fontSize: mobile ? '0.86rem' : 'clamp(0.52rem, 1.55vw, 0.75rem)',
-                lineHeight: 1.3,
+                fontSize: mobile ? '0.5rem' : 'clamp(0.52rem, 1.55vw, 0.75rem)',
+                lineHeight: mobile ? 1.18 : 1.3,
                 fontWeight: 300
               }}>
                 {tip}
@@ -642,7 +642,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
             }}
           />
         </label>
-      ) : <div style={{ height: 'clamp(30px, 5vw, 38px)' }} />}
+      ) : <div style={{ height: mobile ? 40 : 'clamp(30px, 5vw, 38px)' }} />}
     </div>
   );
 }
@@ -696,10 +696,12 @@ export default function FlipBook3D({
   const reduceMotion = useReducedMotion();
   const total = activeSpreads.length;
   const currentStyleLink = activeSpreads[current].styleLink;
-  const pagePaddingTop = 'clamp(24px,5.5vw,32px)';
-  const pagePaddingBottom = 'clamp(10px,2.6vw,32px)';
-  const pagePaddingOuter = 'clamp(10px,2.6vw,32px)';
-  const pagePaddingGutter = 'clamp(22px,4.5vw,44px)';
+  const pagePaddingTop = isCompactBookViewport ? '10px' : 'clamp(24px,5.5vw,32px)';
+  const pagePaddingBottom = isCompactBookViewport ? '8px' : 'clamp(10px,2.6vw,32px)';
+  const pagePaddingOuter = isCompactBookViewport ? '10px' : 'clamp(10px,2.6vw,32px)';
+  const pagePaddingGutter = isCompactBookViewport ? '14px' : 'clamp(22px,4.5vw,44px)';
+  const leftPageWidth = isCompactBookViewport ? '40%' : '50%';
+  const rightPageWidth = isCompactBookViewport ? '60%' : '50%';
   const editCurrentStyle = (field, value) => {
     const id = Number(activeSpreads[current]?.id);
     if (id >= 1 && id <= 8) onChangeStyle?.(id, field, value);
@@ -1092,8 +1094,8 @@ export default function FlipBook3D({
           }
           .braid-book-stage {
             width: calc(100vw - 28px) !important;
-            height: clamp(240px, 68vw, 330px) !important;
-            min-height: 240px !important;
+            height: clamp(270px, 78vw, 340px) !important;
+            min-height: 270px !important;
           }
         }
 
@@ -1161,7 +1163,7 @@ export default function FlipBook3D({
                   top: i * 2, 
                   right: -(i * 2) - 4, 
                   bottom: i * 2, 
-                  left: '50%', 
+                  left: leftPageWidth,
                   background: `rgb(${237 - i * 8}, ${233 - i * 8}, ${226 - i * 8})`, 
                   borderRadius: '0 12px 12px 0',
                   zIndex: -i - 1,
@@ -1180,7 +1182,7 @@ export default function FlipBook3D({
                   top: i * 2, 
                   left: -(i * 2) - 4, 
                   bottom: i * 2, 
-                  right: '50%', 
+                  right: rightPageWidth,
                   background: `rgb(${30 - i * 2}, ${26 - i * 2}, ${22 - i * 2})`, 
                   borderRadius: '12px 0 0 12px',
                   zIndex: -i - 1,
@@ -1204,7 +1206,7 @@ export default function FlipBook3D({
               {/* Spine */}
               <div style={{ 
                 position: 'absolute', 
-                left: '50%', 
+                left: leftPageWidth,
                 top: 0, 
                 transform: 'translateX(-50%)', 
                 width: 28, 
@@ -1233,7 +1235,7 @@ export default function FlipBook3D({
                   changePage(-1);
                 }}
                 style={{
-                  width: '50%',
+                  width: leftPageWidth,
                   height: '100%',
                   background: '#0a0a0a',
                   position: 'relative',
@@ -1296,7 +1298,7 @@ export default function FlipBook3D({
               {/* Right page */}
               <div
                 style={{
-	                  width: '50%',
+	                  width: rightPageWidth,
 	                  height: '100%',
 	                  background: T.rightPage,
 	                  paddingTop: pagePaddingTop,
@@ -1348,12 +1350,12 @@ export default function FlipBook3D({
                   ? <CoverContent cover={cover || BRAID_BOOK_COVER} editMode onChange={onChangeCover} />
                   : editMode && activeSpreads[current]?.id === 9
                     ? <EndPageContent endPage={endPage || BRAID_BOOK_END_PAGE} editMode onChange={onChangeEndPage} />
-                  : <RightPageContent s={activeSpreads[current]} editMode={editMode} onChange={editCurrentStyle} />}
+                  : <RightPageContent s={activeSpreads[current]} mobile={isCompactBookViewport} editMode={editMode} onChange={editCurrentStyle} />}
                 <div style={{ 
                   position: 'absolute', 
-                  bottom: 16, 
-                  right: 20, 
-                  fontSize: '0.58rem', 
+                  bottom: isCompactBookViewport ? 4 : 16,
+                  right: isCompactBookViewport ? 8 : 20,
+                  fontSize: isCompactBookViewport ? '0.42rem' : '0.58rem',
                   color: T.pageNum, 
                   letterSpacing: 1,
                   fontFamily: 'Georgia, serif'
@@ -1541,8 +1543,8 @@ export default function FlipBook3D({
                 style={{
                   position: 'absolute',
                   top: 0,
-                  left: flipDirection > 0 ? '50%' : 0,
-                  width: '50%',
+                  left: flipDirection > 0 ? leftPageWidth : 0,
+                  width: flipDirection > 0 ? rightPageWidth : leftPageWidth,
                   height: '100%',
                   zIndex: 250,
                   pointerEvents: 'none',
@@ -1567,8 +1569,8 @@ export default function FlipBook3D({
                   style={{
                     position: 'absolute',
                     top: 0,
-                    left: isForward ? '50%' : '0',
-                    width: '50%',
+                    left: isForward ? leftPageWidth : '0',
+                    width: isForward ? rightPageWidth : leftPageWidth,
                     height: '100%',
                     transformStyle: 'preserve-3d',
                     zIndex: 300,
@@ -1586,8 +1588,8 @@ export default function FlipBook3D({
                     {isForward ? (
                       /* right-page content of the spread we're leaving */
 	                      <div style={{ width: '100%', height: '100%', paddingTop: pagePaddingTop, paddingRight: pagePaddingOuter, paddingBottom: pagePaddingBottom, paddingLeft: pagePaddingGutter, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                        <RightPageContent s={from} />
-                        <div style={{ position: 'absolute', bottom: 16, right: 20, fontSize: '0.58rem', color: T.pageNum, letterSpacing: 1, fontFamily: 'Georgia,serif' }}>{from.pageNum}</div>
+                        <RightPageContent s={from} mobile={isCompactBookViewport} />
+                        <div style={{ position: 'absolute', bottom: isCompactBookViewport ? 4 : 16, right: isCompactBookViewport ? 8 : 20, fontSize: isCompactBookViewport ? '0.42rem' : '0.58rem', color: T.pageNum, letterSpacing: 1, fontFamily: 'Georgia,serif' }}>{from.pageNum}</div>
                       </div>
                     ) : (
                       /* left-page photo of the spread we're leaving */
@@ -1626,8 +1628,8 @@ export default function FlipBook3D({
                     ) : (
                       /* right-page content of the spread we're arriving at */
 	                      <div style={{ width: '100%', height: '100%', paddingTop: pagePaddingTop, paddingRight: pagePaddingOuter, paddingBottom: pagePaddingBottom, paddingLeft: pagePaddingGutter, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                        <RightPageContent s={to} />
-                        <div style={{ position: 'absolute', bottom: 16, right: 20, fontSize: '0.58rem', color: T.pageNum, letterSpacing: 1, fontFamily: 'Georgia,serif' }}>{to.pageNum}</div>
+                        <RightPageContent s={to} mobile={isCompactBookViewport} />
+                        <div style={{ position: 'absolute', bottom: isCompactBookViewport ? 4 : 16, right: isCompactBookViewport ? 8 : 20, fontSize: isCompactBookViewport ? '0.42rem' : '0.58rem', color: T.pageNum, letterSpacing: 1, fontFamily: 'Georgia,serif' }}>{to.pageNum}</div>
                       </div>
                     )}
                     {/* edge shadow at hinge (mirrored) */}
@@ -1652,8 +1654,8 @@ export default function FlipBook3D({
             style={{
               position: 'absolute',
               top: '6%',
-              right: 'clamp(8px, 1.8vw, 18px)',
-              width: 'clamp(34px, 5vw, 46px)',
+              right: isCompactBookViewport ? 2 : 'clamp(8px, 1.8vw, 18px)',
+              width: isCompactBookViewport ? 24 : 'clamp(34px, 5vw, 46px)',
               height: '88%',
               zIndex: 900,
               border: 'none',
@@ -1661,12 +1663,12 @@ export default function FlipBook3D({
               background: 'linear-gradient(to left, rgba(45,31,26,0.08), transparent)',
               color: current === total - 1 ? 'transparent' : 'rgba(45,31,26,0.32)',
               cursor: current === total - 1 ? 'default' : 'pointer',
-              fontSize: 'clamp(1.2rem, 2.5vw, 1.8rem)',
+              fontSize: isCompactBookViewport ? '1rem' : 'clamp(1.2rem, 2.5vw, 1.8rem)',
               lineHeight: 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
-              padding: '0 8px 0 0',
+              padding: isCompactBookViewport ? 0 : '0 8px 0 0',
               pointerEvents: current === total - 1 || isFlipping ? 'none' : 'auto',
             }}
           >
@@ -1680,20 +1682,24 @@ export default function FlipBook3D({
               data-no-page-flip
               style={{
                 position: 'absolute',
-	                left: `calc(50% + ${pagePaddingGutter})`,
-                bottom: 'clamp(28px, 5vw, 46px)',
+	                left: isCompactBookViewport ? `calc(${leftPageWidth} + ${pagePaddingGutter})` : `calc(50% + ${pagePaddingGutter})`,
+                right: isCompactBookViewport ? pagePaddingOuter : 'auto',
+                bottom: isCompactBookViewport ? 18 : 'clamp(28px, 5vw, 46px)',
                 zIndex: 1000,
                 background: T.btnBg,
                 color: T.btnText,
                 border: `1px solid ${T.heading}`,
                 borderRadius: 2,
-                padding: 'clamp(9px, 2vw, 11px) clamp(14px, 3vw, 18px)',
-                fontSize: 'clamp(0.58rem, 1.3vw, 0.66rem)',
+                minHeight: isCompactBookViewport ? 30 : undefined,
+                padding: isCompactBookViewport ? '7px 8px' : 'clamp(9px, 2vw, 11px) clamp(14px, 3vw, 18px)',
+                fontSize: isCompactBookViewport ? '0.46rem' : 'clamp(0.58rem, 1.3vw, 0.66rem)',
                 fontWeight: 600,
-                letterSpacing: '0.12em',
+                letterSpacing: isCompactBookViewport ? '0.1em' : '0.12em',
                 lineHeight: 1,
                 textDecoration: 'none',
                 textTransform: 'uppercase',
+                textAlign: 'center',
+                whiteSpace: 'nowrap',
                 transition: 'background 0.2s ease, transform 0.2s ease, border-color 0.2s ease',
                 cursor: 'pointer',
                 pointerEvents: 'auto',
