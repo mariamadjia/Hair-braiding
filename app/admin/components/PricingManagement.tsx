@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, BriefcaseBusiness, Check, ChevronDown, ChevronRight, ChevronUp, Clock3, CreditCard, DollarSign, Download, History, Pencil, Plus, RefreshCw, Save, Search, ShieldCheck, Sparkles, X } from "lucide-react";
 import type { BookingCategory, BookingItem, CategoriesData } from "@/lib/booking-types";
+import { sortLengthNames, sortLengthOptions, sortServiceItems } from "@/lib/utils/service-order";
 
 type Tab = "overview" | "matrix" | "deposits" | "history";
 type Row = {
@@ -13,33 +14,9 @@ type Row = {
 };
 type Change = { id: number; createdAt: string; serviceName: string; action: string; summary: string; changedBy?: string; beforeValue?: string; afterValue?: string };
 
-const PRICE_MATRIX_SIZE_ORDER = ["xsmall", "small", "smedium", "medium", "large", "jumbo"];
-const PRICE_MATRIX_LENGTH_ORDER = ["shoulder", "arm pit", "bra strap", "mid back", "waist", "hip", "tailbone", "classic", "mid thigh"];
-
-const normalizeLengthName = (name: string) => name
-  .trim()
-  .toLowerCase()
-  .replace(/[-_]+/g, " ")
-  .replace(/\barmpit\b/g, "arm pit")
-  .replace(/\bmid thight\b/g, "mid thigh")
-  .replace(/\s+/g, " ");
-
-const comparePriceMatrixLengths = (left: string, right: string) => {
-  const leftIndex = PRICE_MATRIX_LENGTH_ORDER.indexOf(normalizeLengthName(left));
-  const rightIndex = PRICE_MATRIX_LENGTH_ORDER.indexOf(normalizeLengthName(right));
-  if (leftIndex !== -1 && rightIndex !== -1) return leftIndex - rightIndex;
-  if (leftIndex !== -1) return -1;
-  if (rightIndex !== -1) return 1;
-  return 0;
-};
-
-const comparePriceMatrixSizes = (left: Row, right: Row) => {
-  const leftIndex = PRICE_MATRIX_SIZE_ORDER.indexOf(left.item.name.trim().toLowerCase());
-  const rightIndex = PRICE_MATRIX_SIZE_ORDER.indexOf(right.item.name.trim().toLowerCase());
-  if (leftIndex !== -1 && rightIndex !== -1) return leftIndex - rightIndex;
-  if (leftIndex !== -1) return -1;
-  if (rightIndex !== -1) return 1;
-  return (left.item.displayOrder ?? Number.MAX_SAFE_INTEGER) - (right.item.displayOrder ?? Number.MAX_SAFE_INTEGER);
+const sortPricingRows = (rows: Row[]) => {
+  const rowByItem = new Map(rows.map(row => [row.item, row]));
+  return sortServiceItems(rows.map(row => row.item)).map(item => rowByItem.get(item)!);
 };
 
 const money = (value?: string) => {
@@ -315,7 +292,7 @@ export function PricingManagement({ token }: { token: string }) {
           version: item.version ?? 0,
           basePriceCents: item.lengthOptions?.length ? undefined : Math.round(parsePrice(item.price) * 100),
           knotlessAdjustmentCents: item.foundationChoicesEnabled ? Math.round(parsePrice(item.knotlessPriceAdjustment) * 100) : undefined,
-          lengths: (item.lengthOptions ?? []).map((option, displayOrder) => ({
+          lengths: sortLengthOptions(item.lengthOptions ?? []).map((option, displayOrder) => ({
             lengthOptionId: option.id,
             priceCents: Math.round(parsePrice(option.price) * 100),
             displayOrder,
@@ -714,11 +691,9 @@ export function PricingManagement({ token }: { token: string }) {
                         <div className="space-y-4 bg-white p-4 sm:p-5">
                           {categoryGroups.map(subcategory => {
                             const subKey = `${category.slug}:${subcategory.slug}`;
-                            const subRows = visibleRows.filter(row => row.groupKey === subKey).sort(comparePriceMatrixSizes);
+                            const subRows = sortPricingRows(visibleRows.filter(row => row.groupKey === subKey));
                             const subClosed = collapsedSubcategories.has(subKey);
-                            const lengthNames = Array.from(new Set(subRows.flatMap(row => row.item.lengthOptions?.map(option => option.name || "") ?? [])))
-                              .filter(Boolean)
-                              .sort(comparePriceMatrixLengths);
+                            const lengthNames = sortLengthNames(Array.from(new Set(subRows.flatMap(row => row.item.lengthOptions?.map(option => option.name || "") ?? []))).filter(Boolean));
                             const hasBaseOnly = subRows.some(row => !row.item.lengthOptions?.length);
                             const columns = hasBaseOnly ? ["Base price", ...lengthNames] : lengthNames;
                             const hasKnotless = subRows.some(row => row.item.foundationChoicesEnabled);

@@ -7,25 +7,14 @@ import { formatPrice } from "@/lib/utils/price";
 import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
+import { sortLengthOptions, sortServiceItems } from "@/lib/utils/service-order";
 import { ItemForm } from "./ItemForm";
 import { ChevronRight, Package, Plus, Trash2, CheckCircle, AlertCircle, Loader2, GripVertical } from "lucide-react";
 import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
 
-const SIZE_ORDER = ['XSmall', 'Small', 'Medium', 'Smedium', 'Large', 'Jumbo'];
-
 function sortItemsBySize(items: BookingItem[]): { item: BookingItem; originalIdx: number }[] {
-    return items.map((item, idx) => ({ item, originalIdx: idx })).sort((a, b) => {
-        if ((a.item.displayOrder ?? 0) !== (b.item.displayOrder ?? 0)) return (a.item.displayOrder ?? 0) - (b.item.displayOrder ?? 0);
-        const indexA = SIZE_ORDER.indexOf(a.item.name.trim());
-        const indexB = SIZE_ORDER.indexOf(b.item.name.trim());
-        if (indexA !== -1 && indexB !== -1) {
-            return indexA - indexB;
-        }
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-        return a.originalIdx - b.originalIdx;
-    });
+    return sortServiceItems(items).map(item => ({ item, originalIdx: items.indexOf(item) }));
 }
 
 function servicePriceLabel(item: BookingItem) {
@@ -520,7 +509,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const reorderLengthOption = async (itemId: number, fromIndex: number, toIndex: number) => {
         if (saving || fromIndex === toIndex) return;
         const currentItem = items.find(item => item.id === itemId);
-        const currentOptions = currentItem?.lengthOptions ?? [];
+        const currentOptions = sortLengthOptions(currentItem?.lengthOptions ?? []);
         if (!currentItem || fromIndex < 0 || toIndex < 0 || fromIndex >= currentOptions.length || toIndex >= currentOptions.length) return;
 
         const reorderedOptions = [...currentOptions];
@@ -861,7 +850,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                         <>
                                                             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-2">Length Options</p>
                                                             <div className="grid grid-cols-1 gap-1.5">
-                                                                {item.lengthOptions.map((option, optIdx) => (
+                                                                {sortLengthOptions(item.lengthOptions).map((option, optIdx) => (
                                                                     <div
                                                                         key={option.id ?? `${option.name}-${optIdx}`}
                                                                         data-length-option-row
