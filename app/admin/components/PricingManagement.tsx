@@ -14,6 +14,24 @@ type Row = {
 type Change = { id: number; createdAt: string; serviceName: string; action: string; summary: string; changedBy?: string; beforeValue?: string; afterValue?: string };
 
 const PRICE_MATRIX_SIZE_ORDER = ["xsmall", "small", "smedium", "medium", "large", "jumbo"];
+const PRICE_MATRIX_LENGTH_ORDER = ["shoulder", "arm pit", "bra strap", "mid back", "waist", "hip", "tailbone", "classic", "mid thigh"];
+
+const normalizeLengthName = (name: string) => name
+  .trim()
+  .toLowerCase()
+  .replace(/[-_]+/g, " ")
+  .replace(/\barmpit\b/g, "arm pit")
+  .replace(/\bmid thight\b/g, "mid thigh")
+  .replace(/\s+/g, " ");
+
+const comparePriceMatrixLengths = (left: string, right: string) => {
+  const leftIndex = PRICE_MATRIX_LENGTH_ORDER.indexOf(normalizeLengthName(left));
+  const rightIndex = PRICE_MATRIX_LENGTH_ORDER.indexOf(normalizeLengthName(right));
+  if (leftIndex !== -1 && rightIndex !== -1) return leftIndex - rightIndex;
+  if (leftIndex !== -1) return -1;
+  if (rightIndex !== -1) return 1;
+  return 0;
+};
 
 const comparePriceMatrixSizes = (left: Row, right: Row) => {
   const leftIndex = PRICE_MATRIX_SIZE_ORDER.indexOf(left.item.name.trim().toLowerCase());
@@ -698,7 +716,9 @@ export function PricingManagement({ token }: { token: string }) {
                             const subKey = `${category.slug}:${subcategory.slug}`;
                             const subRows = visibleRows.filter(row => row.groupKey === subKey).sort(comparePriceMatrixSizes);
                             const subClosed = collapsedSubcategories.has(subKey);
-                            const lengthNames = Array.from(new Set(subRows.flatMap(row => row.item.lengthOptions?.map(option => option.name || "") ?? []))).filter(Boolean);
+                            const lengthNames = Array.from(new Set(subRows.flatMap(row => row.item.lengthOptions?.map(option => option.name || "") ?? [])))
+                              .filter(Boolean)
+                              .sort(comparePriceMatrixLengths);
                             const hasBaseOnly = subRows.some(row => !row.item.lengthOptions?.length);
                             const columns = hasBaseOnly ? ["Base price", ...lengthNames] : lengthNames;
                             const hasKnotless = subRows.some(row => row.item.foundationChoicesEnabled);
