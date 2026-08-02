@@ -77,6 +77,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [bulkSettingsDirty, setBulkSettingsDirty] = useState(false);
     const [applyingFoundations, setApplyingFoundations] = useState(false);
     const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
+    const [draggedLength, setDraggedLength] = useState<{ itemId: number; optionIndex: number } | null>(null);
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
 
@@ -516,6 +517,39 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         finally { setSaving(false); }
     };
 
+    const reorderLengthOption = async (itemId: number, fromIndex: number, toIndex: number) => {
+        if (saving || fromIndex === toIndex) return;
+        const currentItem = items.find(item => item.id === itemId);
+        const currentOptions = currentItem?.lengthOptions ?? [];
+        if (!currentItem || fromIndex < 0 || toIndex < 0 || fromIndex >= currentOptions.length || toIndex >= currentOptions.length) return;
+
+        const reorderedOptions = [...currentOptions];
+        const [movedOption] = reorderedOptions.splice(fromIndex, 1);
+        reorderedOptions.splice(toIndex, 0, movedOption);
+        const updatedItem = {
+            ...currentItem,
+            lengthOptions: reorderedOptions.map((option, displayOrder) => ({ ...option, displayOrder })),
+        };
+
+        setItems(previous => previous.map(item => item.id === itemId ? updatedItem : item));
+        setSaving(true);
+        setSaveError(null);
+        try {
+            await mutate("PUT", `${base}/items`, { item: updatedItem, itemId, subcategoryId: sub.id });
+            setSaveSuccess("Length order updated.");
+            setTimeout(() => setSaveSuccess(null), 3000);
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.items) setItems(freshSub.items);
+        } catch (error) {
+            setSaveError(error instanceof Error ? error.message : "Unable to reorder lengths.");
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.items) setItems(freshSub.items);
+        } finally {
+            setSaving(false);
+            setDraggedLength(null);
+        }
+    };
+
     const setCoverPhoto = async (imageId: number) => {
         const selected = galleryImages.find(imageItem => imageItem.id === imageId);
         if (!selected) return;
@@ -828,8 +862,51 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-2">Length Options</p>
                                                             <div className="grid grid-cols-1 gap-1.5">
                                                                 {item.lengthOptions.map((option, optIdx) => (
-                                                                    <div key={optIdx} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
-                                                                        <div className="flex items-center gap-2 min-w-0">
+                                                                    <div
+                                                                        key={option.id ?? `${option.name}-${optIdx}`}
+                                                                        data-length-option-row
+                                                                        draggable={!saving}
+                                                                        onDragStart={(event) => {
+                                                                            event.stopPropagation();
+                                                                            if (!item.id) return;
+                                                                            event.dataTransfer.effectAllowed = "move";
+                                                                            setDraggedLength({ itemId: item.id, optionIndex: optIdx });
+                                                                        }}
+                                                                        onDragEnd={(event) => {
+                                                                            event.stopPropagation();
+                                                                            setDraggedLength(null);
+                                                                        }}
+                                                                        onDragOver={(event) => {
+                                                                            if (!draggedLength || draggedLength.itemId !== item.id || draggedLength.optionIndex === optIdx) return;
+                                                                            event.preventDefault();
+                                                                            event.stopPropagation();
+                                                                            event.dataTransfer.dropEffect = "move";
+                                                                        }}
+                                                                        onDrop={(event) => {
+                                                                            event.preventDefault();
+                                                                            event.stopPropagation();
+                                                                            if (item.id && draggedLength?.itemId === item.id) {
+                                                                                void reorderLengthOption(item.id, draggedLength.optionIndex, optIdx);
+                                                                            }
+                                                                        }}
+                                                                        className={`grid cursor-grab grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border bg-white px-3 py-2 transition active:cursor-grabbing dark:bg-neutral-900 ${draggedLength?.itemId === item.id && draggedLength?.optionIndex === optIdx ? "border-neutral-400 opacity-55 dark:border-neutral-500" : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}
+                                                                    >
+                                                                        <button
+                                                                            type="button"
+                                                                            aria-label={`Reorder ${option.name}. Use Arrow Up or Arrow Down to move it.`}
+                                                                            onKeyDown={(event) => {
+                                                                                if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                                                                                event.preventDefault();
+                                                                                const targetIndex = optIdx + (event.key === "ArrowUp" ? -1 : 1);
+                                                                                if (item.id && targetIndex >= 0 && targetIndex < (item.lengthOptions?.length ?? 0)) {
+                                                                                    void reorderLengthOption(item.id, optIdx, targetIndex);
+                                                                                }
+                                                                            }}
+                                                                            className="rounded text-neutral-400 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
+                                                                        >
+                                                                            <GripVertical className="h-4 w-4" aria-hidden="true" />
+                                                                        </button>
+                                                                        <div className="flex min-w-0 items-center gap-2">
                                                                             {option.imageUrl && (
                                                                         <img src={toProxyUrl(option.imageUrl)} alt={option.name} className="w-8 h-8 rounded object-cover flex-shrink-0 border border-neutral-200" />
                                                                     )}
@@ -839,6 +916,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                             </div>
                                                         ))}
                                                     </div>
+                                                    {item.lengthOptions.length > 1 && (
+                                                        <p className="mt-2 text-[11px] text-neutral-500">Drag a length row to reorder it</p>
+                                                    )}
                                                 </>
                                             )}
                                                 </div>
