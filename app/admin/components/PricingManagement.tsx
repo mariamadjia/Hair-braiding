@@ -13,6 +13,17 @@ type Row = {
 };
 type Change = { id: number; createdAt: string; serviceName: string; action: string; summary: string; changedBy?: string; beforeValue?: string; afterValue?: string };
 
+const PRICE_MATRIX_SIZE_ORDER = ["xsmall", "small", "smedium", "medium", "large", "jumbo"];
+
+const comparePriceMatrixSizes = (left: Row, right: Row) => {
+  const leftIndex = PRICE_MATRIX_SIZE_ORDER.indexOf(left.item.name.trim().toLowerCase());
+  const rightIndex = PRICE_MATRIX_SIZE_ORDER.indexOf(right.item.name.trim().toLowerCase());
+  if (leftIndex !== -1 && rightIndex !== -1) return leftIndex - rightIndex;
+  if (leftIndex !== -1) return -1;
+  if (rightIndex !== -1) return 1;
+  return (left.item.displayOrder ?? Number.MAX_SAFE_INTEGER) - (right.item.displayOrder ?? Number.MAX_SAFE_INTEGER);
+};
+
 const money = (value?: string) => {
   const amount = Number(String(value ?? "").replace(/[^0-9.-]/g, ""));
   return Number.isFinite(amount) ? `$${amount.toFixed(0)}` : "—";
@@ -685,7 +696,7 @@ export function PricingManagement({ token }: { token: string }) {
                         <div className="space-y-4 bg-white p-4 sm:p-5">
                           {categoryGroups.map(subcategory => {
                             const subKey = `${category.slug}:${subcategory.slug}`;
-                            const subRows = visibleRows.filter(row => row.groupKey === subKey);
+                            const subRows = visibleRows.filter(row => row.groupKey === subKey).sort(comparePriceMatrixSizes);
                             const subClosed = collapsedSubcategories.has(subKey);
                             const lengthNames = Array.from(new Set(subRows.flatMap(row => row.item.lengthOptions?.map(option => option.name || "") ?? []))).filter(Boolean);
                             const hasBaseOnly = subRows.some(row => !row.item.lengthOptions?.length);
