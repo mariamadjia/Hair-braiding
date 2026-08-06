@@ -145,19 +145,26 @@ export default async function Services() {
                         alt={category.name}
                         loading="lazy"
                         decoding="async"
-                        className="row-span-2 h-full min-h-[205px] w-full rounded-lg bg-[#f3eee7] object-cover object-center sm:row-span-1 sm:h-28 sm:min-h-0 sm:object-contain md:h-32"
+                        className="h-[190px] w-full self-stretch rounded-lg bg-[#f3eee7] object-cover object-center sm:h-28 sm:object-contain md:h-32"
                       />
                     ) : (
-                      <div className="row-span-2 min-h-[205px] rounded-lg bg-[#eee4da] sm:row-span-1 sm:h-28 sm:min-h-0 md:h-32" aria-hidden="true" />
+                      <div className="h-[190px] rounded-lg bg-[#eee4da] sm:h-28 md:h-32" aria-hidden="true" />
                     )}
 
                     <div className="min-w-0 px-0 py-2 sm:px-0 sm:py-1">
                       <h3 className="font-serif text-[25px] leading-none text-[#241610] dark:text-white md:text-3xl">{category.name}</h3>
                       <p className="mt-2.5 text-[9px] font-semibold uppercase leading-4 tracking-[0.16em] text-[#b27342] sm:text-[10px] sm:tracking-[0.19em]">{copy.eyebrow}</p>
                       <p className="mt-1.5 max-w-[360px] text-[12px] leading-[1.4] text-[#595653] dark:text-neutral-300 sm:mt-2 sm:text-[14px] sm:leading-[1.45] md:text-[15px]">{copy.description}</p>
+                      <Link
+                        href={`/booking/${category.slug}`}
+                        prefetch={true}
+                        className="mt-3 inline-flex min-h-10 items-center justify-center gap-3 rounded-md bg-[#2C1810] px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-white shadow-[0_5px_12px_rgba(44,24,16,0.16)] transition hover:bg-[#1a0f0a] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2C1810] sm:hidden"
+                      >
+                        Select <ArrowRight className="h-4 w-4 text-[#c69667]" aria-hidden="true" />
+                      </Link>
                     </div>
 
-                    <div className="col-start-2 flex items-end justify-start pb-2 sm:col-start-auto sm:h-24 sm:items-center sm:justify-center sm:border-l sm:border-[#e6d7c9] sm:py-0 md:h-28">
+                    <div className="hidden sm:flex sm:h-24 sm:items-center sm:justify-center sm:border-l sm:border-[#e6d7c9] sm:py-0 md:h-28">
                       <Link
                         href={`/booking/${category.slug}`}
                         prefetch={true}
