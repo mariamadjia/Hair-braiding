@@ -93,7 +93,7 @@ export default async function Services() {
 
   return (
     <div
-      className="relative overflow-hidden bg-[#F6F5F1] bg-cover bg-top bg-no-repeat dark:bg-neutral-900"
+      className="relative overflow-hidden bg-[#F6F5F1] bg-cover bg-top bg-no-repeat dark:bg-neutral-900 md:w-[111.112%] md:[zoom:0.9]"
       style={{ backgroundImage: "url('/services-background.png')" }}
     >
       <div className="pointer-events-none absolute inset-0 bg-[#fffaf3]/8 dark:bg-neutral-950/75" aria-hidden="true" />
