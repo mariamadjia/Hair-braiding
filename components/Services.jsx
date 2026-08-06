@@ -137,7 +137,7 @@ export default async function Services() {
                 return (
                   <article
                     key={category.id}
-                    className="group grid grid-cols-[minmax(112px,38%)_minmax(0,1fr)] gap-x-4 overflow-hidden rounded-xl border border-[#dfcdbb]/75 bg-[#fffdf9]/82 p-2.5 shadow-[0_8px_24px_rgba(76,45,27,0.07)] backdrop-blur-[3px] transition duration-300 hover:-translate-y-0.5 hover:border-[#cda985] hover:shadow-[0_12px_30px_rgba(76,45,27,0.11)] dark:border-neutral-700 dark:bg-neutral-900/85 sm:grid-cols-[145px_minmax(0,1fr)_125px] sm:items-center sm:gap-4 sm:p-3 md:grid-cols-[170px_minmax(0,1fr)_145px] md:gap-5"
+                    className="group flex h-[212px] items-stretch gap-4 overflow-hidden rounded-xl border border-[#dfcdbb]/75 bg-[#fffdf9]/82 p-2.5 shadow-[0_8px_24px_rgba(76,45,27,0.07)] backdrop-blur-[3px] transition duration-300 hover:-translate-y-0.5 hover:border-[#cda985] hover:shadow-[0_12px_30px_rgba(76,45,27,0.11)] dark:border-neutral-700 dark:bg-neutral-900/85 sm:grid sm:h-auto sm:grid-cols-[145px_minmax(0,1fr)_125px] sm:items-center sm:gap-4 sm:p-3 md:grid-cols-[170px_minmax(0,1fr)_145px] md:gap-5"
                   >
                     {rawImage ? (
                       <img
@@ -145,13 +145,13 @@ export default async function Services() {
                         alt={category.name}
                         loading="lazy"
                         decoding="async"
-                        className="h-[190px] w-full self-stretch rounded-lg bg-[#f3eee7] object-cover object-center sm:h-28 sm:object-contain md:h-32"
+                        className="h-[190px] w-[38%] shrink-0 rounded-lg bg-[#f3eee7] object-cover object-center sm:h-28 sm:w-full sm:object-contain md:h-32"
                       />
                     ) : (
-                      <div className="h-[190px] rounded-lg bg-[#eee4da] sm:h-28 md:h-32" aria-hidden="true" />
+                      <div className="h-[190px] w-[38%] shrink-0 rounded-lg bg-[#eee4da] sm:h-28 sm:w-full md:h-32" aria-hidden="true" />
                     )}
 
-                    <div className="min-w-0 px-0 py-2 sm:px-0 sm:py-1">
+                    <div className="min-w-0 flex-1 overflow-hidden px-0 py-2 sm:px-0 sm:py-1">
                       <h3 className="font-serif text-[25px] leading-none text-[#241610] dark:text-white md:text-3xl">{category.name}</h3>
                       <p className="mt-2.5 text-[9px] font-semibold uppercase leading-4 tracking-[0.16em] text-[#b27342] sm:text-[10px] sm:tracking-[0.19em]">{copy.eyebrow}</p>
                       <p className="mt-1.5 max-w-[360px] text-[12px] leading-[1.4] text-[#595653] dark:text-neutral-300 sm:mt-2 sm:text-[14px] sm:leading-[1.45] md:text-[15px]">{copy.description}</p>
