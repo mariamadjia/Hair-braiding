@@ -148,10 +148,10 @@ export default async function Services() {
                         alt={category.name}
                         loading="lazy"
                         decoding="async"
-                        className="aspect-[16/10] h-auto w-full rounded-lg bg-[#f3eee7] object-cover object-center sm:aspect-auto sm:h-28 sm:object-contain md:h-32"
+                        className="h-32 w-full rounded-lg bg-[#f3eee7] object-cover object-center sm:h-28 sm:object-contain md:h-32"
                       />
                     ) : (
-                      <div className="aspect-[16/10] rounded-lg bg-[#eee4da] sm:aspect-auto sm:h-28 md:h-32" aria-hidden="true" />
+                      <div className="h-32 rounded-lg bg-[#eee4da] sm:h-28 md:h-32" aria-hidden="true" />
                     )}
 
                     <div className="px-1 py-3 sm:px-0 sm:py-1">
