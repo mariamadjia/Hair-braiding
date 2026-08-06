@@ -99,7 +99,7 @@ export default async function Services() {
       <div className="pointer-events-none absolute inset-0 bg-[#fffaf3]/8 dark:bg-neutral-950/75" aria-hidden="true" />
       <section
         id="services"
-        className="relative z-10 overflow-hidden pt-20 pb-8 text-neutral-900 dark:text-white md:pt-28 md:pb-10"
+        className="relative z-10 overflow-hidden pt-14 pb-6 text-neutral-900 dark:text-white md:pt-20 md:pb-7"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl text-center">
@@ -107,24 +107,24 @@ export default async function Services() {
               Our Expertise
             </p>
 
-            <h2 className="font-serif text-5xl font-medium leading-none tracking-[-0.035em] text-[#20140f] dark:text-white md:text-7xl">
+            <h2 className="font-serif text-4xl font-medium leading-none tracking-[-0.035em] text-[#20140f] dark:text-white md:text-6xl">
               Signature <span className="italic text-[#9a6b38]">Services</span>
             </h2>
-            <div className="my-5 flex items-center justify-center gap-2 text-[#b7834d]" aria-hidden="true">
+            <div className="my-4 flex items-center justify-center gap-2 text-[#b7834d]" aria-hidden="true">
               <span className="h-px w-12 bg-current" />
               <Sparkles className="h-4 w-4" />
               <span className="h-px w-12 bg-current" />
             </div>
-            <p className="mx-auto max-w-xl text-sm leading-6 text-neutral-700 dark:text-neutral-300 md:text-base">
+            <p className="mx-auto max-w-xl text-sm leading-5 text-neutral-700 dark:text-neutral-300 md:leading-6">
               Premium braiding services tailored to your style.<br className="hidden sm:block" /> Explore our most requested looks and book your favorite.
             </p>
           </div>
         </div>
       </section>
 
-      <section className="relative z-10 pb-20 md:pb-28">
-        <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="space-y-3">
+      <section className="relative z-10 pb-14 md:pb-20">
+        <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="space-y-2.5">
             {categories.length > 0 ? (
               categories.map((category) => {
                 const rawImage =
@@ -140,7 +140,7 @@ export default async function Services() {
                 return (
                   <article
                     key={category.id}
-                    className="group grid overflow-hidden rounded-2xl border border-[#dfcdbb]/75 bg-[#fffdf9]/82 p-3 shadow-[0_12px_35px_rgba(76,45,27,0.08)] backdrop-blur-[3px] transition duration-300 hover:-translate-y-0.5 hover:border-[#cda985] hover:shadow-[0_18px_42px_rgba(76,45,27,0.13)] dark:border-neutral-700 dark:bg-neutral-900/85 sm:grid-cols-[170px_minmax(0,1fr)_150px] sm:items-center sm:gap-5 sm:p-4 md:grid-cols-[200px_minmax(0,1fr)_180px] md:gap-7"
+                    className="group grid overflow-hidden rounded-xl border border-[#dfcdbb]/75 bg-[#fffdf9]/82 p-3 shadow-[0_8px_24px_rgba(76,45,27,0.07)] backdrop-blur-[3px] transition duration-300 hover:-translate-y-0.5 hover:border-[#cda985] hover:shadow-[0_12px_30px_rgba(76,45,27,0.11)] dark:border-neutral-700 dark:bg-neutral-900/85 sm:grid-cols-[145px_minmax(0,1fr)_125px] sm:items-center sm:gap-4 md:grid-cols-[170px_minmax(0,1fr)_145px] md:gap-5"
                   >
                     {rawImage ? (
                       <img
@@ -148,23 +148,23 @@ export default async function Services() {
                         alt={category.name}
                         loading="lazy"
                         decoding="async"
-                        className="h-44 w-full rounded-xl object-cover sm:h-32 md:h-36"
+                        className="h-48 w-full rounded-lg bg-[#f3eee7] object-contain sm:h-28 md:h-32"
                       />
                     ) : (
-                      <div className="h-44 rounded-xl bg-[#eee4da] sm:h-32 md:h-36" aria-hidden="true" />
+                      <div className="h-48 rounded-lg bg-[#eee4da] sm:h-28 md:h-32" aria-hidden="true" />
                     )}
 
-                    <div className="px-1 py-4 sm:px-0 sm:py-2">
-                      <h3 className="font-serif text-3xl leading-none text-[#241610] dark:text-white md:text-4xl">{category.name}</h3>
-                      <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#b27342]">{copy.eyebrow}</p>
-                      <p className="mt-2 max-w-xl text-sm leading-5 text-neutral-600 dark:text-neutral-300 md:text-base md:leading-6">{copy.description}</p>
+                    <div className="px-1 py-3 sm:px-0 sm:py-1">
+                      <h3 className="font-serif text-2xl leading-none text-[#241610] dark:text-white md:text-3xl">{category.name}</h3>
+                      <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.17em] text-[#b27342]">{copy.eyebrow}</p>
+                      <p className="mt-1.5 max-w-xl text-[13px] leading-5 text-neutral-600 dark:text-neutral-300 md:text-sm">{copy.description}</p>
                     </div>
 
-                    <div className="flex items-center justify-end border-t border-[#e6d7c9] py-3 sm:h-28 sm:justify-center sm:border-t-0 sm:border-l sm:py-0 md:h-32">
+                    <div className="flex items-center justify-end border-t border-[#e6d7c9] py-3 sm:h-24 sm:justify-center sm:border-t-0 sm:border-l sm:py-0 md:h-28">
                       <Link
                         href={`/booking/${category.slug}`}
                         prefetch={true}
-                        className="inline-flex min-h-12 items-center justify-center gap-5 rounded-md bg-[#2C1810] px-6 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-[0_7px_16px_rgba(44,24,16,0.18)] transition hover:bg-[#1a0f0a] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2C1810]"
+                        className="inline-flex min-h-10 items-center justify-center gap-3 rounded-md bg-[#2C1810] px-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-white shadow-[0_5px_12px_rgba(44,24,16,0.16)] transition hover:bg-[#1a0f0a] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2C1810]"
                       >
                         Select <ArrowRight className="h-4 w-4 text-[#c69667]" aria-hidden="true" />
                       </Link>
@@ -186,9 +186,9 @@ export default async function Services() {
           </div>
 
           {categories.length > 0 && (
-            <div className="mt-6 grid items-center gap-5 rounded-2xl border border-[#dfcdbb]/75 bg-[#fffdf9]/82 px-6 py-6 shadow-[0_12px_35px_rgba(76,45,27,0.08)] backdrop-blur-[3px] dark:border-neutral-700 dark:bg-neutral-900/85 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-8">
+            <div className="mt-4 grid items-center gap-4 rounded-xl border border-[#dfcdbb]/75 bg-[#fffdf9]/82 px-5 py-4 shadow-[0_8px_24px_rgba(76,45,27,0.07)] backdrop-blur-[3px] dark:border-neutral-700 dark:bg-neutral-900/85 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-6">
               <div>
-                <h3 className="font-serif text-2xl text-[#251710] dark:text-white md:text-3xl">Not sure what to choose?</h3>
+                <h3 className="font-serif text-xl text-[#251710] dark:text-white md:text-2xl">Not sure what to choose?</h3>
                 <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">We&apos;re here to help you find the perfect style.</p>
               </div>
               <Link href="/contact" className="inline-flex min-h-12 items-center justify-center gap-5 rounded-md border border-[#b7834d] px-6 text-xs font-semibold uppercase tracking-[0.2em] text-[#2C1810] transition hover:bg-[#2C1810] hover:text-white dark:text-white">
