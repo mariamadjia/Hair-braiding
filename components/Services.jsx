@@ -30,8 +30,12 @@ export default async function Services() {
     categories = await getServiceCategories();
   } catch (error) {
     return (
-      <section className="relative overflow-hidden bg-[#F6F5F1] pt-24 pb-12 text-neutral-900 dark:bg-neutral-900 dark:text-white md:pt-32 md:pb-16">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <section
+        className="relative overflow-hidden bg-[#F6F5F1] bg-cover bg-center pt-24 pb-12 text-neutral-900 dark:bg-neutral-900 dark:text-white md:pt-32 md:pb-16"
+        style={{ backgroundImage: "url('/services-background.png')" }}
+      >
+        <div className="pointer-events-none absolute inset-0 bg-[#faf7f1]/80 backdrop-blur-[1px] dark:bg-neutral-950/85" aria-hidden="true" />
+        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-10 text-center md:mb-14">
             <p className="mb-4 text-xs uppercase tracking-[0.4em] text-neutral-500 dark:text-neutral-400">
               Our Expertise
@@ -56,10 +60,14 @@ export default async function Services() {
   }
 
   return (
-    <>
+    <div
+      className="relative overflow-hidden bg-[#F6F5F1] bg-cover bg-center bg-no-repeat dark:bg-neutral-900"
+      style={{ backgroundImage: "url('/services-background.png')" }}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[#faf7f1]/76 backdrop-blur-[0.5px] dark:bg-neutral-950/85" aria-hidden="true" />
       <section
         id="services"
-        className="relative overflow-hidden bg-[#F6F5F1] pt-24 pb-12 text-neutral-900 dark:bg-neutral-900 dark:text-white md:pt-32 md:pb-16"
+        className="relative z-10 overflow-hidden pt-24 pb-12 text-neutral-900 dark:text-white md:pt-32 md:pb-16"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-10 text-center md:mb-14">
@@ -75,7 +83,7 @@ export default async function Services() {
         <div className="pointer-events-none absolute -top-20 right-10 h-56 w-56 rounded-full bg-amber-100/30 blur-3xl" aria-hidden="true" />
       </section>
 
-      <section className="bg-[#F6F5F1] pb-24 dark:bg-neutral-900 md:pb-32">
+      <section className="relative z-10 pb-24 md:pb-32">
         <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="divide-y divide-neutral-200/60 dark:divide-neutral-700">
             {categories.length > 0 ? (
@@ -132,6 +140,6 @@ export default async function Services() {
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
