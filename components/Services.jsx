@@ -123,7 +123,7 @@ export default async function Services() {
       </section>
 
       <section className="relative z-10 pb-14 md:pb-20">
-        <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="space-y-2.5">
             {categories.length > 0 ? (
               categories.map((category) => {
@@ -140,7 +140,7 @@ export default async function Services() {
                 return (
                   <article
                     key={category.id}
-                    className="group grid overflow-hidden rounded-[18px] border border-[#dfcdbb]/75 bg-[#fffdf9]/82 p-3 shadow-[0_8px_24px_rgba(76,45,27,0.07)] backdrop-blur-[3px] transition duration-300 hover:-translate-y-0.5 hover:border-[#cda985] hover:shadow-[0_12px_30px_rgba(76,45,27,0.11)] dark:border-neutral-700 dark:bg-neutral-900/85 sm:grid-cols-[190px_minmax(0,1fr)_155px] sm:items-center sm:gap-6 md:grid-cols-[220px_minmax(0,1fr)_190px] md:gap-8"
+                    className="group grid overflow-hidden rounded-xl border border-[#dfcdbb]/75 bg-[#fffdf9]/82 p-3 shadow-[0_8px_24px_rgba(76,45,27,0.07)] backdrop-blur-[3px] transition duration-300 hover:-translate-y-0.5 hover:border-[#cda985] hover:shadow-[0_12px_30px_rgba(76,45,27,0.11)] dark:border-neutral-700 dark:bg-neutral-900/85 sm:grid-cols-[145px_minmax(0,1fr)_125px] sm:items-center sm:gap-4 md:grid-cols-[170px_minmax(0,1fr)_145px] md:gap-5"
                   >
                     {rawImage ? (
                       <img
@@ -148,23 +148,23 @@ export default async function Services() {
                         alt={category.name}
                         loading="lazy"
                         decoding="async"
-                        className="h-48 w-full rounded-[14px] bg-[#f3eee7] object-cover object-center sm:h-36 md:h-40"
+                        className="h-48 w-full rounded-lg bg-[#f3eee7] object-contain sm:h-28 md:h-32"
                       />
                     ) : (
-                      <div className="h-48 rounded-[14px] bg-[#eee4da] sm:h-36 md:h-40" aria-hidden="true" />
+                      <div className="h-48 rounded-lg bg-[#eee4da] sm:h-28 md:h-32" aria-hidden="true" />
                     )}
 
-                    <div className="flex min-w-0 flex-col justify-center px-1 py-3 sm:h-36 sm:px-0 sm:py-1 md:h-40">
+                    <div className="px-1 py-3 sm:px-0 sm:py-1">
                       <h3 className="font-serif text-2xl leading-none text-[#241610] dark:text-white md:text-3xl">{category.name}</h3>
                       <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.19em] text-[#b27342]">{copy.eyebrow}</p>
                       <p className="mt-2 max-w-[360px] text-[14px] leading-[1.45] text-[#595653] dark:text-neutral-300 md:text-[15px]">{copy.description}</p>
                     </div>
 
-                    <div className="flex items-center justify-end border-t border-[#e6d7c9] py-3 sm:h-32 sm:justify-center sm:border-t-0 sm:border-l sm:py-0 md:h-36">
+                    <div className="flex items-center justify-end border-t border-[#e6d7c9] py-3 sm:h-24 sm:justify-center sm:border-t-0 sm:border-l sm:py-0 md:h-28">
                       <Link
                         href={`/booking/${category.slug}`}
                         prefetch={true}
-                        className="inline-flex min-h-12 min-w-[145px] items-center justify-center gap-5 rounded-md bg-[#2C1810] px-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white shadow-[0_5px_12px_rgba(44,24,16,0.16)] transition hover:bg-[#1a0f0a] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2C1810] md:min-w-[160px]"
+                        className="inline-flex min-h-10 items-center justify-center gap-3 rounded-md bg-[#2C1810] px-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-white shadow-[0_5px_12px_rgba(44,24,16,0.16)] transition hover:bg-[#1a0f0a] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2C1810]"
                       >
                         Select <ArrowRight className="h-4 w-4 text-[#c69667]" aria-hidden="true" />
                       </Link>
