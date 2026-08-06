@@ -1204,28 +1204,30 @@ export function HomePageEditor() {
           </section>
 
           {/* Footer Section */}
-          <section className="mx-4 mb-8 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-800 md:mx-8">
-            <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700 md:px-5">
-              <div>
-                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">Footer</h2>
-                <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">Scaled preview of the public website footer</p>
-              </div>
+          <div className="relative">
+            <Footer videoSrc={footerVideoSrc} />
+            {/* Edit button overlay for footer video - positioned over video area */}
+            <div className="lg:hidden absolute top-32 left-1/2 -translate-x-1/2 z-20">
               <button
                 type="button"
                 aria-label="Edit Footer video"
                 onClick={() => setIsFooterVideoEditOpen(true)}
-                className="inline-flex min-h-10 items-center gap-2 rounded border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-800 transition-colors hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-700"
+                className="inline-flex items-center justify-center w-10 h-10 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm text-neutral-900 dark:text-white rounded-full hover:bg-white dark:hover:bg-neutral-700 transition-colors shadow-lg"
               >
                 <Edit className="h-4 w-4" />
-                Edit video
               </button>
             </div>
-            <div className="relative h-[360px] overflow-hidden bg-[#2C1810]">
-              <div className="pointer-events-none absolute left-0 top-0 w-[133.334%] origin-top-left scale-75" aria-label="Footer preview">
-                <Footer videoSrc={footerVideoSrc} />
-              </div>
+            <div className="hidden lg:block absolute top-14 right-12 md:right-16 lg:right-24 z-20">
+              <button
+                type="button"
+                aria-label="Edit Footer video"
+                onClick={() => setIsFooterVideoEditOpen(true)}
+                className="inline-flex items-center justify-center w-10 h-10 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm text-neutral-900 dark:text-white rounded-full hover:bg-white dark:hover:bg-neutral-700 transition-colors shadow-lg"
+              >
+                <Edit className="h-4 w-4" />
+              </button>
             </div>
-          </section>
+          </div>
         </div>
       </div>
 
