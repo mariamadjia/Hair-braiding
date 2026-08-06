@@ -7,7 +7,6 @@ import { LengthOptionsEditor } from "./LengthOptionsEditor";
 import { toProxyUrl } from "@/lib/utils/image";
 import { AlertCircle, CheckCircle, Loader2, Plus, X } from "lucide-react";
 import { uploadFile } from "../utils";
-import { sortLengthOptions } from "@/lib/utils/service-order";
 
 export function ItemForm({ initial, token, onSave, onCancel }: { initial: BookingItem; token: string; categoryId?: number; subcategoryId?: number; onSave: (item: BookingItem) => Promise<void>; onCancel: () => void }) {
     const [item, setItem] = useState<BookingItem>(initial);
@@ -125,7 +124,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                     <div className="space-y-4 p-4">
                         {pricingTab === "REGULAR" ? (
                             <LengthOptionsEditor
-                                options={sortLengthOptions(item.lengthOptions ?? [])}
+                                options={item.lengthOptions ?? []}
                                 onChange={options => set("lengthOptions", options)}
                                 title="Regular length prices"
                             />
@@ -144,7 +143,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                                         <div>
                                             <p className="mb-2 text-xs text-neutral-500">Calculated preview from Regular prices + ${item.knotlessPriceAdjustment || "0"}.</p>
                                             <div className="space-y-2">
-                                                {sortLengthOptions(item.lengthOptions ?? []).map((option, index) => {
+                                                {(item.lengthOptions ?? []).map((option, index) => {
                                                     const calculated = (Number((option.price || "0").replace(/[^0-9.]/g, "")) || 0) + (Number((item.knotlessPriceAdjustment || "0").replace(/[^0-9.]/g, "")) || 0);
                                                     return <div key={option.id ?? index} className="grid grid-cols-[minmax(0,1fr)_7rem] items-center rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm dark:border-neutral-700 dark:bg-neutral-800/50"><span>{option.name}</span><span className="text-right font-semibold">${calculated}</span></div>;
                                                 })}
@@ -153,7 +152,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                                     </div>
                                 ) : (
                                     <LengthOptionsEditor
-                                        options={sortLengthOptions(item.lengthOptions ?? [])}
+                                        options={item.lengthOptions ?? []}
                                         onChange={options => set("lengthOptions", options)}
                                         priceField="knotlessPrice"
                                         title="Knotless length prices"
@@ -165,7 +164,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                     </div>
                 </section>
             ) : (
-                <LengthOptionsEditor options={sortLengthOptions(item.lengthOptions ?? [])} onChange={options => set("lengthOptions", options)} />
+                <LengthOptionsEditor options={item.lengthOptions ?? []} onChange={options => set("lengthOptions", options)} />
             )}
 
             <div className="-mx-4 flex items-center justify-between gap-3 border-t bg-white px-4 pb-0 pt-4 dark:bg-neutral-900"><span className="hidden text-xs text-neutral-500 sm:block">Save shortcut: Ctrl/⌘ + Enter</span><div className="ml-auto flex gap-2"><button type="button" onClick={handleCancel} className={btnS} disabled={saving}>Cancel</button><button type="submit" className={`${btnP} inline-flex min-w-24 items-center justify-center gap-2`} disabled={!dirty || !item.name.trim() || saving || uploading}>{saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{saving ? "Saving…" : "Save service"}</button></div></div>

@@ -11,7 +11,22 @@ import Navbar from "@/components/Navbar";
 import LengthGuideOverlay from "@/components/LengthGuideOverlay";
 import { formatPrice } from "@/lib/utils/price";
 import { toProxyUrl } from "@/lib/utils/image";
-import { sortLengthOptions, sortServiceItems } from "@/lib/utils/service-order";
+
+const SIZE_ORDER = ['XSmall', 'Small', 'Medium', 'Smedium', 'Large', 'Jumbo'];
+
+function sortItemsBySize(items: BookingItem[]): BookingItem[] {
+    return [...items].sort((a, b) => {
+        if ((a.displayOrder ?? 0) !== (b.displayOrder ?? 0)) return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
+        const indexA = SIZE_ORDER.indexOf(a.name.trim());
+        const indexB = SIZE_ORDER.indexOf(b.name.trim());
+        if (indexA !== -1 && indexB !== -1) {
+            return indexA - indexB;
+        }
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return 0;
+    });
+}
 
 function itemPriceLabel(item: BookingItem): string {
     const prices = (item.lengthOptions ?? []).map(option => Number((option.price ?? "").replace(/[^0-9.]/g, ""))).filter(Number.isFinite);
@@ -40,7 +55,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
     const [selectedFoundation, setSelectedFoundation] = useState<"REGULAR" | "KNOTLESS" | null>(null);
     const [showLengthGuide, setShowLengthGuide] = useState(false);
-    const items = sortServiceItems(subcategory.items ?? []);
+    const items = sortItemsBySize(subcategory.items ?? []);
     const subcategoryGalleryImageUrls =
         subcategory.galleryImages && subcategory.galleryImages.length > 0
             ? subcategory.galleryImages
@@ -60,7 +75,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const heroImage = subcategoryImages[0] ?? null;
 
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
-    const lengthOptions = sortLengthOptions(selectedItem?.lengthOptions ?? []);
+    const lengthOptions = selectedItem?.lengthOptions ?? [];
     const selectedLengthOption = lengthOptions.find((option) => option.id?.toString() === selectedLength);
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
     

@@ -11,7 +11,6 @@ import type { BookingCategory } from "@/lib/booking-types";
 import Navbar from "@/components/Navbar";
 import LengthGuideOverlay from "@/components/LengthGuideOverlay";
 import { formatPrice } from "@/lib/utils/price";
-import { sortLengthOptions, sortServiceItems } from "@/lib/utils/service-order";
 
 function itemPriceLabel(item: NonNullable<BookingCategory["items"]>[number]): string {
     const prices = (item.lengthOptions ?? []).map(option => Number((option.price ?? "").replace(/[^0-9.]/g, ""))).filter(Number.isFinite);
@@ -25,7 +24,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
 
     const router = useRouter();
 
-    const items = sortServiceItems(category.items ?? []);
+    const items = category.items ?? [];
     const subcategories = category.subcategories ?? [];
     const hasSubcategories = subcategories.length > 0;
     const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
@@ -63,7 +62,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
     };
 
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
-    const lengthOptions = sortLengthOptions(selectedItem?.lengthOptions ?? []);
+    const lengthOptions = selectedItem?.lengthOptions ?? [];
     const selectedLengthOption = lengthOptions.find((option) => option.id?.toString() === selectedLength);
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
     const photoGallery = photoItem?.images?.length ? photoItem.images : photoItem?.image ? [photoItem.image] : [];
