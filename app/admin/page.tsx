@@ -679,7 +679,7 @@ export default function AdminPage() {
                 />
 
             {/* Main content area */}
-            <div className={`flex min-w-0 flex-1 flex-col ${currentSection === "categories" ? "min-h-dvh" : "overflow-hidden"}`}>
+            <div className={`flex min-h-0 min-w-0 flex-1 flex-col ${currentSection === "categories" ? "min-h-dvh" : "overflow-hidden"}`}>
                 {/* Top bar */}
                 <div className="h-16 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shrink-0 flex items-center justify-between px-6">
                     <div className="flex items-center gap-3">
@@ -773,7 +773,7 @@ export default function AdminPage() {
                 )}
 
                 {currentSection === "gallery" && (
-                    <div className="flex-1 overflow-hidden">
+                    <div className="min-h-0 flex-1 overflow-hidden">
                         <Suspense fallback={<div className="p-12 text-neutral-500">Loading gallery…</div>}>
                             <GalleryAdminNew />
                         </Suspense>
@@ -781,7 +781,7 @@ export default function AdminPage() {
                 )}
 
                 {currentSection === "homepage" && (
-                    <div className="flex-1 overflow-hidden">
+                    <div className="min-h-0 flex-1 overflow-hidden">
                         <Suspense fallback={<div className="p-12 text-neutral-500">Loading homepage editor…</div>}>
                             <HomePageEditor />
                         </Suspense>

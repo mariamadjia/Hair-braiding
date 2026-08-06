@@ -997,7 +997,7 @@ export function HomePageEditor() {
 
   return (
     <>
-      <div className="h-full flex flex-col bg-neutral-50 dark:bg-neutral-900">
+      <div className="flex h-full min-h-0 flex-col bg-neutral-50 dark:bg-neutral-900">
         {/* Header */}
         <div className="bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-4 md:px-8 py-3 shrink-0">
           <p className="text-xs text-neutral-500 dark:text-neutral-400" aria-live="polite">
@@ -1012,7 +1012,7 @@ export function HomePageEditor() {
         </div>
 
         {/* Hero Preview */}
-        <div className="flex-1 overflow-y-auto bg-[#F6F5F1] dark:bg-neutral-900">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F6F5F1] dark:bg-neutral-900">
           <div className="relative">
             <Hero videoSrc={heroVideoSrc} useVideo={useHeroVideo} previewImages={heroImages.map(({ imageUrl }) => imageUrl)} />
             {/* Edit button overlay */}
