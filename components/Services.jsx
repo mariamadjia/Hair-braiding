@@ -17,11 +17,11 @@ const CATEGORY_COPY = {
   },
   "miracle knots": {
     eyebrow: "Gentle on hair. Beautiful results.",
-    description: "Knotless styles for a natural look, less tension, and lasting comfort.",
+    description: "Knotless braids for a natural look, less tension, and lasting comfort.",
   },
   mens: {
     eyebrow: "Clean. Modern. Stylish.",
-    description: "Neat and modern braiding styles created specifically for men.",
+    description: "Neat and trendy braids for men. Styles that make a statement.",
   },
   locs: {
     eyebrow: "Distinctive. Polished. Expressive.",
@@ -156,8 +156,8 @@ export default async function Services() {
 
                     <div className="px-1 py-3 sm:px-0 sm:py-1">
                       <h3 className="font-serif text-2xl leading-none text-[#241610] dark:text-white md:text-3xl">{category.name}</h3>
-                      <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.17em] text-[#b27342]">{copy.eyebrow}</p>
-                      <p className="mt-1.5 max-w-xl text-[13px] leading-5 text-neutral-600 dark:text-neutral-300 md:text-sm">{copy.description}</p>
+                      <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.19em] text-[#b27342]">{copy.eyebrow}</p>
+                      <p className="mt-2 max-w-[360px] text-[14px] leading-[1.45] text-[#595653] dark:text-neutral-300 md:text-[15px]">{copy.description}</p>
                     </div>
 
                     <div className="flex items-center justify-end border-t border-[#e6d7c9] py-3 sm:h-24 sm:justify-center sm:border-t-0 sm:border-l sm:py-0 md:h-28">
