@@ -115,9 +115,6 @@ export default async function Services() {
               <Sparkles className="h-4 w-4" />
               <span className="h-px w-12 bg-current" />
             </div>
-            <p className="mx-auto max-w-xl text-sm leading-5 text-neutral-700 dark:text-neutral-300 md:leading-6">
-              Premium braiding services tailored to your style.<br className="hidden sm:block" /> Explore our most requested looks and book your favorite.
-            </p>
           </div>
         </div>
       </section>
