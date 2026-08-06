@@ -67,7 +67,7 @@ export default async function Services() {
         style={{ backgroundImage: "url('/services-background.png')" }}
       >
         <div className="pointer-events-none absolute inset-0 bg-[#faf7f1]/15 dark:bg-neutral-950/75" aria-hidden="true" />
-        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative mx-auto w-full px-4 sm:px-6 lg:px-8">
           <div className="mb-10 text-center md:mb-14">
             <p className="mb-4 text-xs uppercase tracking-[0.4em] text-neutral-500 dark:text-neutral-400">
               Our Expertise
@@ -93,7 +93,7 @@ export default async function Services() {
 
   return (
     <div
-      className="relative overflow-hidden bg-[#F6F5F1] bg-cover bg-top bg-no-repeat dark:bg-neutral-900 md:w-[111.112%] md:[zoom:0.9]"
+      className="relative overflow-hidden bg-[#F6F5F1] bg-cover bg-top bg-no-repeat dark:bg-neutral-900"
       style={{ backgroundImage: "url('/services-background.png')" }}
     >
       <div className="pointer-events-none absolute inset-0 bg-[#fffaf3]/8 dark:bg-neutral-950/75" aria-hidden="true" />
@@ -101,7 +101,7 @@ export default async function Services() {
         id="services"
         className="relative z-10 overflow-hidden pt-14 pb-6 text-neutral-900 dark:text-white md:pt-20 md:pb-7"
       >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl text-center">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.42em] text-[#a86b3d] dark:text-[#d6a47d]">
               Our Expertise
@@ -120,7 +120,7 @@ export default async function Services() {
       </section>
 
       <section className="relative z-10 pb-14 md:pb-20">
-        <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[920px] px-4 sm:px-6 lg:px-8">
           <div className="space-y-2.5">
             {categories.length > 0 ? (
               categories.map((category) => {
