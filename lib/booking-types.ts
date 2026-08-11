@@ -75,6 +75,8 @@ export type BookingCategory = {
     name: string;
     slug: string;
     summary?: string;
+    serviceTagline?: string;
+    serviceDescription?: string;
     image?: string;
     flippingImages?: string[];
     displayOrder?: number;

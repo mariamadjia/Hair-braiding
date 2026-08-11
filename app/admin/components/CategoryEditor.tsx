@@ -30,6 +30,8 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     onSubcategorySummariesRefresh?: (categorySlug: string) => Promise<any>;
 }) {
     const [name, setName] = useState(cat.name);
+    const [serviceTagline, setServiceTagline] = useState(cat.serviceTagline ?? "");
+    const [serviceDescription, setServiceDescription] = useState(cat.serviceDescription ?? "");
     const [nameError, setNameError] = useState("");
     const [images, setImages] = useState<string[]>(() =>
         (cat.flippingImages ?? []).map(toProxyUrl)
@@ -50,6 +52,8 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
 
     useEffect(() => { 
         setName(cat.name); 
+        setServiceTagline(cat.serviceTagline ?? "");
+        setServiceDescription(cat.serviceDescription ?? "");
         setNameError("");
         setImages((cat.flippingImages ?? []).map(toProxyUrl));
         setDirty(false); 
@@ -81,6 +85,8 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     return proxied;
                 });
                 setImages(proxiedImages);
+                setServiceTagline(detail.serviceTagline ?? "");
+                setServiceDescription(detail.serviceDescription ?? "");
                 setGalleryImages((detail.galleryImages ?? []) as GalleryImage[]);
             } catch (error) {
                 console.error('[CategoryEditor] Failed to fetch category detail:', error);
@@ -128,7 +134,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 e.preventDefault();
-                if (dirty && (name !== cat.name || images.length !== (cat.flippingImages ?? []).length)) {
+                if (dirty) {
                     if (!confirm('You have unsaved changes. Leave without saving?')) return;
                 }
                 setSelection({ type: "root" });
@@ -147,7 +153,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             setErrorMessage("Please wait for the current operation to complete.");
             return;
         }
-        if (dirty && (name !== cat.name || images.length !== (cat.flippingImages ?? []).length)) {
+        if (dirty) {
             if (!confirm('You have unsaved changes. Leave without saving?')) return;
         }
         setSelection(next);
@@ -179,7 +185,11 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         setErrorMessage(null);
         try {
             // Save category name separately
-            await mutate("PUT", `/${cat.slug}`, { name });
+            await mutate("PUT", `/${cat.slug}`, {
+                name,
+                serviceTagline,
+                serviceDescription,
+            });
 
             // Save photos using the same dedicated endpoint as Gallery admin
             const backendUrls = images
@@ -226,6 +236,8 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             if (response.ok) {
                 const detail = await response.json();
                 setName(detail.name);
+                setServiceTagline(detail.serviceTagline ?? "");
+                setServiceDescription(detail.serviceDescription ?? "");
                 setImages((detail.flippingImages ?? []).map(toProxyUrl));
             }
         } finally {
@@ -452,6 +464,51 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                             <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
                                 Choose a clear, descriptive name for your category (e.g., "Box Braids")
                             </p>
+                        </div>
+
+                        <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 p-4 dark:border-neutral-700 dark:bg-neutral-900/30">
+                            <div className="mb-4">
+                                <h4 className="text-sm font-semibold text-neutral-950 dark:text-white">Services Page Content</h4>
+                                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                                    Shown on the public Signature Services page.
+                                </p>
+                            </div>
+                            <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:items-start">
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300" htmlFor="service-tagline">
+                                        Tagline
+                                    </label>
+                                    <input
+                                        id="service-tagline"
+                                        className={`${inp} min-h-11 rounded-lg`}
+                                        value={serviceTagline}
+                                        maxLength={255}
+                                        placeholder="TIMELESS. NEAT. VERSATILE."
+                                        onChange={(event) => {
+                                            setServiceTagline(event.target.value);
+                                            setDirty(true);
+                                            setErrorMessage(null);
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300" htmlFor="service-description">
+                                        Description
+                                    </label>
+                                    <textarea
+                                        id="service-description"
+                                        className={`${inp} min-h-[4.25rem] resize-y rounded-lg py-2.5`}
+                                        value={serviceDescription}
+                                        maxLength={1000}
+                                        placeholder="Classic box braids in a variety of lengths and sizes to match your look."
+                                        onChange={(event) => {
+                                            setServiceDescription(event.target.value);
+                                            setDirty(true);
+                                            setErrorMessage(null);
+                                        }}
+                                    />
+                                </div>
+                            </div>
                         </div>
                 
                 {/* Gallery Photos Section */}

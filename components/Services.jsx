@@ -129,9 +129,13 @@ export default async function Services() {
                   category.fallbackImages?.[0] ||
                   category.image ||
                   "";
-                const copy = CATEGORY_COPY[category.name?.trim().toLowerCase()] ?? {
+                const fallbackCopy = CATEGORY_COPY[category.name?.trim().toLowerCase()] ?? {
                   eyebrow: "Beautiful. Protective. Personal.",
                   description: category.summary || "Explore this collection and choose the style that feels like you.",
+                };
+                const copy = {
+                  eyebrow: category.serviceTagline?.trim() || fallbackCopy.eyebrow,
+                  description: category.serviceDescription?.trim() || fallbackCopy.description,
                 };
 
                 return (
