@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
     // for this one local endpoint.
     localPatterns: [
       {
+        pathname: '/backend-api/api/gallery/image/**',
+        search: '',
+      },
+      {
         pathname: '/api/gallery/image/**',
         search: '',
       },
