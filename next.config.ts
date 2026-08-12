@@ -3,6 +3,19 @@ import type { NextConfig } from "next";
 const API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://backend-hairbraiding.onrender.com';
 
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/admin',
+        headers: [
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+        ],
+      },
+    ];
+  },
   images: {
     // Next.js 16 blocks local image sources with query strings unless they
     // are explicitly allowed. The proxy route validates the upstream origin

@@ -100,7 +100,7 @@ export async function apiClient<T>(
       }
       
       // Enhanced error messages
-      let errorMessage = errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+      let errorMessage = errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`;
       if (response.status === 401) {
         errorMessage = 'Your session has expired. Please log in again.';
       } else if (response.status === 403) {
@@ -108,7 +108,7 @@ export async function apiClient<T>(
       } else if (response.status === 404) {
         errorMessage = 'The requested resource was not found.';
       } else if (response.status === 409) {
-        errorMessage = errorData.message || 'This resource already exists or has a conflict.';
+        errorMessage = errorData.message || errorData.error || 'This resource already exists or has a conflict.';
       } else if (response.status === 413) {
         errorMessage = 'The file you are trying to upload is too large.';
       } else if (response.status === 429) {
