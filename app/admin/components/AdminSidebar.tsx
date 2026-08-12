@@ -60,9 +60,10 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
             label: "Settings", 
             icon: Settings,
             subItems: [
-                { id: "general", label: "General" },
-                { id: "booking-config", label: "Booking Config" },
-                { id: "integrations", label: "Integrations" },
+                { id: "administrators", label: "Administrators" },
+                { id: "general", label: "Business information" },
+                { id: "notifications", label: "Notifications" },
+                { id: "security", label: "Security" },
             ]
         },
         { id: "profile", label: "Profile", icon: User },

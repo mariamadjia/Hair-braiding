@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: '/admin/:path*',
+        headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }],
+      },
     ];
   },
   images: {
