@@ -19,7 +19,13 @@ export function AddOnsManager({ sub, items, data, token, onError, onSuccess }: P
   const [editing, setEditing] = useState<BookingAddOn | null>(null);
   const [form, setForm] = useState<Form>(emptyForm(sub.id));
   const [dragged, setDragged] = useState<number | null>(null);
-  const allStyles = useMemo(() => data.categories.flatMap(category => category.subcategories ?? []).filter(style => style.id), [data]);
+  const [availableStyles, setAvailableStyles] = useState<BookingSubcategory[]>(sub.id ? [sub] : []);
+  const nestedStyles = useMemo(() => data.categories.flatMap(category => category.subcategories ?? []).filter(style => style.id), [data]);
+  const allStyles = useMemo(() => {
+    const byId = new Map<number, BookingSubcategory>();
+    [...availableStyles, ...nestedStyles, sub].forEach(style => { if (style.id) byId.set(style.id, style); });
+    return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [availableStyles, nestedStyles, sub]);
   const lengths = useMemo(() => items.flatMap(item => (item.lengthOptions ?? []).map(length => ({ ...length, size: item.name }))).filter(length => length.id), [items]);
   const authHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
@@ -34,6 +40,25 @@ export function AddOnsManager({ sub, items, data, token, onError, onSuccess }: P
     finally { setLoading(false); }
   };
   useEffect(() => { void load(); }, [sub.id, token]);
+  useEffect(() => {
+    let active = true;
+    const loadStyles = async () => {
+      try {
+        const groups = await Promise.all(data.categories.map(async category => {
+          if (category.subcategories?.length) return category.subcategories;
+          const response = await fetch(`/api/admin/categories/${category.slug}/subcategories`, {
+            headers: { Authorization: `Bearer ${token}` }, cache: "no-store"
+          });
+          return response.ok ? await response.json() as BookingSubcategory[] : [];
+        }));
+        if (active) setAvailableStyles(groups.flat());
+      } catch {
+        if (active && sub.id) setAvailableStyles([sub]);
+      }
+    };
+    void loadStyles();
+    return () => { active = false; };
+  }, [data.categories, sub, token]);
 
   const showCreate = () => { setEditing(null); setForm(emptyForm(sub.id)); setOpen(true); };
   const showEdit = (item: BookingAddOn) => {
@@ -88,7 +113,7 @@ export function AddOnsManager({ sub, items, data, token, onError, onSuccess }: P
       <div className="mt-7 space-y-5"><label className="block text-sm font-medium">Name<input value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} placeholder="e.g., Boho curls" className="mt-1.5 w-full rounded-lg border border-neutral-300 px-3 py-2.5 dark:border-neutral-700 dark:bg-neutral-900" /></label><label className="block text-sm font-medium">Customer description<textarea value={form.description} onChange={event => setForm({ ...form, description: event.target.value })} rows={3} className="mt-1.5 w-full resize-none rounded-lg border border-neutral-300 px-3 py-2.5 dark:border-neutral-700 dark:bg-neutral-900" /></label>
       <fieldset><legend className="text-sm font-medium">Pricing</legend><div className="mt-2 grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-700"><button onClick={() => setForm({ ...form, pricingMode: "FIXED" })} className={`min-h-11 ${form.pricingMode === "FIXED" ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : ""}`}>Fixed price</button><button onClick={() => setForm({ ...form, pricingMode: "STARTING_AT" })} className={`min-h-11 border-l border-neutral-300 dark:border-neutral-700 ${form.pricingMode === "STARTING_AT" ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : ""}`}>Starting at</button></div></fieldset><label className="block text-sm font-medium">{form.pricingMode === "FIXED" ? "Price" : "Starting price"}<div className="mt-1.5 flex rounded-lg border border-neutral-300 dark:border-neutral-700"><span className="border-r border-neutral-200 px-3 py-2.5 text-neutral-500 dark:border-neutral-700">$</span><input inputMode="decimal" value={form.price} onChange={event => setForm({ ...form, price: event.target.value.replace(/[^0-9.]/g, "") })} className="min-w-0 flex-1 bg-transparent px-3 outline-none" /></div>{form.pricingMode === "STARTING_AT" && <span className="mt-1 block text-xs text-neutral-500">Shown to customers, but not charged until you confirm the final amount.</span>}</label>
       <fieldset><legend className="text-sm font-medium">Deposit</legend><div className="mt-2 grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-700"><button onClick={() => setForm({ ...form, depositBehavior: "NO_CHANGE", deposit: "" })} className={`min-h-11 text-sm ${form.depositBehavior === "NO_CHANGE" ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : ""}`}>No change</button><button onClick={() => setForm({ ...form, depositBehavior: "ADD_FIXED" })} className={`min-h-11 border-l border-neutral-300 text-sm dark:border-neutral-700 ${form.depositBehavior === "ADD_FIXED" ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : ""}`}>Increase deposit</button></div>{form.depositBehavior === "ADD_FIXED" && <label className="mt-3 block text-xs text-neutral-500">Additional deposit<div className="mt-1 flex rounded-lg border border-neutral-300 dark:border-neutral-700"><span className="border-r border-neutral-200 px-3 py-2.5 dark:border-neutral-700">$</span><input inputMode="decimal" value={form.deposit} onChange={event => setForm({ ...form, deposit: event.target.value.replace(/[^0-9.]/g, "") })} className="min-w-0 flex-1 bg-transparent px-3 text-sm text-neutral-900 outline-none dark:text-white" /></div></label>}</fieldset>
-      {!editing && <fieldset><legend className="text-sm font-medium">Available on styles</legend><div className="mt-2 max-h-40 space-y-2 overflow-y-auto rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">{allStyles.map(style => <label key={style.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.styleIds.includes(style.id!)} onChange={event => setForm({ ...form, styleIds: event.target.checked ? [...form.styleIds, style.id!] : form.styleIds.filter(id => id !== style.id) })} />{style.name}</label>)}</div>{form.styleIds.length > 1 && <p className="mt-2 text-xs text-neutral-500">When shared across styles, the add-on is available for all sizes and lengths. You can refine each style afterward.</p>}</fieldset>}
+      {!editing && <fieldset><legend className="text-sm font-medium">Available on styles</legend><div className="mt-2 max-h-40 space-y-2 overflow-y-auto rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">{allStyles.map(style => <label key={style.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.styleIds.includes(style.id!)} onChange={event => setForm({ ...form, styleIds: event.target.checked ? [...form.styleIds, style.id!] : form.styleIds.filter(id => id !== style.id) })} />{style.name}{style.id === sub.id && <span className="text-xs text-neutral-400">Current</span>}</label>)}</div>{form.styleIds.length > 1 && <p className="mt-2 text-xs text-neutral-500">When shared across styles, the add-on is available for all sizes and lengths. You can refine each style afterward.</p>}</fieldset>}
       <fieldset><legend className="text-sm font-medium">Size availability</legend><label className="mt-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={form.allSizes} onChange={event => setForm({ ...form, allSizes: event.target.checked, serviceItemIds: event.target.checked ? [] : form.serviceItemIds })} />All sizes</label>{!form.allSizes && <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">{items.filter(item => item.id).map(item => <label key={item.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.serviceItemIds.includes(item.id!)} onChange={event => setForm({ ...form, serviceItemIds: event.target.checked ? [...form.serviceItemIds, item.id!] : form.serviceItemIds.filter(id => id !== item.id) })} />{item.name}</label>)}</div>}</fieldset>
       <fieldset><legend className="text-sm font-medium">Length availability</legend><label className="mt-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={form.allLengths} onChange={event => setForm({ ...form, allLengths: event.target.checked, lengthOptionIds: event.target.checked ? [] : form.lengthOptionIds })} />All lengths</label>{!form.allLengths && <div className="mt-2 grid max-h-44 grid-cols-2 gap-2 overflow-y-auto rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">{lengths.map(length => <label key={length.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.lengthOptionIds.includes(length.id!)} onChange={event => setForm({ ...form, lengthOptionIds: event.target.checked ? [...form.lengthOptionIds, length.id!] : form.lengthOptionIds.filter(id => id !== length.id) })} /><span>{length.name}<small className="block text-neutral-400">{length.size}</small></span></label>)}</div>}</fieldset>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.active} onChange={event => setForm({ ...form, active: event.target.checked })} />Available to customers</label></div>
