@@ -79,7 +79,6 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
         setError("");
         try {
             const response = await fetch("/api/appointments", {
-                headers: { Authorization: `Bearer ${token}` },
                 cache: "no-store",
             });
             const body = await response.json().catch(() => null);
