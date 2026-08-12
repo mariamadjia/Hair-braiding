@@ -10,9 +10,12 @@ export const toProxyUrl = (imageUrl: string | null | undefined): string => {
     const filename = imageUrl.split('/').pop();
     return `/api/proxy-image?url=${encodeURIComponent(`${API_BASE_URL}/api/gallery/image/${filename}`)}`;
   }
-  // If it's a backend gallery image endpoint, convert to proxy
+  // Gallery images are public and already have a same-origin rewrite in
+  // next.config.ts. Keep the browser on the Vercel origin and let that rewrite
+  // forward the request to Render. Sending this path through proxy-image can
+  // accidentally prepend /backend-api twice in production.
   if (imageUrl.startsWith('/api/gallery/image/')) {
-    return `/api/proxy-image?url=${encodeURIComponent(`${API_BASE_URL}${imageUrl}`)}`;
+    return `/backend-api${imageUrl}`;
   }
   // If it's already a full URL with the backend, convert to proxy
   if (imageUrl.startsWith(API_BASE_URL)) {
