@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Ruler } from "lucide-react";
+import { ChevronLeft, ChevronUp, Ruler } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { BookingCategory, BookingSubcategory, BookingItem, BookingAddOn } from "@/lib/booking-types";
@@ -407,7 +407,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 const optionKey = option.id?.toString() ?? `option-${idx}`;
                                 const isSelected = selectedLength === optionKey;
                                 return (
-                                    <div key={optionKey} className="space-y-3">
+                                    <div key={optionKey} className={`overflow-hidden rounded-xl bg-white transition ${isSelected ? "border-2 border-[#2C1810] shadow-sm" : "border border-neutral-200 hover:border-neutral-400"}`}>
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -416,9 +416,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                                     setSelectedTexture((prev) => prev ?? selectedItem.hairTextures?.[0] ?? null);
                                                 }
                                             }}
-                                            className={`flex min-h-20 w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-1 ${
-                                                isSelected ? "border-[#2C1810] bg-[#FAF7F2] shadow-sm" : "border-neutral-200 bg-white hover:border-neutral-400"
-                                            }`}
+                                            className="flex min-h-20 w-full items-center justify-between px-5 py-4 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2C1810]"
                                         >
                                             <div className="flex items-start gap-4">
                                                 <span
@@ -432,23 +430,21 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                                     {option.name && (
                                                         <div className="text-sm font-medium tracking-wide text-neutral-900">{option.name === "Arm Pit" ? "Armpit" : option.name}</div>
                                                     )}
-                                                    {option.notes && (
-                                                        <div className="text-xs text-neutral-500 font-light">{option.notes}</div>
-                                                    )}
+                                                    <div className="text-xs font-light text-neutral-500">{option.notes || "Deposit required"}</div>
                                                 </div>
                                             </div>
-                                            {option.price && <span className="text-base font-medium text-neutral-900">{formatPrice(optionPrice(selectedItem, option, selectedFoundation))}</span>}
+                                            <span className="flex items-center gap-3">{option.price && <span className="text-base font-medium text-neutral-900">{formatPrice(optionPrice(selectedItem, option, selectedFoundation))}</span>}{isSelected && <ChevronUp className="h-5 w-5 text-[#2C1810]" />}</span>
                                         </button>
                                         {isSelected && (loadingAddOns || availableAddOns.length > 0) && (
-                                            <div className="mx-1 rounded-lg border border-neutral-200 bg-white px-4 py-4">
-                                                <div className="mb-3 flex items-center justify-between"><div><p className="text-sm font-medium text-neutral-900">Add-ons <span className="font-normal text-neutral-500">(optional)</span></p><p className="mt-0.5 text-xs text-neutral-500">Select any extras for this appointment.</p></div>{loadingAddOns && <span className="text-xs text-neutral-400">Loading…</span>}</div>
-                                                <div className="space-y-1">{availableAddOns.map(addOn => <label key={addOn.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 transition hover:bg-neutral-50"><input type="checkbox" checked={selectedAddOnIds.includes(addOn.id)} onChange={event => setSelectedAddOnIds(current => event.target.checked ? [...current, addOn.id] : current.filter(id => id !== addOn.id))} className="h-4 w-4 rounded border-neutral-300 accent-[#2C1810]" /><span className="min-w-0 flex-1"><span className="block text-sm text-neutral-900">{addOn.name}</span>{addOn.description && <span className="block truncate text-xs text-neutral-500">{addOn.description}</span>}</span><span className="text-sm font-medium text-neutral-900">{addOn.pricingMode === "STARTING_AT" ? "From " : "+"}{formatPrice(addOn.priceCents / 100)}</span></label>)}</div>
+                                            <div className="mx-5 border-t border-[#E5DDD8] pb-5 pt-5">
+                                                <div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium text-neutral-900">Add-ons <span className="font-normal text-neutral-500">(optional)</span></p>{loadingAddOns && <span className="text-xs text-neutral-400">Loading…</span>}</div>
+                                                <div className="space-y-0.5">{availableAddOns.map(addOn => <label key={addOn.id} className="flex min-h-12 cursor-pointer items-center gap-3 px-1"><input type="checkbox" checked={selectedAddOnIds.includes(addOn.id)} onChange={event => setSelectedAddOnIds(current => event.target.checked ? [...current, addOn.id] : current.filter(id => id !== addOn.id))} className="h-5 w-5 rounded border-neutral-300 accent-[#2C1810]" /><span className="min-w-0 flex-1"><span className="block text-sm text-neutral-900">{addOn.name}</span>{addOn.description && <span className="block truncate text-xs text-neutral-500">{addOn.description}</span>}</span><span className="text-sm font-medium text-neutral-900">{addOn.pricingMode === "STARTING_AT" ? "From " : ""}{formatPrice(addOn.priceCents / 100)}{addOn.pricingMode === "STARTING_AT" ? "+" : ""}</span></label>)}</div>
                                                 {availableAddOns.some(addOn => selectedAddOnIds.includes(addOn.id) && addOn.confirmationRequired) && <p className="mt-3 border-t border-neutral-100 pt-3 text-xs text-neutral-500">Starting prices are confirmed by the salon before your appointment.</p>}
                                             </div>
                                         )}
                                         {isSelected && selectedItem?.hairTextures?.length ? (
-                                            <div className="pl-9 pr-4">
-                                                <div className="rounded-none border border-neutral-200 bg-neutral-50 p-4">
+                                            <div className="mx-5 border-t border-neutral-200 pb-4 pt-4">
+                                                <div className="bg-neutral-50 p-4">
                                                     <label className="block text-[10px] font-medium uppercase tracking-[0.3em] text-neutral-600 mb-2">
                                                         Select Human Hair Texture
                                                     </label>
