@@ -3,6 +3,7 @@ import { apiClient } from './client';
 export interface LoginRequest {
   email: string;
   password: string;
+  rememberDevice?: boolean;
 }
 
 export interface AdminSetupRequest {
@@ -28,7 +29,7 @@ export interface ResetPasswordRequest {
 }
 
 export interface LoginResponse {
-  token: string;
+  token?: string;
   admin: {
     id: number;
     email: string;
@@ -58,23 +59,32 @@ export const authApi = {
       body: JSON.stringify(data),
     });
     
-    // Store token in localStorage
-    if (typeof window !== 'undefined' && response.token) {
-      localStorage.setItem('auth_token', response.token);
-      localStorage.setItem('admin_user', JSON.stringify(response.admin));
-    }
-    
     return response;
   },
 
+  loginWithGoogle: async (credential: string, rememberDevice: boolean): Promise<LoginResponse> => {
+    return apiClient<LoginResponse>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential, rememberDevice }),
+    });
+  },
+
+  session: async (): Promise<{ authenticated: boolean; admin: LoginResponse['admin'] }> => {
+    return apiClient('/api/auth/session', { method: 'GET' });
+  },
+
   // Logout
-  logout: () => {
+  logout: async () => {
+    try {
+      await apiClient('/api/auth/logout', { method: 'POST' });
+    } finally {
     if (typeof window !== "undefined") {
       localStorage.removeItem("auth_token");
       sessionStorage.removeItem("auth_token");
 
       localStorage.removeItem("admin_user");
       sessionStorage.removeItem("admin_user");
+    }
     }
   },
 

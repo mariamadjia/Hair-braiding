@@ -9,6 +9,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeProvider } from "./context/ThemeContext";
 import { authApi } from "@/lib/api/auth";
 import type { CustomerListState } from "@/components/CustomerTable";
+import { AdminSignIn } from "./components/AdminSignIn";
 
 // Lazy load heavy components
 const Dashboard = lazy(() => import("./components/Dashboard").then(m => ({ default: m.Dashboard })));
@@ -316,22 +317,11 @@ export default function AdminPage() {
         setError("");
         
         try {
-            const response = await authApi.login({ email, password });
-            setToken(response.token);
+            const response = await authApi.login({ email, password, rememberDevice: rememberMe });
+            setToken("cookie-session");
             setIsAuthChecking(false);
-            
-            // authApi.login already stores in localStorage as 'auth_token'
-            // Just store in sessionStorage if not remembering
-            if (!rememberMe) {
-                localStorage.removeItem("auth_token");
-                localStorage.removeItem("admin_user");
-
-                sessionStorage.setItem("auth_token", response.token);
-                sessionStorage.setItem("admin_user", JSON.stringify(response.admin));
-            }
-            
             // Only load category summaries initially, full data loaded on-demand
-            void loadCategorySummaries(response.token);
+            void loadCategorySummaries("cookie-session");
         } catch (err: any) {
             setError(err.message || "Invalid email or password.");
         } finally {
@@ -339,29 +329,32 @@ export default function AdminPage() {
         }
     };
 
+    const handleGoogleSignIn = async (credential: string) => {
+        setIsLoading(true);
+        setError("");
+        try {
+            await authApi.loginWithGoogle(credential, rememberMe);
+            setToken("cookie-session");
+            setIsAuthChecking(false);
+            void loadCategorySummaries("cookie-session");
+        } catch (err: any) {
+            setError(err.message || "This Google account is not approved for admin access.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
         const checkAuthAndLoad = async () => {
-            const savedToken =
-                sessionStorage.getItem("auth_token") ||
-                localStorage.getItem("auth_token");
-            
-            if (savedToken) {
+            try {
+                await authApi.session();
                 setIsAuthChecking(true);
-                setToken(savedToken);
-                try {
-                    // Run warm-up ping and summaries fetch in parallel (full data loaded on-demand)
-                    await Promise.all([
-                        pingBackend(),
-                        loadCategorySummaries(savedToken)
-                    ]);
-                } catch (err) {
-                    console.error("Auth check failed:", err);
-                } finally {
-                    setIsAuthChecking(false);
-                }
-            } else {
-                // Still ping even if not logged in
+                setToken("cookie-session");
+                await Promise.all([pingBackend(), loadCategorySummaries("cookie-session")]);
+            } catch {
+                setToken("");
                 pingBackend();
+            } finally {
                 setIsAuthChecking(false);
             }
 
@@ -531,10 +524,9 @@ export default function AdminPage() {
         setSelection(newSelection);
     };
 
-    const handleLogout = () => {
-        authApi.logout();
+    const handleLogout = async () => {
+        await authApi.logout();
         setToken("");
-        // authApi.logout() already removes auth_token from both storages
     };
 
     const handleSectionChange = (section: string) => {
@@ -567,91 +559,7 @@ export default function AdminPage() {
     };
 
     if (!token && !isAuthChecking) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-neutral-50 relative overflow-hidden">
-                <div 
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                    style={{
-                        backgroundImage: "url('/Admin/welcome.jpg')",
-                    }}
-                />
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-                <div className="relative w-full max-w-md space-y-6 p-10 border border-white/20 bg-white/95 backdrop-blur-sm rounded-lg shadow-2xl">
-                    <div className="text-center space-y-2">
-                        <div className="flex justify-center mb-4">
-                            <div className="h-16 w-16 rounded-full bg-neutral-900 flex items-center justify-center">
-                                <span className="text-2xl text-white">✨</span>
-                            </div>
-                        </div>
-                        <h1 className="text-2xl font-light tracking-tight text-neutral-900">Braiding Admin</h1>
-                    </div>
-
-                    <div className="space-y-4">
-                        {error && (
-                            <div className="p-3 bg-red-50 border border-red-200 rounded-sm">
-                                <p className="text-sm text-red-600">{error}</p>
-                            </div>
-                        )}
-
-                        <div className="space-y-2">
-                            <label className="block text-xs font-medium text-neutral-700">Email</label>
-                            <input
-                                type="email"
-                                className="w-full border border-neutral-300 rounded-sm px-4 py-2.5 text-sm text-neutral-900 focus:outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-                                placeholder="admin@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="block text-xs font-medium text-neutral-700">Password</label>
-                            <input
-                                type="password"
-                                className="w-full border border-neutral-300 rounded-sm px-4 py-2.5 text-sm text-neutral-900 focus:outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-                                placeholder="••••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
-                            />
-                        </div>
-
-                        <div className="flex items-center">
-                            <input
-                                type="checkbox"
-                                id="remember"
-                                className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
-                                checked={rememberMe}
-                                onChange={(e) => setRememberMe(e.target.checked)}
-                            />
-                            <label htmlFor="remember" className="ml-2 text-sm text-neutral-700">
-                                Remember me
-                            </label>
-                        </div>
-
-                        <button 
-                            type="button" 
-                            onClick={handleSignIn}
-                            disabled={isLoading}
-                            className="w-full py-3 text-sm font-medium bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? "Signing in..." : "Sign In"}
-                        </button>
-
-                        <div className="text-center">
-                            <button 
-                                type="button"
-                                className="text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
-                                onClick={() => setError("Please contact your administrator to reset your password.")}
-                            >
-                                Forgot password?
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
+        return <AdminSignIn email={email} password={password} rememberDevice={rememberMe} error={error} loading={isLoading} onEmailChange={setEmail} onPasswordChange={setPassword} onRememberChange={setRememberMe} onPasswordSignIn={handleSignIn} onGoogleSignIn={handleGoogleSignIn} onForgotPassword={() => setError("Please contact support to securely reset your password.")} />;
     }
 
     if (isAuthChecking) return <div className="p-12 text-neutral-500">Loading…</div>;

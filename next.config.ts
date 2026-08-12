@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-hairbraiding.onrender.com';
+const API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://backend-hairbraiding.onrender.com';
 
 const nextConfig: NextConfig = {
   images: {
@@ -66,6 +66,10 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
+      {
+        source: '/backend-api/:path*',
+        destination: `${API_URL}/:path*`,
+      },
       {
         source: '/api/gallery/image/:path*',
         destination: `${API_URL}/api/gallery/image/:path*`,

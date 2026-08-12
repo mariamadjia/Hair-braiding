@@ -1,6 +1,5 @@
 // API client configuration
 import { API_BASE_URL } from '../config/api';
-import { getAuthToken } from '../utils/auth';
 
 export class ApiError extends Error {
   constructor(
@@ -69,23 +68,13 @@ export async function apiClient<T>(
   
   const config: RequestInit = {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       'X-Request-ID': requestId,
       ...options.headers,
     },
   };
-
-  // Add auth token if available
-  if (typeof window !== 'undefined') {
-    const token = getAuthToken();
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      };
-    }
-  }
 
   try {
     const response = await fetch(url, {

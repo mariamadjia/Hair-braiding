@@ -1,4 +1,8 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-hairbraiding.onrender.com';
+// Use the same-origin proxy by default so HttpOnly admin cookies work in every
+// browser, including Safari and privacy-focused mobile browsers.
+export const API_BASE_URL = typeof window === 'undefined'
+  ? (process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://backend-hairbraiding.onrender.com')
+  : '/backend-api';
 
 export const API_ENDPOINTS = {
   // Auth
