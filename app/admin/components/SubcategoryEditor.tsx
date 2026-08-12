@@ -8,6 +8,7 @@ import { API_BASE_URL } from "@/lib/config/api";
 import type { GalleryImage } from "@/lib/types/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ItemForm } from "./ItemForm";
+import { AddOnsManager } from "@/components/AddOnsManager";
 import { ChevronRight, Package, Plus, Trash2, CheckCircle, AlertCircle, Loader2, GripVertical } from "lucide-react";
 import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
@@ -742,6 +743,15 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                 </button>
                             </div>
             </section>}
+
+            <AddOnsManager
+                sub={sub}
+                items={items}
+                data={data}
+                token={token}
+                onError={setSaveError}
+                onSuccess={(message) => { setSaveSuccess(message); setTimeout(() => setSaveSuccess(null), 3000); }}
+            />
 
             {/* Sizes card */}
             <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">

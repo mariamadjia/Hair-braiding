@@ -33,6 +33,9 @@ type BookingQuote = {
     remainingBalanceCents: number;
     quoteToken: string;
     expiresAt: string;
+    basePriceCents: number;
+    addOnTotalCents: number;
+    addOns: Array<{ id: number; name: string; pricingMode: "FIXED" | "STARTING_AT"; advertisedPriceCents: number; chargedPriceCents: number; confirmationRequired: boolean }>;
 };
 
 function CheckoutContent() {
@@ -53,6 +56,8 @@ function CheckoutContent() {
     const serviceId = serviceIdParam && /^\d+$/.test(serviceIdParam) ? Number(serviceIdParam) : undefined;
     const lengthOptionIdParam = searchParams.get("lengthOptionId");
     const lengthOptionId = lengthOptionIdParam && /^\d+$/.test(lengthOptionIdParam) ? Number(lengthOptionIdParam) : undefined;
+    const addOnIds = (searchParams.get("addOns") || "").split(",").filter(value => /^\d+$/.test(value)).map(Number);
+    const addOnIdsKey = addOnIds.join(",");
     const selectedOption = authoritativeService?.lengthOptions?.find(option => option.id === lengthOptionId);
     const styleName = authoritativeService?.subcategoryName || authoritativeService?.name || "Service";
     const serviceName = authoritativeService?.name || "";
@@ -128,7 +133,7 @@ function CheckoutContent() {
         fetch("/api/booking/quote", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ serviceId, lengthOptionId: lengthOptionId ?? null, foundation: foundation || null }),
+            body: JSON.stringify({ serviceId, lengthOptionId: lengthOptionId ?? null, foundation: foundation || null, addOnIds }),
             signal: controller.signal,
         }).then(async response => {
             const payload = await response.json().catch(() => ({}));
@@ -139,7 +144,7 @@ function CheckoutContent() {
             setServiceError(error instanceof Error ? error.message : "Unable to confirm the current price.");
         }).finally(() => setQuoteLoading(false));
         return () => controller.abort();
-    }, [authoritativeService, serviceId, lengthOptionId, foundation]);
+    }, [authoritativeService, serviceId, lengthOptionId, foundation, addOnIdsKey]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -316,6 +321,7 @@ function CheckoutContent() {
 
                                 {/* Price Breakdown */}
                                 <div className="space-y-1 pt-3">
+                                    {quote.addOns?.length > 0 && <div className="mb-2 border-b border-[#E9DDD3] pb-3"><p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8E4E30]">Add-ons</p>{quote.addOns.map(addOn => <div key={addOn.id} className="flex items-center justify-between px-1 py-2"><span className="text-sm text-[#4F4038]">{addOn.name}{addOn.confirmationRequired ? <small className="ml-1 text-[#8E7568]">(confirmed later)</small> : null}</span><span className="text-sm font-medium text-[#2C1810]">{addOn.pricingMode === "STARTING_AT" ? "From " : "+"}{formatCurrency(addOn.advertisedPriceCents / 100)}</span></div>)}</div>}
                                     <div className="flex items-center justify-between px-1 py-3">
                                         <span className="text-sm font-medium tracking-wide text-[#4F4038]">Total Price</span>
                                         <span className="font-semibold text-[#2C1810]">

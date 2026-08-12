@@ -6,11 +6,12 @@ import Link from "next/link";
 import { ChevronLeft, Ruler } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { BookingCategory, BookingSubcategory, BookingItem } from "@/lib/booking-types";
+import type { BookingCategory, BookingSubcategory, BookingItem, BookingAddOn } from "@/lib/booking-types";
 import Navbar from "@/components/Navbar";
 import LengthGuideOverlay from "@/components/LengthGuideOverlay";
 import { formatPrice } from "@/lib/utils/price";
 import { toProxyUrl } from "@/lib/utils/image";
+import { API_BASE_URL } from "@/lib/config/api";
 
 const SIZE_ORDER = ['XSmall', 'Small', 'Medium', 'Smedium', 'Large', 'Jumbo'];
 
@@ -55,6 +56,9 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
     const [selectedFoundation, setSelectedFoundation] = useState<"REGULAR" | "KNOTLESS" | null>(null);
     const [showLengthGuide, setShowLengthGuide] = useState(false);
+    const [availableAddOns, setAvailableAddOns] = useState<BookingAddOn[]>([]);
+    const [selectedAddOnIds, setSelectedAddOnIds] = useState<number[]>([]);
+    const [loadingAddOns, setLoadingAddOns] = useState(false);
     const items = sortItemsBySize(subcategory.items ?? []);
     const subcategoryGalleryImageUrls =
         subcategory.galleryImages && subcategory.galleryImages.length > 0
@@ -77,6 +81,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
     const lengthOptions = selectedItem?.lengthOptions ?? [];
     const selectedLengthOption = lengthOptions.find((option) => option.id?.toString() === selectedLength);
+    const fixedAddOnTotal = availableAddOns.filter(addOn => selectedAddOnIds.includes(addOn.id) && addOn.pricingMode === "FIXED").reduce((sum, addOn) => sum + addOn.priceCents, 0);
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
     
     const photoGallery = (photoItem?.sizePhotos?.length ? photoItem.sizePhotos : 
@@ -118,7 +123,21 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
         setSelectedTexture(null);
         setSelectedFoundation(null);
         setShowLengthGuide(false);
+        setAvailableAddOns([]);
+        setSelectedAddOnIds([]);
     };
+
+    useEffect(() => {
+        if (!selectedItem?.id || !selectedLengthOption?.id) { setAvailableAddOns([]); setSelectedAddOnIds([]); return; }
+        let active = true;
+        setLoadingAddOns(true);
+        fetch(`${API_BASE_URL}/api/services/${selectedItem.id}/add-ons?lengthOptionId=${selectedLengthOption.id}`)
+            .then(async response => { if (!response.ok) throw new Error("Unable to load add-ons"); return response.json(); })
+            .then((result: BookingAddOn[]) => { if (active) { setAvailableAddOns(result); setSelectedAddOnIds(current => current.filter(id => result.some(item => item.id === id))); } })
+            .catch(() => { if (active) { setAvailableAddOns([]); setSelectedAddOnIds([]); } })
+            .finally(() => { if (active) setLoadingAddOns(false); });
+        return () => { active = false; };
+    }, [selectedItem?.id, selectedLengthOption?.id]);
 
     const openPhotoModal = (index: number) => {
         const item = items[index];
@@ -190,6 +209,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
             foundation: selectedFoundation ?? "",
             image: selectedItem.image || subcategory.image || "",
         });
+        if (selectedAddOnIds.length) params.set("addOns", selectedAddOnIds.join(","));
 
         router.push(`/checkout?${params.toString()}`);
         closeModal();
@@ -419,6 +439,13 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                             </div>
                                             {option.price && <span className="text-base font-medium text-neutral-900">{formatPrice(optionPrice(selectedItem, option, selectedFoundation))}</span>}
                                         </button>
+                                        {isSelected && (loadingAddOns || availableAddOns.length > 0) && (
+                                            <div className="mx-1 rounded-lg border border-neutral-200 bg-white px-4 py-4">
+                                                <div className="mb-3 flex items-center justify-between"><div><p className="text-sm font-medium text-neutral-900">Add-ons <span className="font-normal text-neutral-500">(optional)</span></p><p className="mt-0.5 text-xs text-neutral-500">Select any extras for this appointment.</p></div>{loadingAddOns && <span className="text-xs text-neutral-400">Loading…</span>}</div>
+                                                <div className="space-y-1">{availableAddOns.map(addOn => <label key={addOn.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 transition hover:bg-neutral-50"><input type="checkbox" checked={selectedAddOnIds.includes(addOn.id)} onChange={event => setSelectedAddOnIds(current => event.target.checked ? [...current, addOn.id] : current.filter(id => id !== addOn.id))} className="h-4 w-4 rounded border-neutral-300 accent-[#2C1810]" /><span className="min-w-0 flex-1"><span className="block text-sm text-neutral-900">{addOn.name}</span>{addOn.description && <span className="block truncate text-xs text-neutral-500">{addOn.description}</span>}</span><span className="text-sm font-medium text-neutral-900">{addOn.pricingMode === "STARTING_AT" ? "From " : "+"}{formatPrice(addOn.priceCents / 100)}</span></label>)}</div>
+                                                {availableAddOns.some(addOn => selectedAddOnIds.includes(addOn.id) && addOn.confirmationRequired) && <p className="mt-3 border-t border-neutral-100 pt-3 text-xs text-neutral-500">Starting prices are confirmed by the salon before your appointment.</p>}
+                                            </div>
+                                        )}
                                         {isSelected && selectedItem?.hairTextures?.length ? (
                                             <div className="pl-9 pr-4">
                                                 <div className="rounded-none border border-neutral-200 bg-neutral-50 p-4">
@@ -454,7 +481,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
 
                         <div className="relative shrink-0 border-t border-neutral-200 bg-white p-4 shadow-[0_-12px_24px_rgba(0,0,0,0.08)] md:px-8">
                             <Button type="button" disabled={!selectedLength || (selectedItem.foundationChoicesEnabled ? !selectedFoundation : false) || (selectedItem.hairTextures?.length ? !selectedTexture : false)} onClick={handleModalSelect} className="w-full rounded-lg bg-[#2C1810] py-3 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#1a0f0a] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500 disabled:hover:bg-neutral-300">
-                                Book Now{selectedLengthOption?.price ? ` · ${formatPrice(optionPrice(selectedItem, selectedLengthOption, selectedFoundation))}` : ""}
+                                Book Now{selectedLengthOption?.price ? ` · ${formatPrice(optionPrice(selectedItem, selectedLengthOption, selectedFoundation) + fixedAddOnTotal / 100)}` : ""}
                             </Button>
                         </div>
                         {showLengthGuide && <LengthGuideOverlay onClose={() => setShowLengthGuide(false)} />}

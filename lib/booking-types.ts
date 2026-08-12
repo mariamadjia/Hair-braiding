@@ -89,3 +89,23 @@ export type CategoriesData = {
     defaultBookingUrl: string;
     categories: BookingCategory[];
 };
+
+export type BookingAddOn = {
+    id: number;
+    assignmentId: number;
+    name: string;
+    description?: string | null;
+    pricingMode: "FIXED" | "STARTING_AT";
+    priceCents: number;
+    depositBehavior: "NO_CHANGE" | "ADD_FIXED";
+    depositAdjustmentCents: number;
+    active: boolean;
+    displayOrder: number;
+    subcategoryId: number;
+    subcategoryName?: string;
+    allSizes: boolean;
+    allLengths: boolean;
+    serviceItemIds: number[];
+    lengthOptionIds: number[];
+    confirmationRequired: boolean;
+};
