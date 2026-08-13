@@ -3,8 +3,6 @@
 import { useReducedMotion } from 'framer-motion';
 import LazyVideo from './LazyVideo';
 
-const FOOTER_VIDEO_POSTER = '/Gallery/ISIMG-683120.JPG';
-
 interface FooterProps {
   videoSrc?: string | null;
 }
@@ -31,7 +29,6 @@ export default function Footer({ videoSrc = null }: FooterProps = {}) {
                 style={{ objectPosition: 'center 30%' }}
                 autoPlay={!reduceMotion}
                 eager
-                poster={FOOTER_VIDEO_POSTER}
               >
                 <source src={videoSrc} media="(max-width: 1023px)" />
               </LazyVideo>
@@ -123,7 +120,6 @@ export default function Footer({ videoSrc = null }: FooterProps = {}) {
                   style={{ objectPosition: 'center 30%' }}
                   autoPlay={!reduceMotion}
                   eager
-                  poster={FOOTER_VIDEO_POSTER}
                 >
                   <source src={videoSrc} media="(min-width: 1024px)" />
                 </LazyVideo>
