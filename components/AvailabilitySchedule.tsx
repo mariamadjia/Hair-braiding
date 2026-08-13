@@ -248,21 +248,27 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
             // The submitted schedule is already the authoritative UI state.
             // Refresh only optimistic-lock versions instead of reloading
             // settings, appointments, blocked dates, and every day's slots.
-            const hoursResponse = await fetch(`${API_BASE_URL}/api/availability/business-hours`, {
+            setSuccess(true);
+            setRemovalWarnings([]);
+            window.dispatchEvent(new CustomEvent("unsavedChanges", { detail: { hasChanges: false } }));
+            window.dispatchEvent(new CustomEvent("saveStatus", { detail: { saving: false, success: true } }));
+
+            // Version synchronization is bookkeeping and must not keep the
+            // save overlay/spinner visible after the server has committed.
+            void fetch(`${API_BASE_URL}/api/availability/business-hours`, {
                 credentials: "include",
                 cache: "no-store"
-            });
-            if (hoursResponse.ok) {
+            }).then(async hoursResponse => {
+                if (!hoursResponse.ok) return;
                 const savedHours = responseItems<any>(await hoursResponse.json(), "Business hours");
                 setSchedule(previous => previous.map(day => ({
                     ...day,
                     version: savedHours.find((item: any) => item.dayOfWeek === day.dayOfWeek)?.version ?? day.version
                 })));
-            }
-            setSuccess(true);
-            setRemovalWarnings([]);
-            window.dispatchEvent(new CustomEvent("unsavedChanges", { detail: { hasChanges: false } }));
-            window.dispatchEvent(new CustomEvent("saveStatus", { detail: { saving: false, success: true } }));
+            }).catch(() => {
+                // The next full load will recover versions if this optional
+                // background synchronization is interrupted.
+            });
         } catch (caught) {
             const message = caught instanceof DOMException && caught.name === "AbortError"
                 ? "Saving took longer than 20 seconds. Nothing was confirmed—please try again."
