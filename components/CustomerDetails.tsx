@@ -3,7 +3,6 @@
 import { memo, useCallback, useEffect, useState } from "react";
 import { ArrowLeft, CalendarClock, CheckCircle2, Loader2, Mail, Phone, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getAuthToken, removeAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
 
 interface Appointment {
@@ -28,13 +27,11 @@ function CustomerDetails({ customerId, onBack }: { customerId: number; onBack: (
     const fetchDetails = useCallback(async () => {
         setLoading(true); setError(null);
         try {
-            const token = getAuthToken();
-            if (!token) throw new Error("Your session has expired. Please log in again.");
             const params = new URLSearchParams({ appointmentPage: String(page), appointmentSize: "10", appointmentStatus: status });
-            const response = await fetch(`${API_BASE_URL}/api/customers/${customerId}?${params}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+            const response = await fetch(`${API_BASE_URL}/api/customers/${customerId}?${params}`, { credentials: "include", cache: "no-store" });
             const body = await response.json().catch(() => ({}));
             if (!response.ok) {
-                if (response.status === 401 || response.status === 403) { removeAuthToken(); throw new Error("Your session has expired. Please log in again."); }
+                if (response.status === 401 || response.status === 403) throw new Error("Your session has expired. Please log in again.");
                 throw new Error(body.error || (response.status === 404 ? "Customer not found" : "Failed to load customer details"));
             }
             setCustomer(body);

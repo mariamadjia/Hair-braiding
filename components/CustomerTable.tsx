@@ -3,7 +3,6 @@
 import { memo, useCallback, useEffect, useState } from "react";
 import { CalendarClock, ChevronRight, Loader2, Mail, Phone, RefreshCw, Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getAuthToken, removeAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
 
 interface Customer {
@@ -38,13 +37,11 @@ function CustomerTable({ onViewDetails, state, onStateChange }: Props) {
     const fetchCustomers = useCallback(async () => {
         setLoading(true); setError(null);
         try {
-            const token = getAuthToken();
-            if (!token) throw new Error("Your session has expired. Please log in again.");
             const params = new URLSearchParams({ page: String(state.page), size: "20", query: state.query.trim(), segment: state.segment, sort: state.sort });
-            const response = await fetch(`${API_BASE_URL}/api/customers?${params}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+            const response = await fetch(`${API_BASE_URL}/api/customers?${params}`, { credentials: "include", cache: "no-store" });
             const body = await response.json().catch(() => ({}));
             if (!response.ok) {
-                if (response.status === 401 || response.status === 403) { removeAuthToken(); throw new Error("Your session has expired. Please log in again."); }
+                if (response.status === 401 || response.status === 403) throw new Error("Your session has expired. Please log in again.");
                 throw new Error(body.error || "Failed to load customers");
             }
             setCustomers(body.content ?? []); setTotalPages(body.totalPages ?? 0); setTotalElements(body.totalElements ?? 0); setLastUpdated(new Date());
