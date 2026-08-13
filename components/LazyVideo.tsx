@@ -18,6 +18,7 @@ interface LazyVideoProps {
   delayMs?: number;
   ariaLabel?: string;
   poster?: string;
+  eager?: boolean;
 }
 
 export default function LazyVideo({
@@ -31,6 +32,7 @@ export default function LazyVideo({
   delayMs = 0,
   ariaLabel = "Decorative salon video",
   poster,
+  eager = false,
 }: LazyVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hasLoadedRef = useRef(false);
@@ -38,6 +40,14 @@ export default function LazyVideo({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    if (eager) {
+      video.preload = "auto";
+      video.load();
+      hasLoadedRef.current = true;
+      if (autoPlay) void video.play().catch(() => {});
+      return () => video.pause();
+    }
 
     let loadTimer: ReturnType<typeof setTimeout> | undefined;
     const observer = new IntersectionObserver(
@@ -72,14 +82,14 @@ export default function LazyVideo({
       observer.disconnect();
       video.pause();
     };
-  }, [autoPlay, delayMs]);
+  }, [autoPlay, delayMs, eager]);
 
   return (
     <video
       ref={videoRef}
       className={className}
       style={style}
-      preload="none"
+      preload={eager ? "auto" : "none"}
       loop={loop}
       muted={muted}
       playsInline={playsInline}

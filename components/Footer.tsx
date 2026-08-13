@@ -28,6 +28,7 @@ export default function Footer({ videoSrc = null }: FooterProps = {}) {
                 className="w-full h-full object-cover"
                 style={{ objectPosition: 'center 30%' }}
                 autoPlay={!reduceMotion}
+                eager
               >
                 <source src={videoSrc} media="(max-width: 1023px)" />
               </LazyVideo>
@@ -118,6 +119,7 @@ export default function Footer({ videoSrc = null }: FooterProps = {}) {
                   className="w-full h-full object-cover"
                   style={{ objectPosition: 'center 30%' }}
                   autoPlay={!reduceMotion}
+                  eager
                 >
                   <source src={videoSrc} media="(min-width: 1024px)" />
                 </LazyVideo>
