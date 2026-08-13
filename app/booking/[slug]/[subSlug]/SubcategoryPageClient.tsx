@@ -13,20 +13,9 @@ import { formatPrice } from "@/lib/utils/price";
 import { toProxyUrl } from "@/lib/utils/image";
 import { API_BASE_URL } from "@/lib/config/api";
 
-const SIZE_ORDER = ['XSmall', 'Small', 'Medium', 'Smedium', 'Large', 'Jumbo'];
-
 function sortItemsBySize(items: BookingItem[]): BookingItem[] {
-    return [...items].sort((a, b) => {
-        if ((a.displayOrder ?? 0) !== (b.displayOrder ?? 0)) return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
-        const indexA = SIZE_ORDER.indexOf(a.name.trim());
-        const indexB = SIZE_ORDER.indexOf(b.name.trim());
-        if (indexA !== -1 && indexB !== -1) {
-            return indexA - indexB;
-        }
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-        return 0;
-    });
+    return [...items].sort((a, b) => (a.displayOrder ?? Number.MAX_SAFE_INTEGER)
+        - (b.displayOrder ?? Number.MAX_SAFE_INTEGER));
 }
 
 function itemPriceLabel(item: BookingItem): string {
