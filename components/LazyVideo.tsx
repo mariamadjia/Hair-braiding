@@ -17,6 +17,7 @@ interface LazyVideoProps {
   playsInline?: boolean;
   delayMs?: number;
   ariaLabel?: string;
+  poster?: string;
 }
 
 export default function LazyVideo({
@@ -29,6 +30,7 @@ export default function LazyVideo({
   playsInline = true,
   delayMs = 0,
   ariaLabel = "Decorative salon video",
+  poster,
 }: LazyVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hasLoadedRef = useRef(false);
@@ -58,7 +60,9 @@ export default function LazyVideo({
           video.pause();
         }
       },
-      { rootMargin: "220px 0px", threshold: 0.05 },
+      // Start early enough for the first frame to be ready when the user
+      // reaches a footer, while still avoiding video work near page load.
+      { rootMargin: "800px 0px", threshold: 0.01 },
     );
 
     observer.observe(video);
@@ -80,6 +84,7 @@ export default function LazyVideo({
       muted={muted}
       playsInline={playsInline}
       aria-label={ariaLabel}
+      poster={poster}
     >
       {children}
     </video>

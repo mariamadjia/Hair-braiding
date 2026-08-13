@@ -9,8 +9,6 @@ import Navbar from '@/components/Navbar';
 import FooterWrapper from '@/components/FooterWrapper';
 import { toProxyUrl } from '@/lib/utils/image';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
 /**
  * @param {{
  *   editMode?: boolean,
@@ -68,9 +66,7 @@ export default function GalleryPage({
       try {
         setLoading(true);
         setLoadError('');
-        const categoriesRes = await fetch(
-          `${API_BASE_URL}/api/categories/gallery`
-        );
+        const categoriesRes = await fetch('/api/gallery-collections?view=full');
 
         if (!categoriesRes.ok) {
           throw new Error("Failed to load Gallery categories");
@@ -100,6 +96,10 @@ export default function GalleryPage({
           : sub.image
             ? [sub.image]
             : [];
+      const rawThumbnails =
+        Array.isArray(sub.thumbnailImages) && sub.thumbnailImages.length === rawImages.length
+          ? sub.thumbnailImages
+          : rawImages;
 
       return {
         id: sub.id,
@@ -109,6 +109,7 @@ export default function GalleryPage({
         imageAltTexts: Array.isArray(sub.imageAltTexts) ? sub.imageAltTexts : rawImages.map(() => sub.name),
         image: rawImages[0] ? toProxyUrl(rawImages[0]) : "",
         images: rawImages.map(toProxyUrl),
+        thumbnailImages: rawThumbnails.map(toProxyUrl),
       };
     });
 
@@ -170,6 +171,7 @@ export default function GalleryPage({
           title: subcategory.name,
           image: subcategory.image,
           images: subcategory.images || [subcategory.image],
+          thumbnailImages: subcategory.thumbnailImages,
           imageAltTexts: subcategory.imageAltTexts,
           link: subcategoryId,
           bookingLink: `/booking/${categorySlug}/${subcategorySlug}`,
@@ -220,6 +222,7 @@ export default function GalleryPage({
           title: sub.name,
           image: sub.image,
           images: sub.images || [sub.image],
+          thumbnailImages: sub.thumbnailImages,
           imageAltTexts: sub.imageAltTexts,
           link: `${category.link}?style=${sub.slug}`,
           bookingLink: `/booking/${categorySlug}/${sub.slug}`,
@@ -593,8 +596,11 @@ export default function GalleryPage({
                   // For categories, use rotation index
                   const stableKey = item.id ?? item.link;
                   const cardImageIndex = isSubcategory ? 0 : Math.min(cardImageIndexes[stableKey] || 0, Math.max(0, (item.images?.length || 1) - 1));
-                  const currentImage = item.images && item.images.length > 0 
-                    ? item.images[cardImageIndex] 
+                  const cardImages = isSubcategory && item.thumbnailImages?.length
+                    ? item.thumbnailImages
+                    : item.images;
+                  const currentImage = cardImages && cardImages.length > 0
+                    ? cardImages[Math.min(cardImageIndex, cardImages.length - 1)]
                     : item.image;
                   
                   const itemId = item.link || `item-${index}`;
@@ -837,7 +843,7 @@ export default function GalleryPage({
                         aria-label={`View image ${index + 1} of ${selectedCategory.images.length}`}
                         aria-current={index === currentImageIndex ? 'true' : undefined}
                       >
-                        <Image src={image} alt={selectedCategory.imageAltTexts?.[index] || `${selectedCategory.title} thumbnail ${index + 1}`} fill sizes="72px" className="h-full w-full object-cover" />
+                        <Image src={selectedCategory.thumbnailImages?.[index] || image} alt={selectedCategory.imageAltTexts?.[index] || `${selectedCategory.title} thumbnail ${index + 1}`} fill sizes="72px" className="h-full w-full object-cover" />
                       </button>
                     ))}
                   </div>

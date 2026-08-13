@@ -3,15 +3,29 @@ import { NextResponse } from 'next/server';
 const API_URL = process.env.BACKEND_API_URL || 'http://localhost:8080';
 
 // GET - Retrieve gallery collections from categories with flipping images
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Fetch lightweight category cards with flipping + fallback images
-    const response = await fetch(
-      `${API_URL}/api/categories/gallery-cards`,
-      {
-        cache: 'no-store'
+    if (new URL(request.url).searchParams.get('view') === 'full') {
+      const galleryResponse = await fetch(`${API_URL}/api/categories/gallery`, {
+        next: { revalidate: 300 },
+      });
+      if (!galleryResponse.ok) {
+        return NextResponse.json(
+          { error: 'The gallery is temporarily unavailable' },
+          { status: galleryResponse.status },
+        );
       }
-    );
+      return NextResponse.json(await galleryResponse.json(), {
+        headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400' },
+      });
+    }
+
+    // These resources are independent. Fetch them concurrently and allow the
+    // Next data cache to shield visitors from Render cold starts.
+    const [response, settingsResponse] = await Promise.all([
+      fetch(`${API_URL}/api/categories/gallery-cards`, { next: { revalidate: 300 } }),
+      fetch(`${API_URL}/api/homepage-settings`, { next: { revalidate: 300 } }),
+    ]);
     if (!response.ok) {
       console.error('Backend gallery endpoint failed:', response.status);
       throw new Error('Failed to fetch categories');
@@ -20,7 +34,6 @@ export async function GET() {
     const categories = await response.json();
     let featuredIds: number[] = [];
     try {
-      const settingsResponse = await fetch(`${API_URL}/api/homepage-settings`, { cache: 'no-store' });
       if (settingsResponse.ok) {
         const settings = await settingsResponse.json();
         const parsed = JSON.parse(settings.galleryCollections || '[]');

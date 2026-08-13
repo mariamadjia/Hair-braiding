@@ -36,7 +36,9 @@ function resolveMediaUrl(url?: string | null) {
 }
 
 export default function FooterWrapper() {
-  const [footerVideoSrc, setFooterVideoSrc] = useState<string | null>(null);
+  // Render useful media immediately. The saved setting can replace it after
+  // hydration, but a slow/cold backend no longer leaves an empty footer.
+  const [footerVideoSrc, setFooterVideoSrc] = useState<string>(DEFAULT_FOOTER_VIDEO);
 
   useEffect(() => {
     const loadFooterVideo = async () => {

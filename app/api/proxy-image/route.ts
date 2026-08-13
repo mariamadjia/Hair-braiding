@@ -59,15 +59,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch image' }, { status: imageResponse.status });
     }
 
-    // Get the image data
-    const imageBuffer = await imageResponse.arrayBuffer();
     const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
     if (!contentType.startsWith('image/')) {
       return NextResponse.json({ error: 'Upstream response is not an image' }, { status: 502 });
     }
 
     // Return the image with proper headers
-    return new NextResponse(imageBuffer, {
+    // Stream the upstream body instead of buffering multi-megabyte originals
+    // in the serverless function before sending the first byte.
+    return new NextResponse(imageResponse.body, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000, immutable',
