@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { X, Calendar, Clock, Trash2, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
 
 type BlockedSlot = {
@@ -14,6 +13,7 @@ type BlockedSlot = {
     reason: string;
     isRecurring: boolean;
     recurrencePattern?: string;
+    recurrenceEndDate?: string;
     createdByName?: string;
     createdAt: string;
 };
@@ -31,6 +31,7 @@ export default function BlockTimeModal() {
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     
     // Form state
     const [startDate, setStartDate] = useState('');
@@ -61,7 +62,6 @@ export default function BlockTimeModal() {
     const fetchBlockedSlots = async () => {
         setLoading(true);
         try {
-            const token = getAuthToken();
             const now = new Date();
             const futureDate = new Date();
             futureDate.setMonth(futureDate.getMonth() + 3);
@@ -71,8 +71,8 @@ export default function BlockTimeModal() {
             const response = await fetch(
                 `${API_BASE_URL}/api/availability/blocked-times?startDate=${encodeURIComponent(startRange)}&endDate=${encodeURIComponent(endRange)}`,
                 {
+                    credentials: 'include',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 }
@@ -83,7 +83,7 @@ export default function BlockTimeModal() {
             const data = await response.json();
             setBlockedSlots(data);
         } catch (error) {
-            console.error('Error fetching blocked slots:', error);
+            setError(error instanceof Error ? error.message : 'Failed to load blocked dates');
         } finally {
             setLoading(false);
         }
@@ -115,14 +115,13 @@ export default function BlockTimeModal() {
         window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: true, error: null, success: false } }));
 
         try {
-            const token = getAuthToken();
             const startDateTime = `${startDate}T${startTime}:00`;
-            const endDateTime = `${endDate}T${endTime}:00`;
+            const endDateTime = `${isRecurring ? startDate : endDate}T${endTime}:00`;
 
             const response = await fetch(`${API_BASE_URL}/api/availability/block-time`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -131,6 +130,7 @@ export default function BlockTimeModal() {
                     reason,
                     isRecurring,
                     recurrencePattern: isRecurring ? recurrencePattern : null
+                    ,recurrenceEndDate: isRecurring ? endDate : null
                 })
             });
 
@@ -176,12 +176,9 @@ export default function BlockTimeModal() {
         if (!confirm('Are you sure you want to remove this blocked time?')) return;
 
         try {
-            const token = getAuthToken();
             const response = await fetch(`${API_BASE_URL}/api/availability/blocked-times/${id}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                credentials: 'include'
             });
 
             if (!response.ok) throw new Error('Failed to delete blocked slot');
@@ -214,6 +211,7 @@ export default function BlockTimeModal() {
 
     return (
         <div className="space-y-6">
+            {error && <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-lg font-medium text-neutral-900">Blocked Time Slots</h3>

@@ -3,15 +3,17 @@
 import { useState, useEffect, useRef } from "react";
 import { Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
 
 type AppointmentSettings = {
+    version: number;
     slotDurationMinutes: number;
     advanceBookingDays: number;
     maxAppointmentsPerSlot: number;
     requireApproval: boolean;
     allowSameDayBooking: boolean;
+    bufferTimeBetweenAppointments: number;
+    timezone: string;
 };
 
 const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
@@ -26,11 +28,14 @@ const TIME_OPTIONS = [
 
 export default function AppointmentSettingsTab() {
     const [settings, setSettings] = useState<AppointmentSettings>({
+        version: 0,
         slotDurationMinutes: 60,
         advanceBookingDays: 60,
         maxAppointmentsPerSlot: 1,
         requireApproval: true,
-        allowSameDayBooking: true
+        allowSameDayBooking: true,
+        bufferTimeBetweenAppointments: 0,
+        timezone: "America/Chicago"
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -64,12 +69,10 @@ export default function AppointmentSettingsTab() {
     const fetchSettings = async () => {
         setLoading(true);
         try {
-            const token = getAuthToken();
-            
             // Fetch appointment settings
             const settingsResponse = await fetch(`${API_BASE_URL}/api/appointments/settings`, {
+                credentials: 'include',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
@@ -77,11 +80,14 @@ export default function AppointmentSettingsTab() {
             if (settingsResponse.ok) {
                 const data = await settingsResponse.json();
                 setSettings({
+                    version: data.version ?? 0,
                     slotDurationMinutes: data.slotDurationMinutes,
                     advanceBookingDays: data.advanceBookingDays,
                     maxAppointmentsPerSlot: data.maxAppointmentsPerSlot || 1,
                     requireApproval: data.requireApproval,
-                    allowSameDayBooking: data.allowSameDayBooking
+                    allowSameDayBooking: data.allowSameDayBooking,
+                    bufferTimeBetweenAppointments: data.bufferTimeBetweenAppointments ?? 0,
+                    timezone: data.timezone || "America/Chicago"
                 });
             }
         } catch (error) {
@@ -101,19 +107,10 @@ export default function AppointmentSettingsTab() {
         window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: true, error: null, success: false } }));
 
         try {
-            const token = getAuthToken();
-            
-            if (!token) {
-                setError('No authentication token found. Please log in again.');
-                window.dispatchEvent(new CustomEvent('saveStatus', { detail: { saving: false, error: 'No authentication token found', success: false } }));
-                setSaving(false);
-                return;
-            }
-
             const settingsResponse = await fetch(`${API_BASE_URL}/api/appointments/settings`, {
                 method: 'PUT',
+                credentials: 'include',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(currentSettings)
@@ -123,6 +120,9 @@ export default function AppointmentSettingsTab() {
                 const errorData = await settingsResponse.json().catch(() => ({}));
                 throw new Error(errorData.error || 'Failed to save appointment settings');
             }
+
+            const updatedSettings = await settingsResponse.json();
+            setSettings(previous => ({ ...previous, version: updatedSettings.version ?? previous.version }));
 
             setSuccess(true);
             window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: false } }));
@@ -235,6 +235,20 @@ export default function AppointmentSettingsTab() {
                     <p className="text-xs text-neutral-500">
                         Time interval between available booking slots
                     </p>
+                </div>
+
+                {/* Advance Booking Period */}
+                <div className="space-y-2">
+                    <label className="block text-sm font-medium text-neutral-900">Buffer after appointments</label>
+                    <select value={settings.bufferTimeBetweenAppointments} onChange={e => updateSetting('bufferTimeBetweenAppointments', Number(e.target.value))} className="w-full px-4 py-2 border border-neutral-200 rounded-md">
+                        {[0, 15, 30, 45, 60].map(value => <option key={value} value={value}>{value} minutes</option>)}
+                    </select>
+                </div>
+                <div className="space-y-2">
+                    <label className="block text-sm font-medium text-neutral-900">Salon timezone</label>
+                    <select value={settings.timezone} onChange={e => updateSetting('timezone', e.target.value)} className="w-full px-4 py-2 border border-neutral-200 rounded-md">
+                        <option value="America/Chicago">Central Time — San Antonio</option>
+                    </select>
                 </div>
 
                 {/* Advance Booking Period */}

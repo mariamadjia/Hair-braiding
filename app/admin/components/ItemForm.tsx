@@ -87,6 +87,10 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
 
             <label className="block"><span className={lbl}>Size or service name *</span><input className={inp} value={item.name} onChange={event => set("name", event.target.value)} placeholder="Small" /></label>
 
+            <label className="block"><span className={lbl}>Appointment duration *</span><select className={inp} value={item.durationMinutes ?? 60} onChange={event => set("durationMinutes", Number(event.target.value))}>
+                {[30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480, 600, 720].map(value => <option key={value} value={value}>{value < 60 ? `${value} minutes` : `${value / 60} hour${value === 60 ? "" : "s"}`}</option>)}
+            </select><span className="mt-1 block text-xs text-neutral-500">The calendar reserves this full amount of time for the service.</span></label>
+
             <fieldset className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
                 <div className="flex items-start justify-between gap-4">
                     <div><legend className="text-sm font-semibold text-neutral-900 dark:text-white">Braid foundation</legend><p className="mt-1 text-xs text-neutral-500">Optionally let customers choose Regular or Knotless before selecting a length.</p></div>

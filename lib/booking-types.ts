@@ -32,6 +32,7 @@ export type BookingItem = {
     price: string;
     description: string;
     notes?: string;
+    durationMinutes?: number;
     image?: string;
     images?: string[];
     sizePhotos?: string[];

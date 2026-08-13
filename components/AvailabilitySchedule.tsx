@@ -9,6 +9,7 @@ type SavedSlot = { startTime: string; endTime: string; capacity: number };
 type AvailabilityWindow = { id: string; startTime: string; endTime: string };
 type DayAvailability = {
     dayOfWeek: string;
+    version: number | null;
     enabled: boolean;
     windows: AvailabilityWindow[];
     capacities: Record<string, number>;
@@ -45,7 +46,7 @@ const displayTime = (time: string) => {
 
 const startsForWindow = (window: AvailabilityWindow, gap: number) => {
     const starts: string[] = [];
-    for (let value = minutes(window.startTime); value < minutes(window.endTime); value += gap) starts.push(timeValue(value));
+    for (let value = minutes(window.startTime); value + gap <= minutes(window.endTime); value += gap) starts.push(timeValue(value));
     return starts;
 };
 
@@ -142,7 +143,7 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
 
             const loaded = await Promise.all(DAYS.map(async day => {
                 const businessDay = hours.find((item: any) => item.dayOfWeek === day.key);
-                if (!businessDay?.isOpen) return { dayOfWeek: day.key, enabled: false, windows: [], capacities: {} };
+                if (!businessDay?.isOpen) return { dayOfWeek: day.key, version: businessDay?.version ?? null, enabled: false, windows: [], capacities: {} };
                 const response = await fetch(`${API_BASE_URL}/api/time-slots/${day.key}`, requestOptions);
                 if (!response.ok) throw new Error(`Could not load ${day.label}. Please refresh and sign in again.`);
                 const slots = responseItems<SavedSlot>(await response.json(), `${day.label} time slots`);
@@ -153,6 +154,7 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
                 }];
                 return {
                     dayOfWeek: day.key,
+                    version: businessDay.version ?? null,
                     enabled: true,
                     windows: slots.length ? windowsFromSlots(slots) : fallback,
                     capacities: Object.fromEntries(slots.map(slot => [slot.startTime.slice(0, 5), slot.capacity || capacity]))
@@ -223,6 +225,7 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
         try {
             const payload = { days: current.map(day => ({
                 dayOfWeek: day.dayOfWeek,
+                version: day.version,
                 isAvailable: day.enabled,
                 timeSlots: day.enabled ? day.windows.flatMap(window => startsForWindow(window, currentGap).map(start => ({
                     dayOfWeek: day.dayOfWeek,
@@ -242,6 +245,7 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
                 const body = await response.json().catch(() => ({}));
                 throw new Error(body.error || "Could not save availability.");
             }
+            await loadSchedule();
             setSuccess(true);
             setRemovalWarnings([]);
             window.dispatchEvent(new CustomEvent("unsavedChanges", { detail: { hasChanges: false } }));

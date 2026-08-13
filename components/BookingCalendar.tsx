@@ -297,7 +297,10 @@ export default function BookingCalendar({
 
     const requestSlots = async (date: Date, signal?: AbortSignal): Promise<TimeSlot[]> => {
         const dateStr = formatLocalDate(date);
-        const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=America%2FChicago`, {
+        const params = new URLSearchParams({ date: dateStr, timezone: "America/Chicago" });
+        if (serviceId) params.set("serviceId", String(serviceId));
+        if (lengthOptionId) params.set("lengthOptionId", String(lengthOptionId));
+        const response = await fetch(`${API_BASE_URL}/api/availability/slots?${params}`, {
             headers: { 'Content-Type': 'application/json' },
             cache: 'no-store',
             signal
@@ -413,7 +416,10 @@ export default function BookingCalendar({
         try {
             const dateStr = formatLocalDate(date);
             const timezone = "America/Chicago";
-            const response = await fetch(`${API_BASE_URL}/api/availability/slots?date=${dateStr}&timezone=${timezone}`, {
+            const params = new URLSearchParams({ date: dateStr, timezone });
+            if (serviceId) params.set("serviceId", String(serviceId));
+            if (lengthOptionId) params.set("lengthOptionId", String(lengthOptionId));
+            const response = await fetch(`${API_BASE_URL}/api/availability/slots?${params}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
