@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Ban, CalendarDays, CheckCircle2, ChevronRight, Clock, Copy, LayoutTemplate, Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/lib/config/api";
-import { getAuthToken } from "@/lib/utils/auth";
 
 type SavedSlot = { startTime: string; endTime: string; capacity: number };
 type AvailabilityWindow = { id: string; startTime: string; endTime: string };
@@ -108,9 +107,7 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
         setLoading(true);
         setError(null);
         try {
-            const token = getAuthToken();
-            if (!token) throw new Error("Your admin session has expired. Please sign in again.");
-            const headers = { Authorization: `Bearer ${token}` };
+            const requestOptions: RequestInit = { credentials: "include", cache: "no-store" };
             const startDate = new Date();
             const endDate = new Date();
             endDate.setMonth(endDate.getMonth() + 3);
@@ -119,10 +116,10 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
                 endDate: `${endDate.toISOString().slice(0, 10)}T23:59:59`
             });
             const [settingsResponse, hoursResponse, appointmentsResponse, blockedResponse] = await Promise.all([
-                fetch(`${API_BASE_URL}/api/appointments/settings`, { headers, cache: "no-store" }),
-                fetch(`${API_BASE_URL}/api/availability/business-hours`, { cache: "no-store" }),
-                fetch(`${API_BASE_URL}/api/appointments/upcoming`, { headers, cache: "no-store" }),
-                fetch(`${API_BASE_URL}/api/availability/blocked-times?${range}`, { headers, cache: "no-store" })
+                fetch(`${API_BASE_URL}/api/appointments/settings`, requestOptions),
+                fetch(`${API_BASE_URL}/api/availability/business-hours`, requestOptions),
+                fetch(`${API_BASE_URL}/api/appointments/upcoming`, requestOptions),
+                fetch(`${API_BASE_URL}/api/availability/blocked-times?${range}`, requestOptions)
             ]);
             if (!settingsResponse.ok || !hoursResponse.ok || !appointmentsResponse.ok || !blockedResponse.ok) throw new Error("Could not load the complete availability data.");
             const settings = await settingsResponse.json();
@@ -137,7 +134,7 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
             const loaded = await Promise.all(DAYS.map(async day => {
                 const businessDay = hours.find((item: any) => item.dayOfWeek === day.key);
                 if (!businessDay?.isOpen) return { dayOfWeek: day.key, enabled: false, windows: [], capacities: {} };
-                const response = await fetch(`${API_BASE_URL}/api/time-slots/${day.key}`, { headers, cache: "no-store" });
+                const response = await fetch(`${API_BASE_URL}/api/time-slots/${day.key}`, requestOptions);
                 if (!response.ok) throw new Error(`Could not load ${day.label}. Please refresh and sign in again.`);
                 const slots: SavedSlot[] = await response.json();
                 const fallback = [{
@@ -215,8 +212,6 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), 20000);
         try {
-            const token = getAuthToken();
-            if (!token) throw new Error("Your admin session has expired. Please sign in again.");
             const payload = { days: current.map(day => ({
                 dayOfWeek: day.dayOfWeek,
                 isAvailable: day.enabled,
@@ -229,7 +224,8 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
             })) };
             const response = await fetch(`${API_BASE_URL}/api/availability/schedule`, {
                 method: "POST",
-                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
                 signal: controller.signal
             });
