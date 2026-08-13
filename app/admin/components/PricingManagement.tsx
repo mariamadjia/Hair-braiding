@@ -13,8 +13,8 @@ type Row = {
 };
 type Change = { id: number; createdAt: string; serviceName: string; action: string; summary: string; changedBy?: string; beforeValue?: string; afterValue?: string };
 
-const PRICE_MATRIX_SIZE_ORDER = ["xsmall", "small", "smedium", "medium", "large", "jumbo"];
 const PRICE_MATRIX_LENGTH_ORDER = ["shoulder", "arm pit", "bra strap", "mid back", "waist", "hip", "tailbone", "classic", "mid thigh"];
+const MAX_PRICE = 10_000;
 
 const normalizeLengthName = (name: string) => name
   .trim()
@@ -34,12 +34,9 @@ const comparePriceMatrixLengths = (left: string, right: string) => {
 };
 
 const comparePriceMatrixSizes = (left: Row, right: Row) => {
-  const leftIndex = PRICE_MATRIX_SIZE_ORDER.indexOf(left.item.name.trim().toLowerCase());
-  const rightIndex = PRICE_MATRIX_SIZE_ORDER.indexOf(right.item.name.trim().toLowerCase());
-  if (leftIndex !== -1 && rightIndex !== -1) return leftIndex - rightIndex;
-  if (leftIndex !== -1) return -1;
-  if (rightIndex !== -1) return 1;
-  return (left.item.displayOrder ?? Number.MAX_SAFE_INTEGER) - (right.item.displayOrder ?? Number.MAX_SAFE_INTEGER);
+  const order = (left.item.displayOrder ?? Number.MAX_SAFE_INTEGER)
+    - (right.item.displayOrder ?? Number.MAX_SAFE_INTEGER);
+  return order || left.item.name.localeCompare(right.item.name);
 };
 
 const money = (value?: string) => {
@@ -55,11 +52,12 @@ const hasValidPrice = (value?: string) => {
   const trimmed = String(value ?? "").trim();
   if (!trimmed) return false;
   const amount = parsePrice(value);
-  return Number.isFinite(amount) && amount > 0;
+  return Number.isFinite(amount) && amount > 0 && amount <= MAX_PRICE;
 };
 const hasValidAdjustment = (value?: string) => {
   const trimmed = String(value ?? "").trim();
-  return trimmed !== "" && Number.isFinite(parsePrice(value));
+  const amount = parsePrice(value);
+  return trimmed !== "" && Number.isFinite(amount) && amount >= 0 && amount <= MAX_PRICE;
 };
 
 type PricingIssue = { category: BookingCategory; subcategory: NonNullable<BookingCategory["subcategories"]>[number]; item: BookingItem; option?: string };
@@ -91,6 +89,7 @@ export function PricingManagement({ token }: { token: string }) {
   const [addLengthTarget, setAddLengthTarget] = useState<{ groupKey: string; subcategoryName: string } | null>(null);
   const [newLengthName, setNewLengthName] = useState("");
   const [newLengthPrices, setNewLengthPrices] = useState<Record<number, string>>({});
+  const [newLengthKnotlessPrices, setNewLengthKnotlessPrices] = useState<Record<number, string>>({});
   const [showPricingIssues, setShowPricingIssues] = useState(false);
   const [collapsedIssueGroups, setCollapsedIssueGroups] = useState<Set<string>>(new Set());
 
@@ -172,6 +171,12 @@ export function PricingManagement({ token }: { token: string }) {
       if (originalOptions.get(name) !== draftOptions.get(name)) changed += 1;
     });
 
+    const originalKnotless = new Map((original.lengthOptions ?? []).map(option => [option.name, String(option.knotlessPrice ?? "")]));
+    const draftKnotless = new Map((draft.lengthOptions ?? []).map(option => [option.name, String(option.knotlessPrice ?? "")]));
+    optionNames.forEach(name => {
+      if (originalKnotless.get(name) !== draftKnotless.get(name)) changed += 1;
+    });
+
     if (String(original.knotlessPriceAdjustment ?? "") !== String(draft.knotlessPriceAdjustment ?? "")) changed += 1;
     return total + changed;
   }, 0), [data, drafts]);
@@ -246,7 +251,13 @@ export function PricingManagement({ token }: { token: string }) {
     } else if (!hasValidPrice(item.price)) {
       issues.push({ category, subcategory, item });
     }
-    if (item.foundationChoicesEnabled && !hasValidAdjustment(item.knotlessPriceAdjustment)) {
+    if (item.foundationChoicesEnabled && item.knotlessPricingMode === "SEPARATE") {
+      (item.lengthOptions ?? []).forEach(option => {
+        if (!hasValidPrice(option.knotlessPrice)) {
+          issues.push({ category, subcategory, item, option: `Knotless ${option.name || "Unnamed length"}` });
+        }
+      });
+    } else if (item.foundationChoicesEnabled && !hasValidAdjustment(item.knotlessPriceAdjustment)) {
       issues.push({ category, subcategory, item, option: "Knotless adjustment" });
     }
     return issues;
@@ -314,17 +325,22 @@ export function PricingManagement({ token }: { token: string }) {
           serviceId: id,
           version: item.version ?? 0,
           basePriceCents: item.lengthOptions?.length ? undefined : Math.round(parsePrice(item.price) * 100),
-          knotlessAdjustmentCents: item.foundationChoicesEnabled ? Math.round(parsePrice(item.knotlessPriceAdjustment) * 100) : undefined,
+          knotlessAdjustmentCents: item.foundationChoicesEnabled && item.knotlessPricingMode !== "SEPARATE"
+            ? Math.round(parsePrice(item.knotlessPriceAdjustment) * 100) : undefined,
           lengths: (item.lengthOptions ?? []).map((option, displayOrder) => ({
             lengthOptionId: option.id,
             priceCents: Math.round(parsePrice(option.price) * 100),
+            knotlessPriceCents: item.foundationChoicesEnabled && item.knotlessPricingMode === "SEPARATE"
+              ? Math.round(parsePrice(option.knotlessPrice) * 100) : undefined,
             displayOrder,
           })),
         };
       });
-      if (changes.some(change => (!change.basePriceCents && !change.lengths.length)
-        || change.lengths.some(length => !length.lengthOptionId || length.priceCents < 1))) {
-        throw new Error("Every published price must be greater than zero.");
+      if (changes.some(change => ((!change.basePriceCents || change.basePriceCents > MAX_PRICE * 100) && !change.lengths.length)
+        || change.lengths.some(length => !length.lengthOptionId || length.priceCents < 1
+          || length.priceCents > MAX_PRICE * 100
+          || (length.knotlessPriceCents != null && (length.knotlessPriceCents < 1 || length.knotlessPriceCents > MAX_PRICE * 100))))) {
+        throw new Error(`Every published price must be between $0.01 and $${MAX_PRICE.toLocaleString()}.`);
       }
       const response = await fetch("/api/admin/pricing/prices", {
         method: "PATCH",
@@ -346,7 +362,11 @@ export function PricingManagement({ token }: { token: string }) {
     const targetRows = visibleRows;
     if (!targetRows.length) return setError("No services match the current filters.");
     const currentPrices = targetRows.flatMap(({ item }) => item.lengthOptions?.length
-      ? item.lengthOptions.map(option => ({ service: item.name, option: option.name, value: parsePrice(option.price) }))
+      ? item.lengthOptions.flatMap(option => [
+          { service: item.name, option: option.name, value: parsePrice(option.price) },
+          ...(item.foundationChoicesEnabled && item.knotlessPricingMode === "SEPARATE"
+            ? [{ service: item.name, option: `Knotless ${option.name}`, value: parsePrice(option.knotlessPrice) }] : []),
+        ])
       : [{ service: item.name, option: "Base price", value: parsePrice(item.price) }]);
     const invalidCurrent = currentPrices.find(price => !Number.isFinite(price.value) || price.value <= 0);
     if (invalidCurrent) {
@@ -354,7 +374,7 @@ export function PricingManagement({ token }: { token: string }) {
     }
     const invalidResult = currentPrices.find(price => {
       const next = bulkMode === "percent" ? price.value * (1 + adjustment / 100) : price.value + adjustment;
-      return !Number.isFinite(next) || next <= 0;
+      return !Number.isFinite(next) || next <= 0 || next > MAX_PRICE;
     });
     if (invalidResult) {
       return setError(`This adjustment would make ${invalidResult.service} ${invalidResult.option} zero or negative.`);
@@ -366,7 +386,12 @@ export function PricingManagement({ token }: { token: string }) {
         return (Math.round(next * 100) / 100).toFixed(2);
       };
       return draft.lengthOptions?.length
-        ? { ...draft, lengthOptions: draft.lengthOptions.map(option => ({ ...option, price: adjust(option.price) })) }
+        ? { ...draft, lengthOptions: draft.lengthOptions.map(option => ({
+            ...option,
+            price: adjust(option.price),
+            ...(draft.foundationChoicesEnabled && draft.knotlessPricingMode === "SEPARATE"
+              ? { knotlessPrice: adjust(option.knotlessPrice) } : {}),
+          })) }
         : { ...draft, price: adjust(draft.price) };
     }));
     setError("");
@@ -381,6 +406,9 @@ export function PricingManagement({ token }: { token: string }) {
     const targets = rows.filter(row => row.groupKey === groupKey && row.item.id);
     setNewLengthName("");
     setNewLengthPrices(Object.fromEntries(targets.map(row => [row.item.id!, ""])));
+    setNewLengthKnotlessPrices(Object.fromEntries(targets
+      .filter(row => row.item.foundationChoicesEnabled && row.item.knotlessPricingMode === "SEPARATE")
+      .map(row => [row.item.id!, ""])));
     setAddLengthTarget({ groupKey, subcategoryName });
   };
 
@@ -398,6 +426,10 @@ export function PricingManagement({ token }: { token: string }) {
     }
     const missingPrice = targetRows.find(row => !hasValidPrice(newLengthPrices[row.item.id!]));
     if (missingPrice) return setError(`Enter a valid ${missingPrice.item.name} price greater than zero.`);
+    const missingKnotlessPrice = targetRows.find(row => row.item.foundationChoicesEnabled
+      && row.item.knotlessPricingMode === "SEPARATE"
+      && !hasValidPrice(newLengthKnotlessPrices[row.item.id!]));
+    if (missingKnotlessPrice) return setError(`Enter a valid Knotless ${missingKnotlessPrice.item.name} price.`);
     setSaving(true); setError(""); setSuccess("");
     try {
       const response = await fetch("/api/admin/pricing/lengths", {
@@ -409,6 +441,8 @@ export function PricingManagement({ token }: { token: string }) {
             serviceId: row.item.id,
             version: row.item.version ?? 0,
             priceCents: Math.round(parsePrice(newLengthPrices[row.item.id!]) * 100),
+            knotlessPriceCents: row.item.foundationChoicesEnabled && row.item.knotlessPricingMode === "SEPARATE"
+              ? Math.round(parsePrice(newLengthKnotlessPrices[row.item.id!]) * 100) : undefined,
           })),
         }),
       });
@@ -476,7 +510,7 @@ export function PricingManagement({ token }: { token: string }) {
   };
 
   const exportPriceList = () => {
-    const lines = [["Category", "Style", "Size / Service", "Length", "Price", "Knotless adjustment", "Deposit override"]];
+    const lines = [["Category", "Style", "Size / Service", "Length", "Regular price", "Knotless price", "Knotless adjustment", "Deposit override"]];
     rows.forEach(({ category, subcategory, item }) => {
       const options = item.lengthOptions?.length ? item.lengthOptions : [{ name: "Base", price: item.price }];
       options.forEach(option => lines.push([
@@ -485,7 +519,8 @@ export function PricingManagement({ token }: { token: string }) {
         item.name,
         option.name || "Base",
         option.price || "",
-        item.foundationChoicesEnabled ? item.knotlessPriceAdjustment || "0" : "",
+        item.foundationChoicesEnabled && item.knotlessPricingMode === "SEPARATE" ? option.knotlessPrice || "" : "",
+        item.foundationChoicesEnabled && item.knotlessPricingMode !== "SEPARATE" ? item.knotlessPriceAdjustment || "0" : "",
         depositOverrides[item.id!] == null ? "" : String(depositOverrides[item.id!]! / 100),
       ]));
     });
@@ -762,7 +797,9 @@ export function PricingManagement({ token }: { token: string }) {
                                           {subRows.map(row => {
                                             const item = row.item;
                                             const isDirty = !!drafts[item.id!];
-                                            const knotlessInvalid = item.foundationChoicesEnabled && !hasValidAdjustment(item.knotlessPriceAdjustment);
+                                            const usesSeparateKnotless = item.foundationChoicesEnabled && item.knotlessPricingMode === "SEPARATE";
+                                            const knotlessInvalid = item.foundationChoicesEnabled && !usesSeparateKnotless
+                                              && !hasValidAdjustment(item.knotlessPriceAdjustment);
 
                                             return (
                                               <tr key={item.id} data-pricing-row-id={item.id} className="group transition hover:bg-[#fdfaf6]">
@@ -810,7 +847,33 @@ export function PricingManagement({ token }: { token: string }) {
 
                                                 {hasKnotless && (
                                                   <td className="border-b border-[#f0e8e0] px-3 py-2.5 text-center">
-                                                    {item.foundationChoicesEnabled ? (
+                                                    {usesSeparateKnotless ? (
+                                                      <div className="min-w-[185px] space-y-1.5 py-1 text-left">
+                                                        {(item.lengthOptions ?? []).map((option, optionIndex) => {
+                                                          const invalid = !hasValidPrice(option.knotlessPrice);
+                                                          return <label key={option.id ?? option.name} className="flex items-center justify-between gap-2 text-[11px]">
+                                                            <span className="max-w-20 truncate text-neutral-500" title={option.name}>{option.name}</span>
+                                                            <span className={`flex w-[94px] items-center rounded-lg border bg-[#fffdfa] ${invalid ? "border-amber-300" : "border-[#eee5dd]"}`}>
+                                                              <span className="pl-2 text-xs text-neutral-400">$</span>
+                                                              <input
+                                                                aria-label={`${item.name} Knotless ${option.name} price`}
+                                                                data-pricing-service-id={item.id}
+                                                                data-pricing-price-key={`Knotless ${option.name}`}
+                                                                inputMode="decimal"
+                                                                value={option.knotlessPrice ?? ""}
+                                                                onFocus={event => event.currentTarget.select()}
+                                                                onChange={event => updateItem(item.id!, draft => {
+                                                                  const options = [...(draft.lengthOptions ?? [])];
+                                                                  options[optionIndex] = { ...options[optionIndex], knotlessPrice: event.target.value };
+                                                                  return { ...draft, lengthOptions: options };
+                                                                })}
+                                                                className="w-full min-w-0 bg-transparent py-2 pr-2 text-center text-sm font-medium outline-none"
+                                                              />
+                                                            </span>
+                                                          </label>;
+                                                        })}
+                                                      </div>
+                                                    ) : item.foundationChoicesEnabled ? (
                                                       <div className={`mx-auto flex w-[94px] items-center rounded-lg border bg-[#fffdfa] ${knotlessInvalid ? "border-amber-300" : "border-[#eee5dd]"} focus-within:border-[#b7734d] focus-within:ring-3 focus-within:ring-[#b7734d]/10`}>
                                                         <span className="pl-2 text-xs text-neutral-400">+$</span>
                                                         <input
@@ -1088,19 +1151,24 @@ export function PricingManagement({ token }: { token: string }) {
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#6b4b3c]">Price by size</span>
                 <div className="divide-y divide-[#eee5dc] overflow-hidden rounded-xl border border-[#d9cabd] bg-white">
                   {rows.filter(row => row.groupKey === addLengthTarget.groupKey && row.item.id).map(row => (
-                    <label key={row.item.id} className="flex items-center gap-4 px-4 py-3">
+                    <div key={row.item.id} className="grid items-center gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_9rem_9rem]">
                       <span className="min-w-0 flex-1 text-sm font-medium text-[#351a10]">{row.item.name}</span>
-                      <span className="text-sm text-neutral-400">$</span>
-                      <input
-                        aria-label={`${row.item.name} new length price`}
-                        inputMode="decimal"
-                        value={newLengthPrices[row.item.id!] ?? ""}
-                        onChange={event => setNewLengthPrices(previous => ({ ...previous, [row.item.id!]: event.target.value }))}
-                        onFocus={event => event.currentTarget.select()}
-                        placeholder="0.00"
-                        className="w-28 rounded-lg border border-[#e1d5c9] px-3 py-2 text-right text-sm outline-none focus:border-[#a46645] focus:ring-3 focus:ring-[#b7734d]/10"
-                      />
-                    </label>
+                      <label className="text-[10px] uppercase tracking-wide text-neutral-500">Regular
+                        <input aria-label={`${row.item.name} new length price`} inputMode="decimal"
+                          value={newLengthPrices[row.item.id!] ?? ""}
+                          onChange={event => setNewLengthPrices(previous => ({ ...previous, [row.item.id!]: event.target.value }))}
+                          onFocus={event => event.currentTarget.select()} placeholder="$0.00"
+                          className="mt-1 w-full rounded-lg border border-[#e1d5c9] px-3 py-2 text-right text-sm normal-case outline-none focus:border-[#a46645] focus:ring-3 focus:ring-[#b7734d]/10" />
+                      </label>
+                      {row.item.foundationChoicesEnabled && row.item.knotlessPricingMode === "SEPARATE" ?
+                        <label className="text-[10px] uppercase tracking-wide text-neutral-500">Knotless
+                          <input aria-label={`${row.item.name} new Knotless length price`} inputMode="decimal"
+                            value={newLengthKnotlessPrices[row.item.id!] ?? ""}
+                            onChange={event => setNewLengthKnotlessPrices(previous => ({ ...previous, [row.item.id!]: event.target.value }))}
+                            onFocus={event => event.currentTarget.select()} placeholder="$0.00"
+                            className="mt-1 w-full rounded-lg border border-[#e1d5c9] px-3 py-2 text-right text-sm normal-case outline-none focus:border-[#a46645] focus:ring-3 focus:ring-[#b7734d]/10" />
+                        </label> : <span />}
+                    </div>
                   ))}
                 </div>
               </div>
