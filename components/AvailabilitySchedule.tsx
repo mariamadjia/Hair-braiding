@@ -245,7 +245,20 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
                 const body = await response.json().catch(() => ({}));
                 throw new Error(body.error || "Could not save availability.");
             }
-            await loadSchedule();
+            // The submitted schedule is already the authoritative UI state.
+            // Refresh only optimistic-lock versions instead of reloading
+            // settings, appointments, blocked dates, and every day's slots.
+            const hoursResponse = await fetch(`${API_BASE_URL}/api/availability/business-hours`, {
+                credentials: "include",
+                cache: "no-store"
+            });
+            if (hoursResponse.ok) {
+                const savedHours = responseItems<any>(await hoursResponse.json(), "Business hours");
+                setSchedule(previous => previous.map(day => ({
+                    ...day,
+                    version: savedHours.find((item: any) => item.dayOfWeek === day.dayOfWeek)?.version ?? day.version
+                })));
+            }
             setSuccess(true);
             setRemovalWarnings([]);
             window.dispatchEvent(new CustomEvent("unsavedChanges", { detail: { hasChanges: false } }));
