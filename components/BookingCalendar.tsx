@@ -1066,6 +1066,7 @@ export default function BookingCalendar({
                             onBack={() => setStep("details")}
                             clientSecret={paymentClientSecret}
                             customerEmail={formData.email}
+                            customerPhone={formData.phoneNumber}
                             customerName={`${formData.firstName} ${formData.lastName}`}
                         />
                     </Elements>
