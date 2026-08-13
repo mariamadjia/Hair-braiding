@@ -25,6 +25,13 @@ const DAYS = [
 ];
 
 const windowId = () => `window-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const responseItems = <T,>(payload: unknown, label: string): T[] => {
+    if (Array.isArray(payload)) return payload as T[];
+    if (payload && typeof payload === "object" && Array.isArray((payload as { content?: unknown }).content)) {
+        return (payload as { content: T[] }).content;
+    }
+    throw new Error(`${label} returned an unexpected response. Please refresh and try again.`);
+};
 const minutes = (time: string) => {
     const [hour, minute] = time.split(":").map(Number);
     return hour * 60 + minute;
@@ -118,25 +125,27 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
             const [settingsResponse, hoursResponse, appointmentsResponse, blockedResponse] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/appointments/settings`, requestOptions),
                 fetch(`${API_BASE_URL}/api/availability/business-hours`, requestOptions),
-                fetch(`${API_BASE_URL}/api/appointments/upcoming`, requestOptions),
+                fetch(`${API_BASE_URL}/api/appointments/upcoming?size=200`, requestOptions),
                 fetch(`${API_BASE_URL}/api/availability/blocked-times?${range}`, requestOptions)
             ]);
             if (!settingsResponse.ok || !hoursResponse.ok || !appointmentsResponse.ok || !blockedResponse.ok) throw new Error("Could not load the complete availability data.");
             const settings = await settingsResponse.json();
-            const hours = await hoursResponse.json();
+            const hours = responseItems<any>(await hoursResponse.json(), "Business hours");
+            const upcomingAppointments = responseItems<ExistingAppointment>(await appointmentsResponse.json(), "Upcoming appointments");
+            const upcomingBlocks = responseItems<BlockedDate>(await blockedResponse.json(), "Blocked dates");
             const gap = settings.slotDurationMinutes || 60;
             const capacity = settings.maxAppointmentsPerSlot || 1;
             setSlotGap(gap);
             setDefaultCapacity(capacity);
-            setAppointments(await appointmentsResponse.json());
-            setBlockedDates(await blockedResponse.json());
+            setAppointments(upcomingAppointments);
+            setBlockedDates(upcomingBlocks);
 
             const loaded = await Promise.all(DAYS.map(async day => {
                 const businessDay = hours.find((item: any) => item.dayOfWeek === day.key);
                 if (!businessDay?.isOpen) return { dayOfWeek: day.key, enabled: false, windows: [], capacities: {} };
                 const response = await fetch(`${API_BASE_URL}/api/time-slots/${day.key}`, requestOptions);
                 if (!response.ok) throw new Error(`Could not load ${day.label}. Please refresh and sign in again.`);
-                const slots: SavedSlot[] = await response.json();
+                const slots = responseItems<SavedSlot>(await response.json(), `${day.label} time slots`);
                 const fallback = [{
                     id: windowId(),
                     startTime: businessDay.openTime?.slice(0, 5) || "09:00",
