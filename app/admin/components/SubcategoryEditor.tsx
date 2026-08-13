@@ -13,18 +13,11 @@ import { ChevronRight, Package, Plus, Trash2, CheckCircle, AlertCircle, Loader2,
 import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
 
-const SIZE_ORDER = ['XSmall', 'Small', 'Medium', 'Smedium', 'Large', 'Jumbo'];
-
 function sortItemsBySize(items: BookingItem[]): { item: BookingItem; originalIdx: number }[] {
     return items.map((item, idx) => ({ item, originalIdx: idx })).sort((a, b) => {
-        if ((a.item.displayOrder ?? 0) !== (b.item.displayOrder ?? 0)) return (a.item.displayOrder ?? 0) - (b.item.displayOrder ?? 0);
-        const indexA = SIZE_ORDER.indexOf(a.item.name.trim());
-        const indexB = SIZE_ORDER.indexOf(b.item.name.trim());
-        if (indexA !== -1 && indexB !== -1) {
-            return indexA - indexB;
-        }
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
+        const orderA = a.item.displayOrder ?? Number.MAX_SAFE_INTEGER;
+        const orderB = b.item.displayOrder ?? Number.MAX_SAFE_INTEGER;
+        if (orderA !== orderB) return orderA - orderB;
         return a.originalIdx - b.originalIdx;
     });
 }
