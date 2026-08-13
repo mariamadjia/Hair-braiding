@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthorized, revalidatePublicServices } from "@/lib/utils/admin-route";
+import { backendAuthHeaders, isAuthorized, revalidatePublicServices } from "@/lib/utils/admin-route";
 
 const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -9,7 +9,7 @@ async function forward(req: NextRequest, method: "GET" | "PUT") {
     const response = await fetch(`${API_URL}/api/admin/pricing/deposits`, {
       method,
       headers: {
-        Authorization: req.headers.get("authorization") || "",
+        ...backendAuthHeaders(req),
         ...(method === "PUT" ? { "Content-Type": "application/json" } : {}),
       },
       body: method === "PUT" ? JSON.stringify(await req.json()) : undefined,

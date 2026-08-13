@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePublicServices } from "@/lib/utils/admin-route";
+import { backendAuthHeaders, isAuthorized, revalidatePublicServices } from "@/lib/utils/admin-route";
 
 export const runtime = "nodejs";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-function isAuthorized(req: NextRequest) {
-    const authHeader = req.headers.get("authorization");
-    return Boolean(authHeader?.startsWith("Bearer ") && authHeader.length > 7);
-}
 
 export async function GET(req: NextRequest) {
     if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -21,7 +16,7 @@ export async function GET(req: NextRequest) {
             ? `${API_URL}/api/admin/services/archived${subcategoryId ? `?subcategoryId=${encodeURIComponent(subcategoryId)}` : ""}`
             : `${API_URL}/api/services`;
         const response = await fetch(backendUrl, {
-            headers: { Authorization: req.headers.get("authorization") || "" },
+            headers: backendAuthHeaders(req),
             signal: AbortSignal.timeout(10000)
         });
         if (!response.ok) {
@@ -39,14 +34,12 @@ export async function POST(req: NextRequest) {
     if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     
     const service = await req.json();
-    const token = req.headers.get("authorization")?.replace("Bearer ", "");
-    
     try {
         const response = await fetch(`${API_URL}/api/services`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                ...backendAuthHeaders(req)
             },
             body: JSON.stringify(service),
             signal: AbortSignal.timeout(10000)

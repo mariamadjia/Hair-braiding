@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { backendAuthHeaders, isAuthorized } from "@/lib/utils/admin-route";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-function isAuthorized(req: NextRequest) {
-    const authHeader = req.headers.get("authorization");
-    return authHeader && authHeader.startsWith("Bearer ");
-}
-
-function getAuthHeader(req: NextRequest) {
-    return req.headers.get("authorization") || "";
-}
 
 function revalidatePublicBookingPages(slug: string, subSlug: string) {
     revalidatePath("/services");
@@ -43,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         if (!resolvedSubcategoryId) {
             console.log('[POST ITEMS] subcategoryId missing, fetching category...');
             const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
-                headers: { 'Authorization': getAuthHeader(req), 'Content-Type': 'application/json' }
+                headers: { ...backendAuthHeaders(req), 'Content-Type': 'application/json' }
             });
             if (!categoryResponse.ok) return NextResponse.json({ error: "Category not found" }, { status: 404 });
             const category = await categoryResponse.json();
@@ -64,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         const response = await fetch(`${API_URL}/api/services`, {
             method: 'POST',
             headers: {
-                'Authorization': getAuthHeader(req),
+                ...backendAuthHeaders(req),
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(itemWithIds)
@@ -83,7 +75,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         // If backend returns no body or no ID, fetch subcategory services to get the real item ID
         if (!createdItem?.id) {
             const itemsResponse = await fetch(`${API_URL}/api/services/subcategory/${resolvedSubcategoryId}`, {
-                headers: { 'Authorization': getAuthHeader(req) }
+                headers: backendAuthHeaders(req)
             });
             if (itemsResponse.ok) {
                 const items = await itemsResponse.json();
@@ -124,7 +116,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
         const response = await fetch(`${API_URL}/api/services/${resolvedItemId}`, {
             method: 'PUT',
             headers: {
-                'Authorization': getAuthHeader(req),
+                ...backendAuthHeaders(req),
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ ...item, subcategory: { id: subcategoryId } })
@@ -160,7 +152,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
         // Get subcategory ID from slug endpoint
         const categoryResponse = await fetch(`${API_URL}/api/categories/slug/${slug}`, {
             headers: {
-                'Authorization': getAuthHeader(req),
+                ...backendAuthHeaders(req),
                 'Content-Type': 'application/json'
             }
         });
@@ -180,7 +172,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
         
         // Use services endpoint to get items with IDs
         const itemsResponse = await fetch(`${API_URL}/api/services/subcategory/${subcategory.id}`, {
-            headers: { 'Authorization': getAuthHeader(req) }
+            headers: backendAuthHeaders(req)
         });
         
         let itemToDelete: any = null;
@@ -204,7 +196,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
         const response = await fetch(`${API_URL}/api/services/${itemToDelete.id}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': getAuthHeader(req)
+                ...backendAuthHeaders(req)
             }
         });
         

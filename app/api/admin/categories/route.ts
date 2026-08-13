@@ -1,27 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthorized, revalidatePublicServices } from "@/lib/utils/admin-route";
+import { backendAuthHeaders, isAuthorized, revalidatePublicServices } from "@/lib/utils/admin-route";
 
 const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function getAuthHeader(req: NextRequest) {
-  return req.headers.get("authorization") || "";
-}
-
 export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   
   try {
-    const authHeader = getAuthHeader(req);
-    
     console.log('[ADMIN CATEGORIES] Fetching from backend:', `${API_URL}/api/categories/admin`);
     
     const res = await fetch(`${API_URL}/api/categories/admin`, {
       method: "GET",
       cache: "no-store",
-      headers: authHeader ? { "Authorization": authHeader } : {} as Record<string, string>,
+      headers: backendAuthHeaders(req),
       signal: AbortSignal.timeout(15000)
     });
 
@@ -61,13 +55,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const authHeader = getAuthHeader(req);
-
     const res = await fetch(`${API_URL}/api/categories`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: authHeader,
+        ...backendAuthHeaders(req),
       },
       body: JSON.stringify(body),
       cache: "no-store",
