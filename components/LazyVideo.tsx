@@ -45,8 +45,17 @@ export default function LazyVideo({
       video.preload = "auto";
       video.load();
       hasLoadedRef.current = true;
-      if (autoPlay) void video.play().catch(() => {});
-      return () => video.pause();
+      const startPlayback = () => {
+        if (autoPlay) void video.play().catch(() => {});
+      };
+      startPlayback();
+      video.addEventListener("canplay", startPlayback);
+      window.addEventListener("pageshow", startPlayback);
+      return () => {
+        video.removeEventListener("canplay", startPlayback);
+        window.removeEventListener("pageshow", startPlayback);
+        video.pause();
+      };
     }
 
     let loadTimer: ReturnType<typeof setTimeout> | undefined;
