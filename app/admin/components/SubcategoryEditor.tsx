@@ -793,11 +793,27 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                 </button>
                             </div>
 
-                        {guideSettings && <div className="mt-6 border-t border-neutral-200 pt-6 dark:border-neutral-800">
-                            <div className="mb-4">
-                                <h5 className="text-sm font-semibold text-neutral-950 dark:text-white">Customer guides</h5>
-                                <p className="mt-1 text-xs text-neutral-500">The length image is shared by every size. Each size guide is matched by its permanent size key, so reordering sizes will not change the image shown.</p>
-                            </div>
+                        {guideSettings && <details className="group mt-6 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50/70 dark:border-neutral-700 dark:bg-neutral-800/30">
+                            <summary className="flex min-h-20 cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 outline-none transition hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 dark:hover:bg-neutral-800 [&::-webkit-details-marker]:hidden">
+                                <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <h5 className="text-sm font-semibold text-neutral-950 dark:text-white">Customer guides</h5>
+                                        {guidesDirty && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">Unsaved</span>}
+                                    </div>
+                                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
+                                        <span>Length: {guideSettings.lengthGuideEnabled ? "On" : "Off"}</span>
+                                        <span>Size: {guideSettings.sizeGuideEnabled ? "On" : "Off"}</span>
+                                        <span>{guideSettings.sizes.filter(size => size.imageUrl).length} of {guideSettings.sizes.length} size images</span>
+                                    </div>
+                                </div>
+                                <span className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold text-neutral-800 shadow-sm dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100">
+                                    <span className="group-open:hidden">Manage guides</span><span className="hidden group-open:inline">Close</span>
+                                    <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+                                </span>
+                            </summary>
+
+                            <div className="border-t border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900 sm:p-5">
+                                <p className="mb-4 text-xs text-neutral-500">The length image is shared by every size. Size images stay attached to their permanent keys even if sizes are reordered.</p>
 
                             <div className="space-y-5">
                                 <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
@@ -827,8 +843,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                     </div>
                                 </div>
                             </div>
-                            <div className="mt-4 flex justify-end"><button type="button" onClick={() => void saveGuideSettings()} disabled={!guidesDirty || savingGuides || uploadingGuide !== null} className="min-h-10 rounded-lg bg-neutral-950 px-5 text-sm font-semibold text-white disabled:opacity-40 dark:bg-white dark:text-neutral-950">{savingGuides ? "Saving guides…" : "Save guide settings"}</button></div>
-                        </div>}
+                                <div className="mt-4 flex justify-end"><button type="button" onClick={() => void saveGuideSettings()} disabled={!guidesDirty || savingGuides || uploadingGuide !== null} className="min-h-10 rounded-lg bg-neutral-950 px-5 text-sm font-semibold text-white disabled:opacity-40 dark:bg-white dark:text-neutral-950">{savingGuides ? "Saving guides…" : "Save guide settings"}</button></div>
+                            </div>
+                        </details>}
             </section>}
 
             <AddOnsManager
