@@ -29,6 +29,7 @@ export type BookingItem = {
     id?: number;
     version?: number;
     name: string;
+    sizeGuideKey?: string;
     price: string;
     description: string;
     notes?: string;

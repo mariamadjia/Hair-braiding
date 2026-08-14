@@ -4,13 +4,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, Ruler } from "lucide-react";
+import { ChevronLeft, Ruler, Rows3 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { BookingCategory } from "@/lib/booking-types";
 import Navbar from "@/components/Navbar";
 import LengthGuideOverlay from "@/components/LengthGuideOverlay";
 import { formatPrice } from "@/lib/utils/price";
+import SizeGuideOverlay from "@/components/SizeGuideOverlay";
+import { guideImageUrl, guideKeyForSize, useGuideSettings } from "@/lib/guides";
 
 function itemPriceLabel(item: NonNullable<BookingCategory["items"]>[number]): string {
     const prices = (item.lengthOptions ?? []).map(option => Number((option.price ?? "").replace(/[^0-9.]/g, ""))).filter(Number.isFinite);
@@ -33,6 +35,8 @@ export default function CategoryPageClient({ category }: { category: BookingCate
     const [photoImageIndex, setPhotoImageIndex] = useState(0);
     const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
     const [showLengthGuide, setShowLengthGuide] = useState(false);
+    const [showSizeGuide, setShowSizeGuide] = useState(false);
+    const guides = useGuideSettings();
     const openModalForItem = (index: number) => {
         const item = items[index];
         if (item?.lengthOptions?.length || item?.hairTextures?.length) {
@@ -62,6 +66,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
     };
 
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
+    const selectedSizeGuide = guides?.sizes.find(size => size.guideKey === (selectedItem?.sizeGuideKey || guideKeyForSize(selectedItem?.name)));
     const lengthOptions = selectedItem?.lengthOptions ?? [];
     const selectedLengthOption = lengthOptions.find((option) => option.id?.toString() === selectedLength);
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
@@ -73,6 +78,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
         setSelectedLength(null);
         setSelectedTexture(null);
         setShowLengthGuide(false);
+        setShowSizeGuide(false);
     };
 
     const closePhotoModal = () => {
@@ -93,7 +99,9 @@ export default function CategoryPageClient({ category }: { category: BookingCate
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
-                if (showLengthGuide) {
+                if (showSizeGuide) {
+                    setShowSizeGuide(false);
+                } else if (showLengthGuide) {
                     setShowLengthGuide(false);
                 } else if (photoItemIndex !== null) {
                     closePhotoModal();
@@ -113,7 +121,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [photoItemIndex, selectedItemIndex, hasMultiplePhotos, showLengthGuide]);
+    }, [photoItemIndex, selectedItemIndex, hasMultiplePhotos, showLengthGuide, showSizeGuide]);
 
     const handleModalSelect = () => {
         if (!selectedItem || !selectedLength) return;
@@ -329,9 +337,12 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                                 <p className="text-sm text-neutral-600 font-light">{selectedItem.description}</p>
                             )}
                             <p className="mt-3 text-sm font-medium text-neutral-900">Choose your preferred length.</p>
-                            <button type="button" onClick={() => setShowLengthGuide(true)} className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#2C1810] underline decoration-[#2C1810]/40 underline-offset-4 transition hover:decoration-[#2C1810] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2">
+                            <div className="mt-2 flex flex-wrap gap-x-5">
+                            {guides?.sizeGuideEnabled && selectedSizeGuide?.imageUrl && <button type="button" onClick={() => setShowSizeGuide(true)} className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#2C1810] underline underline-offset-4"><Rows3 className="h-4 w-4" /> View size guide</button>}
+                            {guides?.lengthGuideEnabled && guides.lengthGuideImageUrl && <button type="button" onClick={() => setShowLengthGuide(true)} className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#2C1810] underline decoration-[#2C1810]/40 underline-offset-4 transition hover:decoration-[#2C1810] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2">
                                 <Ruler className="h-4 w-4" /> View length guide
-                            </button>
+                            </button>}
+                            </div>
                         </div>
 
                         <div className="relative flex-1 space-y-2 overflow-y-auto px-6 py-4 md:px-8">
@@ -415,7 +426,8 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                                 Book Now{selectedLengthOption?.price ? ` · ${formatPrice(selectedLengthOption.price)}` : ""}
                             </Button>
                         </div>
-                        {showLengthGuide && <LengthGuideOverlay onClose={() => setShowLengthGuide(false)} />}
+                        {showLengthGuide && guides?.lengthGuideImageUrl && <LengthGuideOverlay imageUrl={guideImageUrl(guides.lengthGuideImageUrl)} onClose={() => setShowLengthGuide(false)} />}
+                        {showSizeGuide && selectedSizeGuide && <SizeGuideOverlay profile={selectedSizeGuide} onClose={() => setShowSizeGuide(false)} />}
                     </div>
                 </div>
             )}

@@ -3,7 +3,7 @@
 import { ArrowLeft, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function LengthGuideOverlay({ onClose }: { onClose: () => void }) {
+export default function LengthGuideOverlay({ onClose, imageUrl = "/images/length-guide.png" }: { onClose: () => void; imageUrl?: string }) {
     return (
         <div
             className="fixed inset-0 z-[60] flex flex-col bg-white text-neutral-900 lg:absolute lg:inset-auto lg:left-[calc(100%+1rem)] lg:top-0 lg:h-full lg:w-[32rem] lg:overflow-hidden lg:rounded-xl lg:border lg:border-neutral-200 lg:shadow-[0_20px_60px_rgb(0,0,0,0.3)]"
@@ -29,7 +29,7 @@ export default function LengthGuideOverlay({ onClose }: { onClose: () => void })
                 </p>
                 <div className="m-auto flex max-w-4xl items-center justify-center overflow-auto rounded-xl bg-white p-2 shadow-sm sm:p-4">
                     <img
-                        src="/images/length-guide.png"
+                        src={imageUrl}
                         alt="Hair length guide showing shoulder, armpit, bra-strap, mid-back, waist, hip, tailbone, classic, and mid-thigh lengths"
                         className="h-auto max-h-[calc(100dvh-10.5rem)] w-auto max-w-full object-contain [touch-action:pinch-zoom]"
                         draggable={false}

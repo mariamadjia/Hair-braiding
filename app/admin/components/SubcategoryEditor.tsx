@@ -12,6 +12,7 @@ import { AddOnsManager } from "@/components/AddOnsManager";
 import { ChevronRight, Package, Plus, Trash2, CheckCircle, AlertCircle, Loader2, GripVertical } from "lucide-react";
 import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
+import type { GuideSettings } from "@/lib/guides";
 
 function sortItemsBySize(items: BookingItem[]): { item: BookingItem; originalIdx: number }[] {
     return items.map((item, idx) => ({ item, originalIdx: idx })).sort((a, b) => {
@@ -72,8 +73,64 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [applyingFoundations, setApplyingFoundations] = useState(false);
     const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
     const [draggedLength, setDraggedLength] = useState<{ itemId: number; optionIndex: number } | null>(null);
+    const [guideSettings, setGuideSettings] = useState<GuideSettings | null>(null);
+    const [guidesDirty, setGuidesDirty] = useState(false);
+    const [savingGuides, setSavingGuides] = useState(false);
+    const [uploadingGuide, setUploadingGuide] = useState<string | null>(null);
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
+
+    useEffect(() => {
+        fetch(`${API_BASE_URL}/api/admin/guides`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(async response => {
+                if (!response.ok) throw new Error(`Could not load guide settings (${response.status})`);
+                return response.json();
+            })
+            .then(setGuideSettings)
+            .catch(error => setSaveError(error instanceof Error ? error.message : "Could not load guide settings."));
+    }, [token]);
+
+    const updateGuides = (change: (current: GuideSettings) => GuideSettings) => {
+        setGuideSettings(current => current ? change(current) : current);
+        setGuidesDirty(true);
+    };
+
+    const uploadGuideImage = async (file: File, guideKey?: string) => {
+        const validation = validateFile(file);
+        if (!validation.valid) { setSaveError(validation.error); return; }
+        const target = guideKey || "length";
+        setUploadingGuide(target); setSaveError(null);
+        try {
+            const compressed = await compressImage(file, { maxWidth: 1800, maxHeight: 1800, quality: 0.88, format: "image/webp" });
+            const body = new FormData();
+            body.append("file", compressed);
+            body.append("title", guideKey ? `${guideKey} size guide` : "Length guide");
+            const response = await fetch(`${API_BASE_URL}/api/gallery/upload`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body });
+            if (!response.ok) throw new Error(`Guide upload failed (${response.status})`);
+            const uploaded = await response.json();
+            if (!uploaded.imageUrl) throw new Error("Upload completed without an image URL.");
+            updateGuides(current => guideKey
+                ? { ...current, sizes: current.sizes.map(size => size.guideKey === guideKey ? { ...size, imageUrl: uploaded.imageUrl } : size) }
+                : { ...current, lengthGuideImageUrl: uploaded.imageUrl });
+        } catch (error) {
+            setSaveError(error instanceof Error ? error.message : "Could not upload guide image.");
+        } finally { setUploadingGuide(null); }
+    };
+
+    const saveGuideSettings = async () => {
+        if (!guideSettings) return;
+        setSavingGuides(true); setSaveError(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/admin/guides`, {
+                method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(guideSettings)
+            });
+            if (!response.ok) throw new Error(`Could not save guide settings (${response.status})`);
+            setGuideSettings(await response.json()); setGuidesDirty(false);
+            setSaveSuccess("Guide settings saved and published.");
+            setTimeout(() => setSaveSuccess(null), 3000);
+        } catch (error) { setSaveError(error instanceof Error ? error.message : "Could not save guide settings."); }
+        finally { setSavingGuides(false); }
+    };
 
     useEffect(() => {
         setName(sub.name);
@@ -735,6 +792,43 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                     {applyingFoundations ? "Applying to all sizes…" : `Apply to ${items.length} sizes`}
                                 </button>
                             </div>
+
+                        {guideSettings && <div className="mt-6 border-t border-neutral-200 pt-6 dark:border-neutral-800">
+                            <div className="mb-4">
+                                <h5 className="text-sm font-semibold text-neutral-950 dark:text-white">Customer guides</h5>
+                                <p className="mt-1 text-xs text-neutral-500">The length image is shared by every size. Each size guide is matched by its permanent size key, so reordering sizes will not change the image shown.</p>
+                            </div>
+
+                            <div className="space-y-5">
+                                <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <div><p className="text-sm font-semibold">Length guide</p><p className="text-xs text-neutral-500">One image for all sizes</p></div>
+                                        <button type="button" role="switch" aria-checked={guideSettings.lengthGuideEnabled} onClick={() => updateGuides(current => ({ ...current, lengthGuideEnabled: !current.lengthGuideEnabled }))} className={`relative h-7 w-12 rounded-full transition ${guideSettings.lengthGuideEnabled ? "bg-neutral-950 dark:bg-white" : "bg-neutral-300 dark:bg-neutral-700"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${guideSettings.lengthGuideEnabled ? "left-6 dark:bg-neutral-950" : "left-1"}`} /></button>
+                                    </div>
+                                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                                        {guideSettings.lengthGuideImageUrl && <img src={toProxyUrl(guideSettings.lengthGuideImageUrl)} alt="Current length guide" className="h-24 w-20 rounded-lg border border-neutral-200 object-cover dark:border-neutral-700" />}
+                                        <label className="inline-flex min-h-10 cursor-pointer items-center rounded-lg border border-neutral-300 px-4 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800">{uploadingGuide === "length" ? "Uploading…" : guideSettings.lengthGuideImageUrl ? "Replace image" : "Upload image"}<input disabled={uploadingGuide !== null} type="file" accept="image/*" className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) void uploadGuideImage(file); event.target.value = ""; }} /></label>
+                                        {guideSettings.lengthGuideImageUrl && <button type="button" onClick={() => updateGuides(current => ({ ...current, lengthGuideImageUrl: null, lengthGuideEnabled: false }))} className="min-h-10 px-3 text-sm font-medium text-red-700">Remove</button>}
+                                    </div>
+                                </div>
+
+                                <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <div><p className="text-sm font-semibold">Size guide</p><p className="text-xs text-neutral-500">One image for each size</p></div>
+                                        <button type="button" role="switch" aria-checked={guideSettings.sizeGuideEnabled} onClick={() => updateGuides(current => ({ ...current, sizeGuideEnabled: !current.sizeGuideEnabled }))} className={`relative h-7 w-12 rounded-full transition ${guideSettings.sizeGuideEnabled ? "bg-neutral-950 dark:bg-white" : "bg-neutral-300 dark:bg-neutral-700"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${guideSettings.sizeGuideEnabled ? "left-6 dark:bg-neutral-950" : "left-1"}`} /></button>
+                                    </div>
+                                    <div className="mt-4 divide-y divide-neutral-200 dark:divide-neutral-800">
+                                        {[...guideSettings.sizes].sort((a,b) => a.displayOrder - b.displayOrder).map(size => <div key={size.guideKey} className="flex flex-wrap items-center gap-3 py-3">
+                                            {size.imageUrl ? <img src={toProxyUrl(size.imageUrl)} alt={`${size.displayName} guide`} className="h-16 w-14 rounded-md border border-neutral-200 object-cover dark:border-neutral-700" /> : <div className="flex h-16 w-14 items-center justify-center rounded-md border border-dashed border-neutral-300 text-[10px] text-neutral-400 dark:border-neutral-700">No image</div>}
+                                            <div className="min-w-28 flex-1"><p className="text-sm font-semibold">{size.displayName}</p><p className="text-xs text-neutral-400">Key: {size.guideKey}</p></div>
+                                            <label className="inline-flex min-h-9 cursor-pointer items-center rounded-lg border border-neutral-300 px-3 text-xs font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800">{uploadingGuide === size.guideKey ? "Uploading…" : size.imageUrl ? "Replace" : "Upload"}<input disabled={uploadingGuide !== null} type="file" accept="image/*" className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) void uploadGuideImage(file, size.guideKey); event.target.value = ""; }} /></label>
+                                            {size.imageUrl && <button type="button" onClick={() => updateGuides(current => ({ ...current, sizes: current.sizes.map(entry => entry.guideKey === size.guideKey ? { ...entry, imageUrl: null } : entry) }))} className="min-h-9 px-2 text-xs font-medium text-red-700">Remove</button>}
+                                        </div>)}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="mt-4 flex justify-end"><button type="button" onClick={() => void saveGuideSettings()} disabled={!guidesDirty || savingGuides || uploadingGuide !== null} className="min-h-10 rounded-lg bg-neutral-950 px-5 text-sm font-semibold text-white disabled:opacity-40 dark:bg-white dark:text-neutral-950">{savingGuides ? "Saving guides…" : "Save guide settings"}</button></div>
+                        </div>}
             </section>}
 
             <AddOnsManager

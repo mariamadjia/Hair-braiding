@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, ChevronUp, Ruler } from "lucide-react";
+import { ChevronLeft, ChevronUp, Ruler, Rows3 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { BookingCategory, BookingSubcategory, BookingItem, BookingAddOn } from "@/lib/booking-types";
 import Navbar from "@/components/Navbar";
 import LengthGuideOverlay from "@/components/LengthGuideOverlay";
+import SizeGuideOverlay from "@/components/SizeGuideOverlay";
+import { guideImageUrl, guideKeyForSize, useGuideSettings } from "@/lib/guides";
 import { formatPrice } from "@/lib/utils/price";
 import { toProxyUrl } from "@/lib/utils/image";
 import { API_BASE_URL } from "@/lib/config/api";
@@ -45,6 +47,8 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
     const [selectedFoundation, setSelectedFoundation] = useState<"REGULAR" | "KNOTLESS" | null>(null);
     const [showLengthGuide, setShowLengthGuide] = useState(false);
+    const [showSizeGuide, setShowSizeGuide] = useState(false);
+    const guides = useGuideSettings();
     const [availableAddOns, setAvailableAddOns] = useState<BookingAddOn[]>([]);
     const [selectedAddOnIds, setSelectedAddOnIds] = useState<number[]>([]);
     const [loadingAddOns, setLoadingAddOns] = useState(false);
@@ -68,6 +72,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const heroImage = subcategoryImages[0] ?? null;
 
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
+    const selectedSizeGuide = guides?.sizes.find(size => size.guideKey === (selectedItem?.sizeGuideKey || guideKeyForSize(selectedItem?.name)));
     const lengthOptions = selectedItem?.lengthOptions ?? [];
     const selectedLengthOption = lengthOptions.find((option) => option.id?.toString() === selectedLength);
     const fixedAddOnTotal = availableAddOns.filter(addOn => selectedAddOnIds.includes(addOn.id) && addOn.pricingMode === "FIXED").reduce((sum, addOn) => sum + addOn.priceCents, 0);
@@ -155,7 +160,9 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
-                if (showLengthGuide) {
+                if (showSizeGuide) {
+                    setShowSizeGuide(false);
+                } else if (showLengthGuide) {
                     setShowLengthGuide(false);
                 } else if (photoItemIndex !== null) {
                     closePhotoModal();
@@ -175,7 +182,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [photoItemIndex, selectedItemIndex, hasMultiplePhotos, showLengthGuide]);
+    }, [photoItemIndex, selectedItemIndex, hasMultiplePhotos, showLengthGuide, showSizeGuide]);
 
     const handleModalSelect = () => {
         if (!selectedItem || !selectedLength) return;
@@ -385,9 +392,12 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 </p>
                             )}
                             <p className="mt-3 text-sm font-medium text-neutral-900">Choose your preferred length.</p>
-                            <button type="button" onClick={() => setShowLengthGuide(true)} className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#2C1810] underline decoration-[#2C1810]/40 underline-offset-4 transition hover:decoration-[#2C1810] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2">
+                            <div className="mt-2 flex flex-wrap gap-x-5">
+                            {guides?.sizeGuideEnabled && selectedSizeGuide?.imageUrl && <button type="button" onClick={() => setShowSizeGuide(true)} className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#2C1810] underline underline-offset-4"><Rows3 className="h-4 w-4" /> View size guide</button>}
+                            {guides?.lengthGuideEnabled && guides.lengthGuideImageUrl && <button type="button" onClick={() => setShowLengthGuide(true)} className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#2C1810] underline decoration-[#2C1810]/40 underline-offset-4 transition hover:decoration-[#2C1810] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2">
                                 <Ruler className="h-4 w-4" /> View length guide
-                            </button>
+                            </button>}
+                            </div>
                         </div>
 
                         <div className="relative flex-1 space-y-2 overflow-y-auto px-6 py-4 md:px-8 scrollbar-hide">
@@ -469,7 +479,8 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 Book Now{selectedLengthOption?.price ? ` · ${formatPrice(optionPrice(selectedItem, selectedLengthOption, selectedFoundation) + fixedAddOnTotal / 100)}` : ""}
                             </Button>
                         </div>
-                        {showLengthGuide && <LengthGuideOverlay onClose={() => setShowLengthGuide(false)} />}
+                        {showLengthGuide && guides?.lengthGuideImageUrl && <LengthGuideOverlay imageUrl={guideImageUrl(guides.lengthGuideImageUrl)} onClose={() => setShowLengthGuide(false)} />}
+                        {showSizeGuide && selectedSizeGuide && <SizeGuideOverlay profile={selectedSizeGuide} onClose={() => setShowSizeGuide(false)} />}
                     </div>
                 </div>
             )}
