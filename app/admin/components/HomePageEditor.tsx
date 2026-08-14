@@ -52,6 +52,7 @@ export function HomePageEditor() {
   const [heroImages, setHeroImages] = useState<HeroImage[]>([]);
   const [heroVideoSrc, setHeroVideoSrc] = useState<string>('');
   const [useHeroVideo, setUseHeroVideo] = useState(false);
+  const [heroEditorTab, setHeroEditorTab] = useState<'images' | 'video'>('images');
   const [heroVideoUploading, setHeroVideoUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -870,9 +871,9 @@ export function HomePageEditor() {
         }
 
         setHeroVideoSrc(resolvedVideoUrl);
-        setUseHeroVideo(true);
+        setUseHeroVideo(false);
 
-        const saved = await saveHomepageSettings(videoUrl, true);
+        const saved = await saveHomepageSettings(videoUrl, false);
         if (!saved) {
           await deleteUnusedVideo(videoUrl);
           setHeroVideoSrc('');
@@ -1048,7 +1049,10 @@ export function HomePageEditor() {
             <Hero videoSrc={heroVideoSrc} useVideo={useHeroVideo} previewImages={heroImages.map(({ imageUrl }) => imageUrl)} />
             {/* Edit button overlay */}
             <button
-              onClick={() => setIsEditModalOpen(true)}
+              onClick={() => {
+                setHeroEditorTab(useHeroVideo ? 'video' : 'images');
+                setIsEditModalOpen(true);
+              }}
               className="absolute top-4 right-4 z-10 inline-flex items-center gap-2 px-4 py-2 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm text-neutral-900 dark:text-white text-sm rounded-sm hover:bg-white dark:hover:bg-neutral-700 transition-colors shadow-lg"
             >
               <Edit className="h-4 w-4" />
@@ -1271,7 +1275,7 @@ export function HomePageEditor() {
               <div>
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Manage Hero Section</h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                  {useHeroVideo ? 'Background video mode' : `${heroImages.length} ${heroImages.length === 1 ? 'image' : 'images'} in carousel`}
+                  {heroEditorTab === 'video' ? 'Background video settings' : `${heroImages.length} ${heroImages.length === 1 ? 'image' : 'images'} in carousel`}
                 </p>
               </div>
               <button
@@ -1287,45 +1291,20 @@ export function HomePageEditor() {
             {/* Modal Content */}
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-6">
-                {/* Mode Toggle */}
-                <div className="bg-neutral-50 dark:bg-neutral-900 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium text-neutral-900 dark:text-white">Background Video</h3>
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                        Use a video background instead of image carousel
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={useHeroVideo}
-                      aria-label="Use a background video"
-                      onClick={async () => {
-                        const nextUseHeroVideo = !useHeroVideo;
-                        if (nextUseHeroVideo && !heroVideoSrc) {
-                          setStatusMessage('Upload an MP4 hero video before enabling video mode.');
-                          return;
-                        }
-                        setUseHeroVideo(nextUseHeroVideo);
-                        const saved = await saveHomepageSettings(heroVideoSrc, nextUseHeroVideo);
-                        if (!saved) setUseHeroVideo(!nextUseHeroVideo);
-                      }}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        useHeroVideo ? 'bg-blue-600' : 'bg-neutral-200 dark:bg-neutral-700'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          useHeroVideo ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
+                {/* Separate editor tabs */}
+                <div role="tablist" aria-label="Hero media type" className="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-600">
+                  <button type="button" role="tab" aria-selected={heroEditorTab === 'images'} onClick={() => setHeroEditorTab('images')}
+                    className={`px-4 py-3 font-medium transition-colors ${heroEditorTab === 'images' ? 'bg-[#2C1810] text-white' : 'bg-white text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'}`}>
+                    Image Carousel
+                  </button>
+                  <button type="button" role="tab" aria-selected={heroEditorTab === 'video'} onClick={() => setHeroEditorTab('video')}
+                    className={`px-4 py-3 font-medium transition-colors ${heroEditorTab === 'video' ? 'bg-[#2C1810] text-white' : 'bg-white text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'}`}>
+                    Background Video
+                  </button>
                 </div>
 
                 {/* Video Upload Section */}
-                {
+                {heroEditorTab === 'video' && (
                   <div className="space-y-4">
                     <label className="block">
                       <div className="border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg p-8 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer bg-blue-50/50 dark:bg-blue-900/20">
@@ -1348,6 +1327,7 @@ export function HomePageEditor() {
 
                     {/* Video Preview */}
                     {heroVideoSrc && (
+                      <div className="space-y-3">
                       <div className="relative rounded-lg overflow-hidden bg-black">
                         <video
                           key={heroVideoSrc}
@@ -1358,12 +1338,13 @@ export function HomePageEditor() {
                         <button
                           onClick={async () => {
                             const previousVideoSrc = heroVideoSrc;
+                            const previousUseHeroVideo = useHeroVideo;
                             setHeroVideoSrc('');
                             setUseHeroVideo(false);
                             const saved = await saveHomepageSettings('', false);
                             if (!saved) {
                               setHeroVideoSrc(previousVideoSrc);
-                              setUseHeroVideo(true);
+                              setUseHeroVideo(previousUseHeroVideo);
                             }
                           }}
                           className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
@@ -1371,12 +1352,26 @@ export function HomePageEditor() {
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const next = !useHeroVideo;
+                          setUseHeroVideo(next);
+                          const saved = await saveHomepageSettings(heroVideoSrc, next);
+                          if (!saved) setUseHeroVideo(!next);
+                        }}
+                        className={`w-full rounded-md px-4 py-3 font-medium transition-colors ${useHeroVideo ? 'border border-neutral-300 text-neutral-800 dark:text-white' : 'bg-[#2C1810] text-white hover:bg-[#43261b]'}`}
+                      >
+                        {useHeroVideo ? 'Disable video and use image carousel' : 'Enable video'}
+                      </button>
+                      </div>
                     )}
+                    {!heroVideoSrc && <p className="text-sm text-neutral-500">Upload a video to enable background video mode.</p>}
                   </div>
-                }
+                )}
 
                 {/* Image Upload Section */}
-                {!useHeroVideo && (
+                {heroEditorTab === 'images' && (
                   <>
                     {/* Upload Button */}
                     <label className="block">
