@@ -3,7 +3,7 @@
 import { ArrowLeft, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function LengthGuideOverlay({ onClose, imageUrl = "/images/length-guide.png" }: { onClose: () => void; imageUrl?: string }) {
+export default function LengthGuideOverlay({ onClose, imageUrl = "/images/length-guide.png", onShowSize }: { onClose: () => void; imageUrl?: string; onShowSize?: () => void }) {
     return (
         <div
             className="fixed inset-0 z-[60] flex flex-col bg-white text-neutral-900 lg:absolute lg:inset-auto lg:left-[calc(100%+1rem)] lg:top-0 lg:h-full lg:w-[32rem] lg:overflow-hidden lg:rounded-xl lg:border lg:border-neutral-200 lg:shadow-[0_20px_60px_rgb(0,0,0,0.3)]"
@@ -22,6 +22,11 @@ export default function LengthGuideOverlay({ onClose, imageUrl = "/images/length
                 </button>
                 <h2 id="length-guide-title" className="text-base font-semibold tracking-wide">Length Guide</h2>
             </header>
+
+            {onShowSize && <nav className="grid shrink-0 grid-cols-2 border-b border-neutral-200 bg-white p-2" aria-label="Guide type">
+                <button type="button" onClick={onShowSize} className="rounded-lg px-3 py-2.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-100">Size guide</button>
+                <button type="button" aria-current="page" className="rounded-lg bg-[#2C1810] px-3 py-2.5 text-xs font-semibold text-white">Length guide</button>
+            </nav>}
 
             <div className="flex min-h-0 flex-1 flex-col overflow-auto bg-[#F6F5F1] px-3 py-4 sm:px-6">
                 <p className="mb-3 flex items-center justify-center gap-2 text-xs text-neutral-500">

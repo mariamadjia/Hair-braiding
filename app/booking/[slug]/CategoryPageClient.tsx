@@ -426,8 +426,8 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                                 Book Now{selectedLengthOption?.price ? ` · ${formatPrice(selectedLengthOption.price)}` : ""}
                             </Button>
                         </div>
-                        {showLengthGuide && guides?.lengthGuideImageUrl && <LengthGuideOverlay imageUrl={guideImageUrl(guides.lengthGuideImageUrl)} onClose={() => setShowLengthGuide(false)} />}
-                        {showSizeGuide && selectedSizeGuide && <SizeGuideOverlay profile={selectedSizeGuide} onClose={() => setShowSizeGuide(false)} />}
+                        {showLengthGuide && guides?.lengthGuideImageUrl && <LengthGuideOverlay imageUrl={guideImageUrl(guides.lengthGuideImageUrl)} onClose={() => setShowLengthGuide(false)} onShowSize={guides.sizeGuideEnabled && selectedSizeGuide?.imageUrl ? () => { setShowLengthGuide(false); setShowSizeGuide(true); } : undefined} />}
+                        {showSizeGuide && selectedSizeGuide && <SizeGuideOverlay profile={selectedSizeGuide} onClose={() => setShowSizeGuide(false)} onShowLength={guides?.lengthGuideEnabled && guides.lengthGuideImageUrl ? () => { setShowSizeGuide(false); setShowLengthGuide(true); } : undefined} />}
                     </div>
                 </div>
             )}
