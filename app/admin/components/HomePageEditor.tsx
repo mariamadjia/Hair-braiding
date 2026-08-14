@@ -102,8 +102,9 @@ export function HomePageEditor() {
   };
 
   const validateVideo = (file: File) => {
-    const allowed = ['video/mp4', 'video/quicktime', 'video/webm'];
-    if (!allowed.includes(file.type)) return 'Only MP4, MOV, and WebM videos are supported.';
+    if (file.type !== 'video/mp4' && !file.name.toLowerCase().endsWith('.mp4')) {
+      return 'Only MP4 videos are supported for reliable mobile playback.';
+    }
     if (file.size > 50 * 1024 * 1024) return 'Video must be 50MB or smaller.';
     return '';
   };
@@ -487,6 +488,9 @@ export function HomePageEditor() {
     nextUseHeroVideo = useHeroVideo
   ) => {
     try {
+      const portableVideoSrc = nextHeroVideoSrc.startsWith(`${API_BASE_URL}/api/gallery/image/`)
+        ? nextHeroVideoSrc.slice(API_BASE_URL.length)
+        : nextHeroVideoSrc;
       const token = getAuthToken();
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       if (token) {
@@ -497,13 +501,17 @@ export function HomePageEditor() {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          heroVideoSrc: nextHeroVideoSrc,
+          heroVideoSrc: portableVideoSrc,
           useHeroVideo: nextUseHeroVideo,
         }),
       });
 
       if (!res.ok) {
-        throw new Error(`Failed to save homepage settings: ${res.status}`);
+        const payload = await res.json().catch(() => null);
+        if (res.status === 401 || res.status === 403) {
+          throw new Error('Your admin session has expired. Please sign in again.');
+        }
+        throw new Error(payload?.error || payload?.message || `Failed to save homepage settings (${res.status}).`);
       }
       const saved = await res.json();
       setLastSavedAt(saved.updatedAt || new Date().toISOString());
@@ -511,7 +519,7 @@ export function HomePageEditor() {
       return true;
     } catch (error) {
       console.error('Failed to save homepage settings:', error);
-      setStatusMessage('Hero settings could not be saved. Please retry.');
+      setStatusMessage(error instanceof Error ? error.message : 'Hero settings could not be saved. Please retry.');
       return false;
     }
   };
@@ -609,7 +617,7 @@ export function HomePageEditor() {
       
       if (res.ok) {
         await loadHeroImages();
-        setStatusMessage('Hero image uploaded successfully.');
+        setStatusMessage('Hero image uploaded and published.');
       } else {
         const error = await res.json().catch(() => ({
           error: "Upload failed",
@@ -864,7 +872,7 @@ export function HomePageEditor() {
         setHeroVideoSrc(resolvedVideoUrl);
         setUseHeroVideo(true);
 
-        const saved = await saveHomepageSettings(resolvedVideoUrl, true);
+        const saved = await saveHomepageSettings(videoUrl, true);
         if (!saved) {
           await deleteUnusedVideo(videoUrl);
           setHeroVideoSrc('');
@@ -911,10 +919,33 @@ export function HomePageEditor() {
       await loadHeroImages();
 
       setPendingHeroDeleteId(null);
-      setStatusMessage('Hero image permanently deleted.');
+      setStatusMessage('Hero image permanently deleted from the homepage.');
     } catch (error) {
       console.error("Failed to delete Hero image:", error);
       setStatusMessage('The Hero image could not be deleted.');
+    }
+  };
+
+  const moveHeroImage = async (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= heroImages.length) return;
+    const previous = [...heroImages];
+    const reordered = [...heroImages];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    setHeroImages(reordered);
+    try {
+      const token = getAuthToken();
+      if (!token) throw new Error('Your admin session has expired. Please sign in again.');
+      const response = await fetch(`${API_BASE_URL}/api/gallery/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(reordered.map(({ id }) => id)),
+      });
+      if (!response.ok) throw new Error(`Image order could not be saved (${response.status}).`);
+      setStatusMessage('Hero image order saved and published.');
+    } catch (error) {
+      setHeroImages(previous);
+      setStatusMessage(error instanceof Error ? error.message : 'Image order could not be saved.');
     }
   };
 
@@ -1272,6 +1303,10 @@ export function HomePageEditor() {
                       aria-label="Use a background video"
                       onClick={async () => {
                         const nextUseHeroVideo = !useHeroVideo;
+                        if (nextUseHeroVideo && !heroVideoSrc) {
+                          setStatusMessage('Upload an MP4 hero video before enabling video mode.');
+                          return;
+                        }
                         setUseHeroVideo(nextUseHeroVideo);
                         const saved = await saveHomepageSettings(heroVideoSrc, nextUseHeroVideo);
                         if (!saved) setUseHeroVideo(!nextUseHeroVideo);
@@ -1290,7 +1325,7 @@ export function HomePageEditor() {
                 </div>
 
                 {/* Video Upload Section */}
-                {useHeroVideo && (
+                {
                   <div className="space-y-4">
                     <label className="block">
                       <div className="border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg p-8 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer bg-blue-50/50 dark:bg-blue-900/20">
@@ -1299,12 +1334,12 @@ export function HomePageEditor() {
                           {heroVideoUploading ? 'Uploading video...' : heroVideoSrc ? 'Change hero video' : 'Upload hero video'}
                         </p>
                         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                          MP4, MOV, or WebM • Max 200MB
+                          MP4 • Max 50MB • Changes publish immediately
                         </p>
                       </div>
                       <input
                         type="file"
-                        accept="video/*"
+                        accept="video/mp4,.mp4"
                         onChange={handleHeroVideoUpload}
                         disabled={heroVideoUploading}
                         className="hidden"
@@ -1338,7 +1373,7 @@ export function HomePageEditor() {
                       </div>
                     )}
                   </div>
-                )}
+                }
 
                 {/* Image Upload Section */}
                 {!useHeroVideo && (
@@ -1387,6 +1422,15 @@ export function HomePageEditor() {
 
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <button
+                                type="button"
+                                onClick={() => moveHeroImage(index, -1)}
+                                disabled={index === 0}
+                                className="mr-2 p-3 bg-white/90 text-neutral-900 rounded-full disabled:opacity-30"
+                                aria-label={`Move Hero image ${index + 1} earlier`}
+                              >
+                                <ChevronLeft className="h-5 w-5" />
+                              </button>
+                              <button
                                 onClick={() => handleDeleteImage(image)}
                                 className={`p-3 text-white rounded-full transition-colors ${pendingHeroDeleteId === image.id ? 'bg-red-800 ring-4 ring-red-300' : 'bg-red-600 hover:bg-red-700'}`}
                                 aria-label={pendingHeroDeleteId === image.id
@@ -1394,6 +1438,15 @@ export function HomePageEditor() {
                                   : `Permanently delete Hero image ${index + 1}`}
                               >
                                 <Trash2 className="h-5 w-5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveHeroImage(index, 1)}
+                                disabled={index === heroImages.length - 1}
+                                className="ml-2 p-3 bg-white/90 text-neutral-900 rounded-full disabled:opacity-30"
+                                aria-label={`Move Hero image ${index + 1} later`}
+                              >
+                                <ChevronRight className="h-5 w-5" />
                               </button>
                             </div>
 

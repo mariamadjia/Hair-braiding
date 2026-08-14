@@ -51,7 +51,7 @@ export async function GET() {
       const backendRes = await fetch(
         `${BACKEND_API_URL}/api/gallery?isHero=true`,
         {
-          cache: "no-store",
+          next: { revalidate: 300 },
         }
       );
 
@@ -71,7 +71,7 @@ export async function GET() {
           return NextResponse.json({
             images,
             source: "backend",
-          });
+          }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400" } });
         }
       }
     } catch (error) {

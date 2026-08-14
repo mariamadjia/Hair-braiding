@@ -109,12 +109,13 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
               )}
               <video
                 src={videoSrc}
-                autoPlay
+                autoPlay={!reduceMotion}
                 loop
                 muted
                 playsInline
-                preload="auto"
+                preload="metadata"
                 onCanPlay={() => setVideoReady(true)}
+                onError={() => setVideoReady(false)}
                 className={`relative w-full h-full max-w-md mx-auto object-cover transition-opacity duration-300 md:absolute md:inset-0 md:max-w-none ${
                   videoReady ? "opacity-100" : "opacity-0"
                 }`}
