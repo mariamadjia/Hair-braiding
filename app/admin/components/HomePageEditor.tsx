@@ -617,14 +617,29 @@ export function HomePageEditor() {
       // Upload directly to backend for faster performance
       const uploaded = await new Promise<any>((resolve, reject) => {
         const request = new XMLHttpRequest();
+        let stallTimer: ReturnType<typeof setTimeout>;
+        const resetStallTimer = () => {
+          clearTimeout(stallTimer);
+          stallTimer = setTimeout(() => {
+            request.abort();
+            reject(new Error('Upload stalled for 30 seconds. Check your connection and try again.'));
+          }, 30_000);
+        };
+        const finish = () => clearTimeout(stallTimer);
         request.open('POST', `${DIRECT_BACKEND_URL}/api/gallery/upload`);
+        request.timeout = 120_000;
         if (token) request.setRequestHeader('Authorization', `Bearer ${token}`);
         request.upload.onprogress = (event) => {
+          resetStallTimer();
           setHeroUploadStage('uploading');
           if (event.lengthComputable) setHeroUploadProgress(Math.round((event.loaded / event.total) * 100));
         };
-        request.upload.onload = () => setHeroUploadStage('processing');
+        request.upload.onload = () => {
+          resetStallTimer();
+          setHeroUploadStage('processing');
+        };
         request.onload = () => {
+          finish();
           if (request.status >= 200 && request.status < 300) {
             try { resolve(JSON.parse(request.responseText)); }
             catch { reject(new Error('The server returned an invalid upload response.')); }
@@ -635,7 +650,9 @@ export function HomePageEditor() {
             } catch { reject(new Error(`Upload failed (${request.status}).`)); }
           }
         };
-        request.onerror = () => reject(new Error('The direct upload could not reach the media server.'));
+        request.onerror = () => { finish(); reject(new Error('The direct upload could not reach the media server.')); };
+        request.ontimeout = () => { finish(); reject(new Error('Upload timed out. Check your connection and try again.')); };
+        resetStallTimer();
         request.send(formData);
       });
 
@@ -648,7 +665,7 @@ export function HomePageEditor() {
       }
     } catch (error) {
       console.error('Failed to upload image:', error);
-      setStatusMessage('Hero image could not be uploaded.');
+      setStatusMessage(error instanceof Error ? error.message : 'Hero image could not be uploaded.');
     } finally {
       setUploading(false);
       setHeroUploadStage('idle');
