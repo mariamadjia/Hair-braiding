@@ -111,9 +111,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             if (!response.ok) throw new Error(`Guide upload failed (${response.status})`);
             const uploaded = await response.json();
             if (!uploaded.imageUrl) throw new Error("Upload completed without an image URL.");
-            updateGuides(current => guideKey
-                ? { ...current, sizes: current.sizes.map(size => size.guideKey === guideKey ? { ...size, imageUrl: uploaded.imageUrl } : size) }
-                : { ...current, lengthGuideImageUrl: uploaded.imageUrl });
+            if (!guideSettings) throw new Error("Guide settings are not loaded.");
+            const next = guideKey
+                ? { ...guideSettings, sizes: guideSettings.sizes.map(size => size.guideKey === guideKey ? { ...size, imageUrl: uploaded.imageUrl } : size) }
+                : { ...guideSettings, lengthGuideImageUrl: uploaded.imageUrl };
+            setGuideSettings(next);
+            setGuidesDirty(true);
+            await saveGuideSettings(next);
         } catch (error) {
             setSaveError(error instanceof Error ? error.message : "Could not upload guide image.");
         } finally { setUploadingGuide(null); }
@@ -151,7 +155,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     };
 
     const cancelGuideEditor = () => {
-        if (guideSnapshot) setGuideSettings(guideSnapshot);
+        if (uploadingGuide) return;
+        if (guidesDirty && guideSnapshot) setGuideSettings(guideSnapshot);
         setGuidesDirty(false); setEditingGuide(null); setGuideSnapshot(null);
     };
 
