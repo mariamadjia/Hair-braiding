@@ -3,7 +3,7 @@
 import { useReducedMotion } from 'framer-motion';
 import LazyVideo from './LazyVideo';
 
-const FOOTER_VIDEO_POSTER = '/Gallery/ISIMG-683120.JPG';
+const FOOTER_VIDEO_POSTER = '/Footer/footer-poster.jpg';
 
 interface FooterProps {
   videoSrc?: string | null;
@@ -14,121 +14,36 @@ export default function Footer({ videoSrc = null }: FooterProps = {}) {
   return (
     <footer className="bg-[#2C1810] text-white w-full">
       
-      {/* Mobile Layout */}
-      <div className="lg:hidden px-6 pt-14 pb-10">
-        {/* Centered Branding */}
-        <h2 className="text-2xl font-semibold tracking-[0.25em] mb-8 text-center">
-          BY AH BRAIDING
-        </h2>
-
-        {/* Large Centered Video */}
-        <div className="w-full max-w-xs mx-auto mb-8">
-          <div className="aspect-[4/5] overflow-hidden">
-            {videoSrc && (
-              <LazyVideo
-                key={`mobile-${videoSrc}`}
-                className="w-full h-full object-cover"
-                style={{ objectPosition: 'center 30%' }}
-                autoPlay={!reduceMotion}
-                eager
-                poster={FOOTER_VIDEO_POSTER}
-              >
-                <source src={videoSrc} media="(max-width: 1023px)" />
-              </LazyVideo>
-            )}
-          </div>
-        </div>
-
-        {/* Centered Social Links */}
-        <div className="flex flex-wrap justify-center gap-6 text-[13px] uppercase tracking-[0.18em] font-medium">
-          <a
-            href="https://www.instagram.com/ah_braiding"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:opacity-70 transition-opacity"
-          >
-            INSTAGRAM
-          </a>
-          <a
-            href="https://www.tiktok.com/@ah.braiding"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:opacity-70 transition-opacity"
-          >
-            TIKTOK
-          </a>
-          <a
-            href="https://www.facebook.com/adjias.braiding"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:opacity-70 transition-opacity"
-          >
-            FACEBOOK
-          </a>
-        </div>
-
-        {/* Mobile Navigation */}
-        <nav className="flex flex-wrap justify-center gap-6 mt-8 text-[13px] uppercase tracking-[0.18em] font-medium">
-          <a href="/" className="hover:opacity-70 transition-opacity">HOME</a>
-          <a href="/gallery" className="hover:opacity-70 transition-opacity">GALLERY</a>
-          <a href="/services" className="hover:opacity-70 transition-opacity">SERVICES</a>
-          <a href="/contact" className="hover:opacity-70 transition-opacity">CONTACT</a>
-        </nav>
-      </div>
-
-      {/* Desktop Layout */}
-      <div className="hidden lg:block w-full px-12 md:px-16 lg:px-24 pt-14 pb-10">
-        <div className="flex items-center justify-between">
-          {/* Left: Brand + Social */}
-          <div>
-            <h2 className="text-2xl md:text-3xl font-semibold tracking-[0.25em] mb-6">
+      <div className="w-full px-6 pb-10 pt-14 lg:px-24">
+        <div className="flex flex-col items-center gap-8 lg:flex-row lg:justify-between lg:gap-12">
+          <div className="text-center lg:text-left">
+            <h2 className="mb-6 text-2xl font-semibold tracking-[0.25em] lg:text-3xl">
               BY AH BRAIDING
             </h2>
-
-            <div className="flex flex-wrap gap-6 text-[13px] uppercase tracking-[0.18em] font-medium">
-              <a
-                href="https://www.instagram.com/ah_braiding"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:opacity-70 transition-opacity"
-              >
-                INSTAGRAM
-              </a>
-              <a
-                href="https://www.tiktok.com/@ah.braiding"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:opacity-70 transition-opacity"
-              >
-                TIKTOK
-              </a>
-              <a
-                href="https://www.facebook.com/adjias.braiding"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:opacity-70 transition-opacity"
-              >
-                FACEBOOK
-              </a>
+            <div className="flex flex-wrap justify-center gap-6 text-[13px] font-medium uppercase tracking-[0.18em] lg:justify-start">
+              <a href="https://www.instagram.com/ah_braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">INSTAGRAM</a>
+              <a href="https://www.tiktok.com/@ah.braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">TIKTOK</a>
+              <a href="https://www.facebook.com/adjias.braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">FACEBOOK</a>
             </div>
+            <nav className="mt-8 flex flex-wrap justify-center gap-6 text-[13px] font-medium uppercase tracking-[0.18em] lg:hidden">
+              <a href="/" className="transition-opacity hover:opacity-70">HOME</a>
+              <a href="/gallery" className="transition-opacity hover:opacity-70">GALLERY</a>
+              <a href="/services" className="transition-opacity hover:opacity-70">SERVICES</a>
+              <a href="/contact" className="transition-opacity hover:opacity-70">CONTACT</a>
+            </nav>
           </div>
 
-          {/* Right: Video */}
-          <div>
-            <div className="w-[300px] md:w-[380px] lg:w-[450px] aspect-[6/5] overflow-hidden">
-              {videoSrc && (
-                <LazyVideo
-                  key={`desktop-${videoSrc}`}
-                  className="w-full h-full object-cover"
-                  style={{ objectPosition: 'center 30%' }}
-                  autoPlay={!reduceMotion}
-                  eager
-                  poster={FOOTER_VIDEO_POSTER}
-                >
-                  <source src={videoSrc} media="(min-width: 1024px)" />
-                </LazyVideo>
-              )}
-            </div>
+          <div className="aspect-[4/5] w-full max-w-xs overflow-hidden bg-[#21110b] lg:aspect-[6/5] lg:w-[450px] lg:max-w-none">
+            {videoSrc && (
+              <LazyVideo
+                className="h-full w-full object-cover"
+                style={{ objectPosition: 'center 30%' }}
+                autoPlay={!reduceMotion}
+                poster={FOOTER_VIDEO_POSTER}
+              >
+                <source src={videoSrc} type="video/mp4" />
+              </LazyVideo>
+            )}
           </div>
         </div>
       </div>
