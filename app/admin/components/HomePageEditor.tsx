@@ -7,7 +7,7 @@ import Welcome from "@/components/Welcome";
 import Gallery from "@/components/Gallery";
 import Footer from "@/components/Footer";
 import FlipBook3D from "@/components/FlipBook3D";
-import { API_BASE_URL, DIRECT_BACKEND_URL } from "@/lib/config/api";
+import { API_BASE_URL } from "@/lib/config/api";
 import { BRAID_BOOK_COVER, BRAID_BOOK_END_PAGE, BRAID_BOOK_STYLES } from "@/lib/braid-book-data";
 import {
   fetchCategoryDisplayPhotos,
@@ -626,7 +626,10 @@ export function HomePageEditor() {
           }, 30_000);
         };
         const finish = () => clearTimeout(stallTimer);
-        request.open('POST', `${DIRECT_BACKEND_URL}/api/gallery/upload`);
+        // Admin authentication is an HttpOnly cookie scoped to this site, so
+        // uploads must use the same-origin proxy to carry that session.
+        request.open('POST', `${API_BASE_URL}/api/gallery/upload`);
+        request.withCredentials = true;
         request.timeout = 120_000;
         if (token) request.setRequestHeader('Authorization', `Bearer ${token}`);
         request.upload.onprogress = (event) => {

@@ -40,7 +40,8 @@ export async function normalizeImageForUpload(file: File): Promise<File> {
 
   // Large phone photos waste upload time. Hero/service imagery does not need
   // dimensions beyond 2000px for the current layouts.
-  if (normalized.type !== "image/jpeg" || normalized.size < 1_500_000) return normalized;
+  if (!["image/jpeg", "image/png", "image/webp"].includes(normalized.type)
+      || normalized.size < 1_500_000) return normalized;
   try {
     const bitmap = await createImageBitmap(normalized);
     const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
@@ -49,10 +50,12 @@ export async function normalizeImageForUpload(file: File): Promise<File> {
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close();
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    const outputType = normalized.type === "image/png" ? "image/webp" : normalized.type;
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, outputType, 0.82));
     if (!blob || blob.size >= normalized.size) return normalized;
-    return new File([blob], normalized.name.replace(/\.[^.]+$/, ".jpg"), {
-      type: "image/jpeg",
+    const extension = outputType === "image/webp" ? ".webp" : ".jpg";
+    return new File([blob], normalized.name.replace(/\.[^.]+$/, extension), {
+      type: outputType,
       lastModified: normalized.lastModified,
     });
   } catch {
