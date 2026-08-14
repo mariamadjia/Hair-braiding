@@ -131,7 +131,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(settingsToSave)
             });
             if (!response.ok) throw new Error(`Could not save guide settings (${response.status})`);
-            setGuideSettings(await response.json()); setGuidesDirty(false);
+            const savedSettings = await response.json();
+            setGuideSettings(savedSettings); setGuideSnapshot(savedSettings); setGuidesDirty(false);
             if (closeEditor) { setEditingGuide(null); setGuideSnapshot(null); }
             setSaveSuccess("Guide settings saved and published.");
             setTimeout(() => setSaveSuccess(null), 3000);
@@ -154,10 +155,14 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         setEditingGuide(kind);
     };
 
-    const cancelGuideEditor = () => {
+    const cancelGuideEditor = async () => {
         if (uploadingGuide) return;
-        if (guidesDirty && guideSnapshot) setGuideSettings(guideSnapshot);
-        setGuidesDirty(false); setEditingGuide(null); setGuideSnapshot(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/admin/guides`, { headers: { Authorization: `Bearer ${token}` } });
+            if (response.ok) setGuideSettings(await response.json());
+        } finally {
+            setGuidesDirty(false); setEditingGuide(null); setGuideSnapshot(null);
+        }
     };
 
     useEffect(() => {
