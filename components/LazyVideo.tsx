@@ -99,6 +99,7 @@ export default function LazyVideo({
       className={className}
       style={style}
       preload={eager ? "auto" : "none"}
+      autoPlay={autoPlay}
       loop={loop}
       muted={muted}
       playsInline={playsInline}
