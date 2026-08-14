@@ -48,3 +48,6 @@ app/.DS_Store
 app/api/.DS_Store
 lib/.DS_Store
 public/.DS_Store
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+*.tsbuildinfo
