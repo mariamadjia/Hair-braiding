@@ -81,9 +81,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [guideSnapshot, setGuideSnapshot] = useState<GuideSettings | null>(null);
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
+    const guideAuthHeaders: Record<string, string> = token && token !== "cookie-session"
+        ? { Authorization: `Bearer ${token}` }
+        : {};
 
     useEffect(() => {
-        fetch(`${API_BASE_URL}/api/admin/guides`, { headers: { Authorization: `Bearer ${token}` } })
+        fetch(`${API_BASE_URL}/api/admin/guides`, { headers: guideAuthHeaders })
             .then(async response => {
                 if (!response.ok) throw new Error(`Could not load guide settings (${response.status})`);
                 return response.json();
@@ -107,7 +110,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             const body = new FormData();
             body.append("file", compressed);
             body.append("title", guideKey ? `${guideKey} size guide` : "Length guide");
-            const response = await fetch(`${API_BASE_URL}/api/gallery/upload`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body });
+            const response = await fetch(`${API_BASE_URL}/api/gallery/upload`, { method: "POST", headers: guideAuthHeaders, body });
             if (!response.ok) throw new Error(`Guide upload failed (${response.status})`);
             const uploaded = await response.json();
             if (!uploaded.imageUrl) throw new Error("Upload completed without an image URL.");
@@ -124,7 +127,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         setSavingGuides(true); setSaveError(null);
         try {
             const response = await fetch(`${API_BASE_URL}/api/admin/guides`, {
-                method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(settingsToSave)
+                method: "PUT", headers: { "Content-Type": "application/json", ...guideAuthHeaders }, body: JSON.stringify(settingsToSave)
             });
             if (!response.ok) {
                 const detail = await response.text();
