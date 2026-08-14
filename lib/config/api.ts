@@ -4,6 +4,11 @@ export const API_BASE_URL = typeof window === 'undefined'
   ? (process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://backend-hairbraiding.onrender.com')
   : '/backend-api';
 
+const configuredPublicBackend = process.env.NEXT_PUBLIC_API_URL || '';
+export const DIRECT_BACKEND_URL = configuredPublicBackend.startsWith('http')
+  ? configuredPublicBackend.replace(/\/$/, '')
+  : 'https://backend-hairbraiding.onrender.com';
+
 export const API_ENDPOINTS = {
   // Auth
   AUTH_LOGIN: '/api/auth/login',

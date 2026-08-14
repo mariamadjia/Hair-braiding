@@ -7,7 +7,7 @@ import Welcome from "@/components/Welcome";
 import Gallery from "@/components/Gallery";
 import Footer from "@/components/Footer";
 import FlipBook3D from "@/components/FlipBook3D";
-import { API_BASE_URL } from "@/lib/config/api";
+import { API_BASE_URL, DIRECT_BACKEND_URL } from "@/lib/config/api";
 import { BRAID_BOOK_COVER, BRAID_BOOK_END_PAGE, BRAID_BOOK_STYLES } from "@/lib/braid-book-data";
 import {
   fetchCategoryDisplayPhotos,
@@ -89,6 +89,9 @@ export function HomePageEditor() {
   const [statusMessage, setStatusMessage] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [pendingHeroDeleteId, setPendingHeroDeleteId] = useState<number | null>(null);
+  const [deletingHeroImageId, setDeletingHeroImageId] = useState<number | null>(null);
+  const [heroUploadProgress, setHeroUploadProgress] = useState(0);
+  const [heroUploadStage, setHeroUploadStage] = useState<'idle' | 'preparing' | 'uploading' | 'processing'>('idle');
   const collectionSnapshotRef = useRef<GalleryCollection[] | null>(null);
   const selectionSnapshotRef = useRef<number[] | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -588,6 +591,8 @@ export function HomePageEditor() {
     }
 
     setUploading(true);
+    setHeroUploadStage('preparing');
+    setHeroUploadProgress(0);
     let uploadFile: File;
     try {
       uploadFile = await normalizeImageForUpload(file);
@@ -610,27 +615,44 @@ export function HomePageEditor() {
       }
 
       // Upload directly to backend for faster performance
-      const res = await fetch(`${API_BASE_URL}/api/gallery/upload`, {
-        method: 'POST',
-        headers,
-        body: formData,
+      const uploaded = await new Promise<any>((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open('POST', `${DIRECT_BACKEND_URL}/api/gallery/upload`);
+        if (token) request.setRequestHeader('Authorization', `Bearer ${token}`);
+        request.upload.onprogress = (event) => {
+          setHeroUploadStage('uploading');
+          if (event.lengthComputable) setHeroUploadProgress(Math.round((event.loaded / event.total) * 100));
+        };
+        request.upload.onload = () => setHeroUploadStage('processing');
+        request.onload = () => {
+          if (request.status >= 200 && request.status < 300) {
+            try { resolve(JSON.parse(request.responseText)); }
+            catch { reject(new Error('The server returned an invalid upload response.')); }
+          } else {
+            try {
+              const payload = JSON.parse(request.responseText);
+              reject(new Error(payload.error || payload.message || `Upload failed (${request.status}).`));
+            } catch { reject(new Error(`Upload failed (${request.status}).`)); }
+          }
+        };
+        request.onerror = () => reject(new Error('The direct upload could not reach the media server.'));
+        request.send(formData);
       });
-      
-      if (res.ok) {
-        await loadHeroImages();
+
+      if (uploaded?.id && uploaded?.imageUrl) {
+        const nextImage = { id: uploaded.id, imageUrl: resolveMediaUrl(uploaded.imageUrl) };
+        setHeroImages((images) => [...images, nextImage]);
         setStatusMessage('Hero image uploaded and published.');
       } else {
-        const error = await res.json().catch(() => ({
-          error: "Upload failed",
-        }));
-
-        setStatusMessage(error.error || 'Hero image could not be uploaded.');
+        throw new Error('The upload completed without an image record.');
       }
     } catch (error) {
       console.error('Failed to upload image:', error);
       setStatusMessage('Hero image could not be uploaded.');
     } finally {
       setUploading(false);
+      setHeroUploadStage('idle');
+      setHeroUploadProgress(0);
       e.target.value = '';
     }
   };
@@ -892,11 +914,14 @@ export function HomePageEditor() {
   };
 
   const handleDeleteImage = async (image: HeroImage) => {
-    if (pendingHeroDeleteId !== image.id) {
-      setPendingHeroDeleteId(image.id);
-      setStatusMessage('Select the highlighted delete button again to permanently remove this Hero image.');
-      return;
-    }
+    if (deletingHeroImageId !== null) return;
+    setPendingHeroDeleteId(image.id);
+  };
+
+  const confirmDeleteHeroImage = async () => {
+    const imageId = pendingHeroDeleteId;
+    if (imageId === null || deletingHeroImageId !== null) return;
+    setDeletingHeroImageId(imageId);
 
     try {
       const token = getAuthToken();
@@ -907,7 +932,7 @@ export function HomePageEditor() {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/gallery/${image.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/gallery/${imageId}`, {
         method: "DELETE",
         headers,
       });
@@ -917,13 +942,15 @@ export function HomePageEditor() {
         throw new Error(message || "Failed to delete Hero image");
       }
 
-      await loadHeroImages();
-
+      setHeroImages((images) => images.filter(({ id }) => id !== imageId));
       setPendingHeroDeleteId(null);
       setStatusMessage('Hero image permanently deleted from the homepage.');
     } catch (error) {
       console.error("Failed to delete Hero image:", error);
-      setStatusMessage('The Hero image could not be deleted.');
+      setPendingHeroDeleteId(null);
+      setStatusMessage(error instanceof Error ? error.message : 'The Hero image could not be deleted.');
+    } finally {
+      setDeletingHeroImageId(null);
     }
   };
 
@@ -1388,6 +1415,16 @@ export function HomePageEditor() {
                             ? 'Uploading...'
                             : 'Click to upload image'}
                         </p>
+                        {uploading && (
+                          <div className="mx-auto mt-4 max-w-xs" aria-live="polite">
+                            <div className="h-2 overflow-hidden rounded-full bg-neutral-200">
+                              <div className="h-full bg-[#2C1810] transition-all" style={{ width: `${heroUploadStage === 'processing' ? 100 : heroUploadProgress}%` }} />
+                            </div>
+                            <p className="mt-2 text-xs text-neutral-500">
+                              {heroUploadStage === 'preparing' ? 'Preparing image…' : heroUploadStage === 'processing' ? 'Processing and publishing…' : `Uploading… ${heroUploadProgress}%`}
+                            </p>
+                          </div>
+                        )}
                         <p className="text-sm text-neutral-500 dark:text-neutral-400">
                           Recommended: 800x1000px (4:5 ratio) • Max 5 images
                         </p>
@@ -1427,10 +1464,9 @@ export function HomePageEditor() {
                               </button>
                               <button
                                 onClick={() => handleDeleteImage(image)}
-                                className={`p-3 text-white rounded-full transition-colors ${pendingHeroDeleteId === image.id ? 'bg-red-800 ring-4 ring-red-300' : 'bg-red-600 hover:bg-red-700'}`}
-                                aria-label={pendingHeroDeleteId === image.id
-                                  ? `Confirm permanent deletion of Hero image ${index + 1}`
-                                  : `Permanently delete Hero image ${index + 1}`}
+                                disabled={deletingHeroImageId !== null}
+                                className="p-3 text-white rounded-full transition-colors bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                                aria-label={`Delete Hero image ${index + 1}`}
                               >
                                 <Trash2 className="h-5 w-5" />
                               </button>
@@ -1455,6 +1491,21 @@ export function HomePageEditor() {
                   </>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingHeroDeleteId !== null && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" role="alertdialog" aria-modal="true" aria-labelledby="delete-hero-title">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-neutral-800">
+            <h3 id="delete-hero-title" className="text-lg font-semibold text-neutral-900 dark:text-white">Delete this Hero image?</h3>
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">This permanently removes the image from the homepage and any service or gallery references.</p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" disabled={deletingHeroImageId !== null} onClick={() => setPendingHeroDeleteId(null)} className="rounded-md border border-neutral-300 px-4 py-2 disabled:opacity-50">Cancel</button>
+              <button type="button" disabled={deletingHeroImageId !== null} onClick={confirmDeleteHeroImage} className="rounded-md bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700 disabled:opacity-60">
+                {deletingHeroImageId !== null ? 'Deleting…' : 'Delete image'}
+              </button>
             </div>
           </div>
         </div>
