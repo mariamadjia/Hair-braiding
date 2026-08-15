@@ -1024,7 +1024,7 @@ export default function BookingCalendar({
                                 required
                             />
                             <span>
-                                I have read and agree to the Booking, Deposit, Late Arrival, and No-Show Policies.{" "}
+                                I have read and agree to AH Braiding Salon’s Booking Policies.{" "}
                                 <button
                                     type="button"
                                     onClick={(event) => {
