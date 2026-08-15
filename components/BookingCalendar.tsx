@@ -55,7 +55,7 @@ const PENDING_PAYMENT_STORAGE_KEY = "ah-braiding-pending-payment";
 
 const policySections = (depositAmountCents: number) => [
     {
-        title: "Appointments & Deposits",
+        title: "Appointments, Deposits & Approval",
         points: [
             "All braiding services are available by appointment.",
             `A card authorization of $${(depositAmountCents / 100).toFixed(2)} is required to submit your appointment request. Your card is charged only if the salon approves your appointment.`,
@@ -63,17 +63,14 @@ const policySections = (depositAmountCents: number) => [
         ],
     },
     {
-        title: "Hair Preparation",
+        title: "Hair & Appointment Preparation",
         points: [
             "Please arrive with clean, fully detangled hair unless a wash and blow-dry service has been scheduled.",
             "Additional detangling or preparation fees may apply.",
-        ],
-    },
-    {
-        title: "Hair Extensions",
-        points: [
             "You are responsible for providing the correct type, color, and quantity of extension hair unless hair is included with your selected service.",
             "Additional hair may result in an additional charge.",
+            "Please inform your stylist of any scalp sensitivity, recent chemical services, hair loss, or other concerns before your appointment.",
+            "The stylist may decline or modify a service if your hair or scalp appears unsuitable for braiding.",
         ],
     },
     {
@@ -85,25 +82,13 @@ const policySections = (depositAmountCents: number) => [
         ],
     },
     {
-        title: "Cancellations & Rescheduling",
+        title: "Cancellations, Rescheduling & No-Shows",
         points: [
             "At least 72 hours’ notice is required to cancel or reschedule.",
             "Late cancellations and no-shows may result in loss of the deposit and/or a requirement to pay a new deposit before booking another appointment.",
-        ],
-    },
-    {
-        title: "No-Shows",
-        points: [
             "An appointment is considered a no-show when a client misses their scheduled appointment without providing notice.",
             "Clients who no-show may be required to pay a non-refundable fee equal to 60% of the scheduled service price before booking another appointment.",
             "Repeated no-shows may result in the loss of future booking privileges.",
-        ],
-    },
-    {
-        title: "Scalp & Hair Health",
-        points: [
-            "Please inform your stylist of any scalp sensitivity, recent chemical services, hair loss, or other concerns before your appointment.",
-            "The stylist may decline or modify a service if your hair or scalp appears unsuitable for braiding.",
         ],
     },
     {
