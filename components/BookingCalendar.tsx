@@ -55,33 +55,62 @@ const PENDING_PAYMENT_STORAGE_KEY = "ah-braiding-pending-payment";
 
 const policySections = (depositAmountCents: number) => [
     {
-        title: "Deposits & Approval",
+        title: "Appointments & Deposits",
         points: [
-            `A card authorization of up to $${(depositAmountCents / 100).toFixed(2)} is required with your appointment request.`,
-            "Your card is not charged unless the salon approves your appointment.",
-            "If your request is denied, the authorization hold is released.",
+            "All braiding services are available by appointment.",
+            `A card authorization of $${(depositAmountCents / 100).toFixed(2)} is required to submit your appointment request. Your card is charged only if the salon approves your appointment.`,
+            `Once approved, the $${(depositAmountCents / 100).toFixed(2)} deposit is non-refundable and will be applied toward your total service balance. If your request is denied, the authorization hold is released.`,
+        ],
+    },
+    {
+        title: "Hair Preparation",
+        points: [
+            "Please arrive with clean, fully detangled hair unless a wash and blow-dry service has been scheduled.",
+            "Additional detangling or preparation fees may apply.",
+        ],
+    },
+    {
+        title: "Hair Extensions",
+        points: [
+            "You are responsible for providing the correct type, color, and quantity of extension hair unless hair is included with your selected service.",
+            "Additional hair may result in an additional charge.",
         ],
     },
     {
         title: "Late Arrivals",
         points: [
-            "Please arrive on time. A 15-minute grace period is provided.",
-            "After 15 minutes, a late fee may apply. After 30 minutes, your appointment may be canceled and your deposit forfeited.",
+            "Please arrive on time. A 30-minute grace period is provided.",
+            "Arrivals beyond the grace period may result in a shortened service, an additional fee, or rescheduling.",
+            "Your deposit may be forfeited if the appointment cannot be completed.",
         ],
     },
     {
-        title: "Cancellations & No-Shows",
+        title: "Cancellations & Rescheduling",
         points: [
-            "Cancellations within 48 hours and no-shows forfeit the deposit.",
-            "Please contact the salon directly as soon as possible if you cannot attend.",
+            "At least 72 hours’ notice is required to cancel or reschedule.",
+            "Late cancellations and no-shows may result in loss of the deposit and/or a requirement to pay a new deposit before booking another appointment.",
         ],
     },
     {
-        title: "Appointment Preparation",
+        title: "No-Shows",
         points: [
-            "Arrive with clean, detangled, and blown-out hair unless your selected service states otherwise.",
-            "Extra preparation may require an additional fee or a new appointment.",
-            "No extra guests or children unless they are being serviced.",
+            "An appointment is considered a no-show when a client misses their scheduled appointment without providing notice.",
+            "Clients who no-show may be required to pay a non-refundable fee equal to 60% of the scheduled service price before booking another appointment.",
+            "Repeated no-shows may result in the loss of future booking privileges.",
+        ],
+    },
+    {
+        title: "Scalp & Hair Health",
+        points: [
+            "Please inform your stylist of any scalp sensitivity, recent chemical services, hair loss, or other concerns before your appointment.",
+            "The stylist may decline or modify a service if your hair or scalp appears unsuitable for braiding.",
+        ],
+    },
+    {
+        title: "Photos & Promotional Use",
+        points: [
+            "AH Braiding Salon may photograph or record completed hairstyles for use on our website, social media, portfolio, and other promotional materials.",
+            "If you prefer not to be photographed or recorded, please notify your stylist before your service begins. We will respect your request.",
         ],
     },
 ];
