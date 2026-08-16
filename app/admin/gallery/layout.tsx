@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { authApi } from '@/lib/api/auth';
 import { AdminSidebar } from '../components/AdminSidebar';
 
 export default function AdminGalleryLayout({
@@ -13,16 +14,26 @@ export default function AdminGalleryLayout({
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        // Check authentication in both storage types
-        const token =
-            localStorage.getItem('auth_token') ||
-            sessionStorage.getItem('auth_token');
+        let cancelled = false;
 
-        if (!token) {
-            router.push('/admin');
-        } else {
-            setIsAuthenticated(true);
-        }
+        const checkAuthentication = async () => {
+            try {
+                await authApi.session();
+                if (!cancelled) {
+                    setIsAuthenticated(true);
+                }
+            } catch {
+                if (!cancelled) {
+                    router.replace('/admin');
+                }
+            }
+        };
+
+        void checkAuthentication();
+
+        return () => {
+            cancelled = true;
+        };
     }, [router]);
 
     if (!isAuthenticated) {
