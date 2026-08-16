@@ -105,6 +105,7 @@ export default function GalleryPage({
         id: sub.id,
         name: sub.name,
         slug: sub.slug,
+        displayOrder: sub.displayOrder ?? 0,
         rawImages,
         imageAltTexts: Array.isArray(sub.imageAltTexts) ? sub.imageAltTexts : rawImages.map(() => sub.name),
         image: rawImages[0] ? toProxyUrl(rawImages[0]) : "",
