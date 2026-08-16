@@ -342,6 +342,14 @@ export default function AdminCategoryDetailPage() {
             {/* Header */}
             <div className="bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 shrink-0">
                 <div className="max-w-7xl mx-auto px-6 py-6">
+                    <button
+                        type="button"
+                        onClick={() => router.push('/admin?section=gallery')}
+                        className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-950 dark:text-neutral-300 dark:hover:text-white"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                        Back to Gallery
+                    </button>
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-3xl font-bold uppercase tracking-[0.2em] text-neutral-900 dark:text-white">
