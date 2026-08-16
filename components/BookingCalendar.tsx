@@ -87,7 +87,8 @@ const policySections = (depositAmountCents: number) => [
             "At least 72 hours’ notice is required to cancel or reschedule.",
             "Late cancellations and no-shows may result in loss of the deposit and/or a requirement to pay a new deposit before booking another appointment.",
             "An appointment is considered a no-show when a client misses their scheduled appointment without providing notice.",
-            "Clients who no-show may be required to pay a non-refundable fee equal to 60% of the scheduled service price before booking another appointment.",
+            "Missing your appointment without notice will result in a non-refundable fee equal to 60% of the scheduled service price. Your deposit is applied toward this fee.",
+            "By accepting these policies, you authorize AH Braiding Salon to save the card used for your deposit and charge the remaining no-show balance to that card. The charge is normally processed within 24 hours after the missed appointment and no later than seven calendar days afterward.",
             "Repeated no-shows may result in the loss of future booking privileges.",
         ],
     },
@@ -522,6 +523,8 @@ export default function BookingCalendar({
                     price: servicePrice ? servicePrice.replace('$', '').trim() : null,
                     notes: formData.notes,
                     quoteToken,
+                    depositPolicyAccepted: policyAccepted,
+                    offSessionConsentAccepted: policyAccepted,
                 })
             });
 

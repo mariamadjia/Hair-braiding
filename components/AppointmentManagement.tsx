@@ -39,12 +39,20 @@ export type Appointment = {
     paymentAuthorizationExpiresAt?: string;
     notificationStatus?: string;
     notificationLastAttemptAt?: string;
+    noShowFee?: {
+        appointmentId: number; scheduledServicePriceCents: number; feeRatePercent: number;
+        totalFeeCents: number; depositCreditCents: number; amountToChargeCents: number;
+        feeDecision: string; paymentStatus: string; paymentMethodBrand?: string;
+        paymentMethodLast4?: string; failureMessage?: string; eligibleAt: string;
+        normalDeadlineAt: string; automaticChargeDeadlineAt: string;
+        overdueConfirmationRequired: boolean; automaticChargeAllowed: boolean;
+    };
 };
 
 type WorkflowView = "NEEDS_ACTION" | "UPCOMING" | "HISTORY";
-type DetailFilter = "ALL" | "READY_FOR_APPROVAL" | "AWAITING_PAYMENT" | "CAPTURE_PROCESSING" | "PAYMENT_ISSUE" | "APPROVED" | "PAST" | "COMPLETED" | "DENIED" | "CANCELLED";
+type DetailFilter = "ALL" | "READY_FOR_APPROVAL" | "AWAITING_PAYMENT" | "CAPTURE_PROCESSING" | "PAYMENT_ISSUE" | "APPROVED" | "PAST" | "COMPLETED" | "DENIED" | "CANCELLED" | "NO_SHOW";
 type SortChoice = "appointment-asc" | "appointment-desc" | "requested-desc" | "payment";
-type ActionKind = "approve" | "deny" | "complete" | "cancel";
+type ActionKind = "approve" | "deny" | "complete" | "cancel" | "no-show";
 
 const WORKFLOW_VIEWS: { value: WorkflowView; label: string; description: string }[] = [
     { value: "NEEDS_ACTION", label: "Needs Action", description: "Requests and payment issues requiring attention" },
@@ -69,7 +77,8 @@ const DETAIL_OPTIONS: Record<WorkflowView, { value: DetailFilter; label: string 
         { value: "PAST", label: "Past" },
         { value: "COMPLETED", label: "Completed" },
         { value: "DENIED", label: "Denied" },
-        { value: "CANCELLED", label: "Cancelled" }
+        { value: "CANCELLED", label: "Cancelled" },
+        { value: "NO_SHOW", label: "No-show" }
     ]
 };
 
@@ -88,12 +97,13 @@ const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detai
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }));
     const appointmentTime = new Date(appointment.appointmentDateTime);
     const captureProcessing = appointment.status === "PENDING" && Boolean(appointment.approvedAt);
-    const paymentIssue = ["CAPTURE_FAILED", "CANCELLATION_FAILED", "FAILED"].includes(appointment.paymentStatus || "");
+    const paymentIssue = ["CAPTURE_FAILED", "CANCELLATION_FAILED", "FAILED"].includes(appointment.paymentStatus || "")
+        || ["UNPAID", "PROCESSING", "FAILED"].includes(appointment.noShowFee?.paymentStatus || "");
     const viewMatch = workflow === "NEEDS_ACTION"
         ? appointment.status === "PENDING" || paymentIssue
         : workflow === "UPCOMING"
             ? captureProcessing || (appointment.status === "APPROVED" && appointmentTime >= now)
-            : ["DENIED", "CANCELLED", "COMPLETED"].includes(appointment.status)
+            : ["DENIED", "CANCELLED", "COMPLETED", "NO_SHOW"].includes(appointment.status)
                 || (appointment.status === "APPROVED" && appointmentTime < now);
     if (!viewMatch || detail === "ALL") return viewMatch;
     return {
@@ -105,7 +115,8 @@ const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detai
         PAST: appointmentTime < now,
         COMPLETED: appointment.status === "COMPLETED",
         DENIED: appointment.status === "DENIED",
-        CANCELLED: appointment.status === "CANCELLED"
+        CANCELLED: appointment.status === "CANCELLED",
+        NO_SHOW: appointment.status === "NO_SHOW"
     }[detail];
 };
 
@@ -127,6 +138,7 @@ function AppointmentManagement() {
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
     const [action, setAction] = useState<{ kind: ActionKind; appointment: Appointment } | null>(null);
     const [actionNotes, setActionNotes] = useState("");
+    const [confirmOverdue, setConfirmOverdue] = useState(false);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
@@ -235,19 +247,24 @@ function AppointmentManagement() {
         setError(null);
         setNotice(null);
         try {
-            await readResponse(await fetch(`${API_BASE_URL}/api/appointments/${action.appointment.id}/${action.kind}`, {
-                method: "PUT",
+            const noShow = action.kind === "no-show";
+            const result = await readResponse(await fetch(`${API_BASE_URL}/api/appointments/${action.appointment.id}/${action.kind}`, {
+                method: noShow ? "POST" : "PUT",
                 headers: authHeaders(),
-                body: JSON.stringify({ adminNotes: notes })
+                body: JSON.stringify(noShow ? { adminNote: notes, confirmOverdue } : { adminNotes: notes })
             }));
             setNotice({
                 approve: "Approval is processing while the authorized deposit is captured.",
                 deny: "Appointment denied. Payment authorization release is processing when applicable.",
                 complete: "Appointment marked complete.",
-                cancel: "Appointment cancelled by the salon. Any authorization release is processing."
+                cancel: "Appointment cancelled by the salon. Any authorization release is processing.",
+                "no-show": result.paymentStatus === "PAID"
+                    ? `No-show recorded and ${(result.amountToChargeCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} charged.`
+                    : `No-show recorded. Card charge status: ${String(result.paymentStatus).toLowerCase()}.`
             }[action.kind]);
             setAction(null);
             setActionNotes("");
+            setConfirmOverdue(false);
             setSelectedAppointment(null);
             await fetchAppointments();
             if (activeCalendarRange) await fetchCalendarRange(activeCalendarRange);
@@ -322,7 +339,8 @@ function AppointmentManagement() {
         APPROVED: "bg-emerald-100 text-emerald-900 border-emerald-300",
         DENIED: "bg-red-100 text-red-900 border-red-300",
         CANCELLED: "bg-neutral-100 text-neutral-700 border-neutral-300",
-        COMPLETED: "bg-blue-100 text-blue-900 border-blue-300"
+        COMPLETED: "bg-blue-100 text-blue-900 border-blue-300",
+        NO_SHOW: "bg-red-100 text-red-900 border-red-300"
     }[status] ?? "bg-neutral-100 text-neutral-700 border-neutral-300");
 
     const paymentClass = (status?: string) => {
@@ -475,7 +493,10 @@ function AppointmentManagement() {
                                         {appointment.paymentStatus === "CAPTURE_FAILED" && <Button size="sm" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "capture")}><CreditCard className="mr-1 h-4 w-4" />Retry capture</Button>}
                                         {appointment.paymentStatus === "CANCELLATION_FAILED" && <Button size="sm" variant="outline" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "release")}>Retry release</Button>}
                                         {appointment.notificationStatus?.includes("FAILED") && <Button size="sm" variant="outline" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}><Mail className="mr-1 h-4 w-4" />Retry notification</Button>}
-                                        {appointment.status === "APPROVED" && isPast(appointment) && <Button size="sm" onClick={() => { setAction({ kind: "complete", appointment }); setActionNotes(""); }}>Mark complete</Button>}
+                                        {appointment.status === "APPROVED" && isPast(appointment) && <>
+                                            <Button size="sm" onClick={() => { setAction({ kind: "complete", appointment }); setActionNotes(""); }}>Mark complete</Button>
+                                            {appointment.noShowFee?.automaticChargeAllowed && <Button size="sm" variant="destructive" onClick={() => { setAction({ kind: "no-show", appointment }); setActionNotes(""); setConfirmOverdue(false); }}>Mark no-show</Button>}
+                                        </>}
                                         {(appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing && <Button size="sm" variant="outline" className="text-red-700" onClick={() => { setAction({ kind: "cancel", appointment }); setActionNotes(""); }}>Cancel appointment</Button>}
                                     </div>
                                 </div>
@@ -498,14 +519,23 @@ function AppointmentManagement() {
                     <div className="flex items-start justify-between gap-4"><div><h2 id="appointment-action-title" className="text-xl font-semibold capitalize">{action.kind} appointment</h2><p className="mt-1 text-sm text-neutral-600">{action.appointment.customer.firstName} {action.appointment.customer.lastName} · {formatDateTime(action.appointment.appointmentDateTime)}</p></div><button aria-label="Close dialog" className="p-1 text-neutral-500 hover:text-neutral-900" onClick={() => setAction(null)}><X className="h-5 w-5" /></button></div>
                     {action.kind === "approve" && <div className="mt-4 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">The customer’s authorized deposit will be captured after approval.</div>}
                     {action.kind === "cancel" && action.appointment.paymentStatus === "CAPTURED" && <div className="mt-4 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">The deposit has already been captured. Cancelling here does not automatically refund it; manage any refund in Stripe.</div>}
+                    {action.kind === "no-show" && action.appointment.noShowFee && <div className="mt-4 space-y-3">
+                        <div className="border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+                            <p className="font-semibold">This will charge the saved {action.appointment.noShowFee.paymentMethodBrand || "card"} ending in {action.appointment.noShowFee.paymentMethodLast4 || "••••"}.</p>
+                            <dl className="mt-3 space-y-1"><div className="flex justify-between"><dt>60% no-show fee</dt><dd>${(action.appointment.noShowFee.totalFeeCents / 100).toFixed(2)}</dd></div><div className="flex justify-between"><dt>Deposit credited</dt><dd>− ${(action.appointment.noShowFee.depositCreditCents / 100).toFixed(2)}</dd></div><div className="mt-2 flex justify-between border-t border-amber-300 pt-2 font-bold"><dt>Charge now</dt><dd>${(action.appointment.noShowFee.amountToChargeCents / 100).toFixed(2)}</dd></div></dl>
+                        </div>
+                        {action.appointment.noShowFee.overdueConfirmationRequired && <label className="flex items-start gap-3 border border-red-200 bg-red-50 p-3 text-sm text-red-900"><input type="checkbox" className="mt-1" checked={confirmOverdue} onChange={event => setConfirmOverdue(event.target.checked)} /><span><b>Charge overdue—review required.</b> This is outside the normal 24-hour processing period. I confirmed the customer missed the appointment and no cancellation was received.</span></label>}
+                        <p className="text-xs text-neutral-500">Automatic charging closes {formatDateTime(action.appointment.noShowFee.automaticChargeDeadlineAt)}.</p>
+                    </div>}
                     <label className="mt-4 block text-sm font-medium text-neutral-800">{
                         action.kind === "deny" ? "Denial reason (required)"
                             : action.kind === "cancel" ? "Cancellation reason (required)"
                                 : action.kind === "complete" ? "Completion notes (optional)"
+                                    : action.kind === "no-show" ? "Internal no-show note (optional)"
                                     : "Approval notes (optional)"
                     }<textarea autoFocus value={actionNotes} maxLength={500} rows={4} onChange={event => setActionNotes(event.target.value)} className="mt-2 w-full rounded-sm border border-neutral-300 p-3 font-normal outline-none focus:border-neutral-700 focus:ring-2 focus:ring-neutral-200" /></label>
                     <p className="text-right text-xs text-neutral-400">{actionNotes.length}/500</p>
-                    <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setAction(null)}>Back</Button><Button variant={action.kind === "deny" || action.kind === "cancel" ? "destructive" : "default"} disabled={actionLoading === action.appointment.id || ((action.kind === "deny" || action.kind === "cancel") && !actionNotes.trim())} onClick={() => void submitAction()}>{actionLoading === action.appointment.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirm {action.kind}</Button></div>
+                    <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setAction(null)}>Back</Button><Button variant={action.kind === "deny" || action.kind === "cancel" || action.kind === "no-show" ? "destructive" : "default"} disabled={actionLoading === action.appointment.id || ((action.kind === "deny" || action.kind === "cancel") && !actionNotes.trim()) || (action.kind === "no-show" && Boolean(action.appointment.noShowFee?.overdueConfirmationRequired) && !confirmOverdue)} onClick={() => void submitAction()}>{actionLoading === action.appointment.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{action.kind === "no-show" ? `Mark no-show & charge $${((action.appointment.noShowFee?.amountToChargeCents || 0) / 100).toFixed(2)}` : `Confirm ${action.kind}`}</Button></div>
                 </section>
             </div>}
         </div>

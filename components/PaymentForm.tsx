@@ -154,11 +154,6 @@ export default function PaymentForm({
               },
               paymentMethodOrder: [
                 "card",
-                "affirm",
-                "afterpay_clearpay",
-                "cashapp",
-                "klarna",
-                "link",
               ],
               terms: {
                 card: "never",
@@ -166,6 +161,10 @@ export default function PaymentForm({
             }}
           />
         </div>
+        <p className="mt-4 text-xs leading-5 text-neutral-600">
+          By continuing, you authorize AH Braiding Salon to save this card and charge any remaining
+          no-show balance described in the Booking Policies. Your deposit is credited toward that fee.
+        </p>
       </div>
 
       {error && (
