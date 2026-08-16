@@ -22,11 +22,11 @@ export async function GET(request: Request) {
       });
     }
 
-    // These resources are independent. Fetch them concurrently and allow the
-    // Next data cache to shield visitors from Render cold starts.
+    // Keep the homepage collection synchronized with Gallery Management.
+    // Backend cache eviction cannot invalidate a separate Vercel data cache.
     const [response, settingsResponse] = await Promise.all([
-      fetch(`${API_URL}/api/categories/gallery-cards`, { next: { revalidate: 300 } }),
-      fetch(`${API_URL}/api/homepage-settings`, { next: { revalidate: 300 } }),
+      fetch(`${API_URL}/api/categories/gallery-cards`, { cache: 'no-store' }),
+      fetch(`${API_URL}/api/homepage-settings`, { cache: 'no-store' }),
     ]);
     if (!response.ok) {
       console.error('Backend gallery endpoint failed:', response.status);
@@ -70,7 +70,10 @@ export async function GET(request: Request) {
           .slice(0, 4)
       : mappedCollections.slice(0, 4);
 
-    return NextResponse.json({ collections });
+    return NextResponse.json(
+      { collections },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } },
+    );
   } catch (error) {
     console.error('Error fetching gallery collections:', error);
     return NextResponse.json(
