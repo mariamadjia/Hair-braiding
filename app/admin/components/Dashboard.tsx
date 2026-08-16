@@ -25,6 +25,10 @@ type Appointment = {
     appointmentDateTime: string;
     status: string;
     createdAt?: string;
+    updatedAt?: string;
+    cancelledByCustomer?: boolean;
+    lastSelfServiceChangeAt?: string;
+    rescheduledFromDateTime?: string;
     depositAmount?: number;
     paymentStatus?: string;
 };
@@ -74,9 +78,9 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
     const [error, setError] = useState("");
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-    const loadDashboard = useCallback(async () => {
-        setLoading(true);
-        setError("");
+    const loadDashboard = useCallback(async (quiet = false) => {
+        if (!quiet) setLoading(true);
+        if (!quiet) setError("");
         try {
             const response = await fetch("/api/appointments", {
                 cache: "no-store",
@@ -86,14 +90,23 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
             setAppointments(Array.isArray(body) ? body : body?.content ?? []);
             setLastUpdated(new Date());
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Dashboard data could not be loaded.");
+            if (!quiet) setError(err instanceof Error ? err.message : "Dashboard data could not be loaded.");
         } finally {
-            setLoading(false);
+            if (!quiet) setLoading(false);
         }
     }, [token]);
 
     useEffect(() => {
         void loadDashboard();
+        const refresh = () => { if (document.visibilityState === "visible") void loadDashboard(true); };
+        const timer = window.setInterval(refresh, 15_000);
+        window.addEventListener("focus", refresh);
+        document.addEventListener("visibilitychange", refresh);
+        return () => {
+            window.clearInterval(timer);
+            window.removeEventListener("focus", refresh);
+            document.removeEventListener("visibilitychange", refresh);
+        };
     }, [loadDashboard]);
 
     const dashboard = useMemo(() => {
@@ -107,7 +120,7 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
         const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
         const todaySchedule = appointments
-            .filter((item) => sameDay(new Date(item.appointmentDateTime), now))
+            .filter((item) => sameDay(new Date(item.appointmentDateTime), now) && ["PENDING", "APPROVED"].includes(item.status))
             .sort((a, b) => new Date(a.appointmentDateTime).getTime() - new Date(b.appointmentDateTime).getTime());
         const yesterdayBookings = appointments.filter((item) => {
             const date = new Date(item.appointmentDateTime);
@@ -176,8 +189,8 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
                 .sort((a, b) => b.bookings - a.bookings)
                 .slice(0, 5),
             recentActivity: [...appointments]
-                .filter((item) => item.createdAt)
-                .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+                .filter((item) => item.updatedAt || item.createdAt)
+                .sort((a, b) => new Date(b.updatedAt || b.createdAt!).getTime() - new Date(a.updatedAt || a.createdAt!).getTime())
                 .slice(0, 5),
             tomorrowStart,
         };

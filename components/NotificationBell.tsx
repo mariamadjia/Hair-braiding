@@ -28,6 +28,10 @@ type Appointment = {
     depositAmount?: number;
     paymentAuthorizationExpiresAt?: string;
     notificationStatus?: string;
+    cancelledByCustomer?: boolean;
+    customerCancellationReason?: string;
+    lastSelfServiceChangeAt?: string;
+    rescheduledFromDateTime?: string;
 };
 
 type Notice = {
@@ -139,13 +143,30 @@ function noticesFromAppointments(appointments: Appointment[]): Notice[] {
 
         if (appointment.status === "CANCELLED" || appointment.status === "DENIED") {
             notices.push({
-                id: `cancelled-${appointment.id}`,
-                title: appointment.status === "DENIED" ? "Appointment request denied" : "Appointment cancelled",
-                description: `${person(appointment)} · ${style(appointment)} · ${appointmentLabel}.`,
-                timestamp: updated,
+                id: `cancelled-${appointment.id}-${appointment.lastSelfServiceChangeAt || updated}`,
+                title: appointment.status === "DENIED" ? "Appointment request denied" : appointment.cancelledByCustomer ? "Customer cancelled appointment" : "Appointment cancelled",
+                description: appointment.cancelledByCustomer
+                    ? `${person(appointment)} cancelled ${style(appointment)}${appointment.customerCancellationReason ? `: ${appointment.customerCancellationReason}` : "."}`
+                    : `${person(appointment)} · ${style(appointment)} · ${appointmentLabel}.`,
+                timestamp: appointment.lastSelfServiceChangeAt || updated,
                 actionLabel: "View appointment",
                 icon: XCircle,
                 tone: "danger",
+            });
+        }
+
+        if (appointment.rescheduledFromDateTime && !appointment.cancelledByCustomer && appointment.lastSelfServiceChangeAt) {
+            const previousLabel = new Date(appointment.rescheduledFromDateTime).toLocaleString("en-US", {
+                month: "short", day: "numeric", hour: "numeric", minute: "2-digit"
+            });
+            notices.push({
+                id: `rescheduled-${appointment.id}-${appointment.lastSelfServiceChangeAt}`,
+                title: "Customer rescheduled appointment",
+                description: `${person(appointment)} moved ${style(appointment)} from ${previousLabel} to ${appointmentLabel}.`,
+                timestamp: appointment.lastSelfServiceChangeAt,
+                actionLabel: "View appointment",
+                icon: Calendar,
+                tone: "neutral",
             });
         }
 
@@ -200,8 +221,15 @@ export function NotificationBell({ token, onNavigate }: { token: string; onNavig
 
     useEffect(() => {
         void loadNotifications();
-        const interval = window.setInterval(() => void loadNotifications(true), 60_000);
-        return () => window.clearInterval(interval);
+        const refresh = () => { if (document.visibilityState === "visible") void loadNotifications(true); };
+        const interval = window.setInterval(refresh, 15_000);
+        window.addEventListener("focus", refresh);
+        document.addEventListener("visibilitychange", refresh);
+        return () => {
+            window.clearInterval(interval);
+            window.removeEventListener("focus", refresh);
+            document.removeEventListener("visibilitychange", refresh);
+        };
     }, [loadNotifications]);
 
     useEffect(() => {

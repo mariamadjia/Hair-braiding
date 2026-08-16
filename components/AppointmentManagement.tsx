@@ -39,6 +39,11 @@ export type Appointment = {
     paymentAuthorizationExpiresAt?: string;
     notificationStatus?: string;
     notificationLastAttemptAt?: string;
+    cancelledByCustomer?: boolean;
+    customerCancellationReason?: string;
+    selfServiceChangeCount?: number;
+    lastSelfServiceChangeAt?: string;
+    rescheduledFromDateTime?: string;
     noShowFee?: {
         appointmentId: number; scheduledServicePriceCents: number; feeRatePercent: number;
         totalFeeCents: number; depositCreditCents: number; amountToChargeCents: number;
@@ -160,9 +165,9 @@ function AppointmentManagement() {
         throw new Error(body.error || body.message || "The request could not be completed");
     }, []);
 
-    const fetchAppointments = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+    const fetchAppointments = useCallback(async (quiet = false) => {
+        if (!quiet) setLoading(true);
+        if (!quiet) setError(null);
         try {
             const sortBy = sort === "requested-desc" ? "createdAt" : sort === "payment" ? "paymentStatus" : "appointmentDateTime";
             const sortDir = sort === "appointment-asc" ? "asc" : "desc";
@@ -186,17 +191,17 @@ function AppointmentManagement() {
             setWorkflowCounts(counts);
             setLastUpdated(new Date());
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to load appointments");
+            if (!quiet) setError(err instanceof Error ? err.message : "Failed to load appointments");
         } finally {
-            setLoading(false);
+            if (!quiet) setLoading(false);
         }
     }, [authHeaders, deferredQuery, detail, page, readResponse, sort, workflow]);
 
     useEffect(() => { void fetchAppointments(); }, [fetchAppointments]);
 
-    const fetchCalendarRange = useCallback(async ({ start, end }: CalendarRange) => {
-        setCalendarLoading(true);
-        setError(null);
+    const fetchCalendarRange = useCallback(async ({ start, end }: CalendarRange, quiet = false) => {
+        if (!quiet) setCalendarLoading(true);
+        if (!quiet) setError(null);
         try {
             const params = new URLSearchParams({ startDate: localDateTime(start), endDate: localDateTime(end) });
             const data: Appointment[] = await readResponse(await fetch(
@@ -206,9 +211,9 @@ function AppointmentManagement() {
             setCalendarAppointments(data.filter(item => matchesWorkflow(item, workflow, detail)));
             setLastUpdated(new Date());
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to load the calendar");
+            if (!quiet) setError(err instanceof Error ? err.message : "Failed to load the calendar");
         } finally {
-            setCalendarLoading(false);
+            if (!quiet) setCalendarLoading(false);
         }
     }, [authHeaders, detail, readResponse, workflow]);
 
@@ -220,6 +225,22 @@ function AppointmentManagement() {
     const refreshCurrentView = useCallback(async () => {
         if (viewMode === "calendar" && activeCalendarRange) await fetchCalendarRange(activeCalendarRange);
         else await fetchAppointments();
+    }, [activeCalendarRange, fetchAppointments, fetchCalendarRange, viewMode]);
+
+    useEffect(() => {
+        const refreshQuietly = () => {
+            if (document.visibilityState !== "visible") return;
+            if (viewMode === "calendar" && activeCalendarRange) void fetchCalendarRange(activeCalendarRange, true);
+            else void fetchAppointments(true);
+        };
+        const timer = window.setInterval(refreshQuietly, 15_000);
+        window.addEventListener("focus", refreshQuietly);
+        document.addEventListener("visibilitychange", refreshQuietly);
+        return () => {
+            window.clearInterval(timer);
+            window.removeEventListener("focus", refreshQuietly);
+            document.removeEventListener("visibilitychange", refreshQuietly);
+        };
     }, [activeCalendarRange, fetchAppointments, fetchCalendarRange, viewMode]);
 
     const changeWorkflow = (next: WorkflowView) => {
@@ -451,6 +472,8 @@ function AppointmentManagement() {
                                         <div className="mb-3 flex flex-wrap items-center gap-2">
                                             <h2 className="text-lg font-semibold text-neutral-900">{appointment.customer.firstName} {appointment.customer.lastName}</h2>
                                             <span className={cn("rounded-full border px-2.5 py-1 text-xs font-semibold", statusClass(appointment.status))}>{operationalLabel}</span>
+                                            {appointment.cancelledByCustomer && <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800">CANCELLED BY CUSTOMER</span>}
+                                            {!appointment.cancelledByCustomer && appointment.rescheduledFromDateTime && <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">RESCHEDULED BY CUSTOMER</span>}
                                             {overdue && <span className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white">OVERDUE</span>}
                                             {appointment.paymentStatus && <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", paymentClass(appointment.paymentStatus))}>PAYMENT: {appointment.paymentStatus.replaceAll("_", " ")}</span>}
                                         </div>
@@ -463,6 +486,8 @@ function AppointmentManagement() {
                                         {captureProcessing && (
                                             <p className="mt-3 text-xs font-medium text-blue-700">Approval is waiting for the deposit capture to finish.</p>
                                         )}
+                                        {appointment.rescheduledFromDateTime && <div className="mb-3 rounded-sm border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900"><b>Customer rescheduled:</b> {formatDateTime(appointment.rescheduledFromDateTime)} → {formatDateTime(appointment.appointmentDateTime)}</div>}
+                                        {appointment.cancelledByCustomer && <div className="mb-3 rounded-sm border border-violet-200 bg-violet-50 p-3 text-sm text-violet-900"><b>Customer cancellation{appointment.customerCancellationReason ? ":" : ""}</b>{appointment.customerCancellationReason && ` ${appointment.customerCancellationReason}`}</div>}
                                         <div className="grid gap-2 text-sm text-neutral-600 md:grid-cols-2">
                                             <p className="flex items-center gap-2"><Calendar className="h-4 w-4 shrink-0" />{formatDateTime(appointment.appointmentDateTime)}</p>
                                             <a className="flex min-w-0 items-center gap-2 hover:text-neutral-900 hover:underline" href={`mailto:${appointment.customer.email}`}><Mail className="h-4 w-4 shrink-0" /><span className="truncate">{appointment.customer.email}</span></a>
@@ -543,6 +568,35 @@ function AppointmentManagement() {
 }
 
 function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, onDeny }: { appointment: Appointment; formatDateTime: (value?: string) => string; onClose: () => void; onApprove?: () => void; onDeny?: () => void }) {
+    const [events, setEvents] = useState<{ id: number; eventType: string; appointmentStatus: string; paymentStatus?: string; actorName?: string; reason?: string; createdAt: string }[]>([]);
+    const [eventsLoading, setEventsLoading] = useState(true);
+    const [eventsError, setEventsError] = useState("");
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const load = async () => {
+            setEventsLoading(true);
+            setEventsError("");
+            try {
+                const token = getAuthToken();
+                const response = await fetch(`${API_BASE_URL}/api/appointments/${appointment.id}/events`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    cache: "no-store",
+                    signal: controller.signal
+                });
+                const body = await response.json().catch(() => null);
+                if (!response.ok) throw new Error(body?.error || "Activity could not be loaded");
+                setEvents(Array.isArray(body) ? body : []);
+            } catch (error) {
+                if (!controller.signal.aborted) setEventsError(error instanceof Error ? error.message : "Activity could not be loaded");
+            } finally {
+                if (!controller.signal.aborted) setEventsLoading(false);
+            }
+        };
+        void load();
+        return () => controller.abort();
+    }, [appointment.id]);
+
     return <div className="fixed inset-0 z-40 flex justify-end bg-black/40" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
         <aside role="dialog" aria-modal="true" aria-labelledby="appointment-detail-title" className="h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between"><div><p className="text-xs uppercase tracking-wide text-neutral-500">Appointment #{appointment.id}</p><h2 id="appointment-detail-title" className="mt-1 text-2xl font-semibold">{appointment.customer.firstName} {appointment.customer.lastName}</h2></div><button aria-label="Close details" onClick={onClose} className="p-2"><X className="h-5 w-5" /></button></div>
@@ -556,10 +610,15 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
                 <div><dt className="text-neutral-500">Size</dt><dd className="font-medium">{appointment.selectedSize || "—"}</dd></div>
                 <div><dt className="text-neutral-500">Length</dt><dd className="font-medium">{appointment.selectedLength || "—"}</dd></div>
                 <div><dt className="text-neutral-500">Foundation</dt><dd className="font-medium">{appointment.selectedFoundation ? (appointment.selectedFoundation === "KNOTLESS" ? "Knotless" : "Regular") : "—"}</dd></div>
+                <div><dt className="text-neutral-500">Self-service changes</dt><dd className="font-medium">{appointment.selfServiceChangeCount ?? 0} of 1 used</dd></div>
+                <div><dt className="text-neutral-500">Changed by customer</dt><dd className="font-medium">{formatDateTime(appointment.lastSelfServiceChangeAt)}</dd></div>
             </dl>
+            {appointment.rescheduledFromDateTime && <div className="mt-6 border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"><h3 className="font-semibold">Rescheduled by customer</h3><p className="mt-2">Previous: {formatDateTime(appointment.rescheduledFromDateTime)}</p><p>Current: {formatDateTime(appointment.appointmentDateTime)}</p></div>}
+            {appointment.cancelledByCustomer && <div className="mt-6 border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900"><h3 className="font-semibold">Cancelled by customer</h3><p className="mt-2">Reason: {appointment.customerCancellationReason || "No reason provided"}</p></div>}
             <div className="mt-6 border-t pt-5 text-sm"><h3 className="font-semibold">Customer</h3><p className="mt-2 flex items-center gap-2"><User className="h-4 w-4" />{appointment.customer.firstName} {appointment.customer.lastName}</p><a href={`mailto:${appointment.customer.email}`} className="mt-2 flex items-center gap-2 hover:underline"><Mail className="h-4 w-4" />{appointment.customer.email}</a><a href={`tel:${appointment.customer.phoneNumber}`} className="mt-2 flex items-center gap-2 hover:underline"><Phone className="h-4 w-4" />{appointment.customer.phoneNumber}</a></div>
             {appointment.notes && <div className="mt-6 border-t pt-5 text-sm"><h3 className="flex items-center gap-2 font-semibold"><MessageSquare className="h-4 w-4" />Customer notes</h3><p className="mt-2 whitespace-pre-wrap text-neutral-700">{appointment.notes}</p></div>}
             {appointment.adminNotes && <div className="mt-6 border-t pt-5 text-sm"><h3 className="font-semibold">Admin notes</h3><p className="mt-2 whitespace-pre-wrap text-neutral-700">{appointment.adminNotes}</p></div>}
+            <div className="mt-6 border-t pt-5 text-sm"><h3 className="font-semibold">Appointment activity</h3>{eventsLoading ? <p className="mt-3 flex items-center gap-2 text-neutral-500"><Loader2 className="h-4 w-4 animate-spin" />Loading activity…</p> : eventsError ? <p className="mt-3 text-red-700">{eventsError}</p> : events.length === 0 ? <p className="mt-3 text-neutral-500">No activity recorded.</p> : <ol className="mt-4 space-y-4 border-l border-neutral-200 pl-5">{events.map(event => <li key={event.id} className="relative"><span className="absolute -left-[25px] top-1 h-2 w-2 rounded-full bg-neutral-700"/><p className="font-medium">{event.eventType.replaceAll("_", " ").toLowerCase().replace(/^./, value => value.toUpperCase())}</p><p className="text-xs text-neutral-500">{formatDateTime(event.createdAt)}{event.actorName ? ` · ${event.actorName}` : " · Customer/system"}</p>{event.reason && <p className="mt-1 whitespace-pre-wrap text-neutral-700">{event.reason}</p>}</li>)}</ol>}</div>
             {(onApprove || onDeny) && <div className="mt-8 flex flex-wrap justify-end gap-2 border-t pt-5">{onDeny && <Button variant="destructive" onClick={onDeny}>Deny</Button>}{onApprove && <Button onClick={onApprove}>Approve and capture deposit</Button>}</div>}
         </aside>
     </div>;
