@@ -9,24 +9,13 @@ import Navbar from '@/components/Navbar';
 import FooterWrapper from '@/components/FooterWrapper';
 import { toProxyUrl } from '@/lib/utils/image';
 
-/**
- * @param {{
- *   editMode?: boolean,
- *   onEdit?: (item: any) => void,
- *   onDelete?: (item: any) => void,
- *   onToggleFeatured?: (item: any) => void,
- *   selectedItems?: string[],
- *   onToggleSelection?: (itemId: string) => void,
- * }} [props]
- */
-export default function GalleryPage({ 
-  editMode = false,
-  onEdit = null,
-  onDelete = null,
-  onToggleFeatured = null,
-  selectedItems = [],
-  onToggleSelection = null
-} = {}) {
+export default function GalleryPage() {
+  const editMode = false;
+  const onEdit = null;
+  const onDelete = null;
+  const onToggleFeatured = null;
+  const selectedItems = [];
+  const onToggleSelection = null;
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
