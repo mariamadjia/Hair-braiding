@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server';
 
 const API_URL = process.env.BACKEND_API_URL || 'http://localhost:8080';
 
+export const dynamic = 'force-dynamic';
+
 // GET - Retrieve gallery collections from categories with flipping images
 export async function GET(request: Request) {
   try {
     if (new URL(request.url).searchParams.get('view') === 'full') {
       const galleryResponse = await fetch(`${API_URL}/api/categories/gallery`, {
-        next: { revalidate: 300 },
+        cache: 'no-store',
       });
       if (!galleryResponse.ok) {
         return NextResponse.json(
@@ -16,7 +18,7 @@ export async function GET(request: Request) {
         );
       }
       return NextResponse.json(await galleryResponse.json(), {
-        headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400' },
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
       });
     }
 

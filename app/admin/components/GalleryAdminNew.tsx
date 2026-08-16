@@ -191,6 +191,7 @@ export function GalleryAdminNew() {
                 'Content-Type': 'application/json',
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
+            credentials: 'include',
             body: JSON.stringify(orderedCategories.map((category) => category.id)),
         });
         if (!response.ok) throw new Error(`Failed to update display order: ${response.status}`);
