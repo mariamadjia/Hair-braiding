@@ -185,7 +185,6 @@ export default function ManageAppointmentClient({ token }: { token: string }) {
         <aside className="h-fit rounded-xl border border-[#e2d4c5] p-6 lg:mt-[44px]">
           <h2 className="font-serif text-2xl">Why can’t I make changes?</h2>
           <div className="mt-7 space-y-7 text-sm text-stone-700"><div className="flex gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f6ead8]"><Clock3/></div><p className="pt-1">Changes require at least 72 hours’ notice.</p></div><div className="flex gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f6ead8]"><UserRound/></div><p className="pt-1">Only one self-service cancellation or reschedule is allowed.</p></div><div className="flex gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f6ead8]"><CircleDollarSign/></div><p className="pt-1">Your {money(appointment.depositPaidCents)} deposit remains non-refundable.</p></div></div>
-          <div className="mt-8 border-t border-[#e2d4c5] pt-6"><button type="button" onClick={() => setMode("summary")} className="w-full rounded-lg border border-[#684738] px-4 py-3 font-serif text-lg">Return to appointment</button></div>
         </aside>
       </div>
       <footer className="bg-gradient-to-r from-[#3a2114] to-[#2a160d] px-6 py-5 text-center text-sm text-white">AH Braiding Salon · (210) 812-8121</footer>
