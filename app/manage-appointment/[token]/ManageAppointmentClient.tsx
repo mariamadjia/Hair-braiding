@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { CalendarDays, CheckCircle2, CircleDollarSign, Clock3, Info, LockKeyhole, Phone, TriangleAlert, UserRound, X } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config/api";
+import ManageAvailabilityPicker, { ManageSlot } from "@/components/ManageAvailabilityPicker";
 
 type Appointment = {
   customerFirstName: string;
@@ -21,25 +22,20 @@ type Appointment = {
   canReschedule: boolean;
   lockReason?: string;
 };
-type Slot = { startTime: string; endTime: string };
-
 const money = (cents = 0) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 const parseDate = (value?: string) => {
   if (!value) return null;
-  const parsed = new Date(value);
+  const local = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  const parsed = local
+    ? new Date(Date.UTC(+local[1], +local[2] - 1, +local[3], +local[4], +local[5]))
+    : new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 const dateTime = (value?: string) => {
   const parsed = parseDate(value);
   return parsed
-    ? new Intl.DateTimeFormat("en-US", { dateStyle: "full", timeStyle: "short", timeZone: "America/Chicago" }).format(parsed)
+    ? new Intl.DateTimeFormat("en-US", { dateStyle: "full", timeStyle: "short", timeZone: "UTC" }).format(parsed) + " CT"
     : "Date unavailable";
-};
-const time = (value?: string) => {
-  const parsed = parseDate(value);
-  return parsed
-    ? new Intl.DateTimeFormat("en-US", { timeStyle: "short", timeZone: "America/Chicago" }).format(parsed)
-    : "Time unavailable";
 };
 
 async function read(response: Response) {
@@ -51,9 +47,6 @@ async function read(response: Response) {
 export default function ManageAppointmentClient({ token }: { token: string }) {
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [mode, setMode] = useState<"summary" | "reschedule" | "cancel">("summary");
-  const [date, setDate] = useState("");
-  const [slots, setSlots] = useState<Slot[]>([]);
-  const [selected, setSelected] = useState<Slot | null>(null);
   const [reason, setReason] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -74,21 +67,7 @@ export default function ManageAppointmentClient({ token }: { token: string }) {
     void load();
   }, [token]);
 
-  const loadSlots = async (nextDate: string) => {
-    setDate(nextDate);
-    setSelected(null);
-    setSlots([]);
-    setError(null);
-    if (!nextDate) return;
-    try {
-      setSlots(await read(await fetch(`${API_BASE_URL}/api/public/appointments/manage/${encodeURIComponent(token)}/slots?date=${nextDate}`, { cache: "no-store" })));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load times.");
-    }
-  };
-
-  const reschedule = async () => {
-    if (!selected) return;
+  const reschedule = async (selected: ManageSlot) => {
     setBusy(true);
     setError(null);
     try {
@@ -158,15 +137,15 @@ export default function ManageAppointmentClient({ token }: { token: string }) {
             : !cancelled && <><div className="grid gap-3 sm:grid-cols-2"><button disabled className="rounded-xl bg-stone-100 px-5 py-4 text-stone-400"><LockKeyhole className="mr-2 inline h-4 w-4"/>Reschedule appointment</button><button disabled className="rounded-xl bg-stone-100 px-5 py-4 text-stone-400"><LockKeyhole className="mr-2 inline h-4 w-4"/>Cancel appointment</button></div><p className="text-center text-sm text-stone-500">Online cancellation and rescheduling are no longer available.</p></>}
         </>}
 
-        {mode === "reschedule" && <section className="space-y-5">
-          <button className="flex items-center gap-2 text-sm underline" onClick={() => setMode("summary")}><X className="h-4 w-4"/>Close</button>
-          <h2 className="font-serif text-3xl">Choose a new date and time</h2>
-          <input aria-label="New appointment date" type="date" min={new Date().toISOString().slice(0, 10)} value={date} onChange={e => void loadSlots(e.target.value)} className="w-full rounded-xl border border-[#d7b99d] bg-white p-4"/>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{slots.map(slot => <button key={slot.startTime} onClick={() => setSelected(slot)} className={`rounded-xl border p-3 ${selected?.startTime === slot.startTime ? "bg-[#351d12] text-white" : "bg-white"}`}><Clock3 className="mr-2 inline h-4 w-4"/>{time(slot.startTime)}</button>)}</div>
-          {date && slots.length === 0 && <p className="text-stone-500">No times are available on this date.</p>}
-          <div className="rounded-xl bg-[#f4eadc] p-4 text-sm">Your current appointment remains reserved until the new time is confirmed. This uses your one self-service change.</div>
-          <button disabled={!selected || busy} onClick={reschedule} className="w-full rounded-xl bg-[#351d12] p-4 text-white disabled:opacity-40">{busy ? "Confirming…" : "Confirm one-time reschedule"}</button>
-        </section>}
+        {mode === "reschedule" && (
+          <ManageAvailabilityPicker
+            token={token}
+            currentAppointmentDateTime={appointment.appointmentDateTime}
+            busy={busy}
+            onClose={() => setMode("summary")}
+            onConfirm={reschedule}
+          />
+        )}
 
         {mode === "cancel" && <section className="space-y-5">
           <button className="flex items-center gap-2 text-sm underline" onClick={() => setMode("summary")}><X className="h-4 w-4"/>Close</button>
@@ -183,7 +162,7 @@ export default function ManageAppointmentClient({ token }: { token: string }) {
         </div>
 
         <aside className="h-fit rounded-xl border border-[#e2d4c5] p-6 lg:mt-[44px]">
-          <h2 className="font-serif text-2xl">Why can’t I make changes?</h2>
+          <h2 className="font-serif text-2xl">{changesOpen ? "Appointment change rules" : "Why can’t I make changes?"}</h2>
           <div className="mt-7 space-y-7 text-sm text-stone-700"><div className="flex gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f6ead8]"><Clock3/></div><p className="pt-1">Changes require at least 72 hours’ notice.</p></div><div className="flex gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f6ead8]"><UserRound/></div><p className="pt-1">Only one self-service cancellation or reschedule is allowed.</p></div><div className="flex gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f6ead8]"><CircleDollarSign/></div><p className="pt-1">Your {money(appointment.depositPaidCents)} deposit remains non-refundable.</p></div></div>
         </aside>
       </div>
