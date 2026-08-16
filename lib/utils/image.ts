@@ -17,6 +17,10 @@ export const toProxyUrl = (imageUrl: string | null | undefined): string => {
   if (imageUrl.startsWith('/api/gallery/image/')) {
     return `/backend-api${imageUrl}`;
   }
+  // This is already the browser-ready same-origin backend rewrite.
+  if (imageUrl.startsWith('/backend-api/api/gallery/image/')) {
+    return imageUrl;
+  }
   // Normalize absolute gallery URLs left by older records to the same-origin
   // rewrite so they share a CDN/browser cache key and avoid CORS.
   if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
@@ -44,6 +48,9 @@ export const fromProxyUrl = (imageUrl: string | null | undefined): string => {
   if (imageUrl.includes('/api/proxy-image?url=')) {
     const urlParam = imageUrl.split('url=')[1];
     return decodeURIComponent(urlParam);
+  }
+  if (imageUrl.startsWith('/backend-api/api/gallery/image/')) {
+    return imageUrl.replace('/backend-api', '');
   }
   // Otherwise return as is
   return imageUrl;

@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
     if (imageUrl.startsWith('/Gallery/uploads/')) {
       const filename = imageUrl.split('/').pop();
       targetUrl = `${NORMALIZED_API_BASE_URL}/api/gallery/image/${filename}`;
+    } else if (imageUrl.startsWith('/backend-api/api/gallery/image/')) {
+      targetUrl = `${NORMALIZED_API_BASE_URL}${imageUrl.replace('/backend-api', '')}`;
     } else if (!imageUrl.startsWith('http')) {
       targetUrl = `${NORMALIZED_API_BASE_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
     }
