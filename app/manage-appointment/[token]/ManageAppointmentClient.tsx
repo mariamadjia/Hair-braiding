@@ -5,23 +5,41 @@ import { CalendarDays, CheckCircle2, Clock3, LockKeyhole, Phone, TriangleAlert, 
 import { API_BASE_URL } from "@/lib/config/api";
 
 type Appointment = {
-  customerName: string;
+  customerFirstName: string;
+  maskedEmail: string;
   serviceName: string;
-  sizeName?: string;
-  lengthName?: string;
-  startTime: string;
+  selectedSize?: string;
+  selectedLength?: string;
+  appointmentDateTime: string;
+  appointmentEndDateTime?: string;
   status: string;
-  depositAmountCents: number;
-  changeDeadline: string;
-  changesRemaining: number;
-  changesAllowed: boolean;
-  lockedReason?: string;
+  depositPaidCents: number;
+  changeDeadlineAt: string;
+  selfServiceChangesRemaining: number;
+  canCancel: boolean;
+  canReschedule: boolean;
+  lockReason?: string;
 };
 type Slot = { startTime: string; endTime: string };
 
 const money = (cents = 0) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
-const dateTime = (value: string) => new Intl.DateTimeFormat("en-US", { dateStyle: "full", timeStyle: "short", timeZone: "America/Chicago" }).format(new Date(value));
-const time = (value: string) => new Intl.DateTimeFormat("en-US", { timeStyle: "short", timeZone: "America/Chicago" }).format(new Date(value));
+const parseDate = (value?: string) => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+const dateTime = (value?: string) => {
+  const parsed = parseDate(value);
+  return parsed
+    ? new Intl.DateTimeFormat("en-US", { dateStyle: "full", timeStyle: "short", timeZone: "America/Chicago" }).format(parsed)
+    : "Date unavailable";
+};
+const time = (value?: string) => {
+  const parsed = parseDate(value);
+  return parsed
+    ? new Intl.DateTimeFormat("en-US", { timeStyle: "short", timeZone: "America/Chicago" }).format(parsed)
+    : "Time unavailable";
+};
 
 async function read(response: Response) {
   const body = await response.json().catch(() => ({}));
@@ -76,7 +94,7 @@ export default function ManageAppointmentClient({ token }: { token: string }) {
       const updated = await read(await fetch(`${API_BASE_URL}/api/public/appointments/manage/${encodeURIComponent(token)}/reschedule`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ startTime: selected.startTime }),
+        body: JSON.stringify({ appointmentDateTime: selected.startTime }),
       }));
       setAppointment(updated);
       setMessage("Your appointment was rescheduled successfully.");
@@ -123,15 +141,15 @@ export default function ManageAppointmentClient({ token }: { token: string }) {
         {message && <div className="flex gap-3 rounded-xl bg-emerald-50 p-4 text-emerald-800"><CheckCircle2 className="shrink-0"/>{message}</div>}
         {error && <div className="flex gap-3 rounded-xl bg-red-50 p-4 text-red-800"><TriangleAlert className="shrink-0"/>{error}</div>}
         <section className="rounded-2xl border border-[#ead9ca] p-5 sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-serif text-2xl">{dateTime(appointment.startTime)}</p><p className="mt-3 text-lg font-semibold">{appointment.serviceName}</p><p className="text-stone-600">{[appointment.sizeName, appointment.lengthName].filter(Boolean).join(" • ")}</p></div><span className="rounded-full bg-[#edf5df] px-3 py-1 text-sm">{appointment.status}</span></div>
-          <hr className="my-5 border-[#ead9ca]"/><p>Deposit paid: <strong>{money(appointment.depositAmountCents)}</strong> <span className="text-red-700">• Non-refundable</span></p>
+          <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-serif text-2xl">{dateTime(appointment.appointmentDateTime)}</p><p className="mt-3 text-lg font-semibold">{appointment.serviceName}</p><p className="text-stone-600">{[appointment.selectedSize, appointment.selectedLength].filter(Boolean).join(" • ")}</p></div><span className="rounded-full bg-[#edf5df] px-3 py-1 text-sm">{appointment.status}</span></div>
+          <hr className="my-5 border-[#ead9ca]"/><p>Deposit paid: <strong>{money(appointment.depositPaidCents)}</strong> <span className="text-red-700">• Non-refundable</span></p>
         </section>
 
         {mode === "summary" && <>
-          {!cancelled && <section className="rounded-2xl border border-[#ead9ca] p-5"><div className="flex gap-3"><CalendarDays/><div><h2 className="font-semibold">Appointment changes</h2><p className="mt-1 text-stone-600">You may cancel or reschedule online once, up to 72 hours before your appointment.</p><p className="mt-3 text-sm">Changes available until {dateTime(appointment.changeDeadline)}.</p></div></div></section>}
-          {!cancelled && appointment.changesAllowed
-            ? <div className="grid gap-3 sm:grid-cols-2"><button className="rounded-xl bg-[#351d12] px-5 py-4 text-white" onClick={() => { setMode("reschedule"); setError(null); }}>Reschedule appointment</button><button className="rounded-xl border border-[#6b3d2a] px-5 py-4" onClick={() => { setMode("cancel"); setError(null); }}>Cancel appointment</button></div>
-            : !cancelled && <section className="rounded-2xl bg-[#f4eadc] p-5"><div className="flex gap-3"><LockKeyhole/><div><h2 className="font-semibold">Online changes are closed</h2><p className="mt-1 text-stone-600">{appointment.lockedReason || "Your one self-service change has been used or the 72-hour deadline has passed."}</p></div></div></section>}
+          {!cancelled && <section className="rounded-2xl border border-[#ead9ca] p-5"><div className="flex gap-3"><CalendarDays/><div><h2 className="font-semibold">Appointment changes</h2><p className="mt-1 text-stone-600">You may cancel or reschedule online once, up to 72 hours before your appointment.</p><p className="mt-3 text-sm">Changes available until {dateTime(appointment.changeDeadlineAt)}.</p></div></div></section>}
+          {!cancelled && (appointment.canCancel || appointment.canReschedule)
+            ? <div className="grid gap-3 sm:grid-cols-2"><button disabled={!appointment.canReschedule} className="rounded-xl bg-[#351d12] px-5 py-4 text-white disabled:opacity-40" onClick={() => { setMode("reschedule"); setError(null); }}>Reschedule appointment</button><button disabled={!appointment.canCancel} className="rounded-xl border border-[#6b3d2a] px-5 py-4 disabled:opacity-40" onClick={() => { setMode("cancel"); setError(null); }}>Cancel appointment</button></div>
+            : !cancelled && <section className="rounded-2xl bg-[#f4eadc] p-5"><div className="flex gap-3"><LockKeyhole/><div><h2 className="font-semibold">Online changes are closed</h2><p className="mt-1 text-stone-600">{appointment.lockReason || "Your one self-service change has been used or the 72-hour deadline has passed."}</p></div></div></section>}
         </>}
 
         {mode === "reschedule" && <section className="space-y-5">
@@ -147,7 +165,7 @@ export default function ManageAppointmentClient({ token }: { token: string }) {
         {mode === "cancel" && <section className="space-y-5">
           <button className="flex items-center gap-2 text-sm underline" onClick={() => setMode("summary")}><X className="h-4 w-4"/>Close</button>
           <h2 className="font-serif text-3xl">Cancel appointment?</h2>
-          <div className="rounded-xl border border-red-300 bg-red-50 p-4 font-semibold text-red-800">Your {money(appointment.depositAmountCents)} deposit is non-refundable.</div>
+          <div className="rounded-xl border border-red-300 bg-red-50 p-4 font-semibold text-red-800">Your {money(appointment.depositPaidCents)} deposit is non-refundable.</div>
           <p>Cancellation is available only up to 72 hours before your appointment. This will use your one self-service change and cannot be undone.</p>
           <label className="block"><span className="text-sm">Reason for cancellation (optional)</span><textarea value={reason} onChange={e => setReason(e.target.value)} className="mt-2 w-full rounded-xl border border-[#d7b99d] p-3" rows={3}/></label>
           <label className="flex gap-3"><input type="checkbox" checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)}/><span>I understand my deposit will not be refunded and this action cannot be undone.</span></label>
