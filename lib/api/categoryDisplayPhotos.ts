@@ -1,5 +1,4 @@
 import { API_BASE_URL } from "@/lib/config/api";
-import { getAuthToken } from "@/lib/utils/auth";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
 
 export type CategoryDisplayPhotos = {
@@ -40,12 +39,6 @@ export async function saveCategoryFlippingImages(
   categoryId: number,
   imageUrls: string[]
 ) {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Admin session expired. Please sign in again.");
-  }
-
   const backendUrls = imageUrls
     .map(fromProxyUrl)
     .filter((url): url is string => Boolean(url));
@@ -56,8 +49,8 @@ export async function saveCategoryFlippingImages(
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
+      credentials: "include",
       body: JSON.stringify(backendUrls),
       cache: "no-store",
     }
