@@ -42,7 +42,7 @@ export async function getCategorySubcategories(
           name: sub.name,
           slug: sub.slug,
           image:
-            sub.image || (subImages[0] ? subImages[0].imageUrl : null),
+            (subImages[0] ? subImages[0].imageUrl : null) || sub.image || null,
           images:
             subImages.length > 0
               ? subImages.map((img: any) => img.imageUrl)
