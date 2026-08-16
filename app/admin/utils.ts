@@ -81,7 +81,7 @@ function normalizeUploadedUrl(rawUrl: string): string {
 
 export async function uploadFile(
   file: File,
-  token: string,
+  token: string = "",
   relationship: GalleryImageRelationship = {},
   useSimpleUpload: boolean = false
 ): Promise<string> {
@@ -97,8 +97,9 @@ export async function uploadFile(
     throw new Error(`Invalid file type: ${file.type}. Allowed types: JPEG, PNG, WebP, GIF.`);
   }
 
-  // Validate token
-  if (!token) {
+  // The simple admin upload still uses bearer authentication. Gallery uploads
+  // use the HttpOnly cookie session through galleryApi.
+  if (useSimpleUpload && !token) {
     throw new Error('Authentication required. Please log in and try again.');
   }
 

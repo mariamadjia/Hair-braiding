@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X, GripVertical, Trash2, Plus, ArrowLeft, ArrowRight } from "lucide-react";
 import { GalleryImage } from "@/lib/api/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
+import { ImageUploader } from "./ImageUploader";
 
 interface FlippingImagesModalProps {
     category: {
@@ -28,6 +29,7 @@ export function FlippingImagesModal({
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [showImagePicker, setShowImagePicker] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
     const [message, setMessage] = useState("");
 
     const MIN_IMAGES = 2;
@@ -104,6 +106,7 @@ export function FlippingImagesModal({
         new Set([
             ...fallbackImageUrls,
             ...allCategoryImages.map((image) => image.imageUrl),
+            ...uploadedImageUrls,
         ])
     );
 
@@ -233,6 +236,21 @@ export function FlippingImagesModal({
                                 >
                                     Cancel
                                 </button>
+                            </div>
+                            <div className="mb-5">
+                                <ImageUploader
+                                    categoryId={category.id}
+                                    onChange={(imageUrl) => {
+                                        setUploadedImageUrls((current) => [...current, imageUrl]);
+                                        if (selectedImages.length < MAX_IMAGES) {
+                                            setSelectedImages((current) => [...current, imageUrl]);
+                                            setShowImagePicker(false);
+                                            setMessage("Image uploaded and added.");
+                                        } else {
+                                            setMessage("Image uploaded. Remove a selected image before adding it.");
+                                        }
+                                    }}
+                                />
                             </div>
                             
                             {availableImages.length === 0 ? (

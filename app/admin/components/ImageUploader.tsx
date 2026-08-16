@@ -13,7 +13,7 @@ export function ImageUploader({
   onChange,
 }: {
   value?: string;
-  token: string;
+  token?: string;
   categoryId?: number;
   subcategoryId?: number;
   serviceItemId?: number;

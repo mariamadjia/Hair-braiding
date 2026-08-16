@@ -119,6 +119,7 @@ export const galleryApi = {
                 headers: {
                     ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
+                credentials: 'include',
                 body: formData,
                 signal: controller.signal,
             });
