@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarDays, CheckCircle2, Clock3, LockKeyhole, Phone, TriangleAlert, X } from "lucide-react";
+import Image from "next/image";
+import { CalendarDays, CheckCircle2, CircleDollarSign, Clock3, Info, LockKeyhole, Phone, TriangleAlert, UserRound, X } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config/api";
 
 type Appointment = {
@@ -130,26 +131,31 @@ export default function ManageAppointmentClient({ token }: { token: string }) {
   if (!appointment) return <main className="min-h-screen grid place-items-center bg-[#fbf7f1] p-6"><section className="max-w-lg rounded-3xl border border-[#d7b99d] bg-white p-10 text-center"><LockKeyhole className="mx-auto mb-4"/><h1 className="font-serif text-3xl">Link unavailable</h1><p className="mt-3 text-stone-600">{error}</p></section></main>;
 
   const cancelled = appointment.status === "CANCELLED" || appointment.status === "DENIED";
-  return <main className="min-h-screen bg-[#fbf7f1] px-4 py-8 text-[#321a10] sm:py-14">
-    <div className="mx-auto max-w-3xl overflow-hidden rounded-[28px] border border-[#d7b99d] bg-[#fffdfa] shadow-xl">
-      <header className="border-b border-[#ead9ca] px-6 py-8 text-center sm:px-12">
-        <div className="font-serif text-4xl tracking-[.18em]">AH</div><div className="text-[10px] tracking-[.35em]">BRAIDING SALON</div>
-        <h1 className="mt-7 font-serif text-4xl">Manage your appointment</h1>
-        <p className="mt-2 text-sm text-stone-500"><LockKeyhole className="mr-1 inline h-4 w-4"/>Secure, private appointment link</p>
+  const changesOpen = !cancelled && (appointment.canCancel || appointment.canReschedule);
+  return <main className="min-h-screen bg-[#fbf7f1] px-3 py-4 text-[#2f1b12] sm:px-6 sm:py-8 lg:py-12">
+    <div className="mx-auto max-w-[1180px] overflow-hidden rounded-[20px] border border-[#cdb79f] bg-[#fffdfa] shadow-[0_18px_55px_rgba(62,38,25,.12)]">
+      <header className="relative px-5 pb-6 pt-5 sm:px-10 sm:pb-8 sm:pt-8 lg:px-14">
+        <div className="flex items-start justify-between gap-4">
+          <Image src="/logo/logo2.PNG" alt="AH Braiding Salon" width={132} height={80} className="h-auto w-[105px] object-contain sm:w-[132px]" priority/>
+          <div className="text-right text-xs text-stone-600 sm:text-sm"><p><LockKeyhole className="mr-1 inline h-4 w-4"/>Secure link</p><p className="mt-1">{appointment.maskedEmail}</p></div>
+        </div>
+        <div className="mt-5 text-center sm:mt-0"><h1 className="font-serif text-[2rem] leading-tight sm:text-5xl">Manage your appointment</h1><div className="mx-auto mt-4 flex w-40 items-center gap-3 text-[#c8a982]"><span className="h-px flex-1 bg-[#decbb5]"/><span>⌘</span><span className="h-px flex-1 bg-[#decbb5]"/></div></div>
       </header>
-      <div className="space-y-5 p-5 sm:p-10">
+      <div className="grid gap-7 px-5 pb-8 sm:px-10 lg:grid-cols-[minmax(0,1fr)_285px] lg:px-14 lg:pb-10">
+        <div className="space-y-4">
+          <p className="font-serif text-xl">Hi {appointment.customerFirstName},</p>
         {message && <div className="flex gap-3 rounded-xl bg-emerald-50 p-4 text-emerald-800"><CheckCircle2 className="shrink-0"/>{message}</div>}
         {error && <div className="flex gap-3 rounded-xl bg-red-50 p-4 text-red-800"><TriangleAlert className="shrink-0"/>{error}</div>}
-        <section className="rounded-2xl border border-[#ead9ca] p-5 sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-serif text-2xl">{dateTime(appointment.appointmentDateTime)}</p><p className="mt-3 text-lg font-semibold">{appointment.serviceName}</p><p className="text-stone-600">{[appointment.selectedSize, appointment.selectedLength].filter(Boolean).join(" • ")}</p></div><span className="rounded-full bg-[#edf5df] px-3 py-1 text-sm">{appointment.status}</span></div>
+        <section className="rounded-xl border border-[#e2d4c5] p-5 sm:p-7">
+          <div className="flex items-start gap-4 sm:gap-6"><div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#3c2418] text-[#ead6bc] sm:h-20 sm:w-20"><UserRound className="h-9 w-9 sm:h-11 sm:w-11"/></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-start justify-between gap-2"><p className="font-serif text-xl leading-snug sm:text-2xl">{dateTime(appointment.appointmentDateTime)}</p><span className="rounded-md bg-[#e5efd7] px-2.5 py-1 text-xs text-[#355326]">{appointment.status === "APPROVED" ? "Confirmed" : appointment.status}</span></div><p className="mt-3 font-serif text-xl">{appointment.serviceName}</p><p className="text-stone-600">{[appointment.selectedSize, appointment.selectedLength].filter(Boolean).join(" • ")}</p></div></div>
           <hr className="my-5 border-[#ead9ca]"/><p>Deposit paid: <strong>{money(appointment.depositPaidCents)}</strong> <span className="text-red-700">• Non-refundable</span></p>
         </section>
 
         {mode === "summary" && <>
-          {!cancelled && <section className="rounded-2xl border border-[#ead9ca] p-5"><div className="flex gap-3"><CalendarDays/><div><h2 className="font-semibold">Appointment changes</h2><p className="mt-1 text-stone-600">You may cancel or reschedule online once, up to 72 hours before your appointment.</p><p className="mt-3 text-sm">Changes available until {dateTime(appointment.changeDeadlineAt)}.</p></div></div></section>}
-          {!cancelled && (appointment.canCancel || appointment.canReschedule)
+          {!cancelled && <section className={`rounded-xl border p-5 sm:p-6 ${changesOpen ? "border-[#e2d4c5]" : "border-[#e7d8c7] bg-[#fdfaf6]"}`}><div className="flex gap-4">{changesOpen ? <CalendarDays className="mt-1 shrink-0"/> : <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#f3e7d6]"><LockKeyhole className="h-7 w-7"/></div>}<div><div className="flex flex-wrap items-center gap-3"><h2 className="font-serif text-2xl">{changesOpen ? "Appointment changes" : "Online changes are closed"}</h2>{!changesOpen && <span className="rounded-md bg-[#f2dfbe] px-2.5 py-1 text-xs">72-hour deadline passed</span>}</div>{changesOpen ? <><p className="mt-2 text-stone-600">You may cancel or reschedule online once, up to 72 hours before your appointment.</p><p className="mt-3 text-sm">Changes available until {dateTime(appointment.changeDeadlineAt)}.</p></> : <><p className="mt-2 text-stone-600">Your appointment is still confirmed. The deadline to cancel or reschedule online was {dateTime(appointment.changeDeadlineAt)}.</p><p className="mt-4 border-t border-[#ead9ca] pt-4">For assistance, call or text (210) 812-8121.<br/><span className="text-stone-500">Approval is not guaranteed.</span></p></>}</div></div></section>}
+          {changesOpen
             ? <div className="grid gap-3 sm:grid-cols-2"><button disabled={!appointment.canReschedule} className="rounded-xl bg-[#351d12] px-5 py-4 text-white disabled:opacity-40" onClick={() => { setMode("reschedule"); setError(null); }}>Reschedule appointment</button><button disabled={!appointment.canCancel} className="rounded-xl border border-[#6b3d2a] px-5 py-4 disabled:opacity-40" onClick={() => { setMode("cancel"); setError(null); }}>Cancel appointment</button></div>
-            : !cancelled && <section className="rounded-2xl bg-[#f4eadc] p-5"><div className="flex gap-3"><LockKeyhole/><div><h2 className="font-semibold">Online changes are closed</h2><p className="mt-1 text-stone-600">{appointment.lockReason || "Your one self-service change has been used or the 72-hour deadline has passed."}</p></div></div></section>}
+            : !cancelled && <><div className="grid gap-3 sm:grid-cols-2"><button disabled className="rounded-xl bg-stone-100 px-5 py-4 text-stone-400"><LockKeyhole className="mr-2 inline h-4 w-4"/>Reschedule appointment</button><button disabled className="rounded-xl bg-stone-100 px-5 py-4 text-stone-400"><LockKeyhole className="mr-2 inline h-4 w-4"/>Cancel appointment</button></div><p className="text-center text-sm text-stone-500">Online cancellation and rescheduling are no longer available.</p></>}
         </>}
 
         {mode === "reschedule" && <section className="space-y-5">
@@ -172,10 +178,17 @@ export default function ManageAppointmentClient({ token }: { token: string }) {
           <div className="grid gap-3 sm:grid-cols-2"><button className="rounded-xl border p-4" onClick={() => setMode("summary")}>Keep appointment</button><button disabled={!acknowledged || busy} onClick={cancel} className="rounded-xl bg-red-700 p-4 text-white disabled:opacity-40">{busy ? "Cancelling…" : "Cancel appointment"}</button></div>
         </section>}
 
-        <section className="rounded-xl bg-[#f8f0e7] p-4 text-sm"><strong>No-Show Policy</strong><p className="mt-1">Missing your appointment without notice will result in a non-refundable fee equal to 60% of the scheduled service price. Your deposit is included in that 60%, and any remaining amount may be charged to your saved card before you can book again.</p></section>
-        <a href="tel:+12108128121" className="mx-auto flex w-fit items-center gap-2 underline"><Phone className="h-4 w-4"/>Call or text (210) 812-8121</a>
+        {!changesOpen && !cancelled && <a href="tel:+12108128121" className="mx-auto flex w-full max-w-[330px] items-center justify-center gap-3 rounded-xl bg-[#351d12] px-5 py-3 text-center text-white"><Phone className="h-5 w-5"/><span>Call or text<br/>(210) 812-8121</span></a>}
+        <section className="flex gap-3 rounded-xl bg-[#faf4ec] p-4 text-sm"><Info className="mt-0.5 h-5 w-5 shrink-0 text-[#b98354]"/><div><strong>No-Show Policy</strong><p className="mt-1">Missing your appointment without notice will result in a non-refundable fee equal to 60% of the scheduled service price. This fee must be paid before you can book another appointment.</p></div></section>
+        </div>
+
+        <aside className="h-fit rounded-xl border border-[#e2d4c5] p-6 lg:mt-[44px]">
+          <h2 className="font-serif text-2xl">Why can’t I make changes?</h2>
+          <div className="mt-7 space-y-7 text-sm text-stone-700"><div className="flex gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f6ead8]"><Clock3/></div><p className="pt-1">Changes require at least 72 hours’ notice.</p></div><div className="flex gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f6ead8]"><UserRound/></div><p className="pt-1">Only one self-service cancellation or reschedule is allowed.</p></div><div className="flex gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f6ead8]"><CircleDollarSign/></div><p className="pt-1">Your {money(appointment.depositPaidCents)} deposit remains non-refundable.</p></div></div>
+          <div className="mt-8 border-t border-[#e2d4c5] pt-6"><button type="button" onClick={() => setMode("summary")} className="w-full rounded-lg border border-[#684738] px-4 py-3 font-serif text-lg">Return to appointment</button></div>
+        </aside>
       </div>
-      <footer className="bg-[#351d12] px-6 py-5 text-center text-sm text-white">AH Braiding Salon · (210) 812-8121</footer>
+      <footer className="bg-gradient-to-r from-[#3a2114] to-[#2a160d] px-6 py-5 text-center text-sm text-white">AH Braiding Salon · (210) 812-8121</footer>
     </div>
   </main>;
 }
