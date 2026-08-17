@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (imageUrl.startsWith('/Gallery/uploads/')) {
       const filename = imageUrl.split('/').pop();
       targetUrl = `${NORMALIZED_API_BASE_URL}/api/gallery/image/${filename}`;
-    } else if (imageUrl.startsWith('/backend-api/api/gallery/image/')) {
+    } else if (imageUrl.startsWith('/backend-api/')) {
       targetUrl = `${NORMALIZED_API_BASE_URL}${imageUrl.replace('/backend-api', '')}`;
     } else if (!imageUrl.startsWith('http')) {
       targetUrl = `${NORMALIZED_API_BASE_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
     const allowedUrl = new URL(allowedBase);
     const parsedTarget = new URL(targetUrl);
     const allowedPath = parsedTarget.pathname.startsWith('/api/gallery/image/')
-      || parsedTarget.pathname.startsWith('/uploads/');
+      || parsedTarget.pathname.startsWith('/uploads/')
+      || parsedTarget.pathname.startsWith('/Gallery/');
     if (parsedTarget.origin !== allowedUrl.origin || !allowedPath) {
       console.error('Invalid image URL:', targetUrl);
       return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 });
