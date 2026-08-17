@@ -97,12 +97,6 @@ export async function uploadFile(
     throw new Error(`Invalid file type: ${file.type}. Allowed types: JPEG, PNG, WebP, GIF.`);
   }
 
-  // The simple admin upload still uses bearer authentication. Gallery uploads
-  // use the HttpOnly cookie session through galleryApi.
-  if (useSimpleUpload && !token) {
-    throw new Error('Authentication required. Please log in and try again.');
-  }
-
   try {
     if (useSimpleUpload) {
       // Use simple upload endpoint for size photos (doesn't go to gallery)
@@ -112,8 +106,11 @@ export async function uploadFile(
       const response = await fetch(`${API_BASE_URL}/api/admin/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          ...(token && token !== "cookie-session"
+            ? { Authorization: `Bearer ${token}` }
+            : {}),
         },
+        credentials: 'include',
         body: formData,
       });
       
