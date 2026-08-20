@@ -418,7 +418,7 @@ function AppointmentManagement() {
     const chosenCharge = Math.max(0, chosenNoShowTotal - chosenDepositCredit);
 
     return (
-        <div className="mx-auto max-w-[1440px] p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto max-w-[1440px] px-3 py-4 sm:p-6 lg:p-8">
             <header className="mb-7 flex flex-col gap-5 border-b border-[#e8dfd8] pb-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#9a6d50]">Bookings</p>
@@ -426,14 +426,14 @@ function AppointmentManagement() {
                     <p className="mt-2 text-sm text-neutral-600">Review requests, resolve payment issues, and manage upcoming clients.</p>
                     {lastUpdated && <p className="mt-1 text-xs text-neutral-400">Last updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>}
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => void refreshCurrentView()} disabled={loading || calendarLoading}>
+                <div className="grid w-full grid-cols-[auto_1fr] items-center gap-2 lg:flex lg:w-auto lg:flex-wrap">
+                    <Button variant="outline" size="sm" className="h-11 px-3 sm:h-9" onClick={() => void refreshCurrentView()} disabled={loading || calendarLoading}>
                         <RefreshCw className={cn("mr-2 h-4 w-4", (loading || calendarLoading) && "animate-spin")} /> Refresh
                     </Button>
-                    <div className="flex overflow-hidden rounded-xl border border-[#ded3cb] bg-white p-1" role="group" aria-label="Appointment view">
+                    <div className="flex min-w-0 overflow-hidden rounded-xl border border-[#ded3cb] bg-white p-1" role="group" aria-label="Appointment view">
                         {(["list", "calendar"] as const).map(mode => (
                             <button key={mode} type="button" aria-pressed={viewMode === mode} onClick={() => setViewMode(mode)}
-                                className={cn("flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium capitalize transition", viewMode === mode ? "bg-[#2f1b12] text-white shadow-sm" : "bg-white text-neutral-600 hover:bg-[#f7f2ee]")}>
+                                className={cn("flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium capitalize transition sm:gap-2 sm:px-4 sm:py-2", viewMode === mode ? "bg-[#2f1b12] text-white shadow-sm" : "bg-white text-neutral-600 hover:bg-[#f7f2ee]")}>
                                 {mode === "list" ? <List className="h-4 w-4" /> : <CalendarDays className="h-4 w-4" />}{mode}
                             </button>
                         ))}
@@ -442,22 +442,22 @@ function AppointmentManagement() {
             </header>
 
             <section className="mb-6 overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white shadow-[0_8px_30px_rgba(53,29,18,0.05)]">
-                <div className="overflow-x-auto border-b border-[#eee5df] px-3 pt-2 sm:px-5" role="tablist" aria-label="Appointment workflow">
-                    <div className="flex min-w-max gap-2">
+                <div className="overflow-x-auto border-b border-[#eee5df] px-2 pt-2 sm:px-5" role="tablist" aria-label="Appointment workflow">
+                    <div className="grid min-w-[390px] grid-cols-3 gap-1 sm:flex sm:min-w-max sm:gap-2">
                     {WORKFLOW_VIEWS.map(item => (
                         <button key={item.value} type="button" role="tab" aria-selected={workflow === item.value} onClick={() => changeWorkflow(item.value)}
                             title={item.description}
-                            className={cn("border-b-2 px-3 py-4 text-sm font-semibold transition sm:px-5", workflow === item.value ? "border-[#351d12] text-[#351d12]" : "border-transparent text-neutral-500 hover:text-[#351d12]")}>
-                            {item.label} <span className={cn("ml-1 rounded-full px-2 py-0.5 text-xs", workflow === item.value ? "bg-[#efe3d9] text-[#6b3d27]" : "bg-neutral-100")}>{workflowCounts[item.value] ?? 0}</span>
+                            className={cn("whitespace-nowrap border-b-2 px-2 py-3 text-xs font-semibold transition sm:px-5 sm:py-4 sm:text-sm", workflow === item.value ? "border-[#351d12] text-[#351d12]" : "border-transparent text-neutral-500 hover:text-[#351d12]")}>
+                            {item.label} <span className={cn("ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] sm:ml-1 sm:px-2 sm:text-xs", workflow === item.value ? "bg-[#efe3d9] text-[#6b3d27]" : "bg-neutral-100")}>{workflowCounts[item.value] ?? 0}</span>
                         </button>
                     ))}
                     </div>
                 </div>
                 <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                     <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500" htmlFor="appointment-detail-filter">Show</label>
                     <select id="appointment-detail-filter" value={detail} onChange={event => { setDetail(event.target.value as DetailFilter); setPage(0); }}
-                        className="h-9 rounded-sm border border-neutral-300 bg-white px-3 text-sm focus:border-neutral-700 focus:ring-2 focus:ring-neutral-200">
+                        className="h-10 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-white px-2 text-sm focus:border-neutral-700 focus:ring-2 focus:ring-neutral-200 sm:flex-none sm:px-3">
                         {DETAIL_OPTIONS[workflow].map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
                     <span className="hidden text-xs text-neutral-500 sm:inline">{WORKFLOW_VIEWS.find(item => item.value === workflow)?.description}</span>
@@ -514,7 +514,7 @@ function AppointmentManagement() {
                                     : appointment.status === "PENDING" ? "AWAITING PAYMENT"
                                         : appointment.status;
                         return (
-                            <article key={appointment.id} className={cn("group relative overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white p-4 shadow-[0_7px_24px_rgba(53,29,18,0.05)] transition hover:-translate-y-0.5 hover:border-[#d7c6bb] hover:shadow-[0_12px_32px_rgba(53,29,18,0.09)] sm:p-6", (overdue || paymentIssue) && "border-red-200 bg-red-50/30")}>
+                            <article key={appointment.id} className={cn("group relative overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white p-4 shadow-[0_7px_24px_rgba(53,29,18,0.05)] transition sm:p-6 sm:hover:-translate-y-0.5 sm:hover:border-[#d7c6bb] sm:hover:shadow-[0_12px_32px_rgba(53,29,18,0.09)]", (overdue || paymentIssue) && "border-red-200 bg-red-50/30")}>
                                 <div className={cn("absolute inset-y-4 left-0 w-1 rounded-r-full", paymentIssue || overdue ? "bg-red-500" : canApprove(appointment) ? "bg-amber-500" : appointment.status === "APPROVED" ? "bg-emerald-500" : "bg-neutral-300")} />
                                 <div className="grid gap-5 pl-2 lg:grid-cols-[minmax(230px,0.85fr)_minmax(300px,1.2fr)_auto] lg:items-center">
                                     <div className="min-w-0">
@@ -546,23 +546,23 @@ function AppointmentManagement() {
                                         {appointment.cancelledByCustomer && <p className="mt-2 text-xs font-medium text-violet-700">Cancelled by customer{appointment.customerCancellationReason ? `: ${appointment.customerCancellationReason}` : ""}</p>}
                                         <p className="mt-2 text-xs text-neutral-400">Requested {formatDateTime(appointment.createdAt)}</p>
                                     </div>
-                                    <div className="flex shrink-0 flex-wrap gap-2 lg:max-w-[260px] lg:justify-end">
-                                        <Button variant="outline" size="sm" className="border-[#d7c6bb]" onClick={() => setSelectedAppointment(appointment)}>Review <ChevronRight className="ml-1 h-4 w-4" /></Button>
+                                    <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:max-w-[260px] lg:justify-end">
+                                        <Button variant="outline" size="sm" className="col-span-2 h-10 border-[#d7c6bb] sm:col-span-1 sm:h-9" onClick={() => setSelectedAppointment(appointment)}>Review <ChevronRight className="ml-1 h-4 w-4" /></Button>
                                         {appointment.status === "PENDING" && !captureProcessing && <>
-                                            <Button size="sm" className="bg-[#351d12] text-white hover:bg-[#4b2a1b]" disabled={!canApprove(appointment) || actionLoading === appointment.id}
+                                            <Button size="sm" className="h-10 bg-[#351d12] text-white hover:bg-[#4b2a1b] sm:h-9" disabled={!canApprove(appointment) || actionLoading === appointment.id}
                                                 title={overdue ? "Past appointments cannot be approved" : appointment.paymentStatus !== "AUTHORIZED" ? "Payment authorization is required" : undefined}
                                                 onClick={() => { setAction({ kind: "approve", appointment }); setActionNotes(""); }}><Check className="mr-1 h-4 w-4" />Approve</Button>
-                                            <Button size="sm" variant="outline" className="text-red-700" disabled={actionLoading === appointment.id} onClick={() => { setAction({ kind: "deny", appointment }); setActionNotes(""); }}>Deny</Button>
+                                            <Button size="sm" variant="outline" className="h-10 text-red-700 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => { setAction({ kind: "deny", appointment }); setActionNotes(""); }}>Deny</Button>
                                         </>}
-                                        {appointment.paymentStatus === "CAPTURE_FAILED" && <Button size="sm" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "capture")}><CreditCard className="mr-1 h-4 w-4" />Retry capture</Button>}
-                                        {appointment.paymentStatus === "CANCELLATION_FAILED" && <Button size="sm" variant="outline" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "release")}>Retry release</Button>}
-                                        {appointment.notificationStatus?.includes("FAILED") && <Button size="sm" variant="outline" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}><Mail className="mr-1 h-4 w-4" />Retry notification</Button>}
+                                        {appointment.paymentStatus === "CAPTURE_FAILED" && <Button size="sm" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "capture")}><CreditCard className="mr-1 h-4 w-4" />Retry capture</Button>}
+                                        {appointment.paymentStatus === "CANCELLATION_FAILED" && <Button size="sm" variant="outline" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "release")}>Retry release</Button>}
+                                        {appointment.notificationStatus?.includes("FAILED") && <Button size="sm" variant="outline" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}><Mail className="mr-1 h-4 w-4" />Retry notification</Button>}
                                         {appointment.status === "APPROVED" && isPast(appointment) && <>
-                                            <Button size="sm" onClick={() => { setAction({ kind: "complete", appointment }); setActionNotes(""); }}>Mark complete</Button>
-                                            {appointment.noShowFee && <Button size="sm" variant="destructive" disabled={new Date(appointment.noShowFee.eligibleAt) > centralNow()} title={new Date(appointment.noShowFee.eligibleAt) > centralNow() ? `Available after ${formatDateTime(appointment.noShowFee.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</Button>}
+                                            <Button size="sm" className="h-10 sm:h-9" onClick={() => { setAction({ kind: "complete", appointment }); setActionNotes(""); }}>Mark complete</Button>
+                                            {appointment.noShowFee && <Button size="sm" variant="destructive" className="h-10 sm:h-9" disabled={new Date(appointment.noShowFee.eligibleAt) > centralNow()} title={new Date(appointment.noShowFee.eligibleAt) > centralNow() ? `Available after ${formatDateTime(appointment.noShowFee.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</Button>}
                                         </>}
-                                        {appointment.status === "NO_SHOW" && appointment.noShowFee?.paymentStatus === "FAILED" && <Button size="sm" variant="destructive" onClick={() => openNoShow(appointment)}>Retry no-show charge</Button>}
-                                        {(appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing && <Button size="sm" variant="outline" className="text-red-700" onClick={() => { setAction({ kind: "cancel", appointment }); setActionNotes(""); }}>Cancel appointment</Button>}
+                                        {appointment.status === "NO_SHOW" && appointment.noShowFee?.paymentStatus === "FAILED" && <Button size="sm" variant="destructive" className="h-10 sm:h-9" onClick={() => openNoShow(appointment)}>Retry no-show charge</Button>}
+                                        {(appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing && <Button size="sm" variant="outline" className="h-10 text-red-700 sm:h-9" onClick={() => { setAction({ kind: "cancel", appointment }); setActionNotes(""); }}>Cancel appointment</Button>}
                                     </div>
                                 </div>
                                 {appointment.status === "PENDING" && !captureProcessing && !canApprove(appointment) && !overdue && <p className="mt-3 pl-2 text-xs font-medium text-amber-700">Approval is unavailable until payment is authorized.</p>}
@@ -572,15 +572,15 @@ function AppointmentManagement() {
                 </div>
             )}
 
-            {viewMode === "list" && !loading && totalPages > 1 && <nav aria-label="Appointment pages" className="mt-6 flex items-center justify-between border-t border-neutral-200 pt-4">
+            {viewMode === "list" && !loading && totalPages > 1 && <nav aria-label="Appointment pages" className="mt-6 flex flex-col gap-3 border-t border-neutral-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-neutral-600">Page {page + 1} of {totalPages} · {totalElements} appointments</p>
-                <div className="flex gap-2"><Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(value => Math.max(0, value - 1))}>Previous</Button><Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(value => Math.min(totalPages - 1, value + 1))}>Next</Button></div>
+                <div className="grid grid-cols-2 gap-2"><Button variant="outline" size="sm" className="h-10" disabled={page === 0} onClick={() => setPage(value => Math.max(0, value - 1))}>Previous</Button><Button variant="outline" size="sm" className="h-10" disabled={page >= totalPages - 1} onClick={() => setPage(value => Math.min(totalPages - 1, value + 1))}>Next</Button></div>
             </nav>}
 
             {selectedAppointment && <AppointmentDialog appointment={selectedAppointment} formatDateTime={formatDateTime} onClose={() => setSelectedAppointment(null)} onApprove={canApprove(selectedAppointment) ? () => { setAction({ kind: "approve", appointment: selectedAppointment }); setActionNotes(""); } : undefined} onDeny={selectedAppointment.status === "PENDING" && !selectedAppointment.approvedAt ? () => { setAction({ kind: "deny", appointment: selectedAppointment }); setActionNotes(""); } : undefined} />}
 
-            {action && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setAction(null); }}>
-                <section role="dialog" aria-modal="true" aria-labelledby="appointment-action-title" className={cn("max-h-[92vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-xl", action.kind === "no-show" ? "max-w-3xl" : "max-w-lg")}>
+            {action && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setAction(null); }}>
+                <section role="dialog" aria-modal="true" aria-labelledby="appointment-action-title" className={cn("max-h-[94dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 shadow-xl sm:max-h-[92vh] sm:rounded-2xl sm:p-6", action.kind === "no-show" ? "max-w-3xl" : "max-w-lg")}>
                     <div className="flex items-start justify-between gap-4"><div><h2 id="appointment-action-title" className="text-xl font-semibold capitalize">{action.kind} appointment</h2><p className="mt-1 text-sm text-neutral-600">{action.appointment.customer.firstName} {action.appointment.customer.lastName} · {formatDateTime(action.appointment.appointmentDateTime)}</p></div><button aria-label="Close dialog" className="p-1 text-neutral-500 hover:text-neutral-900" onClick={() => setAction(null)}><X className="h-5 w-5" /></button></div>
                     {action.kind === "approve" && <div className="mt-4 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">The customer’s authorized deposit will be captured after approval.</div>}
                     {action.kind === "cancel" && action.appointment.paymentStatus === "CAPTURED" && <div className="mt-4 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">The deposit has already been captured. Cancelling here does not automatically refund it; manage any refund in Stripe.</div>}
@@ -608,7 +608,7 @@ function AppointmentManagement() {
                                     : "Approval notes (optional)"
                     }<textarea autoFocus value={actionNotes} maxLength={500} rows={4} onChange={event => setActionNotes(event.target.value)} className="mt-2 w-full rounded-sm border border-neutral-300 p-3 font-normal outline-none focus:border-neutral-700 focus:ring-2 focus:ring-neutral-200" /></label>}
                     {!(action.kind === "no-show" && noShowResult) && <p className="text-right text-xs text-neutral-400">{actionNotes.length}/500</p>}
-                    <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => { setAction(null); setNoShowResult(null); }}>{noShowResult ? "Close" : "Back"}</Button>{!(action.kind === "no-show" && noShowResult?.paymentStatus === "PAID") && !(action.kind === "no-show" && noShowResult?.paymentStatus === "PROCESSING") && <Button variant={action.kind === "deny" || action.kind === "cancel" || action.kind === "no-show" ? "destructive" : "default"} disabled={actionLoading === action.appointment.id || ((action.kind === "deny" || action.kind === "cancel") && !actionNotes.trim()) || (action.kind === "no-show" && noShowDecision !== "WAIVED" && Boolean(action.appointment.noShowFee?.overdueConfirmationRequired) && !confirmOverdue)} onClick={() => void submitAction()}>{actionLoading === action.appointment.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{action.kind === "no-show" ? noShowResult?.paymentStatus === "FAILED" ? `Retry charge $${(noShowResult.amountToChargeCents / 100).toFixed(2)}` : noShowDecision === "WAIVED" ? "Mark no-show & waive fee" : `Mark no-show & charge $${(chosenCharge / 100).toFixed(2)}` : `Confirm ${action.kind}`}</Button>}</div>
+                    <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:justify-end"><Button variant="outline" className="h-11 sm:h-10" onClick={() => { setAction(null); setNoShowResult(null); }}>{noShowResult ? "Close" : "Back"}</Button>{!(action.kind === "no-show" && noShowResult?.paymentStatus === "PAID") && !(action.kind === "no-show" && noShowResult?.paymentStatus === "PROCESSING") && <Button className="h-11 sm:h-10" variant={action.kind === "deny" || action.kind === "cancel" || action.kind === "no-show" ? "destructive" : "default"} disabled={actionLoading === action.appointment.id || ((action.kind === "deny" || action.kind === "cancel") && !actionNotes.trim()) || (action.kind === "no-show" && noShowDecision !== "WAIVED" && Boolean(action.appointment.noShowFee?.overdueConfirmationRequired) && !confirmOverdue)} onClick={() => void submitAction()}>{actionLoading === action.appointment.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{action.kind === "no-show" ? noShowResult?.paymentStatus === "FAILED" ? `Retry charge $${(noShowResult.amountToChargeCents / 100).toFixed(2)}` : noShowDecision === "WAIVED" ? "Mark no-show & waive fee" : `Mark no-show & charge $${(chosenCharge / 100).toFixed(2)}` : `Confirm ${action.kind}`}</Button>}</div>
                 </section>
             </div>}
         </div>
@@ -668,14 +668,14 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
                     <div><dt className="text-neutral-500">Hair texture</dt><dd className="mt-1 font-medium">{appointment.selectedTexture || "—"}</dd></div>
                 </dl>
             </section>
-            <section className="mt-5 rounded-2xl border border-[#e7ddd6] bg-white p-5 text-sm"><div className="flex items-center justify-between gap-4"><h3 className="font-semibold text-[#241711]">Customer</h3><span className="rounded-full bg-[#f2e8e1] px-3 py-1 text-xs font-medium text-[#6b3d27]">{appointment.selfServiceChangeCount ?? 0} of 1 changes used</span></div><p className="mt-4 flex items-center gap-2"><User className="h-4 w-4 text-[#9a6d50]" />{appointment.customer.firstName} {appointment.customer.lastName}</p><a href={`mailto:${appointment.customer.email}`} className="mt-3 flex items-center gap-2 hover:underline"><Mail className="h-4 w-4 text-[#9a6d50]" />{appointment.customer.email}</a><a href={`tel:${appointment.customer.phoneNumber}`} className="mt-3 flex items-center gap-2 hover:underline"><Phone className="h-4 w-4 text-[#9a6d50]" />{appointment.customer.phoneNumber}</a>{appointment.lastSelfServiceChangeAt && <p className="mt-3 text-xs text-neutral-500">Last customer change: {formatDateTime(appointment.lastSelfServiceChangeAt)}</p>}</section>
+            <section className="mt-5 rounded-2xl border border-[#e7ddd6] bg-white p-5 text-sm"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><h3 className="font-semibold text-[#241711]">Customer</h3><span className="w-fit rounded-full bg-[#f2e8e1] px-3 py-1 text-xs font-medium text-[#6b3d27]">{appointment.selfServiceChangeCount ?? 0} of 1 changes used</span></div><p className="mt-4 flex items-center gap-2"><User className="h-4 w-4 shrink-0 text-[#9a6d50]" />{appointment.customer.firstName} {appointment.customer.lastName}</p><a href={`mailto:${appointment.customer.email}`} className="mt-3 flex min-w-0 items-center gap-2 hover:underline"><Mail className="h-4 w-4 shrink-0 text-[#9a6d50]" /><span className="break-all">{appointment.customer.email}</span></a><a href={`tel:${appointment.customer.phoneNumber}`} className="mt-3 flex items-center gap-2 hover:underline"><Phone className="h-4 w-4 shrink-0 text-[#9a6d50]" />{appointment.customer.phoneNumber}</a>{appointment.lastSelfServiceChangeAt && <p className="mt-3 text-xs text-neutral-500">Last customer change: {formatDateTime(appointment.lastSelfServiceChangeAt)}</p>}</section>
             {appointment.rescheduledFromDateTime && <div className="mt-6 border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"><h3 className="font-semibold">Rescheduled by customer</h3><p className="mt-2">Previous: {formatDateTime(appointment.rescheduledFromDateTime)}</p><p>Current: {formatDateTime(appointment.appointmentDateTime)}</p></div>}
             {appointment.cancelledByCustomer && <div className="mt-6 border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900"><h3 className="font-semibold">Cancelled by customer</h3><p className="mt-2">Reason: {appointment.customerCancellationReason || "No reason provided"}</p></div>}
             {appointment.notes && <div className="mt-6 border-t pt-5 text-sm"><h3 className="flex items-center gap-2 font-semibold"><MessageSquare className="h-4 w-4" />Customer notes</h3><p className="mt-2 whitespace-pre-wrap text-neutral-700">{appointment.notes}</p></div>}
             {appointment.adminNotes && <div className="mt-6 border-t pt-5 text-sm"><h3 className="font-semibold">Admin notes</h3><p className="mt-2 whitespace-pre-wrap text-neutral-700">{appointment.adminNotes}</p></div>}
             <div className="mt-6 border-t pt-5 text-sm"><h3 className="font-semibold">Appointment activity</h3>{eventsLoading ? <p className="mt-3 flex items-center gap-2 text-neutral-500"><Loader2 className="h-4 w-4 animate-spin" />Loading activity…</p> : eventsError ? <p className="mt-3 text-red-700">{eventsError}</p> : events.length === 0 ? <p className="mt-3 text-neutral-500">No activity recorded.</p> : <ol className="mt-4 space-y-4 border-l border-neutral-200 pl-5">{events.map(event => <li key={event.id} className="relative"><span className="absolute -left-[25px] top-1 h-2 w-2 rounded-full bg-neutral-700"/><p className="font-medium">{event.eventType.replaceAll("_", " ").toLowerCase().replace(/^./, value => value.toUpperCase())}</p><p className="text-xs text-neutral-500">{formatDateTime(event.createdAt)}{event.actorName ? ` · ${event.actorName}` : " · Customer/system"}</p>{event.reason && <p className="mt-1 whitespace-pre-wrap text-neutral-700">{event.reason}</p>}</li>)}</ol>}</div>
             </div>
-            {(onApprove || onDeny) && <footer className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 border-t border-[#e8ddd5] bg-white px-5 py-4 sm:px-7"><p className="flex items-center gap-2 text-xs text-neutral-500"><ShieldCheck className="h-4 w-4 text-emerald-700" />Actions use the current payment authorization.</p><div className="flex gap-2">{onDeny && <Button variant="outline" className="text-red-700" onClick={onDeny}>Deny request</Button>}{onApprove && <Button className="bg-[#351d12] hover:bg-[#4b2a1b]" onClick={onApprove}>Approve and capture deposit</Button>}</div></footer>}
+            {(onApprove || onDeny) && <footer className="sticky bottom-0 border-t border-[#e8ddd5] bg-white px-4 py-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:px-7 sm:py-4"><p className="mb-3 flex items-center gap-2 text-xs text-neutral-500 sm:mb-0"><ShieldCheck className="h-4 w-4 shrink-0 text-emerald-700" />Actions use the current payment authorization.</p><div className="grid grid-cols-2 gap-2 sm:flex">{onDeny && <Button variant="outline" className="h-11 text-red-700 sm:h-10" onClick={onDeny}>Deny request</Button>}{onApprove && <Button className="h-11 bg-[#351d12] text-xs hover:bg-[#4b2a1b] sm:h-10 sm:text-sm" onClick={onApprove}>Approve and capture</Button>}</div></footer>}
         </aside>
     </div>;
 }
