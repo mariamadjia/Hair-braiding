@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Upload, Trash2, Plus, Edit, X, GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
+import { Upload, Trash2, Plus, Edit, X, ChevronLeft, ChevronRight } from "lucide-react";
 import Hero from "@/components/Hero";
 import Welcome from "@/components/Welcome";
 import Gallery from "@/components/Gallery";
@@ -91,19 +91,12 @@ export function HomePageEditor() {
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [pendingHeroDeleteId, setPendingHeroDeleteId] = useState<number | null>(null);
   const [deletingHeroImageId, setDeletingHeroImageId] = useState<number | null>(null);
-  const [draggedHeroImageIndex, setDraggedHeroImageIndex] = useState<number | null>(null);
-  const [heroOrderSaving, setHeroOrderSaving] = useState(false);
   const [heroUploadProgress, setHeroUploadProgress] = useState(0);
   const [heroUploadStage, setHeroUploadStage] = useState<'idle' | 'preparing' | 'uploading' | 'processing'>('idle');
   const collectionSnapshotRef = useRef<GalleryCollection[] | null>(null);
-  const heroImagesRef = useRef<HeroImage[]>([]);
-  const heroDragIndexRef = useRef<number | null>(null);
-  const heroDragOriginalRef = useRef<HeroImage[] | null>(null);
   const selectionSnapshotRef = useRef<number[] | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const tempWelcomeItemSrcRef = useRef('');
-
-  useEffect(() => { heroImagesRef.current = heroImages; }, [heroImages]);
 
   // Helper function to get auth token
   const getAuthToken = () => {
@@ -983,44 +976,6 @@ export function HomePageEditor() {
     }
   };
 
-  const saveHeroImageOrder = async (reordered: HeroImage[], previous: HeroImage[]) => {
-    setHeroOrderSaving(true);
-    setStatusMessage('Saving Hero image order…');
-    try {
-      const token = getAuthToken();
-      if (!token) throw new Error('Your admin session has expired. Please sign in again.');
-      const response = await fetch('/api/admin/gallery-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(reordered.map(({ id }) => id)),
-      });
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error || payload.message || `Image order could not be saved (${response.status}).`);
-      }
-      setStatusMessage('Hero image order saved and published.');
-    } catch (error) {
-      heroImagesRef.current = previous;
-      setHeroImages(previous);
-      setStatusMessage(error instanceof Error ? error.message : 'Image order could not be saved.');
-    } finally {
-      setHeroOrderSaving(false);
-    }
-  };
-
-  const moveDraggedHeroImage = (to: number) => {
-    const from = heroDragIndexRef.current;
-    const current = heroImagesRef.current;
-    if (from === null || from === to || to < 0 || to >= current.length) return;
-    const reordered = [...current];
-    const [moved] = reordered.splice(from, 1);
-    reordered.splice(to, 0, moved);
-    heroDragIndexRef.current = to;
-    heroImagesRef.current = reordered;
-    setDraggedHeroImageIndex(to);
-    setHeroImages(reordered);
-  };
-
   const updateHeroFocalPosition = async (
     image: HeroImage,
     focalPosition: HeroImage['focalPosition']
@@ -1521,8 +1476,7 @@ export function HomePageEditor() {
                         {heroImages.map((image, index) => (
                           <div
                             key={image.id}
-                            data-hero-index={index}
-                            className={`relative group aspect-[4/5] bg-neutral-100 dark:bg-neutral-700 rounded-lg overflow-hidden border transition dark:border-neutral-600 ${draggedHeroImageIndex === index ? 'scale-[0.98] border-[#2C1810] opacity-50' : 'border-neutral-200'}`}
+                            className="relative group aspect-[4/5] overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 transition dark:border-neutral-600 dark:bg-neutral-700"
                           >
                             <img
                               src={image.imageUrl}
@@ -1547,17 +1501,6 @@ export function HomePageEditor() {
                             <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                               #{index + 1}
                             </div>
-                            <div
-                              role="button"
-                              tabIndex={0}
-                              onPointerDown={(event) => { if (heroOrderSaving) return; heroDragOriginalRef.current = [...heroImagesRef.current]; heroDragIndexRef.current = index; setDraggedHeroImageIndex(index); event.currentTarget.setPointerCapture(event.pointerId); }}
-                              onPointerMove={(event) => { if (heroDragIndexRef.current === null) return; const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-hero-index]'); const targetIndex = target ? Number(target.dataset.heroIndex) : NaN; if (Number.isInteger(targetIndex)) moveDraggedHeroImage(targetIndex); }}
-                              onPointerUp={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); const previous = heroDragOriginalRef.current; const reordered = [...heroImagesRef.current]; heroDragIndexRef.current = null; heroDragOriginalRef.current = null; setDraggedHeroImageIndex(null); if (previous && previous.map(item => item.id).join(',') !== reordered.map(item => item.id).join(',')) void saveHeroImageOrder(reordered, previous); }}
-                              onPointerCancel={() => { const previous = heroDragOriginalRef.current; if (previous) { heroImagesRef.current = previous; setHeroImages(previous); } heroDragIndexRef.current = null; heroDragOriginalRef.current = null; setDraggedHeroImageIndex(null); }}
-                              className={`absolute right-2 top-2 z-30 touch-none select-none rounded bg-black/75 p-2 text-white ${heroOrderSaving ? 'cursor-wait opacity-50' : 'cursor-grab active:cursor-grabbing'}`}
-                              aria-label={`Drag Hero image ${index + 1} to reorder`}
-                              aria-disabled={heroOrderSaving}
-                            ><GripVertical className="h-4 w-4" /></div>
                             <label className="absolute bottom-2 left-2 right-2 z-20">
                               <span className="sr-only">Focal position for Hero image {index + 1}</span>
                               <select
