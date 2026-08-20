@@ -986,12 +986,15 @@ export function HomePageEditor() {
     try {
       const token = getAuthToken();
       if (!token) throw new Error('Your admin session has expired. Please sign in again.');
-      const response = await fetch(`${API_BASE_URL}/api/gallery/reorder`, {
+      const response = await fetch('/api/admin/gallery-reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(reordered.map(({ id }) => id)),
       });
-      if (!response.ok) throw new Error(`Image order could not be saved (${response.status}).`);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || payload.message || `Image order could not be saved (${response.status}).`);
+      }
       setStatusMessage('Hero image order saved and published.');
     } catch (error) {
       setHeroImages(previous);
