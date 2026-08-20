@@ -95,9 +95,14 @@ export function HomePageEditor() {
   const [heroUploadProgress, setHeroUploadProgress] = useState(0);
   const [heroUploadStage, setHeroUploadStage] = useState<'idle' | 'preparing' | 'uploading' | 'processing'>('idle');
   const collectionSnapshotRef = useRef<GalleryCollection[] | null>(null);
+  const heroImagesRef = useRef<HeroImage[]>([]);
+  const heroDragIndexRef = useRef<number | null>(null);
+  const heroDragOriginalRef = useRef<HeroImage[] | null>(null);
   const selectionSnapshotRef = useRef<number[] | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const tempWelcomeItemSrcRef = useRef('');
+
+  useEffect(() => { heroImagesRef.current = heroImages; }, [heroImages]);
 
   // Helper function to get auth token
   const getAuthToken = () => {
@@ -977,13 +982,7 @@ export function HomePageEditor() {
     }
   };
 
-  const reorderHeroImages = async (from: number, to: number) => {
-    if (from === to || from < 0 || to < 0 || from >= heroImages.length || to >= heroImages.length) return;
-    const previous = [...heroImages];
-    const reordered = [...heroImages];
-    const [moved] = reordered.splice(from, 1);
-    reordered.splice(to, 0, moved);
-    setHeroImages(reordered);
+  const saveHeroImageOrder = async (reordered: HeroImage[], previous: HeroImage[]) => {
     try {
       const token = getAuthToken();
       if (!token) throw new Error('Your admin session has expired. Please sign in again.');
@@ -1005,6 +1004,19 @@ export function HomePageEditor() {
       setHeroImages(previous);
       setStatusMessage(error instanceof Error ? error.message : 'Image order could not be saved.');
     }
+  };
+
+  const moveDraggedHeroImage = (to: number) => {
+    const from = heroDragIndexRef.current;
+    const current = heroImagesRef.current;
+    if (from === null || from === to || to < 0 || to >= current.length) return;
+    const reordered = [...current];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    heroDragIndexRef.current = to;
+    heroImagesRef.current = reordered;
+    setDraggedHeroImageIndex(to);
+    setHeroImages(reordered);
   };
 
   const updateHeroFocalPosition = async (
@@ -1507,8 +1519,7 @@ export function HomePageEditor() {
                         {heroImages.map((image, index) => (
                           <div
                             key={image.id}
-                            onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; }}
-                            onDrop={(event) => { event.preventDefault(); if (draggedHeroImageIndex !== null) void reorderHeroImages(draggedHeroImageIndex, index); setDraggedHeroImageIndex(null); }}
+                            data-hero-index={index}
                             className={`relative group aspect-[4/5] bg-neutral-100 dark:bg-neutral-700 rounded-lg overflow-hidden border transition dark:border-neutral-600 ${draggedHeroImageIndex === index ? 'scale-[0.98] border-[#2C1810] opacity-50' : 'border-neutral-200'}`}
                           >
                             <img
@@ -1537,10 +1548,11 @@ export function HomePageEditor() {
                             <div
                               role="button"
                               tabIndex={0}
-                              draggable
-                              onDragStart={(event) => { setDraggedHeroImageIndex(index); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(image.id)); }}
-                              onDragEnd={() => setDraggedHeroImageIndex(null)}
-                              className="absolute right-2 top-2 z-30 cursor-grab rounded bg-black/75 p-2 text-white active:cursor-grabbing"
+                              onPointerDown={(event) => { heroDragOriginalRef.current = [...heroImagesRef.current]; heroDragIndexRef.current = index; setDraggedHeroImageIndex(index); event.currentTarget.setPointerCapture(event.pointerId); }}
+                              onPointerMove={(event) => { if (heroDragIndexRef.current === null) return; const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-hero-index]'); const targetIndex = target ? Number(target.dataset.heroIndex) : NaN; if (Number.isInteger(targetIndex)) moveDraggedHeroImage(targetIndex); }}
+                              onPointerUp={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); const previous = heroDragOriginalRef.current; const reordered = [...heroImagesRef.current]; heroDragIndexRef.current = null; heroDragOriginalRef.current = null; setDraggedHeroImageIndex(null); if (previous && previous.map(item => item.id).join(',') !== reordered.map(item => item.id).join(',')) void saveHeroImageOrder(reordered, previous); }}
+                              onPointerCancel={() => { const previous = heroDragOriginalRef.current; if (previous) { heroImagesRef.current = previous; setHeroImages(previous); } heroDragIndexRef.current = null; heroDragOriginalRef.current = null; setDraggedHeroImageIndex(null); }}
+                              className="absolute right-2 top-2 z-30 touch-none cursor-grab select-none rounded bg-black/75 p-2 text-white active:cursor-grabbing"
                               aria-label={`Drag Hero image ${index + 1} to reorder`}
                             ><GripVertical className="h-4 w-4" /></div>
                             <label className="absolute bottom-2 left-2 right-2 z-20">
