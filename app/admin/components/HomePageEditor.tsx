@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Upload, Trash2, Plus, Edit, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Upload, Trash2, Plus, Edit, X, GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
 import Hero from "@/components/Hero";
 import Welcome from "@/components/Welcome";
 import Gallery from "@/components/Gallery";
@@ -91,6 +91,7 @@ export function HomePageEditor() {
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [pendingHeroDeleteId, setPendingHeroDeleteId] = useState<number | null>(null);
   const [deletingHeroImageId, setDeletingHeroImageId] = useState<number | null>(null);
+  const [draggedHeroImageIndex, setDraggedHeroImageIndex] = useState<number | null>(null);
   const [heroUploadProgress, setHeroUploadProgress] = useState(0);
   const [heroUploadStage, setHeroUploadStage] = useState<'idle' | 'preparing' | 'uploading' | 'processing'>('idle');
   const collectionSnapshotRef = useRef<GalleryCollection[] | null>(null);
@@ -976,12 +977,12 @@ export function HomePageEditor() {
     }
   };
 
-  const moveHeroImage = async (index: number, direction: -1 | 1) => {
-    const target = index + direction;
-    if (target < 0 || target >= heroImages.length) return;
+  const reorderHeroImages = async (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || from >= heroImages.length || to >= heroImages.length) return;
     const previous = [...heroImages];
     const reordered = [...heroImages];
-    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
     setHeroImages(reordered);
     try {
       const token = getAuthToken();
@@ -1502,7 +1503,12 @@ export function HomePageEditor() {
                         {heroImages.map((image, index) => (
                           <div
                             key={image.id}
-                            className="relative group aspect-[4/5] bg-neutral-100 dark:bg-neutral-700 rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-600"
+                            draggable
+                            onDragStart={(event) => { setDraggedHeroImageIndex(index); event.dataTransfer.effectAllowed = 'move'; }}
+                            onDragEnd={() => setDraggedHeroImageIndex(null)}
+                            onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; }}
+                            onDrop={(event) => { event.preventDefault(); if (draggedHeroImageIndex !== null) void reorderHeroImages(draggedHeroImageIndex, index); setDraggedHeroImageIndex(null); }}
+                            className={`relative group aspect-[4/5] cursor-grab bg-neutral-100 dark:bg-neutral-700 rounded-lg overflow-hidden border transition dark:border-neutral-600 ${draggedHeroImageIndex === index ? 'scale-[0.98] border-[#2C1810] opacity-50' : 'border-neutral-200'}`}
                           >
                             <img
                               src={image.imageUrl}
@@ -1514,14 +1520,6 @@ export function HomePageEditor() {
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <button
                                 type="button"
-                                onClick={() => moveHeroImage(index, -1)}
-                                disabled={index === 0}
-                                className="mr-2 p-3 bg-white/90 text-neutral-900 rounded-full disabled:opacity-30"
-                                aria-label={`Move Hero image ${index + 1} earlier`}
-                              >
-                                <ChevronLeft className="h-5 w-5" />
-                              </button>
-                              <button
                                 onClick={() => handleDeleteImage(image)}
                                 disabled={deletingHeroImageId !== null}
                                 className="p-3 text-white rounded-full transition-colors bg-red-600 hover:bg-red-700 disabled:opacity-50"
@@ -1529,20 +1527,12 @@ export function HomePageEditor() {
                               >
                                 <Trash2 className="h-5 w-5" />
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => moveHeroImage(index, 1)}
-                                disabled={index === heroImages.length - 1}
-                                className="ml-2 p-3 bg-white/90 text-neutral-900 rounded-full disabled:opacity-30"
-                                aria-label={`Move Hero image ${index + 1} later`}
-                              >
-                                <ChevronRight className="h-5 w-5" />
-                              </button>
                             </div>
 
                             <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                               #{index + 1}
                             </div>
+                            <div className="pointer-events-none absolute right-2 top-2 rounded bg-black/70 p-1.5 text-white" aria-hidden="true"><GripVertical className="h-4 w-4" /></div>
                             <label className="absolute bottom-2 left-2 right-2 z-20">
                               <span className="sr-only">Focal position for Hero image {index + 1}</span>
                               <select
