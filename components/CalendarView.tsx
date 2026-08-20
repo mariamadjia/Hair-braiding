@@ -27,6 +27,10 @@ export default function CalendarView({ appointments, onAppointmentClick, onRange
     const [selectedView, setSelectedView] = useState<"month" | "week" | "day">(view);
     const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
+    useEffect(() => {
+        if (window.matchMedia("(max-width: 639px)").matches) setSelectedView("day");
+    }, []);
+
     const visibleRange = useMemo<CalendarRange>(() => {
         if (selectedView === "month") {
             return { start: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1), end: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1) };
@@ -43,16 +47,19 @@ export default function CalendarView({ appointments, onAppointmentClick, onRange
     const grouped = useMemo(() => {
         const map = new Map<string, Appointment[]>();
         appointments.forEach(appointment => {
-            const date = new Date(appointment.appointmentDateTime);
-            const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+            const [year, month, day] = appointment.appointmentDateTime.slice(0, 10).split("-").map(Number);
+            if (!year || !month || !day) return;
+            const key = `${year}-${month - 1}-${day}`;
             map.set(key, [...(map.get(key) ?? []), appointment]);
         });
-        map.forEach(items => items.sort((a, b) => new Date(a.appointmentDateTime).getTime() - new Date(b.appointmentDateTime).getTime()));
+        map.forEach(items => items.sort((a, b) => a.appointmentDateTime.localeCompare(b.appointmentDateTime)));
         return map;
     }, [appointments]);
 
     const appointmentsFor = (date: Date) => grouped.get(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`) ?? [];
     const operationalStatus = (appointment: Appointment) => {
+        if (appointment.notificationStatus?.includes("FAILED")) return "NOTIFICATION ISSUE";
+        if (["UNPAID", "PROCESSING", "FAILED"].includes(appointment.noShowFee?.paymentStatus || "")) return "PAYMENT ISSUE";
         if (appointment.paymentStatus?.includes("FAILED")) return "PAYMENT ISSUE";
         if (appointment.status === "PENDING" && appointment.approvedAt) return "CAPTURE PROCESSING";
         if (appointment.status === "PENDING" && appointment.paymentStatus === "AUTHORIZED") return "READY FOR APPROVAL";
@@ -61,9 +68,12 @@ export default function CalendarView({ appointments, onAppointmentClick, onRange
     };
     const statusClass = (appointment: Appointment) => {
         const status = operationalStatus(appointment);
-        return ({ "AWAITING PAYMENT": "bg-amber-600", "READY FOR APPROVAL": "bg-emerald-700", "CAPTURE PROCESSING": "bg-blue-700", "PAYMENT ISSUE": "bg-red-700", APPROVED: "bg-emerald-700", DENIED: "bg-red-700", CANCELLED: "bg-neutral-500", COMPLETED: "bg-blue-700" }[status] ?? "bg-neutral-600");
+        return ({ "AWAITING PAYMENT": "bg-amber-600", "READY FOR APPROVAL": "bg-emerald-700", "CAPTURE PROCESSING": "bg-blue-700", "PAYMENT ISSUE": "bg-red-700", "NOTIFICATION ISSUE": "bg-violet-700", APPROVED: "bg-emerald-700", DENIED: "bg-red-700", CANCELLED: "bg-neutral-500", COMPLETED: "bg-blue-700" }[status] ?? "bg-neutral-600");
     };
-    const time = (value: string) => new Date(`${value.replace(/Z$/, "")}Z`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" });
+    const time = (value: string) => {
+        const date = new Date(`${value.replace(/Z$/, "")}Z`);
+        return Number.isNaN(date.getTime()) ? "Time unavailable" : date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" });
+    };
     const eventTime = (appointment: Appointment) => {
         if (appointment.appointmentEndDateTime) return `${time(appointment.appointmentDateTime)}–${time(appointment.appointmentEndDateTime)}`;
         return time(appointment.appointmentDateTime);
@@ -100,11 +110,11 @@ export default function CalendarView({ appointments, onAppointmentClick, onRange
     const weekDays = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(visibleRange.start, index)), [visibleRange]);
 
     return (
-        <section className="overflow-hidden rounded-sm border border-neutral-200 bg-white" aria-label="Appointment calendar">
+        <section className="overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white" aria-label="Appointment calendar">
             <header className="border-b border-neutral-200 p-4 sm:px-6">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex flex-wrap items-center gap-3"><h2 className="text-lg font-medium text-neutral-900 sm:text-xl">{title}</h2><Button variant="outline" size="sm" onClick={() => setCurrentDate(startOfDay(new Date()))}>Today</Button></div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
                         <div className="flex overflow-hidden rounded-sm border border-neutral-200" role="tablist" aria-label="Calendar period">
                             {(["month", "week", "day"] as const).map(period => <button key={period} type="button" role="tab" aria-selected={selectedView === period} onClick={() => setSelectedView(period)} className={cn("px-3 py-2 text-xs font-medium capitalize", selectedView === period ? "bg-neutral-900 text-white" : "bg-white text-neutral-600 hover:bg-neutral-50")}>{period}</button>)}
                         </div>
@@ -113,7 +123,7 @@ export default function CalendarView({ appointments, onAppointmentClick, onRange
                     </div>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-3 text-xs text-neutral-600" aria-label="Status legend">
-                    {[["bg-amber-600", "Awaiting payment"], ["bg-emerald-700", "Ready / approved"], ["bg-blue-700", "Processing / completed"], ["bg-red-700", "Needs payment attention"], ["bg-neutral-500", "Cancelled"]].map(([color, label]) => <span key={label} className="flex items-center gap-1.5"><i aria-hidden="true" className={cn("h-2.5 w-2.5 rounded-full", color)} />{label}</span>)}
+                    {[["bg-amber-600", "Awaiting payment"], ["bg-emerald-700", "Ready / approved"], ["bg-blue-700", "Processing / completed"], ["bg-red-700", "Payment attention"], ["bg-violet-700", "Notification attention"], ["bg-neutral-500", "Cancelled"]].map(([color, label]) => <span key={label} className="flex items-center gap-1.5"><i aria-hidden="true" className={cn("h-2.5 w-2.5 rounded-full", color)} />{label}</span>)}
                     <span className="ml-auto font-medium">San Antonio Central Time</span>
                 </div>
             </header>

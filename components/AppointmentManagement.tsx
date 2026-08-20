@@ -1,8 +1,8 @@
 "use client";
 
-import { memo, useCallback, useDeferredValue, useEffect, useState } from "react";
+import { memo, useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import {
-    AlertTriangle, Calendar, CalendarDays, Check, ChevronRight, Clock, CreditCard, ExternalLink, List,
+    Calendar, CalendarDays, Check, ChevronRight, Clock, CreditCard, List,
     Loader2, Mail, MessageSquare, Phone, RefreshCw, Search, ShieldCheck, User, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,7 +74,7 @@ const DETAIL_OPTIONS: Record<WorkflowView, { value: DetailFilter; label: string 
         { value: "READY_FOR_APPROVAL", label: "Ready for approval" },
         { value: "AWAITING_PAYMENT", label: "Awaiting payment" },
         { value: "CAPTURE_PROCESSING", label: "Capture processing" },
-        { value: "PAYMENT_ISSUE", label: "Payment issue" }
+        { value: "PAYMENT_ISSUE", label: "Payment or notification issue" }
     ],
     UPCOMING: [
         { value: "ALL", label: "All upcoming" },
@@ -96,6 +96,21 @@ const localDateTime = (date: Date) => {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 };
 
+const salonDate = (value?: string) => {
+    if (!value) return null;
+    const parsed = new Date(`${value.replace(/Z$/, "")}Z`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const salonNow = () => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"
+    }).formatToParts(new Date());
+    const part = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find(item => item.type === type)?.value || 0);
+    return new Date(Date.UTC(part("year"), part("month") - 1, part("day"), part("hour"), part("minute"), part("second")));
+};
+
 const parseMoney = (value?: string) => {
     if (!value) return null;
     const amount = Number(value.replace(/[^0-9.-]/g, ""));
@@ -103,8 +118,8 @@ const parseMoney = (value?: string) => {
 };
 
 const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detail: DetailFilter) => {
-    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }));
-    const appointmentTime = new Date(appointment.appointmentDateTime);
+    const now = salonNow();
+    const appointmentTime = salonDate(appointment.appointmentDateTime) || new Date(0);
     const captureProcessing = appointment.status === "PENDING" && Boolean(appointment.approvedAt);
     const paymentIssue = ["CAPTURE_FAILED", "CANCELLATION_FAILED", "FAILED"].includes(appointment.paymentStatus || "")
         || ["UNPAID", "PROCESSING", "FAILED"].includes(appointment.noShowFee?.paymentStatus || "");
@@ -156,6 +171,12 @@ function AppointmentManagement() {
     const [totalElements, setTotalElements] = useState(0);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [activeCalendarRange, setActiveCalendarRange] = useState<CalendarRange | null>(null);
+    const listRequestRef = useRef<AbortController | null>(null);
+    const calendarRequestRef = useRef<AbortController | null>(null);
+    const actionDialogRef = useRef<HTMLElement | null>(null);
+    const actionLoadingRef = useRef<number | null>(null);
+
+    useEffect(() => { actionLoadingRef.current = actionLoading; }, [actionLoading]);
 
     const authHeaders = useCallback((): HeadersInit => {
         const token = getAuthToken();
@@ -173,6 +194,9 @@ function AppointmentManagement() {
     }, []);
 
     const fetchAppointments = useCallback(async (quiet = false) => {
+        listRequestRef.current?.abort();
+        const controller = new AbortController();
+        listRequestRef.current = controller;
         if (!quiet) setLoading(true);
         if (!quiet) setError(null);
         try {
@@ -182,7 +206,12 @@ function AppointmentManagement() {
                 view: workflow, detail, q: deferredQuery.trim(), page: String(page), size: "20", sortBy, sortDir
             });
             const url = `${API_BASE_URL}/api/appointments/workflow?${params}`;
-            const data = await readResponse(await fetch(url, { headers: authHeaders(), cache: "no-store" }));
+            const [data, counts] = await Promise.all([
+                fetch(url, { headers: authHeaders(), cache: "no-store", signal: controller.signal }).then(readResponse),
+                fetch(`${API_BASE_URL}/api/appointments/workflow-counts`, {
+                    headers: authHeaders(), cache: "no-store", signal: controller.signal
+                }).then(readResponse)
+            ]);
             if (Array.isArray(data)) {
                 setAppointments(data);
                 setTotalPages(1);
@@ -192,35 +221,46 @@ function AppointmentManagement() {
                 setTotalPages(data.totalPages ?? 0);
                 setTotalElements(data.totalElements ?? 0);
             }
-            const counts = await readResponse(await fetch(`${API_BASE_URL}/api/appointments/workflow-counts`, {
-                headers: authHeaders(), cache: "no-store"
-            }));
             setWorkflowCounts(counts);
             setLastUpdated(new Date());
         } catch (err) {
-            if (!quiet) setError(err instanceof Error ? err.message : "Failed to load appointments");
+            if (controller.signal.aborted) return;
+            const message = err instanceof Error ? err.message : "Failed to load appointments";
+            if (!quiet || message.includes("session has expired")) setError(message);
         } finally {
-            if (!quiet) setLoading(false);
+            if (listRequestRef.current === controller) {
+                listRequestRef.current = null;
+                setLoading(false);
+            }
         }
     }, [authHeaders, deferredQuery, detail, page, readResponse, sort, workflow]);
 
     useEffect(() => { void fetchAppointments(); }, [fetchAppointments]);
 
     const fetchCalendarRange = useCallback(async ({ start, end }: CalendarRange, quiet = false) => {
+        calendarRequestRef.current?.abort();
+        const controller = new AbortController();
+        calendarRequestRef.current = controller;
         if (!quiet) setCalendarLoading(true);
         if (!quiet) setError(null);
         try {
-            const params = new URLSearchParams({ startDate: localDateTime(start), endDate: localDateTime(end) });
-            const data: Appointment[] = await readResponse(await fetch(
+            const params = new URLSearchParams({ startDate: localDateTime(start), endDate: localDateTime(end), size: "200" });
+            const data = await readResponse(await fetch(
                 `${API_BASE_URL}/api/appointments/date-range?${params}`,
-                { headers: authHeaders(), cache: "no-store" }
+                { headers: authHeaders(), cache: "no-store", signal: controller.signal }
             ));
-            setCalendarAppointments(data.filter(item => matchesWorkflow(item, workflow, detail)));
+            const items: Appointment[] = Array.isArray(data) ? data : (data.content ?? []);
+            setCalendarAppointments(items.filter(item => matchesWorkflow(item, workflow, detail)));
             setLastUpdated(new Date());
         } catch (err) {
-            if (!quiet) setError(err instanceof Error ? err.message : "Failed to load the calendar");
+            if (controller.signal.aborted) return;
+            const message = err instanceof Error ? err.message : "Failed to load the calendar";
+            if (!quiet || message.includes("session has expired")) setError(message);
         } finally {
-            if (!quiet) setCalendarLoading(false);
+            if (calendarRequestRef.current === controller) {
+                calendarRequestRef.current = null;
+                setCalendarLoading(false);
+            }
         }
     }, [authHeaders, detail, readResponse, workflow]);
 
@@ -257,8 +297,8 @@ function AppointmentManagement() {
         setSelectedAppointment(null);
     };
 
-    const centralNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }));
-    const isPast = (appointment: Appointment) => new Date(appointment.appointmentDateTime).getTime() <= centralNow().getTime();
+    const centralNow = salonNow;
+    const isPast = (appointment: Appointment) => (salonDate(appointment.appointmentDateTime)?.getTime() ?? 0) <= centralNow().getTime();
     const canApprove = (appointment: Appointment) => appointment.status === "PENDING"
         && !appointment.approvedAt
         && appointment.paymentStatus === "AUTHORIZED"
@@ -292,9 +332,12 @@ function AppointmentManagement() {
             const noShow = action.kind === "no-show";
             const retryNoShow = noShow && action.appointment.status === "NO_SHOW"
                 && action.appointment.noShowFee?.paymentStatus === "FAILED";
-            const adjustedCents = noShowDecision === "ADJUSTED" ? Math.round(Number(adjustedFee) * 100) : undefined;
-            if (noShowDecision === "ADJUSTED" && (!Number.isFinite(adjustedCents) || adjustedCents === undefined)) {
-                throw new Error("Enter a valid adjusted total fee");
+            const adjustedCents = noShowDecision === "ADJUSTED" && /^\d+(\.\d{1,2})?$/.test(adjustedFee)
+                ? Math.round(Number(adjustedFee) * 100) : undefined;
+            if (noShowDecision === "ADJUSTED" && (adjustedCents === undefined
+                || adjustedCents < (noShowPreview?.depositCreditCents || 0)
+                || adjustedCents > (noShowPreview?.scheduledServicePriceCents || 0))) {
+                throw new Error(`Enter an adjusted fee between $${((noShowPreview?.depositCreditCents || 0) / 100).toFixed(2)} and $${((noShowPreview?.scheduledServicePriceCents || 0) / 100).toFixed(2)}.`);
             }
             const result = await readResponse(await fetch(retryNoShow
                 ? `${API_BASE_URL}/api/appointments/${action.appointment.id}/no-show/retry`
@@ -373,10 +416,46 @@ function AppointmentManagement() {
 
     const visibleAppointments = appointments;
 
-    const formatDateTime = (value?: string) => value ? `${new Date(`${value.replace(/Z$/, "")}Z`).toLocaleString("en-US", {
+    const formatDateTime = (value?: string) => {
+        const date = salonDate(value);
+        return date ? `${date.toLocaleString("en-US", {
         weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
         timeZone: "UTC"
-    })} CT` : "—";
+        })} CT` : "—";
+    };
+
+    useEffect(() => {
+        if (!selectedAppointment) return;
+        const latest = [...appointments, ...calendarAppointments].find(item => item.id === selectedAppointment.id);
+        if (latest && latest !== selectedAppointment) setSelectedAppointment(latest);
+    }, [appointments, calendarAppointments, selectedAppointment]);
+
+    useEffect(() => {
+        if (!action) return;
+        setError(null);
+        const previousOverflow = document.body.style.overflow;
+        const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        document.body.style.overflow = "hidden";
+        window.requestAnimationFrame(() => actionDialogRef.current?.focus());
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape" && actionLoadingRef.current === null) setAction(null);
+            if (event.key !== "Tab" || !actionDialogRef.current) return;
+            const focusable = Array.from(actionDialogRef.current.querySelectorAll<HTMLElement>(
+                'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+            ));
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        };
+        document.addEventListener("keydown", onKeyDown);
+        return () => {
+            document.removeEventListener("keydown", onKeyDown);
+            document.body.style.overflow = previousOverflow;
+            previouslyFocused?.focus();
+        };
+    }, [action?.appointment.id, action?.kind]);
 
     useEffect(() => {
         const captureInProgress = appointments.some(item => item.status === "PENDING" && Boolean(item.approvedAt));
@@ -410,12 +489,16 @@ function AppointmentManagement() {
     };
 
     const noShowPreview = action?.kind === "no-show" ? action.appointment.noShowFee : undefined;
+    const validAdjustedFee = /^\d+(\.\d{1,2})?$/.test(adjustedFee);
     const chosenNoShowTotal = noShowDecision === "WAIVED" ? 0
-        : noShowDecision === "ADJUSTED" && Number.isFinite(Number(adjustedFee))
+        : noShowDecision === "ADJUSTED" && validAdjustedFee
             ? Math.round(Number(adjustedFee) * 100)
             : noShowPreview?.totalFeeCents || 0;
     const chosenDepositCredit = Math.min(chosenNoShowTotal, noShowPreview?.depositCreditCents || 0);
     const chosenCharge = Math.max(0, chosenNoShowTotal - chosenDepositCredit);
+    const adjustedFeeInvalid = noShowDecision === "ADJUSTED" && (!validAdjustedFee
+        || chosenNoShowTotal < (noShowPreview?.depositCreditCents || 0)
+        || chosenNoShowTotal > (noShowPreview?.scheduledServicePriceCents || 0));
 
     return (
         <div className="mx-auto max-w-[1440px] px-3 py-4 sm:p-6 lg:p-8">
@@ -505,10 +588,12 @@ function AppointmentManagement() {
                         const overdue = appointment.status === "PENDING" && isPast(appointment);
                         const captureProcessing = appointment.status === "PENDING" && Boolean(appointment.approvedAt);
                         const expiryHours = appointment.paymentAuthorizationExpiresAt
-                            ? (new Date(appointment.paymentAuthorizationExpiresAt).getTime() - centralNow().getTime()) / 3_600_000
+                            ? ((salonDate(appointment.paymentAuthorizationExpiresAt)?.getTime() ?? 0) - centralNow().getTime()) / 3_600_000
                             : null;
-                        const paymentIssue = appointment.paymentStatus?.includes("FAILED");
-                        const operationalLabel = paymentIssue ? "PAYMENT ISSUE"
+                        const paymentIssue = appointment.paymentStatus?.includes("FAILED")
+                            || ["UNPAID", "PROCESSING", "FAILED"].includes(appointment.noShowFee?.paymentStatus || "");
+                        const notificationIssue = appointment.notificationStatus?.includes("FAILED");
+                        const operationalLabel = notificationIssue ? "NOTIFICATION ISSUE" : paymentIssue ? "PAYMENT ISSUE"
                             : captureProcessing ? "CAPTURE PROCESSING"
                                 : canApprove(appointment) ? "READY FOR APPROVAL"
                                     : appointment.status === "PENDING" ? "AWAITING PAYMENT"
@@ -559,7 +644,7 @@ function AppointmentManagement() {
                                         {appointment.notificationStatus?.includes("FAILED") && <Button size="sm" variant="outline" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}><Mail className="mr-1 h-4 w-4" />Retry notification</Button>}
                                         {appointment.status === "APPROVED" && isPast(appointment) && <>
                                             <Button size="sm" className="h-10 sm:h-9" onClick={() => { setAction({ kind: "complete", appointment }); setActionNotes(""); }}>Mark complete</Button>
-                                            {appointment.noShowFee && <Button size="sm" variant="destructive" className="h-10 sm:h-9" disabled={new Date(appointment.noShowFee.eligibleAt) > centralNow()} title={new Date(appointment.noShowFee.eligibleAt) > centralNow() ? `Available after ${formatDateTime(appointment.noShowFee.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</Button>}
+                                            {appointment.noShowFee && <Button size="sm" variant="destructive" className="h-10 sm:h-9" disabled={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime()} title={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime() ? `Available after ${formatDateTime(appointment.noShowFee.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</Button>}
                                         </>}
                                         {appointment.status === "NO_SHOW" && appointment.noShowFee?.paymentStatus === "FAILED" && <Button size="sm" variant="destructive" className="h-10 sm:h-9" onClick={() => openNoShow(appointment)}>Retry no-show charge</Button>}
                                         {(appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing && <Button size="sm" variant="outline" className="h-10 text-red-700 sm:h-9" onClick={() => { setAction({ kind: "cancel", appointment }); setActionNotes(""); }}>Cancel appointment</Button>}
@@ -577,13 +662,14 @@ function AppointmentManagement() {
                 <div className="grid grid-cols-2 gap-2"><Button variant="outline" size="sm" className="h-10" disabled={page === 0} onClick={() => setPage(value => Math.max(0, value - 1))}>Previous</Button><Button variant="outline" size="sm" className="h-10" disabled={page >= totalPages - 1} onClick={() => setPage(value => Math.min(totalPages - 1, value + 1))}>Next</Button></div>
             </nav>}
 
-            {selectedAppointment && <AppointmentDialog appointment={selectedAppointment} formatDateTime={formatDateTime} onClose={() => setSelectedAppointment(null)} onApprove={canApprove(selectedAppointment) ? () => { setAction({ kind: "approve", appointment: selectedAppointment }); setActionNotes(""); } : undefined} onDeny={selectedAppointment.status === "PENDING" && !selectedAppointment.approvedAt ? () => { setAction({ kind: "deny", appointment: selectedAppointment }); setActionNotes(""); } : undefined} />}
+            {selectedAppointment && <AppointmentDialog appointment={selectedAppointment} formatDateTime={formatDateTime} onClose={() => setSelectedAppointment(null)} onApprove={canApprove(selectedAppointment) ? () => { setSelectedAppointment(null); setAction({ kind: "approve", appointment: selectedAppointment }); setActionNotes(""); } : undefined} onDeny={selectedAppointment.status === "PENDING" && !selectedAppointment.approvedAt ? () => { setSelectedAppointment(null); setAction({ kind: "deny", appointment: selectedAppointment }); setActionNotes(""); } : undefined} />}
 
-            {action && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setAction(null); }}>
-                <section role="dialog" aria-modal="true" aria-labelledby="appointment-action-title" className={cn("max-h-[94dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 shadow-xl sm:max-h-[92vh] sm:rounded-2xl sm:p-6", action.kind === "no-show" ? "max-w-3xl" : "max-w-lg")}>
-                    <div className="flex items-start justify-between gap-4"><div><h2 id="appointment-action-title" className="text-xl font-semibold capitalize">{action.kind} appointment</h2><p className="mt-1 text-sm text-neutral-600">{action.appointment.customer.firstName} {action.appointment.customer.lastName} · {formatDateTime(action.appointment.appointmentDateTime)}</p></div><button aria-label="Close dialog" className="p-1 text-neutral-500 hover:text-neutral-900" onClick={() => setAction(null)}><X className="h-5 w-5" /></button></div>
+            {action && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && actionLoading === null) setAction(null); }}>
+                <section ref={actionDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="appointment-action-title" className={cn("max-h-[94dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 shadow-xl outline-none sm:max-h-[92vh] sm:rounded-2xl sm:p-6", action.kind === "no-show" ? "max-w-3xl" : "max-w-lg")}>
+                    <div className="flex items-start justify-between gap-4"><div><h2 id="appointment-action-title" className="text-xl font-semibold capitalize">{action.kind} appointment</h2><p className="mt-1 text-sm text-neutral-600">{action.appointment.customer.firstName} {action.appointment.customer.lastName} · {formatDateTime(action.appointment.appointmentDateTime)}</p></div><button aria-label="Close dialog" disabled={actionLoading !== null} className="p-1 text-neutral-500 hover:text-neutral-900 disabled:opacity-40" onClick={() => setAction(null)}><X className="h-5 w-5" /></button></div>
                     {action.kind === "approve" && <div className="mt-4 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">The customer’s authorized deposit will be captured after approval.</div>}
                     {action.kind === "cancel" && action.appointment.paymentStatus === "CAPTURED" && <div className="mt-4 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">The deposit has already been captured. Cancelling here does not automatically refund it; manage any refund in Stripe.</div>}
+                    {error && <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"><X className="mt-0.5 h-4 w-4 shrink-0" /><span>{error}</span></div>}
                     {action.kind === "no-show" && noShowPreview && <div className="mt-5 space-y-4">
                         <section className="rounded-xl border border-[#e5d5c7] p-5">
                             <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold">No-show fee calculation</h3><p className="mt-1 text-xs text-neutral-500">Scheduled service price ${(noShowPreview.scheduledServicePriceCents / 100).toFixed(2)}</p></div><span className={cn("rounded-full px-3 py-1 text-xs font-semibold", noShowResult?.paymentStatus === "PAID" ? "bg-emerald-100 text-emerald-800" : noShowResult?.paymentStatus === "FAILED" ? "bg-red-100 text-red-800" : noShowResult?.paymentStatus === "PROCESSING" ? "bg-amber-100 text-amber-800" : "bg-neutral-100 text-neutral-700")}>{noShowResult?.paymentStatus || "UNPAID"}</span></div>
@@ -591,7 +677,7 @@ function AppointmentManagement() {
                             <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">The deposit is included in the total no-show fee—it is not added on top.</p>
                         </section>
 
-                        {!noShowResult && <section className="grid gap-4 sm:grid-cols-2"><div className="rounded-xl border p-4"><h3 className="text-sm font-semibold">Fee decision</h3><div className="mt-3 grid grid-cols-3 overflow-hidden rounded-lg border">{(["ACTIVE", "ADJUSTED", "WAIVED"] as const).map(decision => <button type="button" key={decision} disabled={decision !== "WAIVED" && !noShowPreview.automaticChargeAllowed} onClick={() => setNoShowDecision(decision)} className={cn("px-2 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40", noShowDecision === decision ? "bg-[#351d12] text-white" : "bg-white text-neutral-700 hover:bg-neutral-50")}>{decision.charAt(0) + decision.slice(1).toLowerCase()}</button>)}</div>{!noShowPreview.automaticChargeAllowed && <p className="mt-2 text-xs text-red-700">Automatic charging is unavailable. The appointment can still be recorded with the fee waived.</p>}{noShowDecision === "ADJUSTED" && <label className="mt-3 block text-xs font-medium">Adjusted total fee ($)<input inputMode="decimal" value={adjustedFee} onChange={event => setAdjustedFee(event.target.value.replace(/[^0-9.]/g, ""))} placeholder="130.00" className="mt-1 h-10 w-full rounded-lg border px-3 text-sm"/></label>}</div><div className="rounded-xl border p-4"><h3 className="text-sm font-semibold">Payment status</h3><div className="mt-3 grid grid-cols-2 gap-2 text-xs"><span className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">● Unpaid</span><span className="rounded-lg border px-3 py-2 text-neutral-500">● Processing</span><span className="rounded-lg border px-3 py-2 text-neutral-500">● Paid</span><span className="rounded-lg border px-3 py-2 text-neutral-500">● Failed</span></div></div></section>}
+                        {!noShowResult && <section className="grid gap-4 sm:grid-cols-2"><div className="rounded-xl border p-4"><h3 className="text-sm font-semibold">Fee decision</h3><div className="mt-3 grid grid-cols-3 overflow-hidden rounded-lg border">{(["ACTIVE", "ADJUSTED", "WAIVED"] as const).map(decision => <button type="button" key={decision} disabled={decision !== "WAIVED" && !noShowPreview.automaticChargeAllowed} onClick={() => setNoShowDecision(decision)} className={cn("px-2 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40", noShowDecision === decision ? "bg-[#351d12] text-white" : "bg-white text-neutral-700 hover:bg-neutral-50")}>{decision.charAt(0) + decision.slice(1).toLowerCase()}</button>)}</div>{!noShowPreview.automaticChargeAllowed && <p className="mt-2 text-xs text-red-700">Automatic charging is unavailable. The appointment can still be recorded with the fee waived.</p>}{noShowDecision === "ADJUSTED" && <label className="mt-3 block text-xs font-medium">Adjusted total fee ($)<input inputMode="decimal" value={adjustedFee} aria-invalid={adjustedFeeInvalid} onChange={event => setAdjustedFee(event.target.value.replace(/[^0-9.]/g, ""))} placeholder="130.00" className={cn("mt-1 h-10 w-full rounded-lg border px-3 text-sm", adjustedFeeInvalid && "border-red-400 bg-red-50")}/>{adjustedFeeInvalid && <span className="mt-1 block text-red-700">Enter an amount between ${(noShowPreview.depositCreditCents / 100).toFixed(2)} and ${(noShowPreview.scheduledServicePriceCents / 100).toFixed(2)}.</span>}</label>}</div><div className="rounded-xl border p-4"><h3 className="text-sm font-semibold">Payment status</h3><div className="mt-3 grid grid-cols-2 gap-2 text-xs"><span className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">● Unpaid</span><span className="rounded-lg border px-3 py-2 text-neutral-500">● Processing</span><span className="rounded-lg border px-3 py-2 text-neutral-500">● Paid</span><span className="rounded-lg border px-3 py-2 text-neutral-500">● Failed</span></div></div></section>}
 
                         <section className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"><p className="font-semibold">Saved {noShowPreview.paymentMethodBrand || "card"} ending in {noShowPreview.paymentMethodLast4 || "••••"}</p><p className="mt-1">{noShowPreview.consentRecordedAt ? `Customer off-session consent recorded ${formatDateTime(noShowPreview.consentRecordedAt)}.` : "Customer consent record is unavailable."}</p><p className="mt-2 font-medium">{noShowDecision === "WAIVED" ? "No card charge will be submitted." : `After confirmation, $${(chosenCharge / 100).toFixed(2)} will be submitted immediately.`}</p></section>
 
@@ -608,7 +694,7 @@ function AppointmentManagement() {
                                     : "Approval notes (optional)"
                     }<textarea autoFocus value={actionNotes} maxLength={500} rows={4} onChange={event => setActionNotes(event.target.value)} className="mt-2 w-full rounded-sm border border-neutral-300 p-3 font-normal outline-none focus:border-neutral-700 focus:ring-2 focus:ring-neutral-200" /></label>}
                     {!(action.kind === "no-show" && noShowResult) && <p className="text-right text-xs text-neutral-400">{actionNotes.length}/500</p>}
-                    <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:justify-end"><Button variant="outline" className="h-11 sm:h-10" onClick={() => { setAction(null); setNoShowResult(null); }}>{noShowResult ? "Close" : "Back"}</Button>{!(action.kind === "no-show" && noShowResult?.paymentStatus === "PAID") && !(action.kind === "no-show" && noShowResult?.paymentStatus === "PROCESSING") && <Button className="h-11 sm:h-10" variant={action.kind === "deny" || action.kind === "cancel" || action.kind === "no-show" ? "destructive" : "default"} disabled={actionLoading === action.appointment.id || ((action.kind === "deny" || action.kind === "cancel") && !actionNotes.trim()) || (action.kind === "no-show" && noShowDecision !== "WAIVED" && Boolean(action.appointment.noShowFee?.overdueConfirmationRequired) && !confirmOverdue)} onClick={() => void submitAction()}>{actionLoading === action.appointment.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{action.kind === "no-show" ? noShowResult?.paymentStatus === "FAILED" ? `Retry charge $${(noShowResult.amountToChargeCents / 100).toFixed(2)}` : noShowDecision === "WAIVED" ? "Mark no-show & waive fee" : `Mark no-show & charge $${(chosenCharge / 100).toFixed(2)}` : `Confirm ${action.kind}`}</Button>}</div>
+                    <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:justify-end"><Button variant="outline" className="h-11 sm:h-10" disabled={actionLoading !== null} onClick={() => { setAction(null); setNoShowResult(null); }}>{noShowResult ? "Close" : "Back"}</Button>{!(action.kind === "no-show" && noShowResult?.paymentStatus === "PAID") && !(action.kind === "no-show" && noShowResult?.paymentStatus === "PROCESSING") && <Button className="h-11 sm:h-10" variant={action.kind === "deny" || action.kind === "cancel" || action.kind === "no-show" ? "destructive" : "default"} disabled={actionLoading === action.appointment.id || adjustedFeeInvalid || ((action.kind === "deny" || action.kind === "cancel") && !actionNotes.trim()) || (action.kind === "no-show" && noShowDecision !== "WAIVED" && Boolean(action.appointment.noShowFee?.overdueConfirmationRequired) && !confirmOverdue)} onClick={() => void submitAction()}>{actionLoading === action.appointment.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{action.kind === "no-show" ? noShowResult?.paymentStatus === "FAILED" ? `Retry charge $${(noShowResult.amountToChargeCents / 100).toFixed(2)}` : noShowDecision === "WAIVED" ? "Mark no-show & waive fee" : `Mark no-show & charge $${(chosenCharge / 100).toFixed(2)}` : `Confirm ${action.kind}`}</Button>}</div>
                 </section>
             </div>}
         </div>
@@ -619,6 +705,35 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
     const [events, setEvents] = useState<{ id: number; eventType: string; appointmentStatus: string; paymentStatus?: string; actorName?: string; reason?: string; createdAt: string }[]>([]);
     const [eventsLoading, setEventsLoading] = useState(true);
     const [eventsError, setEventsError] = useState("");
+    const dialogRef = useRef<HTMLElement | null>(null);
+    const onCloseRef = useRef(onClose);
+
+    useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+        const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        document.body.style.overflow = "hidden";
+        window.requestAnimationFrame(() => dialogRef.current?.focus());
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") onCloseRef.current();
+            if (event.key !== "Tab" || !dialogRef.current) return;
+            const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+                'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+            ));
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        };
+        document.addEventListener("keydown", onKeyDown);
+        return () => {
+            document.removeEventListener("keydown", onKeyDown);
+            document.body.style.overflow = previousOverflow;
+            previouslyFocused?.focus();
+        };
+    }, []);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -646,7 +761,7 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
     }, [appointment.id]);
 
     return <div className="fixed inset-0 z-40 flex justify-end bg-[#1e120d]/55 backdrop-blur-[2px]" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
-        <aside role="dialog" aria-modal="true" aria-labelledby="appointment-detail-title" className="flex h-full w-full max-w-2xl flex-col bg-[#fcfaf8] shadow-2xl">
+        <aside ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="appointment-detail-title" className="flex h-full w-full max-w-2xl flex-col bg-[#fcfaf8] shadow-2xl outline-none">
             <header className="sticky top-0 z-10 flex items-start justify-between border-b border-[#e8ddd5] bg-white/95 px-5 py-5 backdrop-blur sm:px-7">
                 <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9a6d50]">Appointment #{appointment.id}</p><h2 id="appointment-detail-title" className="mt-1 text-2xl font-semibold text-[#241711]">{appointment.customer.firstName} {appointment.customer.lastName}</h2><p className="mt-1 flex items-center gap-2 text-sm text-neutral-600"><Calendar className="h-4 w-4 text-[#9a6d50]" />{formatDateTime(appointment.appointmentDateTime)}</p></div><button aria-label="Close details" onClick={onClose} className="rounded-full border border-[#e4d9d1] p-2 text-neutral-500 transition hover:bg-[#f6efea] hover:text-[#351d12]"><X className="h-5 w-5" /></button>
             </header>
@@ -654,7 +769,7 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
             <section className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-[#e7ddd6] bg-white p-4"><p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Status</p><p className="mt-2 font-semibold text-[#241711]">{appointment.status.replaceAll("_", " ")}</p></div>
                 <div className="rounded-xl border border-[#e7ddd6] bg-white p-4"><p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Payment</p><p className="mt-2 font-semibold text-[#241711]">{appointment.paymentStatus?.replaceAll("_", " ") || "Unknown"}</p></div>
-                <div className="rounded-xl border border-[#e7ddd6] bg-white p-4"><p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Deposit</p><p className="mt-2 font-semibold text-[#241711]">{appointment.depositAmount != null ? `$${Number(appointment.depositAmount).toFixed(2)}` : "—"}</p></div>
+                <div className="rounded-xl border border-[#e7ddd6] bg-white p-4"><p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Deposit</p><p className="mt-2 font-semibold text-[#241711]">{appointment.depositAmount != null ? `$${(Number(appointment.depositAmount) / 100).toFixed(2)}` : "—"}</p></div>
             </section>
             <section className="mt-5 rounded-2xl border border-[#e7ddd6] bg-white p-5">
                 <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7a513b]">Service details</h3>
