@@ -139,7 +139,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
                     fill
                     priority={currentImageIndex === 0}
                     sizes="(max-width: 767px) calc(100vw - 48px), 50vw"
-                    className="object-cover"
+                    className="object-cover object-top"
                   />
                 </motion.div>
               </AnimatePresence>
