@@ -1507,16 +1507,14 @@ export function HomePageEditor() {
                         {heroImages.map((image, index) => (
                           <div
                             key={image.id}
-                            draggable
-                            onDragStart={(event) => { setDraggedHeroImageIndex(index); event.dataTransfer.effectAllowed = 'move'; }}
-                            onDragEnd={() => setDraggedHeroImageIndex(null)}
                             onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; }}
                             onDrop={(event) => { event.preventDefault(); if (draggedHeroImageIndex !== null) void reorderHeroImages(draggedHeroImageIndex, index); setDraggedHeroImageIndex(null); }}
-                            className={`relative group aspect-[4/5] cursor-grab bg-neutral-100 dark:bg-neutral-700 rounded-lg overflow-hidden border transition dark:border-neutral-600 ${draggedHeroImageIndex === index ? 'scale-[0.98] border-[#2C1810] opacity-50' : 'border-neutral-200'}`}
+                            className={`relative group aspect-[4/5] bg-neutral-100 dark:bg-neutral-700 rounded-lg overflow-hidden border transition dark:border-neutral-600 ${draggedHeroImageIndex === index ? 'scale-[0.98] border-[#2C1810] opacity-50' : 'border-neutral-200'}`}
                           >
                             <img
                               src={image.imageUrl}
                               alt={`Hero image ${index + 1}`}
+                              draggable={false}
                               className="w-full h-full object-cover"
                               style={{ objectPosition: `center ${image.focalPosition}` }}
                             />
@@ -1536,7 +1534,15 @@ export function HomePageEditor() {
                             <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                               #{index + 1}
                             </div>
-                            <div className="pointer-events-none absolute right-2 top-2 rounded bg-black/70 p-1.5 text-white" aria-hidden="true"><GripVertical className="h-4 w-4" /></div>
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              draggable
+                              onDragStart={(event) => { setDraggedHeroImageIndex(index); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(image.id)); }}
+                              onDragEnd={() => setDraggedHeroImageIndex(null)}
+                              className="absolute right-2 top-2 z-30 cursor-grab rounded bg-black/75 p-2 text-white active:cursor-grabbing"
+                              aria-label={`Drag Hero image ${index + 1} to reorder`}
+                            ><GripVertical className="h-4 w-4" /></div>
                             <label className="absolute bottom-2 left-2 right-2 z-20">
                               <span className="sr-only">Focal position for Hero image {index + 1}</span>
                               <select
