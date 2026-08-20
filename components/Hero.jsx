@@ -60,7 +60,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
   }, [images.length, reduceMotion]);
 
   return (
-    <section className="relative mx-auto flex w-full max-w-[1460px] flex-col bg-[#F6F5F1] md:min-h-[85vh] md:flex-row">
+    <section className="flex flex-col md:flex-row md:min-h-[85vh] relative">
       {/* Mobile & Desktop Layout */}
       <div className="flex flex-col md:flex-1 md:grid md:grid-cols-2">
         {/* Text Content */}
