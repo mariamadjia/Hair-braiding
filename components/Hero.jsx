@@ -12,8 +12,14 @@ const DEFAULT_HERO_IMAGES = [
   '/hero/ISIMG-680068.JPG'
 ];
 
+const normalizeHeroImages = (images) => images.map((image) =>
+  typeof image === "string"
+    ? { imageUrl: image, focalPosition: "center" }
+    : { imageUrl: image.imageUrl, focalPosition: image.focalPosition || "center" }
+);
+
 export default function Hero({ videoSrc, useVideo, previewImages = /** @type {any} */ (null) }) {
-  const [images, setImages] = useState(previewImages || DEFAULT_HERO_IMAGES);
+  const [images, setImages] = useState(normalizeHeroImages(previewImages || DEFAULT_HERO_IMAGES));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [videoReady, setVideoReady] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -24,7 +30,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
 
   useEffect(() => {
     if (previewImages) {
-      setImages(previewImages.length > 0 ? previewImages : DEFAULT_HERO_IMAGES);
+      setImages(normalizeHeroImages(previewImages.length > 0 ? previewImages : DEFAULT_HERO_IMAGES));
       setCurrentImageIndex(0);
       return;
     }
@@ -33,7 +39,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
       .then(res => res.json())
       .then(data => {
         if (data.images && data.images.length > 0) {
-          setImages(data.images);
+          setImages(normalizeHeroImages(data.images));
           setCurrentImageIndex(0);
         }
       })
@@ -97,7 +103,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
             <>
               {images[0] && (
                 <Image
-                  src={images[0]}
+                  src={images[0].imageUrl}
                   alt=""
                   fill
                   priority
@@ -105,6 +111,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
                   className={`object-cover transition-opacity duration-300 ${
                     videoReady ? "opacity-0" : "opacity-100"
                   }`}
+                  style={{ objectPosition: `center ${images[0].focalPosition}` }}
                 />
               )}
               <video
@@ -134,12 +141,13 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
                   transition={{ duration: reduceMotion ? 0 : 0.35 }}
                 >
                   <Image
-                    src={images[currentImageIndex]}
+                    src={images[currentImageIndex].imageUrl}
                     alt={`AH Braiding portfolio style ${currentImageIndex + 1}`}
                     fill
                     priority={currentImageIndex === 0}
                     sizes="(max-width: 767px) calc(100vw - 48px), 50vw"
-                    className="object-cover object-[center_35%]"
+                    className="object-cover"
+                    style={{ objectPosition: `center ${images[currentImageIndex].focalPosition}` }}
                   />
                 </motion.div>
               </AnimatePresence>

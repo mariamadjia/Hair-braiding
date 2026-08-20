@@ -11,6 +11,7 @@ const MAX_HERO_IMAGES = 5;
 
 type BackendImage = {
   imageUrl?: string;
+  focalPosition?: "top" | "center" | "bottom";
 };
 
 function toPublicHeroImageUrl(imageUrl?: string): string | null {
@@ -51,7 +52,7 @@ export async function GET() {
       const backendRes = await fetch(
         `${BACKEND_API_URL}/api/gallery?isHero=true`,
         {
-          next: { revalidate: 300 },
+          cache: "no-store",
         }
       );
 
@@ -62,8 +63,14 @@ export async function GET() {
 
         const images = Array.isArray(data)
           ? data
-              .map((item) => toPublicHeroImageUrl(item.imageUrl))
-              .filter((url): url is string => Boolean(url))
+              .map((item) => {
+                const imageUrl = toPublicHeroImageUrl(item.imageUrl);
+                return imageUrl ? {
+                  imageUrl,
+                  focalPosition: item.focalPosition || "center",
+                } : null;
+              })
+              .filter((image): image is { imageUrl: string; focalPosition: "top" | "center" | "bottom" } => Boolean(image))
               .slice(0, MAX_HERO_IMAGES)
           : [];
 
@@ -71,7 +78,7 @@ export async function GET() {
           return NextResponse.json({
             images,
             source: "backend",
-          }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400" } });
+          }, { headers: { "Cache-Control": "no-store" } });
         }
       }
     } catch (error) {
@@ -90,7 +97,7 @@ export async function GET() {
 
       if (imageFiles.length > 0) {
         return NextResponse.json({
-          images: imageFiles.map((file) => `/hero/${file}`),
+            images: imageFiles.map((file) => ({ imageUrl: `/hero/${file}`, focalPosition: "center" })),
           source: backendAvailable
             ? "filesystem-fallback"
             : "filesystem",

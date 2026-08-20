@@ -34,6 +34,7 @@ interface GalleryCollection {
 interface HeroImage {
   id: number;
   imageUrl: string;
+  focalPosition: 'top' | 'center' | 'bottom';
 }
 
 interface BraidBookStyle {
@@ -319,6 +320,7 @@ export function HomePageEditor() {
                 ? {
                     id: image.id,
                     imageUrl: displayUrl,
+                    focalPosition: image.focalPosition || 'center',
                   }
                 : null;
             })
@@ -660,7 +662,7 @@ export function HomePageEditor() {
       });
 
       if (uploaded?.id && uploaded?.imageUrl) {
-        const nextImage = { id: uploaded.id, imageUrl: resolveMediaUrl(uploaded.imageUrl) };
+        const nextImage = { id: uploaded.id, imageUrl: resolveMediaUrl(uploaded.imageUrl), focalPosition: 'center' as const };
         setHeroImages((images) => [...images, nextImage]);
         setStatusMessage('Hero image uploaded and published.');
       } else {
@@ -997,6 +999,33 @@ export function HomePageEditor() {
     }
   };
 
+  const updateHeroFocalPosition = async (
+    image: HeroImage,
+    focalPosition: HeroImage['focalPosition']
+  ) => {
+    const previousPosition = image.focalPosition;
+    setHeroImages((images) => images.map((item) =>
+      item.id === image.id ? { ...item, focalPosition } : item
+    ));
+
+    try {
+      const token = getAuthToken();
+      if (!token) throw new Error('Your admin session has expired. Please sign in again.');
+      const response = await fetch(`${API_BASE_URL}/api/gallery/${image.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ focalPosition }),
+      });
+      if (!response.ok) throw new Error(`Image position could not be saved (${response.status}).`);
+      setStatusMessage(`Hero image position set to ${focalPosition}.`);
+    } catch (error) {
+      setHeroImages((images) => images.map((item) =>
+        item.id === image.id ? { ...item, focalPosition: previousPosition } : item
+      ));
+      setStatusMessage(error instanceof Error ? error.message : 'Image position could not be saved.');
+    }
+  };
+
   const updateBraidBookStyle = (
     index: number,
     field: keyof BraidBookStyle,
@@ -1093,7 +1122,7 @@ export function HomePageEditor() {
         {/* Hero Preview */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F6F5F1] dark:bg-neutral-900">
           <div className="relative">
-            <Hero videoSrc={heroVideoSrc} useVideo={useHeroVideo} previewImages={heroImages.map(({ imageUrl }) => imageUrl)} />
+            <Hero videoSrc={heroVideoSrc} useVideo={useHeroVideo} previewImages={heroImages} />
             {/* Edit button overlay */}
             <button
               onClick={() => {
@@ -1470,6 +1499,7 @@ export function HomePageEditor() {
                               src={image.imageUrl}
                               alt={`Hero image ${index + 1}`}
                               className="w-full h-full object-cover"
+                              style={{ objectPosition: `center ${image.focalPosition}` }}
                             />
 
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -1504,6 +1534,21 @@ export function HomePageEditor() {
                             <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                               #{index + 1}
                             </div>
+                            <label className="absolute bottom-2 left-2 right-2 z-20">
+                              <span className="sr-only">Focal position for Hero image {index + 1}</span>
+                              <select
+                                value={image.focalPosition}
+                                onChange={(event) => updateHeroFocalPosition(
+                                  image,
+                                  event.target.value as HeroImage['focalPosition']
+                                )}
+                                className="w-full rounded-md border border-white/40 bg-black/75 px-2 py-2 text-xs font-medium text-white"
+                              >
+                                <option value="top">Focus: Top</option>
+                                <option value="center">Focus: Center</option>
+                                <option value="bottom">Focus: Bottom</option>
+                              </select>
+                            </label>
                           </div>
                         ))}
                       </div>
