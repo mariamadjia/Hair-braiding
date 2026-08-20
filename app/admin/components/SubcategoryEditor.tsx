@@ -908,16 +908,14 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                             {sortItemsBySize(items).map(({ item, originalIdx }, orderedIndex, orderedEntries) => (
                                 <div key={item.id ?? `new-${originalIdx}`}>
                                     {editingId === item.id ? (
-                                        <div className="rounded-xl bg-neutral-50 p-3 sm:p-5 dark:bg-neutral-800/40">
-                                            <ItemForm
-                                                initial={item}
-                                                token={token}
-                                                categoryId={cat.id}
-                                                subcategoryId={sub.id}
-                                                onSave={(updated) => saveItem(updated, item.id ?? null)}
-                                                onCancel={() => setEditingId(null)}
-                                            />
-                                        </div>
+                                        <ItemForm
+                                            initial={item}
+                                            token={token}
+                                            categoryId={cat.id}
+                                            subcategoryId={sub.id}
+                                            onSave={(updated) => saveItem(updated, item.id ?? null)}
+                                            onCancel={() => setEditingId(null)}
+                                        />
                                     ) : (
                                         <div
                                             draggable={Boolean(item.id) && !saving}
