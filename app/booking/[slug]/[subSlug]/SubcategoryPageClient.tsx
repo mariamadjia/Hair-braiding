@@ -15,6 +15,8 @@ import { formatPrice } from "@/lib/utils/price";
 import { toProxyUrl } from "@/lib/utils/image";
 import { API_BASE_URL } from "@/lib/config/api";
 
+type ModalQuote = { servicePriceCents: number; depositCents: number; remainingBalanceCents: number };
+
 function sortItemsBySize(items: BookingItem[]): BookingItem[] {
     return [...items].sort((a, b) => (a.displayOrder ?? Number.MAX_SAFE_INTEGER)
         - (b.displayOrder ?? Number.MAX_SAFE_INTEGER));
@@ -52,6 +54,9 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const [availableAddOns, setAvailableAddOns] = useState<BookingAddOn[]>([]);
     const [selectedAddOnIds, setSelectedAddOnIds] = useState<number[]>([]);
     const [loadingAddOns, setLoadingAddOns] = useState(false);
+    const [modalQuote, setModalQuote] = useState<ModalQuote | null>(null);
+    const [quoteError, setQuoteError] = useState<string | null>(null);
+    const [quoteLoading, setQuoteLoading] = useState(false);
     const items = sortItemsBySize(subcategory.items ?? []);
     const subcategoryGalleryImageUrls =
         subcategory.galleryImages && subcategory.galleryImages.length > 0
@@ -89,26 +94,13 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
     const openModalForItem = (index: number) => {
         const item = items[index];
         
-        if (item?.lengthOptions?.length || item?.hairTextures?.length || item?.foundationChoicesEnabled) {
-            setSelectedItemIndex(index);
-            setSelectedLength(item.lengthOptions?.length ? null : "__none__");
-            setSelectedTexture(item?.hairTextures?.[0] ?? null);
-            setSelectedFoundation(null);
-            setShowLengthGuide(false);
-            return;
-        }
-
-        const params = new URLSearchParams({
-            categorySlug: category.slug,
-            subcategorySlug: subcategory.slug,
-            serviceId: item?.id?.toString() ?? "",
-            service: item?.name ?? "Selected Service",
-            price: item?.price ?? "",
-            description: item?.description ?? "Professional braiding service",
-            image: item?.image ?? subcategory.image ?? "",
-        });
-
-        router.push(`/checkout?${params.toString()}`);
+        setSelectedItemIndex(index);
+        setSelectedLength(item?.lengthOptions?.length ? null : "__fixed__");
+        setSelectedTexture(item?.hairTextures?.[0] ?? null);
+        setSelectedFoundation(null);
+        setModalQuote(null);
+        setQuoteError(null);
+        setShowLengthGuide(false);
     };
 
     const closeModal = () => {
@@ -119,6 +111,8 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
         setShowLengthGuide(false);
         setAvailableAddOns([]);
         setSelectedAddOnIds([]);
+        setModalQuote(null);
+        setQuoteError(null);
     };
 
     useEffect(() => {
@@ -132,6 +126,27 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
             .finally(() => { if (active) setLoadingAddOns(false); });
         return () => { active = false; };
     }, [selectedItem?.id, selectedLengthOption?.id]);
+
+    useEffect(() => {
+        if (!selectedItem?.id || selectedItem.pricingMode !== "FIXED" || (selectedItem.foundationChoicesEnabled && !selectedFoundation)) return;
+        const controller = new AbortController();
+        setQuoteLoading(true);
+        setQuoteError(null);
+        setModalQuote(null);
+        fetch("/api/booking/quote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ serviceId: selectedItem.id, lengthOptionId: null, foundation: selectedFoundation, addOnIds: [] }),
+            signal: controller.signal,
+        }).then(async response => {
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || payload.message || "Unable to confirm price.");
+            return payload;
+        }).then(setModalQuote).catch(error => {
+            if (!(error instanceof DOMException && error.name === "AbortError")) setQuoteError(error instanceof Error ? error.message : "Unable to confirm price.");
+        }).finally(() => setQuoteLoading(false));
+        return () => controller.abort();
+    }, [selectedItem?.id, selectedItem?.pricingMode, selectedItem?.foundationChoicesEnabled, selectedFoundation]);
 
     const openPhotoModal = (index: number) => {
         const item = items[index];
@@ -362,7 +377,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                 </div>
             )}
 
-            {selectedItem && lengthOptions.length > 0 && (
+            {selectedItem && (selectedItem.pricingMode === "FIXED" || lengthOptions.length > 0) && (
                 <div 
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-4 md:py-8"
                     onClick={closeModal}
@@ -391,7 +406,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                     {selectedItem.description}
                                 </p>
                             )}
-                            <p className="mt-3 text-sm font-medium text-neutral-900">Choose your preferred length.</p>
+                            <p className="mt-3 text-sm font-medium text-neutral-900">{selectedItem.pricingMode === "FIXED" ? "Confirm your service." : "Choose your preferred length."}</p>
                             <div className="mt-2 flex flex-wrap gap-x-5">
                             {guides?.sizeGuideEnabled && selectedSizeGuide?.imageUrl && <button type="button" onClick={() => setShowSizeGuide(true)} className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#2C1810] underline underline-offset-4"><Rows3 className="h-4 w-4" /> View size guide</button>}
                             {guides?.lengthGuideEnabled && guides.lengthGuideImageUrl && <button type="button" onClick={() => setShowLengthGuide(true)} className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#2C1810] underline decoration-[#2C1810]/40 underline-offset-4 transition hover:decoration-[#2C1810] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2">
@@ -401,6 +416,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                         </div>
 
                         <div className="relative flex-1 space-y-2 overflow-y-auto px-6 py-4 md:px-8 scrollbar-hide">
+                            {selectedItem.pricingMode === "FIXED" && <div className="rounded-xl border-2 border-[#2C1810] bg-[#FAF7F2] px-5 py-5"><div className="flex items-center justify-between gap-4"><div className="flex items-start gap-4"><span className="mt-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#2C1810]"><span className="h-2.5 w-2.5 rounded-full bg-[#2C1810]" /></span><div><p className="font-medium text-neutral-900">{selectedItem.name}</p><p className="mt-1 text-sm text-neutral-500">{quoteLoading ? "Confirming deposit…" : modalQuote ? `${formatPrice(modalQuote.depositCents / 100)} deposit required` : "Deposit required"}</p></div></div><p className="text-xl font-medium text-neutral-900">{modalQuote ? formatPrice(modalQuote.servicePriceCents / 100) : formatPrice(selectedItem.price)}</p></div>{quoteError && <p role="alert" className="mt-4 text-sm text-red-600">{quoteError}</p>}</div>}
                             {selectedItem.foundationChoicesEnabled && <div className="mb-5 space-y-3 border-b border-neutral-200 pb-5"><p className="text-sm font-medium text-neutral-900">Choose your braid foundation.</p><div className="grid grid-cols-2 gap-3">{([['REGULAR', 'Regular'], ['KNOTLESS', 'Knotless']] as const).map(([value, label]) => { const selected = selectedFoundation === value; return <button key={value} type="button" onClick={() => setSelectedFoundation(value)} className={`min-h-16 rounded-lg border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2 ${selected ? 'border-[#2C1810] bg-[#FAF7F2]' : 'border-neutral-200 hover:border-neutral-400'}`}><span className="flex items-center gap-2 text-sm font-semibold"><span className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${selected ? 'border-[#2C1810] bg-[#2C1810] text-white' : 'border-neutral-300'}`}>{selected ? '✓' : ''}</span>{label}</span>{value === 'KNOTLESS' && <span className="mt-1 block pl-6 text-xs text-neutral-600">{selectedItem.knotlessPricingMode === "SEPARATE" ? "Individual prices" : `+${formatPrice(selectedItem.knotlessPriceAdjustment || '0')}`}</span>}</button>; })}</div>{selectedFoundation && <p className="text-xs text-neutral-600">{selectedFoundation === 'KNOTLESS' ? 'Knotless' : 'Regular'} selected · Prices updated</p>}</div>}
                             {lengthOptions.map((option, idx) => {
                                 const optionKey = option.id?.toString() ?? `option-${idx}`;
@@ -475,8 +491,9 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                         </div>
 
                         <div className="relative shrink-0 border-t border-neutral-200 bg-white p-4 shadow-[0_-12px_24px_rgba(0,0,0,0.08)] md:px-8">
-                            <Button type="button" disabled={!selectedLength || (selectedItem.foundationChoicesEnabled ? !selectedFoundation : false) || (selectedItem.hairTextures?.length ? !selectedTexture : false)} onClick={handleModalSelect} className="w-full rounded-lg bg-[#2C1810] py-3 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#1a0f0a] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500 disabled:hover:bg-neutral-300">
-                                Book Now{selectedLengthOption?.price ? ` · ${formatPrice(optionPrice(selectedItem, selectedLengthOption, selectedFoundation) + fixedAddOnTotal / 100)}` : ""}
+                            {selectedItem.pricingMode === "FIXED" && modalQuote && <p className="mb-3 text-center text-xs text-neutral-600">{formatPrice(modalQuote.depositCents / 100)} due today · {formatPrice(modalQuote.remainingBalanceCents / 100)} remaining</p>}
+                            <Button type="button" disabled={!selectedLength || (selectedItem.foundationChoicesEnabled ? !selectedFoundation : false) || (selectedItem.hairTextures?.length ? !selectedTexture : false) || (selectedItem.pricingMode === "FIXED" && (!modalQuote || quoteLoading))} onClick={handleModalSelect} className="w-full rounded-lg bg-[#2C1810] py-3 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#1a0f0a] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500 disabled:hover:bg-neutral-300">
+                                Book Now{selectedItem.pricingMode === "FIXED" && modalQuote ? ` · ${formatPrice(modalQuote.servicePriceCents / 100)}` : selectedLengthOption?.price ? ` · ${formatPrice(optionPrice(selectedItem, selectedLengthOption, selectedFoundation) + fixedAddOnTotal / 100)}` : ""}
                             </Button>
                         </div>
                         {showLengthGuide && guides?.lengthGuideImageUrl && <LengthGuideOverlay imageUrl={guideImageUrl(guides.lengthGuideImageUrl)} onClose={() => setShowLengthGuide(false)} onShowSize={guides.sizeGuideEnabled && selectedSizeGuide?.imageUrl ? () => { setShowLengthGuide(false); setShowSizeGuide(true); } : undefined} />}

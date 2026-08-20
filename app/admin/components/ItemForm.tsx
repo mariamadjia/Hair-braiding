@@ -19,7 +19,17 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [pricingTab, setPricingTab] = useState<"REGULAR" | "KNOTLESS">("REGULAR");
+    const [defaultDepositCents, setDefaultDepositCents] = useState(5000);
+    const [customDeposit, setCustomDeposit] = useState(initial.depositOverrideCents != null);
+    const [depositInput, setDepositInput] = useState(initial.depositOverrideCents == null ? "" : (initial.depositOverrideCents / 100).toFixed(2));
     const photos = item.sizePhotos ?? [];
+
+    useEffect(() => {
+        fetch("/api/admin/pricing/deposits", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
+            .then(response => response.ok ? response.json() : null)
+            .then(payload => { if (payload?.defaultDepositCents) setDefaultDepositCents(payload.defaultDepositCents); })
+            .catch(() => undefined);
+    }, [token]);
 
     useEffect(() => {
         const beforeUnload = (event: BeforeUnloadEvent) => { if (dirty) event.preventDefault(); };
@@ -77,6 +87,10 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
         }
         if (item.pricingMode === "BY_LENGTH" && !item.lengthOptions?.length) {
             setError("Add at least one length option for price-by-length service.");
+            return;
+        }
+        if (customDeposit && (!item.depositOverrideCents || item.depositOverrideCents < 1)) {
+            setError("Enter a valid deposit amount.");
             return;
         }
         setSaving(true); setError(null);
@@ -142,6 +156,17 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                 {item.foundationChoicesEnabled && <p className="mt-4 text-xs text-neutral-500">Regular and Knotless pricing can be managed separately below.</p>}
             </fieldset>
             </div>
+
+            <fieldset className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
+                <legend className="text-sm font-semibold text-neutral-900 dark:text-white">Booking deposit</legend>
+                <p className="mt-1 text-xs text-neutral-500">Amount required to request this service. The balance is due later.</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <button type="button" aria-pressed={!customDeposit} onClick={() => { setCustomDeposit(false); set("depositOverrideCents", null); }} className={`rounded-lg border px-4 py-3 text-left transition ${!customDeposit ? "border-neutral-950 bg-neutral-50 dark:border-white dark:bg-neutral-800" : "border-neutral-200 dark:border-neutral-700"}`}><span className="block text-sm font-semibold">Use default · ${(defaultDepositCents / 100).toFixed(2)}</span><span className="mt-1 block text-xs text-neutral-500">Automatically follows the salon default.</span></button>
+                    <button type="button" aria-pressed={customDeposit} onClick={() => { const cents = item.depositOverrideCents ?? defaultDepositCents; setCustomDeposit(true); setDepositInput((cents / 100).toFixed(2)); set("depositOverrideCents", cents); }} className={`rounded-lg border px-4 py-3 text-left transition ${customDeposit ? "border-neutral-950 bg-neutral-50 dark:border-white dark:bg-neutral-800" : "border-neutral-200 dark:border-neutral-700"}`}><span className="block text-sm font-semibold">Custom deposit</span><span className="mt-1 block text-xs text-neutral-500">Set a different amount for this service.</span></button>
+                </div>
+                {customDeposit && <label className="mt-3 block max-w-xs"><span className={lbl}>Deposit amount *</span><span className="flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-900"><span className="border-r border-neutral-200 px-3 text-neutral-500 dark:border-neutral-700">$</span><input aria-label="Deposit amount" inputMode="decimal" className="min-w-0 flex-1 bg-transparent px-3 outline-none" value={depositInput} onChange={event => { const clean = event.target.value.replace(/[^0-9.]/g, ""); setDepositInput(clean); set("depositOverrideCents", clean && Number.isFinite(Number(clean)) ? Math.round(Number(clean) * 100) : null); }} /></span></label>}
+                <p className="mt-3 text-xs font-medium text-neutral-700 dark:text-neutral-300">Customers will see ${(Number(item.depositOverrideCents ?? defaultDepositCents) / 100).toFixed(2)} deposit required.</p>
+            </fieldset>
 
             <fieldset className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-700"><div className="mb-3 flex items-center justify-between gap-3"><legend className="text-sm font-semibold text-neutral-900 dark:text-white">Photos for this size</legend><span className="text-xs text-neutral-500">{photos.length} uploaded</span></div><div className="flex flex-wrap gap-2.5">
                 <label aria-label="Upload size photos" className={`flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-neutral-300 text-neutral-500 transition focus-within:ring-2 focus-within:ring-neutral-400 ${uploading ? "opacity-50" : "hover:border-neutral-500 hover:bg-neutral-50"}`}>{uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Plus className="h-5 w-5" /><span className="text-[10px] font-medium">Add photo</span></>}<input type="file" accept="image/*" multiple className="sr-only" disabled={uploading || saving} onChange={uploadPhotos} /></label>

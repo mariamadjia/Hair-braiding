@@ -13,6 +13,7 @@ import LengthGuideOverlay from "@/components/LengthGuideOverlay";
 import { formatPrice } from "@/lib/utils/price";
 import SizeGuideOverlay from "@/components/SizeGuideOverlay";
 import { guideImageUrl, guideKeyForSize, useGuideSettings } from "@/lib/guides";
+type ModalQuote = { servicePriceCents: number; depositCents: number; remainingBalanceCents: number };
 
 function itemPriceLabel(item: NonNullable<BookingCategory["items"]>[number]): string {
     const prices = (item.lengthOptions ?? []).map(option => Number((option.price ?? "").replace(/[^0-9.]/g, ""))).filter(Number.isFinite);
@@ -34,28 +35,22 @@ export default function CategoryPageClient({ category }: { category: BookingCate
     const [photoItemIndex, setPhotoItemIndex] = useState<number | null>(null);
     const [photoImageIndex, setPhotoImageIndex] = useState(0);
     const [selectedTexture, setSelectedTexture] = useState<string | null>(null);
+    const [selectedFoundation, setSelectedFoundation] = useState<"REGULAR" | "KNOTLESS" | null>(null);
     const [showLengthGuide, setShowLengthGuide] = useState(false);
     const [showSizeGuide, setShowSizeGuide] = useState(false);
+    const [modalQuote, setModalQuote] = useState<ModalQuote | null>(null);
+    const [quoteError, setQuoteError] = useState<string | null>(null);
+    const [quoteLoading, setQuoteLoading] = useState(false);
     const guides = useGuideSettings();
     const openModalForItem = (index: number) => {
         const item = items[index];
-        if (item?.lengthOptions?.length || item?.hairTextures?.length) {
-            setSelectedItemIndex(index);
-            setSelectedLength(item.lengthOptions?.length ? null : "__none__");
-            setSelectedTexture(item?.hairTextures?.[0] ?? null);
-            setShowLengthGuide(false);
-            return;
-        }
-
-        const params = new URLSearchParams({
-            categorySlug: category.slug,
-            serviceId: item?.id?.toString() ?? "",
-            service: item?.name ?? "Selected Service",
-            price: item?.price ?? "",
-            description: item?.description ?? "Professional braiding service",
-            image: item?.image ?? subcategories[0]?.image ?? "",
-        });
-        router.push(`/checkout?${params.toString()}`);
+        setSelectedItemIndex(index);
+        setSelectedLength(item?.lengthOptions?.length ? null : "__fixed__");
+        setSelectedTexture(item?.hairTextures?.[0] ?? null);
+        setSelectedFoundation(null);
+        setModalQuote(null);
+        setQuoteError(null);
+        setShowLengthGuide(false);
     };
 
     const openPhotoModal = (index: number) => {
@@ -77,9 +72,24 @@ export default function CategoryPageClient({ category }: { category: BookingCate
         setSelectedItemIndex(null);
         setSelectedLength(null);
         setSelectedTexture(null);
+        setSelectedFoundation(null);
         setShowLengthGuide(false);
         setShowSizeGuide(false);
+        setModalQuote(null);
+        setQuoteError(null);
     };
+
+    useEffect(() => {
+        if (!selectedItem?.id || selectedItem.pricingMode !== "FIXED" || (selectedItem.foundationChoicesEnabled && !selectedFoundation)) return;
+        const controller = new AbortController();
+        setQuoteLoading(true); setQuoteError(null); setModalQuote(null);
+        fetch("/api/booking/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ serviceId: selectedItem.id, lengthOptionId: null, foundation: selectedFoundation, addOnIds: [] }), signal: controller.signal })
+            .then(async response => { const payload = await response.json().catch(() => ({})); if (!response.ok) throw new Error(payload.error || payload.message || "Unable to confirm price."); return payload; })
+            .then(setModalQuote)
+            .catch(error => { if (!(error instanceof DOMException && error.name === "AbortError")) setQuoteError(error instanceof Error ? error.message : "Unable to confirm price."); })
+            .finally(() => setQuoteLoading(false));
+        return () => controller.abort();
+    }, [selectedItem?.id, selectedItem?.pricingMode, selectedItem?.foundationChoicesEnabled, selectedFoundation]);
 
     const closePhotoModal = () => {
         setPhotoItemIndex(null);
@@ -125,6 +135,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
 
     const handleModalSelect = () => {
         if (!selectedItem || !selectedLength) return;
+        if (selectedItem.foundationChoicesEnabled && !selectedFoundation) return;
         if (selectedItem.hairTextures?.length && !selectedTexture) return;
 
         const option = lengthOptions.find((opt) => opt.id?.toString() === selectedLength);
@@ -138,6 +149,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
             price: option?.price ?? selectedItem.price ?? "",
             description: selectedItem.description ?? "Professional braiding service",
             texture: selectedTexture ?? "",
+            foundation: selectedFoundation ?? "",
             image: selectedItem.image ?? subcategories[0]?.image ?? "",
         });
         router.push(`/checkout?${params.toString()}`);
@@ -318,7 +330,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                 </div>
             )}
 
-            {selectedItem && lengthOptions.length > 0 && (
+            {selectedItem && (selectedItem.pricingMode === "FIXED" || lengthOptions.length > 0) && (
                 <div 
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" 
                     onClick={closeModal}
@@ -336,7 +348,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                             {selectedItem.description && (
                                 <p className="text-sm text-neutral-600 font-light">{selectedItem.description}</p>
                             )}
-                            <p className="mt-3 text-sm font-medium text-neutral-900">Choose your preferred length.</p>
+                            <p className="mt-3 text-sm font-medium text-neutral-900">{selectedItem.pricingMode === "FIXED" ? "Confirm your service." : "Choose your preferred length."}</p>
                             <div className="mt-2 flex flex-wrap gap-x-5">
                             {guides?.sizeGuideEnabled && selectedSizeGuide?.imageUrl && <button type="button" onClick={() => setShowSizeGuide(true)} className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#2C1810] underline underline-offset-4"><Rows3 className="h-4 w-4" /> View size guide</button>}
                             {guides?.lengthGuideEnabled && guides.lengthGuideImageUrl && <button type="button" onClick={() => setShowLengthGuide(true)} className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#2C1810] underline decoration-[#2C1810]/40 underline-offset-4 transition hover:decoration-[#2C1810] focus:outline-none focus:ring-2 focus:ring-[#2C1810] focus:ring-offset-2">
@@ -346,6 +358,8 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                         </div>
 
                         <div className="relative flex-1 space-y-2 overflow-y-auto px-6 py-4 md:px-8">
+                            {selectedItem.foundationChoicesEnabled && <div className="mb-5 space-y-3 border-b border-neutral-200 pb-5"><p className="text-sm font-medium text-neutral-900">Choose your braid foundation.</p><div className="grid grid-cols-2 gap-3">{([['REGULAR', 'Regular'], ['KNOTLESS', 'Knotless']] as const).map(([value, label]) => { const selected = selectedFoundation === value; return <button key={value} type="button" onClick={() => setSelectedFoundation(value)} className={`min-h-16 rounded-lg border p-4 text-left transition ${selected ? 'border-[#2C1810] bg-[#FAF7F2]' : 'border-neutral-200 hover:border-neutral-400'}`}><span className="flex items-center gap-2 text-sm font-semibold"><span className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${selected ? 'border-[#2C1810] bg-[#2C1810] text-white' : 'border-neutral-300'}`}>{selected ? '✓' : ''}</span>{label}</span></button>; })}</div></div>}
+                            {selectedItem.pricingMode === "FIXED" && <div className="rounded-xl border-2 border-[#2C1810] bg-[#FAF7F2] px-5 py-5"><div className="flex items-center justify-between gap-4"><div className="flex items-start gap-4"><span className="mt-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#2C1810]"><span className="h-2.5 w-2.5 rounded-full bg-[#2C1810]" /></span><div><p className="font-medium text-neutral-900">{selectedItem.name}</p><p className="mt-1 text-sm text-neutral-500">{quoteLoading ? "Confirming deposit…" : modalQuote ? `${formatPrice(modalQuote.depositCents / 100)} deposit required` : "Deposit required"}</p></div></div><p className="text-xl font-medium text-neutral-900">{modalQuote ? formatPrice(modalQuote.servicePriceCents / 100) : formatPrice(selectedItem.price)}</p></div>{quoteError && <p role="alert" className="mt-4 text-sm text-red-600">{quoteError}</p>}</div>}
                             {lengthOptions.map((option, idx) => {
                                 const optionKey = option.id?.toString() || `option-${idx}`;
                                 const isSelected = selectedLength === optionKey;
@@ -422,8 +436,9 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                         </div>
 
                         <div className="relative shrink-0 border-t border-neutral-200 bg-white p-4 shadow-[0_-12px_24px_rgba(0,0,0,0.08)] md:px-8">
-                            <Button type="button" disabled={!selectedLength || (selectedItem.hairTextures?.length ? !selectedTexture : false)} onClick={handleModalSelect} className="w-full rounded-lg bg-[#2C1810] py-3 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#1a0f0a] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500 disabled:hover:bg-neutral-300">
-                                Book Now{selectedLengthOption?.price ? ` · ${formatPrice(selectedLengthOption.price)}` : ""}
+                            {selectedItem.pricingMode === "FIXED" && modalQuote && <p className="mb-3 text-center text-xs text-neutral-600">{formatPrice(modalQuote.depositCents / 100)} due today · {formatPrice(modalQuote.remainingBalanceCents / 100)} remaining</p>}
+                            <Button type="button" disabled={!selectedLength || (selectedItem.foundationChoicesEnabled ? !selectedFoundation : false) || (selectedItem.hairTextures?.length ? !selectedTexture : false) || (selectedItem.pricingMode === "FIXED" && (!modalQuote || quoteLoading))} onClick={handleModalSelect} className="w-full rounded-lg bg-[#2C1810] py-3 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#1a0f0a] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500 disabled:hover:bg-neutral-300">
+                                Book Now{selectedItem.pricingMode === "FIXED" && modalQuote ? ` · ${formatPrice(modalQuote.servicePriceCents / 100)}` : selectedLengthOption?.price ? ` · ${formatPrice(selectedLengthOption.price)}` : ""}
                             </Button>
                         </div>
                         {showLengthGuide && guides?.lengthGuideImageUrl && <LengthGuideOverlay imageUrl={guideImageUrl(guides.lengthGuideImageUrl)} onClose={() => setShowLengthGuide(false)} onShowSize={guides.sizeGuideEnabled && selectedSizeGuide?.imageUrl ? () => { setShowLengthGuide(false); setShowSizeGuide(true); } : undefined} />}
