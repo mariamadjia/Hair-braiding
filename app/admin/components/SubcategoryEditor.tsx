@@ -908,7 +908,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                             {sortItemsBySize(items).map(({ item, originalIdx }, orderedIndex, orderedEntries) => (
                                 <div key={item.id ?? `new-${originalIdx}`}>
                                     {editingId === item.id ? (
-                                        <div className="rounded-lg border border-neutral-300 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800/40">
+                                        <div className="rounded-xl bg-neutral-50 p-3 sm:p-5 dark:bg-neutral-800/40">
                                             <ItemForm
                                                 initial={item}
                                                 token={token}
