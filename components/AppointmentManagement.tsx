@@ -500,7 +500,7 @@ function AppointmentManagement() {
             ) : visibleAppointments.length === 0 ? (
                 <div className="py-16 text-center"><Calendar className="mx-auto mb-3 h-10 w-10 text-neutral-300" /><p className="text-neutral-500">No matching appointments found</p></div>
             ) : (
-                <div className="overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white shadow-[0_10px_35px_rgba(53,29,18,0.05)]">
+                <div className="space-y-4">
                     {visibleAppointments.map(appointment => {
                         const overdue = appointment.status === "PENDING" && isPast(appointment);
                         const captureProcessing = appointment.status === "PENDING" && Boolean(appointment.approvedAt);
@@ -514,7 +514,7 @@ function AppointmentManagement() {
                                     : appointment.status === "PENDING" ? "AWAITING PAYMENT"
                                         : appointment.status;
                         return (
-                            <article key={appointment.id} className={cn("group relative border-b border-[#eee7e1] p-4 transition last:border-b-0 hover:bg-[#fcfaf8] sm:p-6", (overdue || paymentIssue) && "bg-red-50/30")}>
+                            <article key={appointment.id} className={cn("group relative overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white p-4 shadow-[0_7px_24px_rgba(53,29,18,0.05)] transition hover:-translate-y-0.5 hover:border-[#d7c6bb] hover:shadow-[0_12px_32px_rgba(53,29,18,0.09)] sm:p-6", (overdue || paymentIssue) && "border-red-200 bg-red-50/30")}>
                                 <div className={cn("absolute inset-y-4 left-0 w-1 rounded-r-full", paymentIssue || overdue ? "bg-red-500" : canApprove(appointment) ? "bg-amber-500" : appointment.status === "APPROVED" ? "bg-emerald-500" : "bg-neutral-300")} />
                                 <div className="grid gap-5 pl-2 lg:grid-cols-[minmax(230px,0.85fr)_minmax(300px,1.2fr)_auto] lg:items-center">
                                     <div className="min-w-0">
