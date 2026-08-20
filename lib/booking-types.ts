@@ -31,6 +31,7 @@ export type BookingItem = {
     name: string;
     sizeGuideKey?: string;
     price: string;
+    pricingMode?: "FIXED" | "BY_LENGTH";
     description: string;
     notes?: string;
     durationMinutes?: number;

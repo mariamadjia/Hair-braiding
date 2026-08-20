@@ -9,7 +9,10 @@ import { AlertCircle, CheckCircle, Loader2, Plus, X } from "lucide-react";
 import { uploadFile } from "../utils";
 
 export function ItemForm({ initial, token, onSave, onCancel }: { initial: BookingItem; token: string; categoryId?: number; subcategoryId?: number; onSave: (item: BookingItem) => Promise<void>; onCancel: () => void }) {
-    const [item, setItem] = useState<BookingItem>(initial);
+    const [item, setItem] = useState<BookingItem>(() => ({
+        ...initial,
+        pricingMode: initial.pricingMode ?? (initial.lengthOptions?.length ? "BY_LENGTH" : "FIXED"),
+    }));
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [dirty, setDirty] = useState(false);
@@ -52,8 +55,30 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
         setError(null);
     };
 
+    const setPricingMode = (mode: "FIXED" | "BY_LENGTH") => {
+        if (mode === item.pricingMode) return;
+        if (mode === "FIXED" && item.lengthOptions?.length
+            && !confirm("Switching to Fixed price will remove all length options. Continue?")) return;
+        setItem(previous => ({
+            ...previous,
+            pricingMode: mode,
+            lengthOptions: mode === "FIXED" ? [] : previous.lengthOptions,
+            knotlessPricingMode: mode === "FIXED" ? "ADJUSTMENT" : previous.knotlessPricingMode,
+        }));
+        setDirty(true);
+        setError(null);
+    };
+
     const handleSave = async () => {
         if (!item.name.trim() || saving || uploading) return;
+        if (item.pricingMode === "FIXED" && !item.price?.trim()) {
+            setError("Enter a base price for this fixed-price service.");
+            return;
+        }
+        if (item.pricingMode === "BY_LENGTH" && !item.lengthOptions?.length) {
+            setError("Add at least one length option for price-by-length service.");
+            return;
+        }
         setSaving(true); setError(null);
         try {
             await onSave({ ...item, sizePhotos: photos });
@@ -92,6 +117,15 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
             </select><span className="mt-1 block text-xs text-neutral-500">The calendar reserves this full amount of time for the service.</span></label>
 
             <fieldset className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
+                <legend className="text-sm font-semibold text-neutral-900 dark:text-white">Pricing method</legend>
+                <p className="mt-1 text-xs text-neutral-500">Choose whether this service has one price or separate prices by length.</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <button type="button" aria-pressed={item.pricingMode === "FIXED"} onClick={() => setPricingMode("FIXED")} className={`min-h-14 rounded-lg border px-4 text-left text-sm ${item.pricingMode === "FIXED" ? "border-neutral-950 bg-neutral-50 dark:border-white dark:bg-neutral-800" : "border-neutral-200 dark:border-neutral-700"}`}><span className="block font-semibold">Fixed price</span><span className="text-xs text-neutral-500">One base price; customers skip length selection.</span></button>
+                    <button type="button" aria-pressed={item.pricingMode === "BY_LENGTH"} onClick={() => setPricingMode("BY_LENGTH")} className={`min-h-14 rounded-lg border px-4 text-left text-sm ${item.pricingMode === "BY_LENGTH" ? "border-neutral-950 bg-neutral-50 dark:border-white dark:bg-neutral-800" : "border-neutral-200 dark:border-neutral-700"}`}><span className="block font-semibold">Price by length</span><span className="text-xs text-neutral-500">Customers must choose a priced length.</span></button>
+                </div>
+            </fieldset>
+
+            <fieldset className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
                 <div className="flex items-start justify-between gap-4">
                     <div><legend className="text-sm font-semibold text-neutral-900 dark:text-white">Braid foundation</legend><p className="mt-1 text-xs text-neutral-500">Optionally let customers choose Regular or Knotless before selecting a length.</p></div>
                     <label className="inline-flex cursor-pointer items-center gap-2"><span className="sr-only">Offer braid foundation choices</span><input type="checkbox" className="peer sr-only" checked={Boolean(item.foundationChoicesEnabled)} onChange={event => set("foundationChoicesEnabled", event.target.checked)} /><span aria-hidden="true" className="relative h-6 w-11 rounded-full bg-neutral-300 transition peer-checked:bg-[#2C1810] peer-focus-visible:ring-2 peer-focus-visible:ring-[#2C1810] peer-focus-visible:ring-offset-2 after:absolute after:left-1 after:top-1 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5" /></label>
@@ -104,7 +138,12 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                 {photos.map((photo, index) => <div key={`${photo}-${index}`} className="group relative"><img src={toProxyUrl(photo)} alt={`Size photo ${index + 1}`} className="h-16 w-16 rounded-lg border object-cover" /><button type="button" aria-label={`Remove size photo ${index + 1}`} onClick={() => set("sizePhotos", photos.filter((_, photoIndex) => photoIndex !== index))} className="absolute -right-1 -top-1 rounded-full bg-red-600 p-1 text-white opacity-100 focus:ring-2 focus:ring-red-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"><X className="h-3 w-3" /></button></div>)}
             </div></fieldset>
 
-            {item.foundationChoicesEnabled ? (
+            {item.pricingMode === "FIXED" ? (
+                <section className="space-y-4 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
+                    <label className="block"><span className={lbl}>Base price *</span><span className="flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-900"><span className="border-r border-neutral-200 px-3 text-neutral-500 dark:border-neutral-700">$</span><input inputMode="decimal" className="min-w-0 flex-1 bg-transparent px-3 outline-none" value={(item.price ?? "").replace("$", "")} onChange={event => set("price", event.target.value.replace(/[^0-9.]/g, ""))} /></span></label>
+                    {item.foundationChoicesEnabled && <label className="block"><span className={lbl}>Knotless price adjustment</span><span className="flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-900"><span className="border-r border-neutral-200 px-3 text-neutral-500 dark:border-neutral-700">+$</span><input inputMode="decimal" className="min-w-0 flex-1 bg-transparent px-3 outline-none" value={(item.knotlessPriceAdjustment ?? "0").replace("$", "")} onChange={event => set("knotlessPriceAdjustment", event.target.value.replace(/[^0-9.]/g, ""))} /></span></label>}
+                </section>
+            ) : item.foundationChoicesEnabled ? (
                 <section className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
                     <div className="flex border-b border-neutral-200 dark:border-neutral-700">
                         {(["REGULAR", "KNOTLESS"] as const).map(tab => (

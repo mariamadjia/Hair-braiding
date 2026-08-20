@@ -16,6 +16,7 @@ type AuthoritativeService = {
     id: number;
     name: string;
     price?: string;
+    pricingMode?: "FIXED" | "BY_LENGTH";
     description?: string;
     image?: string;
     sizePhotos?: string[];
@@ -110,7 +111,8 @@ function CheckoutContent() {
             .then(service => {
                 const optionIsRequired = Boolean(lengthOptionId);
                 const optionExists = service.lengthOptions?.some((option: { id: number }) => option.id === lengthOptionId);
-                if (service.lengthOptions?.length && !optionIsRequired) throw new Error("Choose a length before checking out.");
+                if (service.pricingMode === "BY_LENGTH" && !optionIsRequired) throw new Error("Choose a length before checking out.");
+                if (service.pricingMode === "FIXED" && optionIsRequired) throw new Error("This service does not use a length option.");
                 if (optionIsRequired && !optionExists) throw new Error("The selected length is no longer available.");
                 if (service.foundationChoicesEnabled && !["REGULAR", "KNOTLESS"].includes(foundation)) throw new Error("Choose a braid foundation before checking out.");
                 if (!service.foundationChoicesEnabled && foundation) throw new Error("This service does not offer braid foundation choices.");
