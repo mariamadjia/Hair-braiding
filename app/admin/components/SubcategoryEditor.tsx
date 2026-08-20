@@ -933,6 +933,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                             }}
                                             className={`overflow-hidden rounded-lg border bg-white transition dark:bg-neutral-900 ${draggedItemId === item.id ? "border-neutral-400 opacity-60 dark:border-neutral-500" : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}
                                         >
+                                            {/* Compact summary keeps pricing mode, photos, and actions scannable. */}
                                             <div className="group grid min-h-[4.5rem] grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 sm:grid-cols-[auto_auto_auto_minmax(0,1fr)_auto_auto] sm:px-5">
                                                 <button
                                                     type="button"
