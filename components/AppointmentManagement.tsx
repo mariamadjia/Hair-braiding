@@ -11,6 +11,17 @@ import { getAuthToken, removeAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
 import CalendarView, { CalendarRange } from "./CalendarView";
 
+type NoShowFee = {
+    appointmentId: number; scheduledServicePriceCents: number; feeRatePercent: number;
+    totalFeeCents: number; depositCreditCents: number; amountToChargeCents: number;
+    feeDecision: string; paymentStatus: string; paymentMethodBrand?: string;
+    paymentMethodLast4?: string; failureMessage?: string; eligibleAt: string;
+    normalDeadlineAt: string; automaticChargeDeadlineAt: string;
+    overdueConfirmationRequired: boolean; automaticChargeAllowed: boolean;
+    bookingRestricted?: boolean; consentRecordedAt?: string; chargeAttemptCount?: number;
+    chargeAttemptedAt?: string; paidAt?: string; adminNote?: string;
+};
+
 export type Appointment = {
     id: number;
     customer: { id: number; firstName: string; lastName: string; email: string; phoneNumber: string };
@@ -44,14 +55,7 @@ export type Appointment = {
     selfServiceChangeCount?: number;
     lastSelfServiceChangeAt?: string;
     rescheduledFromDateTime?: string;
-    noShowFee?: {
-        appointmentId: number; scheduledServicePriceCents: number; feeRatePercent: number;
-        totalFeeCents: number; depositCreditCents: number; amountToChargeCents: number;
-        feeDecision: string; paymentStatus: string; paymentMethodBrand?: string;
-        paymentMethodLast4?: string; failureMessage?: string; eligibleAt: string;
-        normalDeadlineAt: string; automaticChargeDeadlineAt: string;
-        overdueConfirmationRequired: boolean; automaticChargeAllowed: boolean;
-    };
+    noShowFee?: NoShowFee;
 };
 
 type WorkflowView = "NEEDS_ACTION" | "UPCOMING" | "HISTORY";
@@ -144,6 +148,9 @@ function AppointmentManagement() {
     const [action, setAction] = useState<{ kind: ActionKind; appointment: Appointment } | null>(null);
     const [actionNotes, setActionNotes] = useState("");
     const [confirmOverdue, setConfirmOverdue] = useState(false);
+    const [noShowDecision, setNoShowDecision] = useState<"ACTIVE" | "ADJUSTED" | "WAIVED">("ACTIVE");
+    const [adjustedFee, setAdjustedFee] = useState("");
+    const [noShowResult, setNoShowResult] = useState<NoShowFee | null>(null);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
@@ -257,6 +264,20 @@ function AppointmentManagement() {
         && appointment.paymentStatus === "AUTHORIZED"
         && !isPast(appointment);
 
+    const openNoShow = (appointment: Appointment) => {
+        const savedDecision = appointment.noShowFee?.feeDecision;
+        const initialDecision = savedDecision === "ACTIVE" || savedDecision === "ADJUSTED" || savedDecision === "WAIVED"
+            ? savedDecision : appointment.noShowFee?.automaticChargeAllowed ? "ACTIVE" : "WAIVED";
+        setAction({ kind: "no-show", appointment });
+        setActionNotes(appointment.noShowFee?.adminNote || "");
+        setConfirmOverdue(false);
+        setNoShowDecision(initialDecision);
+        setAdjustedFee(appointment.noShowFee?.feeDecision === "ADJUSTED"
+            ? (appointment.noShowFee.totalFeeCents / 100).toFixed(2) : "");
+        setNoShowResult(appointment.status === "NO_SHOW" && appointment.noShowFee ? appointment.noShowFee : null);
+        setError(null);
+    };
+
     const submitAction = async () => {
         if (!action) return;
         const notes = actionNotes.trim();
@@ -269,10 +290,20 @@ function AppointmentManagement() {
         setNotice(null);
         try {
             const noShow = action.kind === "no-show";
-            const result = await readResponse(await fetch(`${API_BASE_URL}/api/appointments/${action.appointment.id}/${action.kind}`, {
+            const retryNoShow = noShow && action.appointment.status === "NO_SHOW"
+                && action.appointment.noShowFee?.paymentStatus === "FAILED";
+            const adjustedCents = noShowDecision === "ADJUSTED" ? Math.round(Number(adjustedFee) * 100) : undefined;
+            if (noShowDecision === "ADJUSTED" && (!Number.isFinite(adjustedCents) || adjustedCents === undefined)) {
+                throw new Error("Enter a valid adjusted total fee");
+            }
+            const result = await readResponse(await fetch(retryNoShow
+                ? `${API_BASE_URL}/api/appointments/${action.appointment.id}/no-show/retry`
+                : `${API_BASE_URL}/api/appointments/${action.appointment.id}/${action.kind}`, {
                 method: noShow ? "POST" : "PUT",
                 headers: authHeaders(),
-                body: JSON.stringify(noShow ? { adminNote: notes, confirmOverdue } : { adminNotes: notes })
+                ...(retryNoShow ? { body: JSON.stringify({ confirmOverdue }) } : { body: JSON.stringify(noShow
+                    ? { adminNote: notes, confirmOverdue, feeDecision: noShowDecision, adjustedTotalFeeCents: adjustedCents }
+                    : { adminNotes: notes }) })
             }));
             setNotice({
                 approve: "Approval is processing while the authorized deposit is captured.",
@@ -283,10 +314,15 @@ function AppointmentManagement() {
                     ? `No-show recorded and ${(result.amountToChargeCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} charged.`
                     : `No-show recorded. Card charge status: ${String(result.paymentStatus).toLowerCase()}.`
             }[action.kind]);
-            setAction(null);
-            setActionNotes("");
-            setConfirmOverdue(false);
-            setSelectedAppointment(null);
+            if (noShow) {
+                setNoShowResult(result as NoShowFee);
+                setAction(current => current ? { ...current, appointment: { ...current.appointment, status: "NO_SHOW", noShowFee: result as NoShowFee } } : null);
+            } else {
+                setAction(null);
+                setActionNotes("");
+                setConfirmOverdue(false);
+                setSelectedAppointment(null);
+            }
             await fetchAppointments();
             if (activeCalendarRange) await fetchCalendarRange(activeCalendarRange);
         } catch (err) {
@@ -372,6 +408,14 @@ function AppointmentManagement() {
         if (status === "PENDING") return "bg-amber-100 text-amber-800";
         return "bg-neutral-100 text-neutral-700";
     };
+
+    const noShowPreview = action?.kind === "no-show" ? action.appointment.noShowFee : undefined;
+    const chosenNoShowTotal = noShowDecision === "WAIVED" ? 0
+        : noShowDecision === "ADJUSTED" && Number.isFinite(Number(adjustedFee))
+            ? Math.round(Number(adjustedFee) * 100)
+            : noShowPreview?.totalFeeCents || 0;
+    const chosenDepositCredit = Math.min(chosenNoShowTotal, noShowPreview?.depositCreditCents || 0);
+    const chosenCharge = Math.max(0, chosenNoShowTotal - chosenDepositCredit);
 
     return (
         <div className="mx-auto max-w-7xl p-4 sm:p-6">
@@ -520,8 +564,9 @@ function AppointmentManagement() {
                                         {appointment.notificationStatus?.includes("FAILED") && <Button size="sm" variant="outline" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}><Mail className="mr-1 h-4 w-4" />Retry notification</Button>}
                                         {appointment.status === "APPROVED" && isPast(appointment) && <>
                                             <Button size="sm" onClick={() => { setAction({ kind: "complete", appointment }); setActionNotes(""); }}>Mark complete</Button>
-                                            {appointment.noShowFee?.automaticChargeAllowed && <Button size="sm" variant="destructive" onClick={() => { setAction({ kind: "no-show", appointment }); setActionNotes(""); setConfirmOverdue(false); }}>Mark no-show</Button>}
+                                            <Button size="sm" variant="destructive" disabled={new Date(appointment.noShowFee!.eligibleAt) > centralNow()} title={new Date(appointment.noShowFee!.eligibleAt) > centralNow() ? `Available after ${formatDateTime(appointment.noShowFee!.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</Button>
                                         </>}
+                                        {appointment.status === "NO_SHOW" && appointment.noShowFee?.paymentStatus === "FAILED" && <Button size="sm" variant="destructive" onClick={() => openNoShow(appointment)}>Retry no-show charge</Button>}
                                         {(appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing && <Button size="sm" variant="outline" className="text-red-700" onClick={() => { setAction({ kind: "cancel", appointment }); setActionNotes(""); }}>Cancel appointment</Button>}
                                     </div>
                                 </div>
@@ -540,27 +585,35 @@ function AppointmentManagement() {
             {selectedAppointment && <AppointmentDialog appointment={selectedAppointment} formatDateTime={formatDateTime} onClose={() => setSelectedAppointment(null)} onApprove={canApprove(selectedAppointment) ? () => { setAction({ kind: "approve", appointment: selectedAppointment }); setActionNotes(""); } : undefined} onDeny={selectedAppointment.status === "PENDING" && !selectedAppointment.approvedAt ? () => { setAction({ kind: "deny", appointment: selectedAppointment }); setActionNotes(""); } : undefined} />}
 
             {action && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setAction(null); }}>
-                <section role="dialog" aria-modal="true" aria-labelledby="appointment-action-title" className="w-full max-w-lg rounded-sm bg-white p-6 shadow-xl">
+                <section role="dialog" aria-modal="true" aria-labelledby="appointment-action-title" className={cn("max-h-[92vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-xl", action.kind === "no-show" ? "max-w-3xl" : "max-w-lg")}>
                     <div className="flex items-start justify-between gap-4"><div><h2 id="appointment-action-title" className="text-xl font-semibold capitalize">{action.kind} appointment</h2><p className="mt-1 text-sm text-neutral-600">{action.appointment.customer.firstName} {action.appointment.customer.lastName} · {formatDateTime(action.appointment.appointmentDateTime)}</p></div><button aria-label="Close dialog" className="p-1 text-neutral-500 hover:text-neutral-900" onClick={() => setAction(null)}><X className="h-5 w-5" /></button></div>
                     {action.kind === "approve" && <div className="mt-4 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">The customer’s authorized deposit will be captured after approval.</div>}
                     {action.kind === "cancel" && action.appointment.paymentStatus === "CAPTURED" && <div className="mt-4 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">The deposit has already been captured. Cancelling here does not automatically refund it; manage any refund in Stripe.</div>}
-                    {action.kind === "no-show" && action.appointment.noShowFee && <div className="mt-4 space-y-3">
-                        <div className="border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
-                            <p className="font-semibold">This will charge the saved {action.appointment.noShowFee.paymentMethodBrand || "card"} ending in {action.appointment.noShowFee.paymentMethodLast4 || "••••"}.</p>
-                            <dl className="mt-3 space-y-1"><div className="flex justify-between"><dt>60% no-show fee</dt><dd>${(action.appointment.noShowFee.totalFeeCents / 100).toFixed(2)}</dd></div><div className="flex justify-between"><dt>Deposit credited</dt><dd>− ${(action.appointment.noShowFee.depositCreditCents / 100).toFixed(2)}</dd></div><div className="mt-2 flex justify-between border-t border-amber-300 pt-2 font-bold"><dt>Charge now</dt><dd>${(action.appointment.noShowFee.amountToChargeCents / 100).toFixed(2)}</dd></div></dl>
-                        </div>
-                        {action.appointment.noShowFee.overdueConfirmationRequired && <label className="flex items-start gap-3 border border-red-200 bg-red-50 p-3 text-sm text-red-900"><input type="checkbox" className="mt-1" checked={confirmOverdue} onChange={event => setConfirmOverdue(event.target.checked)} /><span><b>Charge overdue—review required.</b> This is outside the normal 24-hour processing period. I confirmed the customer missed the appointment and no cancellation was received.</span></label>}
-                        <p className="text-xs text-neutral-500">Automatic charging closes {formatDateTime(action.appointment.noShowFee.automaticChargeDeadlineAt)}.</p>
+                    {action.kind === "no-show" && noShowPreview && <div className="mt-5 space-y-4">
+                        <section className="rounded-xl border border-[#e5d5c7] p-5">
+                            <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold">No-show fee calculation</h3><p className="mt-1 text-xs text-neutral-500">Scheduled service price ${(noShowPreview.scheduledServicePriceCents / 100).toFixed(2)}</p></div><span className={cn("rounded-full px-3 py-1 text-xs font-semibold", noShowResult?.paymentStatus === "PAID" ? "bg-emerald-100 text-emerald-800" : noShowResult?.paymentStatus === "FAILED" ? "bg-red-100 text-red-800" : noShowResult?.paymentStatus === "PROCESSING" ? "bg-amber-100 text-amber-800" : "bg-neutral-100 text-neutral-700")}>{noShowResult?.paymentStatus || "UNPAID"}</span></div>
+                            <dl className="mt-4 space-y-2 text-sm"><div className="flex justify-between"><dt>{noShowDecision === "ADJUSTED" ? "Adjusted no-show fee" : noShowDecision === "WAIVED" ? "No-show fee waived" : "60% of scheduled service price"}</dt><dd>${(chosenNoShowTotal / 100).toFixed(2)}</dd></div><div className="flex justify-between"><dt>Deposit already paid</dt><dd>− ${(chosenDepositCredit / 100).toFixed(2)}</dd></div><div className="flex justify-between border-t pt-3 text-lg font-bold"><dt>Remaining balance</dt><dd>${(chosenCharge / 100).toFixed(2)}</dd></div></dl>
+                            <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">The deposit is included in the total no-show fee—it is not added on top.</p>
+                        </section>
+
+                        {!noShowResult && <section className="grid gap-4 sm:grid-cols-2"><div className="rounded-xl border p-4"><h3 className="text-sm font-semibold">Fee decision</h3><div className="mt-3 grid grid-cols-3 overflow-hidden rounded-lg border">{(["ACTIVE", "ADJUSTED", "WAIVED"] as const).map(decision => <button type="button" key={decision} disabled={decision !== "WAIVED" && !noShowPreview.automaticChargeAllowed} onClick={() => setNoShowDecision(decision)} className={cn("px-2 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40", noShowDecision === decision ? "bg-[#351d12] text-white" : "bg-white text-neutral-700 hover:bg-neutral-50")}>{decision.charAt(0) + decision.slice(1).toLowerCase()}</button>)}</div>{!noShowPreview.automaticChargeAllowed && <p className="mt-2 text-xs text-red-700">Automatic charging is unavailable. The appointment can still be recorded with the fee waived.</p>}{noShowDecision === "ADJUSTED" && <label className="mt-3 block text-xs font-medium">Adjusted total fee ($)<input inputMode="decimal" value={adjustedFee} onChange={event => setAdjustedFee(event.target.value.replace(/[^0-9.]/g, ""))} placeholder="130.00" className="mt-1 h-10 w-full rounded-lg border px-3 text-sm"/></label>}</div><div className="rounded-xl border p-4"><h3 className="text-sm font-semibold">Payment status</h3><div className="mt-3 grid grid-cols-2 gap-2 text-xs"><span className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-800">● Unpaid</span><span className="rounded-lg border px-3 py-2 text-neutral-500">● Processing</span><span className="rounded-lg border px-3 py-2 text-neutral-500">● Paid</span><span className="rounded-lg border px-3 py-2 text-neutral-500">● Failed</span></div></div></section>}
+
+                        <section className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"><p className="font-semibold">Saved {noShowPreview.paymentMethodBrand || "card"} ending in {noShowPreview.paymentMethodLast4 || "••••"}</p><p className="mt-1">{noShowPreview.consentRecordedAt ? `Customer off-session consent recorded ${formatDateTime(noShowPreview.consentRecordedAt)}.` : "Customer consent record is unavailable."}</p><p className="mt-2 font-medium">{noShowDecision === "WAIVED" ? "No card charge will be submitted." : `After confirmation, $${(chosenCharge / 100).toFixed(2)} will be submitted immediately.`}</p></section>
+
+                        {noShowDecision !== "WAIVED" && noShowPreview.overdueConfirmationRequired && (!noShowResult || noShowResult.paymentStatus === "FAILED") && <label className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900"><input type="checkbox" className="mt-1" checked={confirmOverdue} onChange={event => setConfirmOverdue(event.target.checked)} /><span><b>Charge overdue—review required.</b> This is outside the normal 24-hour processing period. I confirmed the customer missed the appointment and no cancellation was received.</span></label>}
+
+                        {noShowResult && <section className={cn("rounded-xl border p-5", noShowResult.paymentStatus === "PAID" ? "border-emerald-300 bg-emerald-50 text-emerald-950" : noShowResult.paymentStatus === "FAILED" ? "border-red-300 bg-red-50 text-red-950" : "border-amber-300 bg-amber-50 text-amber-950")}><h3 className="text-lg font-semibold">{noShowResult.feeDecision === "WAIVED" ? "Fee waived" : noShowResult.paymentStatus === "PAID" ? "Charge successful" : noShowResult.paymentStatus === "FAILED" ? "Charge failed" : "Charge processing"}</h3><dl className="mt-3 space-y-2 text-sm"><div className="flex justify-between"><dt>Amount {noShowResult.paymentStatus === "PAID" ? "charged" : "attempted"}</dt><dd>${(noShowResult.amountToChargeCents / 100).toFixed(2)}</dd></div><div className="flex justify-between"><dt>Booking restriction</dt><dd className="font-semibold">{noShowResult.bookingRestricted ? "Active" : "Removed"}</dd></div><div className="flex justify-between"><dt>Charge attempts</dt><dd>{noShowResult.chargeAttemptCount || 0}</dd></div></dl>{noShowResult.failureMessage && <p className="mt-4 rounded-lg bg-white/70 p-3 text-sm">{noShowResult.failureMessage}</p>}{noShowResult.paymentStatus === "PAID" && <p className="mt-4 text-sm">Receipt and no-show notice queued for email delivery.</p>}</section>}
+                        <p className="text-xs text-neutral-500">Automatic charging closes {formatDateTime(noShowPreview.automaticChargeDeadlineAt)}.</p>
                     </div>}
-                    <label className="mt-4 block text-sm font-medium text-neutral-800">{
+                    {!(action.kind === "no-show" && noShowResult) && <label className="mt-4 block text-sm font-medium text-neutral-800">{
                         action.kind === "deny" ? "Denial reason (required)"
                             : action.kind === "cancel" ? "Cancellation reason (required)"
                                 : action.kind === "complete" ? "Completion notes (optional)"
                                     : action.kind === "no-show" ? "Internal no-show note (optional)"
                                     : "Approval notes (optional)"
-                    }<textarea autoFocus value={actionNotes} maxLength={500} rows={4} onChange={event => setActionNotes(event.target.value)} className="mt-2 w-full rounded-sm border border-neutral-300 p-3 font-normal outline-none focus:border-neutral-700 focus:ring-2 focus:ring-neutral-200" /></label>
-                    <p className="text-right text-xs text-neutral-400">{actionNotes.length}/500</p>
-                    <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setAction(null)}>Back</Button><Button variant={action.kind === "deny" || action.kind === "cancel" || action.kind === "no-show" ? "destructive" : "default"} disabled={actionLoading === action.appointment.id || ((action.kind === "deny" || action.kind === "cancel") && !actionNotes.trim()) || (action.kind === "no-show" && Boolean(action.appointment.noShowFee?.overdueConfirmationRequired) && !confirmOverdue)} onClick={() => void submitAction()}>{actionLoading === action.appointment.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{action.kind === "no-show" ? `Mark no-show & charge $${((action.appointment.noShowFee?.amountToChargeCents || 0) / 100).toFixed(2)}` : `Confirm ${action.kind}`}</Button></div>
+                    }<textarea autoFocus value={actionNotes} maxLength={500} rows={4} onChange={event => setActionNotes(event.target.value)} className="mt-2 w-full rounded-sm border border-neutral-300 p-3 font-normal outline-none focus:border-neutral-700 focus:ring-2 focus:ring-neutral-200" /></label>}
+                    {!(action.kind === "no-show" && noShowResult) && <p className="text-right text-xs text-neutral-400">{actionNotes.length}/500</p>}
+                    <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => { setAction(null); setNoShowResult(null); }}>{noShowResult ? "Close" : "Back"}</Button>{!(action.kind === "no-show" && noShowResult?.paymentStatus === "PAID") && !(action.kind === "no-show" && noShowResult?.paymentStatus === "PROCESSING") && <Button variant={action.kind === "deny" || action.kind === "cancel" || action.kind === "no-show" ? "destructive" : "default"} disabled={actionLoading === action.appointment.id || ((action.kind === "deny" || action.kind === "cancel") && !actionNotes.trim()) || (action.kind === "no-show" && noShowDecision !== "WAIVED" && Boolean(action.appointment.noShowFee?.overdueConfirmationRequired) && !confirmOverdue)} onClick={() => void submitAction()}>{actionLoading === action.appointment.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{action.kind === "no-show" ? noShowResult?.paymentStatus === "FAILED" ? `Retry charge $${(noShowResult.amountToChargeCents / 100).toFixed(2)}` : noShowDecision === "WAIVED" ? "Mark no-show & waive fee" : `Mark no-show & charge $${(chosenCharge / 100).toFixed(2)}` : `Confirm ${action.kind}`}</Button>}</div>
                 </section>
             </div>}
         </div>
