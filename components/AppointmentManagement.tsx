@@ -2,8 +2,8 @@
 
 import { memo, useCallback, useDeferredValue, useEffect, useState } from "react";
 import {
-    AlertTriangle, Calendar, CalendarDays, Check, CreditCard, ExternalLink, List,
-    Loader2, Mail, MessageSquare, Phone, RefreshCw, Search, User, X
+    AlertTriangle, Calendar, CalendarDays, Check, ChevronRight, Clock, CreditCard, ExternalLink, List,
+    Loader2, Mail, MessageSquare, Phone, RefreshCw, Search, ShieldCheck, User, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -418,21 +418,22 @@ function AppointmentManagement() {
     const chosenCharge = Math.max(0, chosenNoShowTotal - chosenDepositCredit);
 
     return (
-        <div className="mx-auto max-w-7xl p-4 sm:p-6">
-            <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="mx-auto max-w-[1440px] p-4 sm:p-6 lg:p-8">
+            <header className="mb-7 flex flex-col gap-5 border-b border-[#e8dfd8] pb-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <h1 className="text-2xl font-light tracking-wide text-neutral-900 sm:text-3xl">Appointment Management</h1>
-                    <p className="mt-1 text-neutral-600">Review and manage customer appointment requests</p>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#9a6d50]">Bookings</p>
+                    <h1 className="text-2xl font-semibold tracking-tight text-[#241711] sm:text-3xl">Appointment Management</h1>
+                    <p className="mt-2 text-sm text-neutral-600">Review requests, resolve payment issues, and manage upcoming clients.</p>
                     {lastUpdated && <p className="mt-1 text-xs text-neutral-400">Last updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => void refreshCurrentView()} disabled={loading || calendarLoading}>
                         <RefreshCw className={cn("mr-2 h-4 w-4", (loading || calendarLoading) && "animate-spin")} /> Refresh
                     </Button>
-                    <div className="flex overflow-hidden rounded-sm border border-neutral-200" role="group" aria-label="Appointment view">
+                    <div className="flex overflow-hidden rounded-xl border border-[#ded3cb] bg-white p-1" role="group" aria-label="Appointment view">
                         {(["list", "calendar"] as const).map(mode => (
                             <button key={mode} type="button" aria-pressed={viewMode === mode} onClick={() => setViewMode(mode)}
-                                className={cn("flex items-center gap-2 px-4 py-2 text-sm font-medium capitalize", viewMode === mode ? "bg-neutral-900 text-white" : "bg-white text-neutral-600 hover:bg-neutral-50")}>
+                                className={cn("flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium capitalize transition", viewMode === mode ? "bg-[#2f1b12] text-white shadow-sm" : "bg-white text-neutral-600 hover:bg-[#f7f2ee]")}>
                                 {mode === "list" ? <List className="h-4 w-4" /> : <CalendarDays className="h-4 w-4" />}{mode}
                             </button>
                         ))}
@@ -440,40 +441,43 @@ function AppointmentManagement() {
                 </div>
             </header>
 
-            <div className="mb-5 border-b border-neutral-200">
-                <div className="overflow-x-auto" role="tablist" aria-label="Appointment workflow">
-                    <div className="flex min-w-max gap-1">
+            <section className="mb-6 overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white shadow-[0_8px_30px_rgba(53,29,18,0.05)]">
+                <div className="overflow-x-auto border-b border-[#eee5df] px-3 pt-2 sm:px-5" role="tablist" aria-label="Appointment workflow">
+                    <div className="flex min-w-max gap-2">
                     {WORKFLOW_VIEWS.map(item => (
                         <button key={item.value} type="button" role="tab" aria-selected={workflow === item.value} onClick={() => changeWorkflow(item.value)}
                             title={item.description}
-                            className={cn("border-b-2 px-4 py-3 text-sm font-semibold", workflow === item.value ? "border-neutral-900 text-neutral-900" : "border-transparent text-neutral-500 hover:text-neutral-800")}>
-                            {item.label} <span className="ml-1 rounded-full bg-neutral-100 px-2 py-0.5 text-xs">{workflowCounts[item.value] ?? 0}</span>
+                            className={cn("border-b-2 px-3 py-4 text-sm font-semibold transition sm:px-5", workflow === item.value ? "border-[#351d12] text-[#351d12]" : "border-transparent text-neutral-500 hover:text-[#351d12]")}>
+                            {item.label} <span className={cn("ml-1 rounded-full px-2 py-0.5 text-xs", workflow === item.value ? "bg-[#efe3d9] text-[#6b3d27]" : "bg-neutral-100")}>{workflowCounts[item.value] ?? 0}</span>
                         </button>
                     ))}
                     </div>
                 </div>
-                <div className="flex items-center gap-3 py-3">
+                <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div className="flex items-center gap-3">
                     <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500" htmlFor="appointment-detail-filter">Show</label>
                     <select id="appointment-detail-filter" value={detail} onChange={event => { setDetail(event.target.value as DetailFilter); setPage(0); }}
                         className="h-9 rounded-sm border border-neutral-300 bg-white px-3 text-sm focus:border-neutral-700 focus:ring-2 focus:ring-neutral-200">
                         {DETAIL_OPTIONS[workflow].map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
                     <span className="hidden text-xs text-neutral-500 sm:inline">{WORKFLOW_VIEWS.find(item => item.value === workflow)?.description}</span>
+                    </div>
+                    {viewMode === "list" && <p className="text-xs font-medium text-neutral-500">{totalElements} {totalElements === 1 ? "appointment" : "appointments"}</p>}
                 </div>
-            </div>
+            </section>
 
             {viewMode === "list" && (
-                <div className="mb-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+                <div className="mb-5 grid gap-3 rounded-2xl border border-[#e6ddd6] bg-white p-3 md:grid-cols-[minmax(0,1fr)_220px]">
                     <label className="relative block">
                         <span className="sr-only">Search appointments</span>
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                         <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search name, email, or phone"
-                            className="h-10 w-full rounded-sm border border-neutral-300 bg-white pl-10 pr-3 text-sm outline-none focus:border-neutral-700 focus:ring-2 focus:ring-neutral-200" />
+                            className="h-11 w-full rounded-xl border border-transparent bg-[#f8f5f2] pl-10 pr-3 text-sm outline-none focus:border-[#b99782] focus:bg-white focus:ring-2 focus:ring-[#eadbd0]" />
                     </label>
                     <label>
                         <span className="sr-only">Sort appointments</span>
                         <select value={sort} onChange={event => { setSort(event.target.value as SortChoice); setPage(0); }}
-                            className="h-10 w-full rounded-sm border border-neutral-300 bg-white px-3 text-sm">
+                            className="h-11 w-full rounded-xl border border-[#ded3cb] bg-white px-3 text-sm">
                             <option value="appointment-asc">Appointment: soonest</option>
                             <option value="appointment-desc">Appointment: latest</option>
                             <option value="requested-desc">Request: newest</option>
@@ -496,7 +500,7 @@ function AppointmentManagement() {
             ) : visibleAppointments.length === 0 ? (
                 <div className="py-16 text-center"><Calendar className="mx-auto mb-3 h-10 w-10 text-neutral-300" /><p className="text-neutral-500">No matching appointments found</p></div>
             ) : (
-                <div className="space-y-4">
+                <div className="overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white shadow-[0_10px_35px_rgba(53,29,18,0.05)]">
                     {visibleAppointments.map(appointment => {
                         const overdue = appointment.status === "PENDING" && isPast(appointment);
                         const captureProcessing = appointment.status === "PENDING" && Boolean(appointment.approvedAt);
@@ -510,67 +514,58 @@ function AppointmentManagement() {
                                     : appointment.status === "PENDING" ? "AWAITING PAYMENT"
                                         : appointment.status;
                         return (
-                            <article key={appointment.id} className={cn("rounded-sm border bg-white p-4 transition hover:shadow-sm sm:p-5", (overdue || paymentIssue) ? "border-red-300" : "border-neutral-200")}>
-                                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                                    <div className="min-w-0 flex-1">
-                                        <div className="mb-3 flex flex-wrap items-center gap-2">
-                                            <h2 className="text-lg font-semibold text-neutral-900">{appointment.customer.firstName} {appointment.customer.lastName}</h2>
+                            <article key={appointment.id} className={cn("group relative border-b border-[#eee7e1] p-4 transition last:border-b-0 hover:bg-[#fcfaf8] sm:p-6", (overdue || paymentIssue) && "bg-red-50/30")}>
+                                <div className={cn("absolute inset-y-4 left-0 w-1 rounded-r-full", paymentIssue || overdue ? "bg-red-500" : canApprove(appointment) ? "bg-amber-500" : appointment.status === "APPROVED" ? "bg-emerald-500" : "bg-neutral-300")} />
+                                <div className="grid gap-5 pl-2 lg:grid-cols-[minmax(230px,0.85fr)_minmax(300px,1.2fr)_auto] lg:items-center">
+                                    <div className="min-w-0">
+                                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                                            <h2 className="text-base font-semibold text-[#241711]">{appointment.customer.firstName} {appointment.customer.lastName}</h2>
                                             <span className={cn("rounded-full border px-2.5 py-1 text-xs font-semibold", statusClass(appointment.status))}>{operationalLabel}</span>
                                             {appointment.cancelledByCustomer && <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800">CANCELLED BY CUSTOMER</span>}
                                             {!appointment.cancelledByCustomer && appointment.rescheduledFromDateTime && <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">RESCHEDULED BY CUSTOMER</span>}
                                             {overdue && <span className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white">OVERDUE</span>}
                                             {appointment.paymentStatus && <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", paymentClass(appointment.paymentStatus))}>PAYMENT: {appointment.paymentStatus.replaceAll("_", " ")}</span>}
                                         </div>
-                                        {appointment.paymentAuthorizationExpiresAt && appointment.paymentStatus === "AUTHORIZED" && (
-                                            <p className={cn("mt-3 flex items-center gap-2 text-xs font-semibold", expiryHours !== null && expiryHours < 24 ? "text-red-700" : "text-amber-700")}>
-                                                {expiryHours !== null && expiryHours < 48 && <AlertTriangle className="h-4 w-4" />}
-                                                Authorization {expiryHours !== null && expiryHours < 24 ? "expires in less than 24 hours" : "must be captured before"} {formatDateTime(appointment.paymentAuthorizationExpiresAt)}.
-                                            </p>
-                                        )}
-                                        {captureProcessing && (
-                                            <p className="mt-3 text-xs font-medium text-blue-700">Approval is waiting for the deposit capture to finish.</p>
-                                        )}
-                                        {appointment.rescheduledFromDateTime && <div className="mb-3 rounded-sm border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900"><b>Customer rescheduled:</b> {formatDateTime(appointment.rescheduledFromDateTime)} → {formatDateTime(appointment.appointmentDateTime)}</div>}
-                                        {appointment.cancelledByCustomer && <div className="mb-3 rounded-sm border border-violet-200 bg-violet-50 p-3 text-sm text-violet-900"><b>Customer cancellation{appointment.customerCancellationReason ? ":" : ""}</b>{appointment.customerCancellationReason && ` ${appointment.customerCancellationReason}`}</div>}
-                                        <div className="grid gap-2 text-sm text-neutral-600 md:grid-cols-2">
-                                            <p className="flex items-center gap-2"><Calendar className="h-4 w-4 shrink-0" />{formatDateTime(appointment.appointmentDateTime)}</p>
-                                            <a className="flex min-w-0 items-center gap-2 hover:text-neutral-900 hover:underline" href={`mailto:${appointment.customer.email}`}><Mail className="h-4 w-4 shrink-0" /><span className="truncate">{appointment.customer.email}</span></a>
-                                            <a className="flex items-center gap-2 hover:text-neutral-900 hover:underline" href={`tel:${appointment.customer.phoneNumber}`}><Phone className="h-4 w-4 shrink-0" />{appointment.customer.phoneNumber}</a>
-                                            {appointment.selectedTexture && <p>Texture: {appointment.selectedTexture}</p>}
+                                        <p className="flex items-center gap-2 text-sm font-medium text-neutral-700"><Calendar className="h-4 w-4 shrink-0 text-[#9a6d50]" />{formatDateTime(appointment.appointmentDateTime)}</p>
+                                        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
+                                            <a className="truncate hover:text-[#351d12] hover:underline" href={`mailto:${appointment.customer.email}`}>{appointment.customer.email}</a>
+                                            <span>•</span><a className="hover:text-[#351d12] hover:underline" href={`tel:${appointment.customer.phoneNumber}`}>{appointment.customer.phoneNumber}</a>
                                         </div>
-                                        <div className="mt-4 rounded-sm border border-neutral-200 bg-neutral-50 p-4">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Appointment summary</p>
-                                            <p className="mt-2 font-semibold text-neutral-900">{appointment.selectedService || appointment.service?.name || "Service not specified"}</p>
-                                            <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm text-neutral-700">
+                                    </div>
+                                    <div className="min-w-0 border-y border-[#f0e9e4] py-4 lg:border-x lg:border-y-0 lg:px-6 lg:py-0">
+                                            <p className="font-semibold text-[#241711]">{appointment.selectedService || appointment.service?.name || "Service not specified"}</p>
+                                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-neutral-600">
                                                 {appointment.selectedSize && <span><b>Size:</b> {appointment.selectedSize}</span>}
                                                 {appointment.selectedLength && <span><b>Length:</b> {appointment.selectedLength}</span>}
                                                 {appointment.selectedFoundation && <span><b>Foundation:</b> {appointment.selectedFoundation === "KNOTLESS" ? "Knotless" : "Regular"}</span>}
-                                                {parseMoney(appointment.price) && <span className="font-bold text-neutral-900">{parseMoney(appointment.price)}</span>}
+                                                {parseMoney(appointment.price) && <span className="font-bold text-[#241711]">{parseMoney(appointment.price)}</span>}
                                             </div>
-                                        </div>
-                                        <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">Requested {formatDateTime(appointment.createdAt)}</p>
+                                        {appointment.paymentAuthorizationExpiresAt && appointment.paymentStatus === "AUTHORIZED" && <p className={cn("mt-2 flex items-center gap-1.5 text-xs font-medium", expiryHours !== null && expiryHours < 24 ? "text-red-700" : "text-amber-700")}><Clock className="h-3.5 w-3.5" />Authorization {expiryHours !== null && expiryHours < 24 ? "expires in less than 24 hours" : `expires ${formatDateTime(appointment.paymentAuthorizationExpiresAt)}`}</p>}
+                                        {captureProcessing && <p className="mt-2 flex items-center gap-2 text-xs font-medium text-blue-700"><Loader2 className="h-3.5 w-3.5 animate-spin" />Capturing authorized deposit</p>}
+                                        {appointment.rescheduledFromDateTime && <p className="mt-2 text-xs font-medium text-blue-700">Customer rescheduled from {formatDateTime(appointment.rescheduledFromDateTime)}</p>}
+                                        {appointment.cancelledByCustomer && <p className="mt-2 text-xs font-medium text-violet-700">Cancelled by customer{appointment.customerCancellationReason ? `: ${appointment.customerCancellationReason}` : ""}</p>}
+                                        <p className="mt-2 text-xs text-neutral-400">Requested {formatDateTime(appointment.createdAt)}</p>
                                     </div>
-                                    <div className="flex shrink-0 flex-wrap gap-2 xl:max-w-[240px] xl:justify-end">
-                                        <Button variant="outline" size="sm" onClick={() => setSelectedAppointment(appointment)}><ExternalLink className="mr-1 h-4 w-4" />Details</Button>
+                                    <div className="flex shrink-0 flex-wrap gap-2 lg:max-w-[260px] lg:justify-end">
+                                        <Button variant="outline" size="sm" className="border-[#d7c6bb]" onClick={() => setSelectedAppointment(appointment)}>Review <ChevronRight className="ml-1 h-4 w-4" /></Button>
                                         {appointment.status === "PENDING" && !captureProcessing && <>
-                                            <Button size="sm" className="bg-emerald-700 text-white hover:bg-emerald-800" disabled={!canApprove(appointment) || actionLoading === appointment.id}
+                                            <Button size="sm" className="bg-[#351d12] text-white hover:bg-[#4b2a1b]" disabled={!canApprove(appointment) || actionLoading === appointment.id}
                                                 title={overdue ? "Past appointments cannot be approved" : appointment.paymentStatus !== "AUTHORIZED" ? "Payment authorization is required" : undefined}
                                                 onClick={() => { setAction({ kind: "approve", appointment }); setActionNotes(""); }}><Check className="mr-1 h-4 w-4" />Approve</Button>
-                                            <Button size="sm" variant="destructive" disabled={actionLoading === appointment.id}
-                                                onClick={() => { setAction({ kind: "deny", appointment }); setActionNotes(""); }}><X className="mr-1 h-4 w-4" />Deny</Button>
+                                            <Button size="sm" variant="outline" className="text-red-700" disabled={actionLoading === appointment.id} onClick={() => { setAction({ kind: "deny", appointment }); setActionNotes(""); }}>Deny</Button>
                                         </>}
                                         {appointment.paymentStatus === "CAPTURE_FAILED" && <Button size="sm" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "capture")}><CreditCard className="mr-1 h-4 w-4" />Retry capture</Button>}
                                         {appointment.paymentStatus === "CANCELLATION_FAILED" && <Button size="sm" variant="outline" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "release")}>Retry release</Button>}
                                         {appointment.notificationStatus?.includes("FAILED") && <Button size="sm" variant="outline" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}><Mail className="mr-1 h-4 w-4" />Retry notification</Button>}
                                         {appointment.status === "APPROVED" && isPast(appointment) && <>
                                             <Button size="sm" onClick={() => { setAction({ kind: "complete", appointment }); setActionNotes(""); }}>Mark complete</Button>
-                                            <Button size="sm" variant="destructive" disabled={new Date(appointment.noShowFee!.eligibleAt) > centralNow()} title={new Date(appointment.noShowFee!.eligibleAt) > centralNow() ? `Available after ${formatDateTime(appointment.noShowFee!.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</Button>
+                                            {appointment.noShowFee && <Button size="sm" variant="destructive" disabled={new Date(appointment.noShowFee.eligibleAt) > centralNow()} title={new Date(appointment.noShowFee.eligibleAt) > centralNow() ? `Available after ${formatDateTime(appointment.noShowFee.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</Button>}
                                         </>}
                                         {appointment.status === "NO_SHOW" && appointment.noShowFee?.paymentStatus === "FAILED" && <Button size="sm" variant="destructive" onClick={() => openNoShow(appointment)}>Retry no-show charge</Button>}
                                         {(appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing && <Button size="sm" variant="outline" className="text-red-700" onClick={() => { setAction({ kind: "cancel", appointment }); setActionNotes(""); }}>Cancel appointment</Button>}
                                     </div>
                                 </div>
-                                {appointment.status === "PENDING" && !captureProcessing && !canApprove(appointment) && !overdue && <p className="mt-3 text-xs font-medium text-amber-700">Approval is unavailable until payment is authorized.</p>}
+                                {appointment.status === "PENDING" && !captureProcessing && !canApprove(appointment) && !overdue && <p className="mt-3 pl-2 text-xs font-medium text-amber-700">Approval is unavailable until payment is authorized.</p>}
                             </article>
                         );
                     })}
@@ -650,29 +645,37 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
         return () => controller.abort();
     }, [appointment.id]);
 
-    return <div className="fixed inset-0 z-40 flex justify-end bg-black/40" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
-        <aside role="dialog" aria-modal="true" aria-labelledby="appointment-detail-title" className="h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between"><div><p className="text-xs uppercase tracking-wide text-neutral-500">Appointment #{appointment.id}</p><h2 id="appointment-detail-title" className="mt-1 text-2xl font-semibold">{appointment.customer.firstName} {appointment.customer.lastName}</h2></div><button aria-label="Close details" onClick={onClose} className="p-2"><X className="h-5 w-5" /></button></div>
-            <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-                <div><dt className="text-neutral-500">Appointment</dt><dd className="font-medium">{formatDateTime(appointment.appointmentDateTime)}</dd></div>
-                <div><dt className="text-neutral-500">Ends</dt><dd className="font-medium">{formatDateTime(appointment.appointmentEndDateTime)}</dd></div>
-                <div><dt className="text-neutral-500">Status</dt><dd className="font-medium">{appointment.status}</dd></div>
-                <div><dt className="text-neutral-500">Payment</dt><dd className="font-medium">{appointment.paymentStatus?.replaceAll("_", " ") || "Unknown"}</dd></div>
-                <div><dt className="text-neutral-500">Service</dt><dd className="font-medium">{appointment.selectedService || appointment.service?.name || "—"}</dd></div>
-                <div><dt className="text-neutral-500">Hair texture</dt><dd className="font-medium">{appointment.selectedTexture || "—"}</dd></div>
-                <div><dt className="text-neutral-500">Size</dt><dd className="font-medium">{appointment.selectedSize || "—"}</dd></div>
-                <div><dt className="text-neutral-500">Length</dt><dd className="font-medium">{appointment.selectedLength || "—"}</dd></div>
-                <div><dt className="text-neutral-500">Foundation</dt><dd className="font-medium">{appointment.selectedFoundation ? (appointment.selectedFoundation === "KNOTLESS" ? "Knotless" : "Regular") : "—"}</dd></div>
-                <div><dt className="text-neutral-500">Self-service changes</dt><dd className="font-medium">{appointment.selfServiceChangeCount ?? 0} of 1 used</dd></div>
-                <div><dt className="text-neutral-500">Changed by customer</dt><dd className="font-medium">{formatDateTime(appointment.lastSelfServiceChangeAt)}</dd></div>
-            </dl>
+    return <div className="fixed inset-0 z-40 flex justify-end bg-[#1e120d]/55 backdrop-blur-[2px]" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+        <aside role="dialog" aria-modal="true" aria-labelledby="appointment-detail-title" className="flex h-full w-full max-w-2xl flex-col bg-[#fcfaf8] shadow-2xl">
+            <header className="sticky top-0 z-10 flex items-start justify-between border-b border-[#e8ddd5] bg-white/95 px-5 py-5 backdrop-blur sm:px-7">
+                <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9a6d50]">Appointment #{appointment.id}</p><h2 id="appointment-detail-title" className="mt-1 text-2xl font-semibold text-[#241711]">{appointment.customer.firstName} {appointment.customer.lastName}</h2><p className="mt-1 flex items-center gap-2 text-sm text-neutral-600"><Calendar className="h-4 w-4 text-[#9a6d50]" />{formatDateTime(appointment.appointmentDateTime)}</p></div><button aria-label="Close details" onClick={onClose} className="rounded-full border border-[#e4d9d1] p-2 text-neutral-500 transition hover:bg-[#f6efea] hover:text-[#351d12]"><X className="h-5 w-5" /></button>
+            </header>
+            <div className="flex-1 overflow-y-auto p-5 sm:p-7">
+            <section className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-[#e7ddd6] bg-white p-4"><p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Status</p><p className="mt-2 font-semibold text-[#241711]">{appointment.status.replaceAll("_", " ")}</p></div>
+                <div className="rounded-xl border border-[#e7ddd6] bg-white p-4"><p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Payment</p><p className="mt-2 font-semibold text-[#241711]">{appointment.paymentStatus?.replaceAll("_", " ") || "Unknown"}</p></div>
+                <div className="rounded-xl border border-[#e7ddd6] bg-white p-4"><p className="text-xs font-medium uppercase tracking-wide text-neutral-400">Deposit</p><p className="mt-2 font-semibold text-[#241711]">{appointment.depositAmount != null ? `$${Number(appointment.depositAmount).toFixed(2)}` : "—"}</p></div>
+            </section>
+            <section className="mt-5 rounded-2xl border border-[#e7ddd6] bg-white p-5">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7a513b]">Service details</h3>
+                <p className="mt-4 text-lg font-semibold text-[#241711]">{appointment.selectedService || appointment.service?.name || "Service not specified"}</p>
+                <dl className="mt-4 grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
+                    <div><dt className="text-neutral-500">Starts</dt><dd className="mt-1 font-medium">{formatDateTime(appointment.appointmentDateTime)}</dd></div>
+                    <div><dt className="text-neutral-500">Ends</dt><dd className="mt-1 font-medium">{formatDateTime(appointment.appointmentEndDateTime)}</dd></div>
+                    <div><dt className="text-neutral-500">Size</dt><dd className="mt-1 font-medium">{appointment.selectedSize || "—"}</dd></div>
+                    <div><dt className="text-neutral-500">Length</dt><dd className="mt-1 font-medium">{appointment.selectedLength || "—"}</dd></div>
+                    <div><dt className="text-neutral-500">Foundation</dt><dd className="mt-1 font-medium">{appointment.selectedFoundation ? (appointment.selectedFoundation === "KNOTLESS" ? "Knotless" : "Regular") : "—"}</dd></div>
+                    <div><dt className="text-neutral-500">Hair texture</dt><dd className="mt-1 font-medium">{appointment.selectedTexture || "—"}</dd></div>
+                </dl>
+            </section>
+            <section className="mt-5 rounded-2xl border border-[#e7ddd6] bg-white p-5 text-sm"><div className="flex items-center justify-between gap-4"><h3 className="font-semibold text-[#241711]">Customer</h3><span className="rounded-full bg-[#f2e8e1] px-3 py-1 text-xs font-medium text-[#6b3d27]">{appointment.selfServiceChangeCount ?? 0} of 1 changes used</span></div><p className="mt-4 flex items-center gap-2"><User className="h-4 w-4 text-[#9a6d50]" />{appointment.customer.firstName} {appointment.customer.lastName}</p><a href={`mailto:${appointment.customer.email}`} className="mt-3 flex items-center gap-2 hover:underline"><Mail className="h-4 w-4 text-[#9a6d50]" />{appointment.customer.email}</a><a href={`tel:${appointment.customer.phoneNumber}`} className="mt-3 flex items-center gap-2 hover:underline"><Phone className="h-4 w-4 text-[#9a6d50]" />{appointment.customer.phoneNumber}</a>{appointment.lastSelfServiceChangeAt && <p className="mt-3 text-xs text-neutral-500">Last customer change: {formatDateTime(appointment.lastSelfServiceChangeAt)}</p>}</section>
             {appointment.rescheduledFromDateTime && <div className="mt-6 border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"><h3 className="font-semibold">Rescheduled by customer</h3><p className="mt-2">Previous: {formatDateTime(appointment.rescheduledFromDateTime)}</p><p>Current: {formatDateTime(appointment.appointmentDateTime)}</p></div>}
             {appointment.cancelledByCustomer && <div className="mt-6 border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900"><h3 className="font-semibold">Cancelled by customer</h3><p className="mt-2">Reason: {appointment.customerCancellationReason || "No reason provided"}</p></div>}
-            <div className="mt-6 border-t pt-5 text-sm"><h3 className="font-semibold">Customer</h3><p className="mt-2 flex items-center gap-2"><User className="h-4 w-4" />{appointment.customer.firstName} {appointment.customer.lastName}</p><a href={`mailto:${appointment.customer.email}`} className="mt-2 flex items-center gap-2 hover:underline"><Mail className="h-4 w-4" />{appointment.customer.email}</a><a href={`tel:${appointment.customer.phoneNumber}`} className="mt-2 flex items-center gap-2 hover:underline"><Phone className="h-4 w-4" />{appointment.customer.phoneNumber}</a></div>
             {appointment.notes && <div className="mt-6 border-t pt-5 text-sm"><h3 className="flex items-center gap-2 font-semibold"><MessageSquare className="h-4 w-4" />Customer notes</h3><p className="mt-2 whitespace-pre-wrap text-neutral-700">{appointment.notes}</p></div>}
             {appointment.adminNotes && <div className="mt-6 border-t pt-5 text-sm"><h3 className="font-semibold">Admin notes</h3><p className="mt-2 whitespace-pre-wrap text-neutral-700">{appointment.adminNotes}</p></div>}
             <div className="mt-6 border-t pt-5 text-sm"><h3 className="font-semibold">Appointment activity</h3>{eventsLoading ? <p className="mt-3 flex items-center gap-2 text-neutral-500"><Loader2 className="h-4 w-4 animate-spin" />Loading activity…</p> : eventsError ? <p className="mt-3 text-red-700">{eventsError}</p> : events.length === 0 ? <p className="mt-3 text-neutral-500">No activity recorded.</p> : <ol className="mt-4 space-y-4 border-l border-neutral-200 pl-5">{events.map(event => <li key={event.id} className="relative"><span className="absolute -left-[25px] top-1 h-2 w-2 rounded-full bg-neutral-700"/><p className="font-medium">{event.eventType.replaceAll("_", " ").toLowerCase().replace(/^./, value => value.toUpperCase())}</p><p className="text-xs text-neutral-500">{formatDateTime(event.createdAt)}{event.actorName ? ` · ${event.actorName}` : " · Customer/system"}</p>{event.reason && <p className="mt-1 whitespace-pre-wrap text-neutral-700">{event.reason}</p>}</li>)}</ol>}</div>
-            {(onApprove || onDeny) && <div className="mt-8 flex flex-wrap justify-end gap-2 border-t pt-5">{onDeny && <Button variant="destructive" onClick={onDeny}>Deny</Button>}{onApprove && <Button onClick={onApprove}>Approve and capture deposit</Button>}</div>}
+            </div>
+            {(onApprove || onDeny) && <footer className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 border-t border-[#e8ddd5] bg-white px-5 py-4 sm:px-7"><p className="flex items-center gap-2 text-xs text-neutral-500"><ShieldCheck className="h-4 w-4 text-emerald-700" />Actions use the current payment authorization.</p><div className="flex gap-2">{onDeny && <Button variant="outline" className="text-red-700" onClick={onDeny}>Deny request</Button>}{onApprove && <Button className="bg-[#351d12] hover:bg-[#4b2a1b]" onClick={onApprove}>Approve and capture deposit</Button>}</div></footer>}
         </aside>
     </div>;
 }
