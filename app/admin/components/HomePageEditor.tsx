@@ -986,10 +986,9 @@ export function HomePageEditor() {
     try {
       const token = getAuthToken();
       if (!token) throw new Error('Your admin session has expired. Please sign in again.');
-      await Promise.all(reordered.map(async ({ id }, displayOrder) => {
-        const response = await fetch(`${API_BASE_URL}/api/gallery/${id}`, {
+      for (const [displayOrder, { id }] of reordered.entries()) {
+        const response = await fetch(`/api/admin/gallery-image?id=${id}`, {
           method: 'PUT',
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ displayOrder }),
         });
@@ -997,7 +996,9 @@ export function HomePageEditor() {
           const payload = await response.json().catch(() => ({}));
           throw new Error(payload.error || payload.message || `Image order could not be saved (${response.status}).`);
         }
-      }));
+        const saved = await response.json();
+        if (saved.displayOrder !== displayOrder) throw new Error('The server did not retain the requested image order.');
+      }
       await loadHeroImages();
       setStatusMessage('Hero image order saved and published.');
     } catch (error) {
