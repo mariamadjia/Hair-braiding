@@ -92,6 +92,7 @@ export function HomePageEditor() {
   const [pendingHeroDeleteId, setPendingHeroDeleteId] = useState<number | null>(null);
   const [deletingHeroImageId, setDeletingHeroImageId] = useState<number | null>(null);
   const [draggedHeroImageIndex, setDraggedHeroImageIndex] = useState<number | null>(null);
+  const [heroOrderSaving, setHeroOrderSaving] = useState(false);
   const [heroUploadProgress, setHeroUploadProgress] = useState(0);
   const [heroUploadStage, setHeroUploadStage] = useState<'idle' | 'preparing' | 'uploading' | 'processing'>('idle');
   const collectionSnapshotRef = useRef<GalleryCollection[] | null>(null);
@@ -291,7 +292,7 @@ export function HomePageEditor() {
 
   const loadHeroImages = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/gallery?isHero=true`);
+      const res = await fetch(`${API_BASE_URL}/api/gallery?isHero=true&_=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`Hero request failed (${res.status})`);
 
       if (res.ok) {
@@ -983,27 +984,27 @@ export function HomePageEditor() {
   };
 
   const saveHeroImageOrder = async (reordered: HeroImage[], previous: HeroImage[]) => {
+    setHeroOrderSaving(true);
+    setStatusMessage('Saving Hero image order…');
     try {
       const token = getAuthToken();
       if (!token) throw new Error('Your admin session has expired. Please sign in again.');
-      for (const [displayOrder, { id }] of reordered.entries()) {
-        const response = await fetch(`/api/admin/gallery-image?id=${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ displayOrder }),
-        });
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          throw new Error(payload.error || payload.message || `Image order could not be saved (${response.status}).`);
-        }
-        const saved = await response.json();
-        if (saved.displayOrder !== displayOrder) throw new Error('The server did not retain the requested image order.');
+      const response = await fetch('/api/admin/gallery-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(reordered.map(({ id }) => id)),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || payload.message || `Image order could not be saved (${response.status}).`);
       }
-      await loadHeroImages();
       setStatusMessage('Hero image order saved and published.');
     } catch (error) {
+      heroImagesRef.current = previous;
       setHeroImages(previous);
       setStatusMessage(error instanceof Error ? error.message : 'Image order could not be saved.');
+    } finally {
+      setHeroOrderSaving(false);
     }
   };
 
@@ -1549,12 +1550,13 @@ export function HomePageEditor() {
                             <div
                               role="button"
                               tabIndex={0}
-                              onPointerDown={(event) => { heroDragOriginalRef.current = [...heroImagesRef.current]; heroDragIndexRef.current = index; setDraggedHeroImageIndex(index); event.currentTarget.setPointerCapture(event.pointerId); }}
+                              onPointerDown={(event) => { if (heroOrderSaving) return; heroDragOriginalRef.current = [...heroImagesRef.current]; heroDragIndexRef.current = index; setDraggedHeroImageIndex(index); event.currentTarget.setPointerCapture(event.pointerId); }}
                               onPointerMove={(event) => { if (heroDragIndexRef.current === null) return; const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-hero-index]'); const targetIndex = target ? Number(target.dataset.heroIndex) : NaN; if (Number.isInteger(targetIndex)) moveDraggedHeroImage(targetIndex); }}
                               onPointerUp={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); const previous = heroDragOriginalRef.current; const reordered = [...heroImagesRef.current]; heroDragIndexRef.current = null; heroDragOriginalRef.current = null; setDraggedHeroImageIndex(null); if (previous && previous.map(item => item.id).join(',') !== reordered.map(item => item.id).join(',')) void saveHeroImageOrder(reordered, previous); }}
                               onPointerCancel={() => { const previous = heroDragOriginalRef.current; if (previous) { heroImagesRef.current = previous; setHeroImages(previous); } heroDragIndexRef.current = null; heroDragOriginalRef.current = null; setDraggedHeroImageIndex(null); }}
-                              className="absolute right-2 top-2 z-30 touch-none cursor-grab select-none rounded bg-black/75 p-2 text-white active:cursor-grabbing"
+                              className={`absolute right-2 top-2 z-30 touch-none select-none rounded bg-black/75 p-2 text-white ${heroOrderSaving ? 'cursor-wait opacity-50' : 'cursor-grab active:cursor-grabbing'}`}
                               aria-label={`Drag Hero image ${index + 1} to reorder`}
+                              aria-disabled={heroOrderSaving}
                             ><GripVertical className="h-4 w-4" /></div>
                             <label className="absolute bottom-2 left-2 right-2 z-20">
                               <span className="sr-only">Focal position for Hero image {index + 1}</span>
