@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { API_BASE_URL } from "@/lib/config/api";
-import type { GalleryImage } from "@/lib/types/gallery";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
@@ -36,7 +35,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     const [images, setImages] = useState<string[]>(() =>
         (cat.flippingImages ?? []).map(toProxyUrl)
     );
-    const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
     const [dirty, setDirty] = useState(false);
     const [addingSub, setAddingSub] = useState(false);
     const [newSubName, setNewSubName] = useState("");
@@ -80,14 +78,16 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 }
 
                 const detail = await response.json();
-                const proxiedImages = (detail.flippingImages ?? []).map((url: string) => {
+                const persistedImages = Array.isArray(detail.flippingImages) && detail.flippingImages.length > 0
+                    ? detail.flippingImages
+                    : (detail.galleryImages ?? []).map((image: { imageUrl?: string }) => image.imageUrl).filter(Boolean);
+                const proxiedImages = persistedImages.map((url: string) => {
                     const proxied = toProxyUrl(url);
                     return proxied;
                 });
                 setImages(proxiedImages);
                 setServiceTagline(detail.serviceTagline ?? "");
                 setServiceDescription(detail.serviceDescription ?? "");
-                setGalleryImages((detail.galleryImages ?? []) as GalleryImage[]);
             } catch (error) {
                 console.error('[CategoryEditor] Failed to fetch category detail:', error);
             } finally {
