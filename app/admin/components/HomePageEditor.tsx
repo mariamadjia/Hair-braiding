@@ -1010,13 +1010,19 @@ export function HomePageEditor() {
 
     try {
       const token = getAuthToken();
-      if (!token) throw new Error('Your admin session has expired. Please sign in again.');
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
       const response = await fetch(`${API_BASE_URL}/api/gallery/${image.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({ focalPosition }),
       });
       if (!response.ok) throw new Error(`Image position could not be saved (${response.status}).`);
+      const savedImage = await response.json();
+      if (savedImage.focalPosition !== focalPosition) {
+        throw new Error('The backend did not save the selected image position.');
+      }
       setStatusMessage(`Hero image position set to ${focalPosition}.`);
     } catch (error) {
       setHeroImages((images) => images.map((item) =>
