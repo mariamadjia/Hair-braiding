@@ -933,7 +933,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                             }}
                                             className={`overflow-hidden rounded-lg border bg-white transition dark:bg-neutral-900 ${draggedItemId === item.id ? "border-neutral-400 opacity-60 dark:border-neutral-500" : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}
                                         >
-                                            <div className="group grid min-h-16 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5 sm:grid-cols-[auto_auto_minmax(8rem,0.8fr)_minmax(10rem,1fr)_minmax(7rem,0.55fr)_auto]">
+                                            <div className="group grid min-h-[4.5rem] grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 sm:grid-cols-[auto_auto_auto_minmax(0,1fr)_auto_auto] sm:px-5">
                                                 <button
                                                     type="button"
                                                     onKeyDown={(event) => {
@@ -948,16 +948,18 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                 >
                                                     <GripVertical className="h-5 w-5" aria-hidden="true" />
                                                 </button>
-                                                <span className="w-5 text-center text-xs font-semibold text-neutral-500">{orderedIndex + 1}</span>
-                                                <button type="button" onClick={() => toggleExpand(item.id)} aria-expanded={item.id ? expandedItems.has(item.id) : false} className="min-w-0 text-left focus:outline-none focus:ring-2 focus:ring-neutral-950">
+                                                <span className="w-5 text-center text-xs font-semibold text-neutral-400">{orderedIndex + 1}</span>
+                                                {item.sizePhotos?.[0] ? <img src={toProxyUrl(item.sizePhotos[0])} alt="" className="hidden h-10 w-10 rounded-md border border-neutral-200 object-cover sm:block dark:border-neutral-700" /> : <div className="hidden h-10 w-10 place-items-center rounded-md bg-neutral-100 text-neutral-400 sm:grid dark:bg-neutral-800"><Package className="h-4 w-4" /></div>}
+                                                <button type="button" onClick={() => toggleExpand(item.id)} aria-expanded={item.id ? expandedItems.has(item.id) : false} className="col-start-3 min-w-0 text-left focus:outline-none focus:ring-2 focus:ring-neutral-950 sm:col-start-4">
                                                     <span className="block truncate text-sm font-semibold text-neutral-950 dark:text-white">{item.name}</span>
+                                                    <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
+                                                        <span className="rounded-full bg-neutral-100 px-2 py-0.5 font-medium dark:bg-neutral-800">{item.pricingMode === "BY_LENGTH" ? `${item.lengthOptions?.length ?? 0} length ${(item.lengthOptions?.length ?? 0) === 1 ? "price" : "prices"}` : "Fixed price"}</span>
+                                                        <span>·</span><span>{item.sizePhotos?.length ?? 0} {(item.sizePhotos?.length ?? 0) === 1 ? "photo" : "photos"}</span>
+                                                    </span>
                                                 </button>
-                                                <span className="col-start-3 text-xs text-neutral-500 sm:col-start-4">
-                                                    {item.lengthOptions?.length ?? 0} {(item.lengthOptions?.length ?? 0) === 1 ? "length" : "lengths"} · {item.sizePhotos?.length ?? 0} {(item.sizePhotos?.length ?? 0) === 1 ? "photo" : "photos"}
-                                                </span>
-                                                <span className="col-start-3 text-xs font-medium text-neutral-700 dark:text-neutral-300 sm:col-start-5">{servicePriceLabel(item)}</span>
+                                                <span className="col-start-3 row-start-2 text-sm font-semibold text-neutral-900 dark:text-white sm:col-start-5 sm:row-start-1 sm:min-w-24 sm:text-right">{servicePriceLabel(item)}</span>
                                                 <div className="col-start-4 row-span-2 row-start-1 flex items-center gap-2 sm:col-start-6 sm:row-span-1">
-                                                    <button type="button" onClick={() => { setEditingId(item.id ?? null); setAddingItem(false); }} aria-label={`Edit ${item.name}`} className="min-h-9 rounded-lg border border-neutral-300 px-3 text-xs font-semibold text-neutral-700 transition hover:border-neutral-500 hover:bg-neutral-50 focus:ring-2 focus:ring-neutral-950 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-800">Edit</button>
+                                                    <button type="button" onClick={() => { setEditingId(item.id ?? null); setAddingItem(false); }} aria-label={`Edit ${item.name}`} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-neutral-300 px-3 text-xs font-semibold text-neutral-700 transition hover:border-neutral-500 hover:bg-neutral-50 focus:ring-2 focus:ring-neutral-950 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-800"><Pencil className="h-3.5 w-3.5" />Edit</button>
                                                     <button type="button" disabled={saving} onClick={() => deleteItem(item.id)} aria-label={`Delete ${item.name}`} className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-300 text-neutral-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 focus:ring-2 focus:ring-red-400 disabled:opacity-40 dark:border-neutral-600 dark:hover:bg-red-950/30" title="Delete">
                                                         <Trash2 className="h-4 w-4" />
                                                     </button>
