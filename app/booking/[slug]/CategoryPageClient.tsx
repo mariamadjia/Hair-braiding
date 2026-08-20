@@ -339,7 +339,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                     aria-labelledby="options-modal-title"
                 >
                     <div
-                        className={`relative flex max-h-[calc(100dvh-2rem)] w-full flex-col rounded-xl bg-white text-neutral-900 shadow-[0_20px_60px_rgb(0,0,0,0.3)] transition-transform duration-300 ${selectedItem.pricingMode === "FIXED" ? "h-[min(600px,calc(100dvh-2rem))] max-w-[380px]" : "max-w-[420px]"} ${showLengthGuide || showSizeGuide ? "overflow-hidden lg:-translate-x-[17rem] lg:overflow-visible" : "overflow-hidden"}`}
+                        className={`relative flex h-[min(600px,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] w-full max-w-[380px] flex-col rounded-xl bg-white text-neutral-900 shadow-[0_20px_60px_rgb(0,0,0,0.3)] transition-transform duration-300 ${showLengthGuide || showSizeGuide ? "overflow-hidden lg:-translate-x-[17rem] lg:overflow-visible" : "overflow-hidden"}`}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="relative shrink-0 border-b border-neutral-200/60 bg-white px-6 py-5 pr-16 text-left md:px-8 md:py-6">
