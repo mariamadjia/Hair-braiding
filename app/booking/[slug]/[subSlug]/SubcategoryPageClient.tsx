@@ -386,7 +386,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                     aria-labelledby="options-modal-title"
                 >
                     <div
-                        className={`relative flex h-[min(600px,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] w-full max-w-[380px] flex-col rounded-xl bg-white text-neutral-900 shadow-[0_20px_60px_rgb(0,0,0,0.3)] transition-transform duration-300 lg:max-w-[32rem] ${showLengthGuide || showSizeGuide ? "overflow-hidden lg:-translate-x-[17rem] lg:overflow-visible" : "overflow-hidden"}`}
+                        className={`relative flex h-[min(600px,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] w-full max-w-[380px] flex-col rounded-xl bg-white text-neutral-900 shadow-[0_20px_60px_rgb(0,0,0,0.3)] transition-transform duration-300 lg:h-[min(720px,calc(100dvh-2rem))] ${showLengthGuide || showSizeGuide ? "overflow-hidden lg:-translate-x-[17rem] lg:overflow-visible" : "overflow-hidden"}`}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <style jsx>{`
