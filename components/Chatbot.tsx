@@ -135,8 +135,8 @@ export default function Chatbot() {
       <>
         {/* Assistant peeks in, greets the visitor, then fades back to idle. */}
         {showPrompt && pathname !== '/checkout' && (
-          <div className="chat-assistant-peek fixed bottom-20 right-5 z-50 hidden w-[300px] origin-bottom-right sm:block motion-reduce:animate-none">
-            <div className="relative mb-1 ml-auto w-[230px] rounded-2xl rounded-br-md border border-[#eadfd4] bg-[#fffaf5] px-5 py-3.5 shadow-[0_12px_35px_rgba(44,24,16,.16)]">
+          <div className="chat-assistant-peek fixed bottom-7 right-5 z-40 hidden h-[285px] w-[220px] origin-bottom-right sm:block motion-reduce:animate-none">
+            <div className="relative z-20 ml-auto w-[200px] rounded-2xl rounded-br-md border border-[#eadfd4] bg-[#fffaf5] px-4 py-3 shadow-[0_12px_35px_rgba(44,24,16,.16)]">
               <button
                 onClick={() => setShowPrompt(false)}
                 className="absolute -right-2 -top-2 rounded-full border border-[#eadfd4] bg-white p-1 text-[#6b5143] shadow-sm transition-colors hover:bg-[#f5ece5]"
@@ -146,15 +146,17 @@ export default function Chatbot() {
               </button>
               <p className="text-sm font-semibold text-[#2c1810]">Have a question?</p>
               <p className="mt-0.5 text-sm text-[#725c50]">We&apos;re here to help.</p>
-              <span className="absolute -bottom-2 right-9 h-4 w-4 rotate-45 border-b border-r border-[#eadfd4] bg-[#fffaf5]" />
+              <span className="absolute -bottom-2 right-8 h-4 w-4 rotate-45 border-b border-r border-[#eadfd4] bg-[#fffaf5]" />
             </div>
-            <Image
-              src="/chatbot-robot.png"
-              alt="AH Braiding virtual assistant waving"
-              width={180}
-              height={180}
-              className="ml-auto mr-5 h-auto w-[148px] drop-shadow-[0_14px_18px_rgba(44,24,16,.22)]"
-            />
+            <div className="absolute bottom-0 right-0 h-[188px] w-[188px] rounded-full border border-[#eadfd4]/80 bg-[#f8f1e9]/85 shadow-[inset_0_0_36px_rgba(255,255,255,.9),0_14px_35px_rgba(44,24,16,.09)]">
+              <Image
+                src="/chatbot-robot-peek.png"
+                alt="AH Braiding virtual assistant peeking in"
+                width={170}
+                height={170}
+                className="absolute bottom-3 right-0 h-auto w-[154px] drop-shadow-[0_12px_16px_rgba(44,24,16,.2)]"
+              />
+            </div>
           </div>
         )}
         
@@ -165,7 +167,7 @@ export default function Chatbot() {
             setShowWelcome(true);
             setShowPrompt(false);
           }}
-          className="fixed bottom-6 right-6 z-50 hidden rounded-full border border-white/20 bg-gradient-to-br from-[#2C1810] to-[#4a3828] p-4 text-white shadow-[0_10px_28px_rgba(44,24,16,.3)] transition-all duration-200 hover:scale-110 hover:shadow-2xl sm:block"
+          className={`fixed bottom-6 z-50 hidden rounded-full border border-white/20 bg-gradient-to-br from-[#2C1810] to-[#4a3828] p-4 text-white shadow-[0_10px_28px_rgba(44,24,16,.3)] transition-all duration-500 hover:scale-110 hover:shadow-2xl sm:block ${showPrompt ? 'right-[158px]' : 'right-6'}`}
           aria-label="Open chat"
         >
           <MessageCircle className="h-6 w-6" strokeWidth={1.8} />

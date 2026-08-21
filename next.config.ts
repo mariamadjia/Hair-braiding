@@ -69,6 +69,10 @@ const nextConfig: NextConfig = {
         pathname: '/chatbot-robot.png',
         search: '',
       },
+      {
+        pathname: '/chatbot-robot-peek.png',
+        search: '',
+      },
     ],
     remotePatterns: [
       {
