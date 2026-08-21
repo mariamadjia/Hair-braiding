@@ -192,7 +192,7 @@ export default function Chatbot() {
               </div>
               <div>
                 <p className="text-xs text-white/80 uppercase tracking-wider">Chat with</p>
-                <h3 className="text-xl font-bold">BY AH Braiding</h3>
+                <h3 className="text-xl font-bold">AH Braiding</h3>
               </div>
             </div>
             <button

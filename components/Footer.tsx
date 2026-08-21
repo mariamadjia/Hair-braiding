@@ -18,7 +18,7 @@ export default function Footer({ videoSrc = null }: FooterProps = {}) {
         <div className="flex flex-col items-center gap-8 lg:flex-row lg:justify-between lg:gap-12">
           <div className="text-center lg:text-left">
             <h2 className="mb-6 text-2xl font-semibold tracking-[0.25em] lg:text-3xl">
-              BY AH BRAIDING
+              AH BRAIDING
             </h2>
             <div className="flex flex-wrap justify-center gap-6 text-[13px] font-medium uppercase tracking-[0.18em] lg:justify-start">
               <a href="https://www.instagram.com/ah_braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">INSTAGRAM</a>

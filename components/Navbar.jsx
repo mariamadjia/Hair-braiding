@@ -25,7 +25,7 @@ export default function Navbar() {
             href="/"
             className="text-[13px] uppercase tracking-[0.23em] font-semibold md:text-[14px] md:tracking-[0.25em]"
           >
-            By Ah Braiding
+            AH Braiding
           </Link>
 
           {/* Desktop navigation */}

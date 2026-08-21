@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "AH Braiding",
     type: "website",
-    images: [{ url: "/hero/IMG_9011.jpg", alt: "Braiding by AH Braiding" }],
+    images: [{ url: "/hero/IMG_9011.jpg", alt: "AH Braiding" }],
   },
   twitter: {
     card: "summary_large_image",

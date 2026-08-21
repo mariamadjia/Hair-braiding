@@ -60,7 +60,7 @@ export function AdminSignIn(props: Props) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(139,104,76,0.10),transparent_34%)]" />
         <div className="relative w-full max-w-md rounded-2xl border border-[#ddcfc1] bg-white/95 px-6 py-8 shadow-[0_20px_60px_rgba(44,24,16,0.10)] sm:px-9 sm:py-10">
           <div className="mb-7 text-center">
-            <p className="mb-5 font-serif text-sm tracking-[0.32em] text-[#2c1810] md:hidden">BY AH BRAIDING</p>
+            <p className="mb-5 font-serif text-sm tracking-[0.32em] text-[#2c1810] md:hidden">AH BRAIDING</p>
             <h1 className="font-serif text-4xl text-[#2c1810]">Admin sign in</h1>
             <p className="mt-2 text-sm text-neutral-600">Manage bookings, services, and availability.</p>
           </div>
