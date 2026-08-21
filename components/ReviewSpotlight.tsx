@@ -80,7 +80,7 @@ export default function ReviewSpotlight() {
               <span>{review.source}</span>
             </figcaption>
 
-            <blockquote className="mx-auto font-[family-name:var(--font-playfair)] text-[clamp(1.25rem,2.4vw,2rem)] font-normal leading-[1.35] tracking-[-0.02em] text-[#fff8ee] [text-shadow:0_2px_22px_rgba(22,9,5,.5)]">
+            <blockquote className="mx-auto font-[family-name:var(--font-playfair)] text-[clamp(1.05rem,1.8vw,1.5rem)] font-normal leading-[1.4] tracking-[-0.015em] text-[#fff8ee] [text-shadow:0_2px_22px_rgba(22,9,5,.5)]">
               “{review.quote}”
             </blockquote>
 
