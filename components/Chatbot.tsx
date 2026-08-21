@@ -135,7 +135,7 @@ export default function Chatbot() {
       <>
         {/* Assistant peeks in, greets the visitor, then fades back to idle. */}
         {showPrompt && pathname !== '/checkout' && (
-          <div className="chat-assistant-peek fixed bottom-7 right-5 z-40 hidden h-[285px] w-[220px] origin-bottom-right sm:block motion-reduce:animate-none">
+          <div className="chat-assistant-peek fixed bottom-7 right-5 z-40 hidden h-[310px] w-[235px] origin-bottom-right sm:block motion-reduce:animate-none">
             <div className="relative z-20 ml-auto w-[200px] rounded-2xl rounded-br-md border border-[#eadfd4] bg-[#fffaf5] px-4 py-3 shadow-[0_12px_35px_rgba(44,24,16,.16)]">
               <button
                 onClick={() => setShowPrompt(false)}
@@ -148,13 +148,13 @@ export default function Chatbot() {
               <p className="mt-0.5 text-sm text-[#725c50]">We&apos;re here to help.</p>
               <span className="absolute -bottom-2 right-8 h-4 w-4 rotate-45 border-b border-r border-[#eadfd4] bg-[#fffaf5]" />
             </div>
-            <div className="absolute bottom-0 right-0 h-[188px] w-[188px] rounded-full border border-[#eadfd4]/80 bg-[#f8f1e9]/85 shadow-[inset_0_0_36px_rgba(255,255,255,.9),0_14px_35px_rgba(44,24,16,.09)]">
+            <div className="absolute bottom-0 right-0 h-[215px] w-[215px] overflow-hidden rounded-full border-2 border-[#e8d9ca] bg-[#f7eee4] shadow-[inset_0_0_42px_rgba(255,255,255,.95),0_14px_35px_rgba(44,24,16,.13)]">
               <Image
                 src="/chatbot-robot-peek.png"
                 alt="AH Braiding virtual assistant peeking in"
                 width={170}
                 height={170}
-                className="absolute bottom-3 right-0 h-auto w-[154px] drop-shadow-[0_12px_16px_rgba(44,24,16,.2)]"
+                className="absolute bottom-1 right-1 h-auto w-[172px] drop-shadow-[0_12px_16px_rgba(44,24,16,.2)]"
               />
             </div>
           </div>
