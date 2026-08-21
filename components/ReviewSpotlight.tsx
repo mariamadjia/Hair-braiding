@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
+import LazyVideo from "./LazyVideo";
 
 const reviews = [
   {
@@ -42,19 +43,24 @@ export default function ReviewSpotlight() {
   return (
     <section
       aria-label="Client reviews"
-      className="relative isolate flex min-h-[27rem] items-center justify-center overflow-hidden bg-[#e6dac8] px-5 py-14 sm:min-h-[30rem] sm:px-8 lg:min-h-[34rem]"
+      className="relative isolate flex min-h-[27rem] items-center justify-center overflow-hidden bg-[#24130d] px-5 py-14 sm:min-h-[30rem] sm:px-8 lg:min-h-[34rem]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocusCapture={() => setIsPaused(true)}
       onBlurCapture={() => setIsPaused(false)}
     >
-      <div className="absolute inset-0 -z-20 bg-[radial-gradient(ellipse_at_center,#f4ecdf_0%,#e9dece_48%,#d5c4ae_100%)]" />
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_48%,rgba(255,252,245,.88)_0%,rgba(255,250,240,.38)_34%,transparent_68%),linear-gradient(108deg,rgba(111,83,61,.13),transparent_25%,transparent_72%,rgba(101,75,56,.12))]" />
-      <div className="absolute inset-0 -z-10 opacity-[0.22] [background-image:repeating-linear-gradient(0deg,rgba(104,79,58,.18)_0,rgba(104,79,58,.18)_1px,transparent_1px,transparent_4px),repeating-linear-gradient(90deg,rgba(104,79,58,.14)_0,rgba(104,79,58,.14)_1px,transparent_1px,transparent_4px)]" />
-      <div className="absolute -left-[11%] -top-[24%] -z-10 h-[72%] w-[34%] rotate-[-14deg] rounded-[50%] bg-[#705746]/28 blur-[58px] sm:blur-[78px]" />
-      <div className="absolute -bottom-[30%] -right-[8%] -z-10 h-[72%] w-[38%] rotate-[24deg] rounded-[48%] bg-[#7d624e]/24 blur-[62px] sm:blur-[86px]" />
-      <div className="absolute left-[8%] top-[4%] -z-10 h-[35%] w-[20%] rotate-[-18deg] rounded-full bg-[#8c715d]/12 blur-[34px]" />
-      <div className="absolute bottom-[5%] right-[12%] -z-10 h-[32%] w-[24%] rotate-[18deg] rounded-full bg-[#8f735c]/10 blur-[38px]" />
+      <LazyVideo
+        className="absolute inset-0 -z-20 h-full w-full object-cover"
+        autoPlay={!reduceMotion}
+        loop
+        muted
+        playsInline
+        poster="/Gallery/Salon.JPG"
+        ariaLabel="Braiding appointment in the salon"
+      >
+        <source src="/welcome/video2.m4v" type="video/mp4" />
+      </LazyVideo>
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(47,25,16,.42)_0%,rgba(30,15,10,.68)_72%,rgba(20,10,7,.8)_100%)]" />
 
       <div className="relative w-full max-w-[44rem]">
         <AnimatePresence mode="wait" initial={false}>
@@ -67,18 +73,18 @@ export default function ReviewSpotlight() {
             exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: reduceMotion ? 0 : 0.75, ease: "easeInOut" }}
           >
-            <figcaption className="mb-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 font-[family-name:var(--font-montserrat)] text-[9px] font-medium uppercase tracking-[0.24em] text-[#422b20] sm:text-[10px]">
+            <figcaption className="mb-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 font-[family-name:var(--font-montserrat)] text-[9px] font-medium uppercase tracking-[0.24em] text-[#fff8ee] sm:text-[10px]">
               <span aria-label="5 out of 5 stars" className="tracking-[0.16em] text-[#d6a45c]">
                 ★★★★★
               </span>
               <span>{review.source}</span>
             </figcaption>
 
-            <blockquote className="mx-auto max-w-[42rem] font-[family-name:var(--font-playfair)] text-[clamp(1.35rem,2.65vw,2.15rem)] font-normal leading-[1.35] tracking-[-0.02em] text-[#4a3023] [text-shadow:0_1px_18px_rgba(255,252,245,.58)]">
+            <blockquote className="mx-auto max-w-[42rem] font-[family-name:var(--font-playfair)] text-[clamp(1.35rem,2.65vw,2.15rem)] font-normal leading-[1.35] tracking-[-0.02em] text-[#fff8ee] [text-shadow:0_2px_22px_rgba(22,9,5,.5)]">
               “{review.quote}”
             </blockquote>
 
-            <p className="mt-7 font-[family-name:var(--font-montserrat)] text-[9px] font-medium uppercase tracking-[0.2em] text-[#4a3023]/75 sm:text-[10px]">
+            <p className="mt-7 font-[family-name:var(--font-montserrat)] text-[9px] font-medium uppercase tracking-[0.2em] text-white/80 sm:text-[10px]">
               {review.name} <span aria-hidden="true">·</span> {review.service}{" "}
               <span aria-hidden="true">·</span> Verified Client
             </p>
