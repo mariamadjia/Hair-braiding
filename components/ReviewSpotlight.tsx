@@ -43,7 +43,7 @@ export default function ReviewSpotlight() {
   return (
     <section
       aria-label="Client reviews"
-      className="relative isolate flex min-h-[34rem] items-center justify-center overflow-hidden bg-[#24130d] px-5 py-20 sm:min-h-[40rem] sm:px-8 lg:min-h-[44rem]"
+      className="relative isolate flex min-h-[27rem] items-center justify-center overflow-hidden bg-[#24130d] px-5 py-14 sm:min-h-[30rem] sm:px-8 lg:min-h-[34rem]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocusCapture={() => setIsPaused(true)}
@@ -63,29 +63,29 @@ export default function ReviewSpotlight() {
 
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(30,15,9,.76),rgba(42,23,15,.57),rgba(22,12,8,.76))]" />
 
-      <div className="relative w-full max-w-[46rem]">
+      <div className="relative w-full max-w-[38rem]">
         <AnimatePresence mode="wait" initial={false}>
           <motion.figure
             key={`${review.name}-${activeReview}`}
             aria-live="polite"
-            className="m-0 rounded-[1.5rem] border border-white/55 bg-white/[0.14] px-6 py-10 text-center shadow-[0_24px_70px_rgba(18,9,5,.24)] backdrop-blur-md sm:px-12 sm:py-12 lg:px-16"
+            className="m-0 rounded-[1.25rem] border border-white/55 bg-white/[0.14] px-6 py-8 text-center shadow-[0_20px_55px_rgba(18,9,5,.22)] backdrop-blur-md sm:px-10 sm:py-9 lg:px-12"
             initial={reduceMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: reduceMotion ? 0 : 0.75, ease: "easeInOut" }}
           >
-            <figcaption className="mb-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 font-[family-name:var(--font-montserrat)] text-[10px] font-medium uppercase tracking-[0.22em] text-[#fffaf4] sm:text-[11px]">
+            <figcaption className="mb-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 font-[family-name:var(--font-montserrat)] text-[9px] font-medium uppercase tracking-[0.22em] text-[#fffaf4] sm:text-[10px]">
               <span aria-label="5 out of 5 stars" className="tracking-[0.16em] text-[#d6a45c]">
                 ★★★★★
               </span>
               <span>{review.source}</span>
             </figcaption>
 
-            <blockquote className="font-[family-name:var(--font-playfair)] text-[clamp(1.45rem,3.25vw,2.55rem)] font-normal leading-[1.3] tracking-[-0.025em] text-[#fffaf4]">
+            <blockquote className="font-[family-name:var(--font-playfair)] text-[clamp(1.25rem,2.4vw,2rem)] font-normal leading-[1.35] tracking-[-0.02em] text-[#fffaf4]">
               “{review.quote}”
             </blockquote>
 
-            <p className="mt-7 font-[family-name:var(--font-montserrat)] text-[10px] font-medium uppercase tracking-[0.2em] text-white/85 sm:text-[11px]">
+            <p className="mt-6 font-[family-name:var(--font-montserrat)] text-[9px] font-medium uppercase tracking-[0.18em] text-white/85 sm:text-[10px]">
               {review.name} <span aria-hidden="true">·</span> {review.service}{" "}
               <span aria-hidden="true">·</span> Verified Client
             </p>
