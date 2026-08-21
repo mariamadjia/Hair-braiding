@@ -551,7 +551,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
           </span>
         </div>
 
-        {bestFor.length > 0 && (
+        {visibleBestFor.length > 0 && (
           <div style={{ paddingTop: mobile ? 8 : 18 }}>
             <div style={{
               color: T.body,
@@ -560,7 +560,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
               letterSpacing: mobile ? '0.01em' : '0.025em',
               whiteSpace: mobile ? 'nowrap' : 'normal',
             }}>
-              {bestFor.join(' · ')}
+              {visibleBestFor.join(' · ')}
             </div>
             <div style={{
               width: mobile ? 34 : 48,
