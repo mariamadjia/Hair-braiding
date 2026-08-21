@@ -131,7 +131,6 @@ export default function PaymentForm({
               },
               paymentMethodOrder: [
                 "card",
-                "paypal",
               ],
               terms: {
                 card: "never",
@@ -140,7 +139,7 @@ export default function PaymentForm({
           />
         </div>
         <p className="mt-4 text-xs leading-5 text-neutral-600">
-          By continuing, you authorize AH Braiding Salon to save this payment method and charge any remaining
+          By continuing, you authorize AH Braiding Salon to save this card and charge any remaining
           no-show balance described in the Booking Policies. Your deposit is credited toward that fee.
         </p>
       </div>
