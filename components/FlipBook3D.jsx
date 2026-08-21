@@ -1185,22 +1185,12 @@ export default function FlipBook3D({
         color: T.sub,
         textAlign: 'center',
         fontSize: '0.78rem',
-        marginBottom: 10,
+        marginBottom: 40,
         letterSpacing: '0.18em',
         textTransform: 'uppercase',
         fontWeight: 500
       }}>
         Signature Protective Styles
-      </p>
-      <p style={{
-        color: T.bodyLight,
-        textAlign: 'center',
-        fontSize: '0.7rem',
-        marginBottom: 40,
-        fontWeight: 300,
-        fontStyle: 'italic'
-      }}>
-        Focus the book and use arrow keys, buttons, or a swipe
       </p>
     </>
   );
