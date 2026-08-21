@@ -868,9 +868,7 @@ export default function GalleryPage() {
           </div>
         )}
       </div>
-      <div className="mt-16 md:mt-24">
-        <FooterWrapper />
-      </div>
+      <FooterWrapper />
     </>
   );
 }
