@@ -34,24 +34,24 @@ function CustomerTable({ onViewDetails, state, onStateChange }: Props) {
 
     const setState = (patch: Partial<CustomerListState>) => onStateChange({ ...state, ...patch });
 
-    const fetchCustomers = useCallback(async () => {
+    const fetchCustomers = useCallback(async (signal?: AbortSignal) => {
         setLoading(true); setError(null);
         try {
             const params = new URLSearchParams({ page: String(state.page), size: "20", query: state.query.trim(), segment: state.segment, sort: state.sort });
-            const response = await fetch(`${API_BASE_URL}/api/customers?${params}`, { credentials: "include", cache: "no-store" });
+            const response = await fetch(`${API_BASE_URL}/api/customers?${params}`, { credentials: "include", cache: "no-store", signal });
             const body = await response.json().catch(() => ({}));
             if (!response.ok) {
                 if (response.status === 401 || response.status === 403) throw new Error("Your session has expired. Please log in again.");
                 throw new Error(body.error || "Failed to load customers");
             }
             setCustomers(body.content ?? []); setTotalPages(body.totalPages ?? 0); setTotalElements(body.totalElements ?? 0); setLastUpdated(new Date());
-        } catch (err) { setError(err instanceof Error ? err.message : "Failed to load customers"); }
-        finally { setLoading(false); }
+        } catch (err) { if (!(err instanceof DOMException && err.name === "AbortError")) setError(err instanceof Error ? err.message : "Failed to load customers"); }
+        finally { if (!signal?.aborted) setLoading(false); }
     }, [state.page, state.query, state.segment, state.sort]);
 
-    useEffect(() => { const timer = window.setTimeout(() => void fetchCustomers(), state.query ? 300 : 0); return () => window.clearTimeout(timer); }, [fetchCustomers, state.query]);
+    useEffect(() => { const controller = new AbortController(); const timer = window.setTimeout(() => void fetchCustomers(controller.signal), state.query ? 300 : 0); return () => { window.clearTimeout(timer); controller.abort(); }; }, [fetchCustomers, state.query]);
 
-    const date = (value: string | null) => value ? new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+    const date = (value: string | null) => { if (!value) return "—"; const parsed = new Date(value.endsWith("Z") ? value : `${value}Z`); return Number.isNaN(parsed.getTime()) ? "Date unavailable" : parsed.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }); };
     const money = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 
     const CustomerCard = ({ customer }: { customer: Customer }) => <article className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800">
