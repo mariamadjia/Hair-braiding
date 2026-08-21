@@ -115,8 +115,8 @@ export function FlippingImagesModal({
     );
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="flipping-images-title">
-            <div className="bg-white rounded-lg max-w-4xl w-full my-8 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/50 p-2 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="flipping-images-title">
+            <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-4xl flex-col rounded-t-2xl bg-white sm:my-8 sm:max-h-[90vh] sm:rounded-lg">
                 {/* Header */}
                 <div className="p-6 border-b border-neutral-200 flex items-center justify-between shrink-0 bg-white">
                     <div>
@@ -155,7 +155,7 @@ export function FlippingImagesModal({
                                 </button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 lg:gap-4">
                                 {selectedImages.map((imageUrl, index) => (
                                     <div
                                         key={index}
@@ -258,7 +258,7 @@ export function FlippingImagesModal({
                                     All images from this category are already selected
                                 </p>
                             ) : (
-                                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-64 overflow-y-auto">
+                                <div className="grid max-h-64 grid-cols-2 gap-3 overflow-y-auto min-[420px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                                     {availableImages.map((imageUrl) => (
                                         <button
                                             key={imageUrl}

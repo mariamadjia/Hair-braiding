@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, lazy, Suspense } from "react";
+import { Menu } from "lucide-react";
 import type { CategoriesData, CategorySummary, SubcategorySummary } from "@/lib/booking-types";
 import { EditorPanel } from "./components/EditorPanel";
 import { PreviewCategoryDetail, PreviewSubcategoryDetail } from "./components/PreviewComponents";
@@ -43,6 +44,7 @@ export default function AdminPage() {
     const [customerListState, setCustomerListState] = useState<CustomerListState>({
         query: "", segment: "ALL", sort: "NAME_ASC", page: 0
     });
+    const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
     
     // New state for lazy loading
     const [categorySummaries, setCategorySummaries] = useState<CategorySummary[]>([]);
@@ -585,14 +587,17 @@ export default function AdminPage() {
                     onSectionChange={handleSectionChange}
                     onLogout={handleLogout}
                     adminName={adminName}
+                    isMobileOpen={mobileNavigationOpen}
+                    onMobileClose={() => setMobileNavigationOpen(false)}
                 />
 
             {/* Main content area */}
             <div className={`flex min-h-0 min-w-0 flex-1 flex-col ${currentSection === "categories" ? "min-h-dvh" : "overflow-hidden"}`}>
                 {/* Top bar */}
-                <div className="h-16 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shrink-0 flex items-center justify-between px-6">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-lg font-medium text-neutral-900 dark:text-white">
+                <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-neutral-200 bg-white px-3 dark:border-neutral-700 dark:bg-neutral-800 sm:px-5 md:px-6">
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                        <button type="button" onClick={() => setMobileNavigationOpen(true)} className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700 md:hidden" aria-label="Open admin navigation"><Menu className="h-5 w-5" /></button>
+                        <h1 className="truncate text-base font-medium text-neutral-900 dark:text-white sm:text-lg">
                             {({
                                 dashboard: "Dashboard",
                                 categories: "Services",
@@ -613,7 +618,7 @@ export default function AdminPage() {
                             } as Record<string, string>)[currentSection] ?? currentSection}
                         </h1>
                         {currentSection === "categories" && (
-                            <span className="text-sm text-neutral-400">{categories.length} categories</span>
+                            <span className="hidden text-sm text-neutral-400 sm:inline">{categories.length} categories</span>
                         )}
                     </div>
                     <NotificationBell token={token} onNavigate={handleSectionChange} />
@@ -762,9 +767,9 @@ export default function AdminPage() {
 
                 {/* Placeholder for other sections */}
                 {currentSection !== "categories" && currentSection !== "dashboard" && currentSection !== "gallery" && currentSection !== "profile" && currentSection !== "homepage" && currentSection !== "bookings" && currentSection !== "availability" && currentSection !== "customers" && currentSection !== "pricing" && currentSection !== "administrators" && (
-                    <div className="flex-1 overflow-y-auto p-8 bg-neutral-50 dark:bg-neutral-900">
+                    <div className="flex-1 overflow-y-auto bg-neutral-50 p-4 dark:bg-neutral-900 sm:p-6 lg:p-8">
                         <div className="max-w-4xl mx-auto">
-                            <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-12 text-center">
+                            <div className="rounded-lg border border-neutral-200 bg-white p-6 text-center dark:border-neutral-700 dark:bg-neutral-800 sm:p-12">
                                 <h2 className="text-xl font-medium text-neutral-900 dark:text-white mb-2">
                                     {currentSection.charAt(0).toUpperCase() + currentSection.slice(1)} Section
                                 </h2>

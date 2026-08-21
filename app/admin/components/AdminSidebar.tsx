@@ -20,6 +20,7 @@ import {
     Moon,
     Home,
     Clock
+    ,X
 } from "lucide-react";
 
 interface SidebarProps {
@@ -27,6 +28,8 @@ interface SidebarProps {
     onSectionChange: (section: string) => void;
     onLogout: () => void;
     adminName?: string;
+    isMobileOpen?: boolean;
+    onMobileClose?: () => void;
 }
 
 interface MenuItem {
@@ -37,7 +40,7 @@ interface MenuItem {
     comingSoon?: boolean;
 }
 
-export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminName = "Admin" }: SidebarProps) {
+export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminName = "Admin", isMobileOpen = false, onMobileClose }: SidebarProps) {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [expandedItems, setExpandedItems] = useState<string[]>(["services"]);
     const { isDarkMode, toggleDarkMode } = useTheme();
@@ -83,14 +86,14 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
             toggleExpanded(itemId);
         } else {
             onSectionChange(itemId);
+            onMobileClose?.();
         }
     };
 
-    return (
+    return (<>
+        {isMobileOpen && <button type="button" aria-label="Close navigation" onClick={onMobileClose} className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px] md:hidden" />}
         <div 
-            className={`sticky top-0 h-dvh shrink-0 bg-white dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 flex flex-col transition-all duration-300 ${
-                isCollapsed ? "w-16" : "w-64"
-            }`}
+            className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(18rem,88vw)] shrink-0 flex-col border-r border-neutral-200 bg-white shadow-2xl transition-transform duration-200 dark:border-neutral-700 dark:bg-neutral-800 md:sticky md:top-0 md:z-auto md:translate-x-0 md:shadow-none ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} ${isCollapsed ? "md:w-16" : "md:w-64"}`}
         >
             {/* Header */}
             <div className="h-16 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between px-4 shrink-0">
@@ -103,8 +106,14 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
                     </div>
                 )}
                 <button
+                    type="button"
+                    onClick={onMobileClose}
+                    className="flex min-h-11 min-w-11 items-center justify-center rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 md:hidden"
+                    aria-label="Close menu"
+                ><X className="h-5 w-5" /></button>
+                <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="p-1.5 hover:bg-neutral-100 rounded-sm transition-colors"
+                    className="hidden p-1.5 hover:bg-neutral-100 rounded-sm transition-colors md:block"
                     title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                 >
                     {isCollapsed ? (
@@ -129,7 +138,7 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
                             <li key={item.id}>
                                 <button
                                     onClick={() => handleItemClick(item.id, !!hasSubItems, item.comingSoon)}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm transition-colors ${
+                                    className={`flex min-h-11 w-full items-center gap-3 rounded-sm px-3 py-2 transition-colors ${
                                         item.comingSoon
                                             ? "text-neutral-400 dark:text-neutral-600 cursor-default"
                                             : isActive 
@@ -163,8 +172,8 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
                                         {item.subItems!.map((subItem) => (
                                             <li key={subItem.id}>
                                                 <button
-                                                    onClick={() => onSectionChange(subItem.id)}
-                                                    className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-sm text-sm transition-colors ${
+                                                    onClick={() => { onSectionChange(subItem.id); onMobileClose?.(); }}
+                                                    className={`flex min-h-11 w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors ${
                                                         currentSection === subItem.id
                                                             ? "bg-neutral-100 text-neutral-900 font-medium"
                                                             : "text-neutral-600 hover:bg-neutral-50"
@@ -257,5 +266,5 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
                 )}
             </div>
         </div>
-    );
+    </>);
 }

@@ -846,8 +846,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                         </div>}
             </section>}
 
-            {guideSettings && editingGuide && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-4" role="dialog" aria-modal="true" aria-labelledby="guide-editor-title" onMouseDown={event => { if (event.target === event.currentTarget) cancelGuideEditor(); }}>
-                <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-neutral-900">
+            {guideSettings && editingGuide && <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/45 p-2 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="guide-editor-title" onMouseDown={event => { if (event.target === event.currentTarget) cancelGuideEditor(); }}>
+                <div className="max-h-[calc(100dvh-1rem)] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-white shadow-2xl dark:bg-neutral-900 sm:max-h-[90vh] sm:rounded-2xl">
                     <div className="sticky top-0 z-10 flex items-start justify-between border-b border-neutral-200 bg-white px-5 py-4 dark:border-neutral-700 dark:bg-neutral-900 sm:px-6"><div><h3 id="guide-editor-title" className="text-lg font-semibold">Edit {editingGuide} guide</h3><p className="mt-1 text-sm text-neutral-500">{editingGuide === "length" ? "Upload the one image customers use to compare hair lengths." : "Upload the image that belongs to each size."}</p></div><button type="button" onClick={cancelGuideEditor} aria-label="Close editor" className="rounded-lg p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"><X className="h-5 w-5" /></button></div>
                     <div className="p-5 sm:p-6">
                         {saveError && <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">{saveError}</div>}

@@ -249,7 +249,7 @@ export function GalleryAdminNew() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-neutral-50 dark:bg-neutral-900">
+            <div className="flex min-h-64 items-center justify-center bg-neutral-50 dark:bg-neutral-900">
                 <div className="text-neutral-500 dark:text-neutral-400">Loading gallery...</div>
             </div>
         );
@@ -258,7 +258,7 @@ export function GalleryAdminNew() {
     return (
         <div className="h-full flex flex-col bg-neutral-50 dark:bg-neutral-900">
             {/* Header */}
-            <div className="bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-8 py-6 shrink-0">
+            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-5 dark:border-neutral-700 dark:bg-neutral-800 sm:px-6 lg:px-8 lg:py-6">
                 <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Gallery Management</h1>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
                     {categories.length} categories
@@ -266,12 +266,12 @@ export function GalleryAdminNew() {
             </div>
 
             {/* Gallery Grid - Same as Public */}
-            <div className="px-8 py-12 overflow-y-auto flex-1">
+            <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
                 <div aria-live="polite" className="mx-auto mb-5 max-w-7xl">
                     {loadError && <div role="alert" className="border border-red-200 bg-red-50 p-4 text-sm text-red-800">{loadError}<button type="button" onClick={loadData} className="ml-3 underline">Retry</button></div>}
                     {statusMessage && <p className="mt-2 text-sm text-neutral-600">{statusMessage}</p>}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-8">
                     {categories.map((category, index) => {
                         const categoryImages = getCategoryImages(category.id);
                         const isEditing = editingCategory === category.id;

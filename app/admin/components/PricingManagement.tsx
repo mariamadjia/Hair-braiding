@@ -537,7 +537,7 @@ export function PricingManagement({ token }: { token: string }) {
 
   return (
     <div className="min-h-full bg-[#f8f5ef] text-[#2d180f]">
-      <div className="mx-auto max-w-7xl p-5 pb-28 sm:p-8">
+      <div className="mx-auto max-w-7xl p-4 pb-32 sm:p-8 sm:pb-28">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm text-neutral-600">Edit only the prices customers see. Names, photos, availability, and ordering stay in Services.</p>
@@ -1182,7 +1182,7 @@ export function PricingManagement({ token }: { token: string }) {
       )}
 
       {dirtyIds.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#e4d8cc] bg-[#fffdf9]/95 px-4 py-3 shadow-[0_-12px_35px_rgba(45,24,15,.10)] backdrop-blur">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#e4d8cc] bg-[#fffdf9]/95 px-3 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_35px_rgba(45,24,15,.10)] backdrop-blur md:left-64 md:px-4">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#d6b999] bg-white font-serif text-xl text-[#351a10]">{dirtyPriceCount || dirtyIds.length}</span>

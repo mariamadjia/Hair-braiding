@@ -87,11 +87,11 @@ export default function AvailabilitySettings() {
     return (
         <div className="mx-auto max-w-[1500px] p-4 sm:p-6 lg:p-8">
             {/* Tabs */}
-            <div className="mb-5 flex gap-2 border-b border-neutral-200">
+            <div className="mb-5 flex gap-1 overflow-x-auto border-b border-neutral-200 pb-px sm:gap-2">
                 <button
                     onClick={() => handleTabChange('hours')}
                     className={cn(
-                        "px-4 py-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-2",
+                        "flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors sm:px-4",
                         activeTab === 'hours'
                             ? "border-neutral-900 text-neutral-900 bg-neutral-50"
                             : "border-transparent text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50"
@@ -103,7 +103,7 @@ export default function AvailabilitySettings() {
                 <button
                     onClick={() => handleTabChange('blocked')}
                     className={cn(
-                        "px-4 py-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-2",
+                        "flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors sm:px-4",
                         activeTab === 'blocked'
                             ? "border-neutral-900 text-neutral-900 bg-neutral-50"
                             : "border-transparent text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50"
@@ -115,7 +115,7 @@ export default function AvailabilitySettings() {
                 <button
                     onClick={() => handleTabChange('settings')}
                     className={cn(
-                        "px-4 py-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-2",
+                        "flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors sm:px-4",
                         activeTab === 'settings'
                             ? "border-neutral-900 text-neutral-900 bg-neutral-50"
                             : "border-transparent text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50"
@@ -135,8 +135,8 @@ export default function AvailabilitySettings() {
 
             {/* Unsaved Changes Warning Modal */}
             {showUnsavedWarning && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
+                    <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-xl bg-white p-4 shadow-lg sm:p-6">
                         <div className="flex items-start gap-4">
                             <div className="flex-shrink-0">
                                 <AlertTriangle className="h-6 w-6 text-amber-500" />
@@ -148,7 +148,7 @@ export default function AvailabilitySettings() {
                                 <p className="text-sm text-neutral-600 mb-4">
                                     Save your changes before switching, or discard them.
                                 </p>
-                                <div className="flex gap-3 justify-end">
+                                <div className="grid gap-2 sm:flex sm:justify-end sm:gap-3">
                                     <button
                                         onClick={cancelTabChange}
                                         className="px-4 py-2 text-sm font-medium text-neutral-700 border border-neutral-300 rounded-md hover:bg-neutral-50"

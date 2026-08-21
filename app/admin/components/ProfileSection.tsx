@@ -68,10 +68,10 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
     };
 
     return (
-        <div className="flex-1 overflow-y-auto p-8 bg-neutral-50 dark:bg-neutral-900">
+        <div className="flex-1 overflow-y-auto bg-neutral-50 p-4 dark:bg-neutral-900 sm:p-6 lg:p-8">
             <div className="max-w-3xl mx-auto space-y-6">
                 {/* Profile Header */}
-                <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-8">
+                <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800 sm:p-6 lg:p-8">
                     <div className="flex items-start gap-6">
                         {/* Avatar */}
                         <div className="relative group">

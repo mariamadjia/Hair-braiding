@@ -526,7 +526,7 @@ function AppointmentManagement() {
 
             <section className="mb-6 overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white shadow-[0_8px_30px_rgba(53,29,18,0.05)]">
                 <div className="overflow-x-auto border-b border-[#eee5df] px-2 pt-2 sm:px-5" role="tablist" aria-label="Appointment workflow">
-                    <div className="grid min-w-[390px] grid-cols-3 gap-1 sm:flex sm:min-w-max sm:gap-2">
+                    <div className="grid min-w-0 grid-cols-3 gap-1 sm:flex sm:min-w-max sm:gap-2">
                     {WORKFLOW_VIEWS.map(item => (
                         <button key={item.value} type="button" role="tab" aria-selected={workflow === item.value} onClick={() => changeWorkflow(item.value)}
                             title={item.description}

@@ -1327,10 +1327,10 @@ export function HomePageEditor() {
 
       {/* Hero Edit Modal */}
       {isEditModalOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Manage Hero Section" className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div role="dialog" aria-modal="true" aria-label="Manage Hero Section" className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 sm:items-center sm:p-4">
+          <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-white dark:bg-neutral-800 sm:max-h-[90vh] sm:rounded-lg">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center justify-between border-b border-neutral-200 p-4 dark:border-neutral-700 sm:p-6">
               <div>
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Manage Hero Section</h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
@@ -1472,7 +1472,7 @@ export function HomePageEditor() {
 
                     {/* Image Grid */}
                     {heroImages.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                         {heroImages.map((image, index) => (
                           <div
                             key={image.id}
@@ -1545,10 +1545,10 @@ export function HomePageEditor() {
 
       {/* Welcome Item Edit Modal */}
       {editingWelcomeItemIndex !== null && (
-        <div role="dialog" aria-modal="true" aria-label="Edit Welcome Item" className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div role="dialog" aria-modal="true" aria-label="Edit Welcome Item" className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 sm:items-center sm:p-4">
+          <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white dark:bg-neutral-800 sm:max-h-[90vh] sm:rounded-lg">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center justify-between border-b border-neutral-200 p-4 dark:border-neutral-700 sm:p-6">
               <div>
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
                   Edit Welcome Item
@@ -1699,10 +1699,10 @@ export function HomePageEditor() {
 
       {/* Gallery Collection Edit Modal */}
       {editingCollectionIndex !== null && (
-        <div role="dialog" aria-modal="true" aria-label="Edit Gallery Collection" className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div role="dialog" aria-modal="true" aria-label="Edit Gallery Collection" className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 sm:items-center sm:p-4">
+          <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-white dark:bg-neutral-800 sm:max-h-[90vh] sm:rounded-lg">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center justify-between border-b border-neutral-200 p-4 dark:border-neutral-700 sm:p-6">
               <div>
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
                   Edit {galleryCollections[editingCollectionIndex].title}
@@ -1751,7 +1751,7 @@ export function HomePageEditor() {
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
                     Images
                   </label>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     {galleryCollections[editingCollectionIndex].images.map((image, imgIndex) => (
                       <div key={imgIndex} className="relative group aspect-[4/5] bg-neutral-200 dark:bg-neutral-700 rounded overflow-hidden">
                         <img
@@ -1846,10 +1846,10 @@ export function HomePageEditor() {
 
       {/* Gallery Selection Modal */}
       {isGalleryEditOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Manage Featured Gallery Collections" className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div role="dialog" aria-modal="true" aria-label="Manage Featured Gallery Collections" className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 sm:items-center sm:p-4">
+          <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-6xl flex-col overflow-hidden rounded-t-2xl bg-white dark:bg-neutral-800 sm:max-h-[90vh] sm:rounded-lg">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center justify-between border-b border-neutral-200 p-4 dark:border-neutral-700 sm:p-6">
               <div>
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
                   Manage Gallery Collections
@@ -1888,7 +1888,7 @@ export function HomePageEditor() {
                     <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
                       Selected Collections Preview
                     </label>
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                       {Array.from({ length: 4 }).map((_, index) => {
                         const selectedCollection = allCollections[selectedCollectionIndices[index]];
                         return (
@@ -2073,10 +2073,10 @@ export function HomePageEditor() {
 
       {/* Footer Video Edit Modal */}
       {isFooterVideoEditOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Edit Footer Video" className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div role="dialog" aria-modal="true" aria-label="Edit Footer Video" className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 sm:items-center sm:p-4">
+          <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white dark:bg-neutral-800 sm:max-h-[90vh] sm:rounded-lg">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center justify-between border-b border-neutral-200 p-4 dark:border-neutral-700 sm:p-6">
               <div>
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Edit Footer Video</h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
