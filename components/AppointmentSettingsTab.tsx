@@ -87,7 +87,7 @@ export default function AppointmentSettingsTab() {
                     requireApproval: data.requireApproval,
                     allowSameDayBooking: data.allowSameDayBooking,
                     bufferTimeBetweenAppointments: data.bufferTimeBetweenAppointments ?? 0,
-                    timezone: data.timezone || "America/Chicago"
+                    timezone: "America/Chicago"
                 });
             }
         } catch (error) {
@@ -113,7 +113,7 @@ export default function AppointmentSettingsTab() {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(currentSettings)
+                body: JSON.stringify({ ...currentSettings, timezone: "America/Chicago" })
             });
 
             if (!settingsResponse.ok) {
@@ -122,7 +122,7 @@ export default function AppointmentSettingsTab() {
             }
 
             const updatedSettings = await settingsResponse.json();
-            setSettings(previous => ({ ...previous, version: updatedSettings.version ?? previous.version }));
+            setSettings(previous => ({ ...previous, version: updatedSettings.version ?? previous.version, timezone: "America/Chicago" }));
 
             setSuccess(true);
             window.dispatchEvent(new CustomEvent('unsavedChanges', { detail: { hasChanges: false } }));
@@ -246,9 +246,8 @@ export default function AppointmentSettingsTab() {
                 </div>
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-neutral-900">Salon timezone</label>
-                    <select value={settings.timezone} onChange={e => updateSetting('timezone', e.target.value)} className="w-full px-4 py-2 border border-neutral-200 rounded-md">
-                        <option value="America/Chicago">Central Time — San Antonio</option>
-                    </select>
+                    <div className="w-full rounded-md border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm text-neutral-700">Central Time — San Antonio (America/Chicago)</div>
+                    <p className="text-xs text-neutral-500">All customer, staff, and notification times use the salon&apos;s San Antonio timezone.</p>
                 </div>
 
                 {/* Advance Booking Period */}

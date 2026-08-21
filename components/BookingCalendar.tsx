@@ -52,6 +52,23 @@ const MONTHS = [
 ];
 
 const PENDING_PAYMENT_STORAGE_KEY = "ah-braiding-pending-payment";
+const SALON_TIME_ZONE = "America/Chicago";
+
+const salonToday = () => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: SALON_TIME_ZONE,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).formatToParts(new Date());
+    const value = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return new Date(Number(value.year), Number(value.month) - 1, Number(value.day));
+};
+
+const parseStoredCalendarDate = (value: string) => {
+    const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : new Date(value);
+};
 
 const policySections = (depositAmountCents: number) => [
     {
@@ -118,7 +135,7 @@ export default function BookingCalendar({
     depositAmountCents = 5000,
     quoteToken
 }: BookingCalendarProps) {
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentDate, setCurrentDate] = useState(salonToday);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [step, setStep] = useState<"date" | "time" | "details" | "payment" | "success">("date");
@@ -172,7 +189,7 @@ export default function BookingCalendar({
                         throw new Error(`Payment authorization was not completed. Status: ${verified.status || "unknown"}`);
                     }
                     if (cancelled) return;
-                    const restoredDate = new Date(restored.date);
+                    const restoredDate = parseStoredCalendarDate(restored.date);
                     setSelectedDate(restoredDate);
                     setSelectedTime(restored.time);
                     setFormData(restored.formData);
@@ -266,8 +283,7 @@ export default function BookingCalendar({
         if (!day) return true;
         
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = salonToday();
         
         const status = dateAvailability[formatLocalDate(date)];
         return date < today || status === "unavailable";
@@ -310,9 +326,11 @@ export default function BookingCalendar({
         return `${year}-${month}-${day}T${hour}:${minute}:00`;
     };
 
+    const slotCacheKey = (date: Date) => `${serviceId ?? "default"}:${lengthOptionId ?? "none"}:${formatLocalDate(date)}`;
+
     const requestSlots = async (date: Date, signal?: AbortSignal): Promise<TimeSlot[]> => {
         const dateStr = formatLocalDate(date);
-        const params = new URLSearchParams({ date: dateStr, timezone: "America/Chicago" });
+        const params = new URLSearchParams({ date: dateStr, timezone: SALON_TIME_ZONE });
         if (serviceId) params.set("serviceId", String(serviceId));
         if (lengthOptionId) params.set("lengthOptionId", String(lengthOptionId));
         const response = await fetch(`${API_BASE_URL}/api/availability/slots?${params}`, {
@@ -333,7 +351,8 @@ export default function BookingCalendar({
 
     const fetchAvailableSlots = async (date: Date, force = false) => {
         const dateStr = formatLocalDate(date);
-        const cached = slotsCache.current.get(dateStr);
+        const cacheKey = slotCacheKey(date);
+        const cached = slotsCache.current.get(cacheKey);
         if (!force && cached) {
             setError(null);
             setAvailableSlots(cached);
@@ -344,7 +363,7 @@ export default function BookingCalendar({
         availabilityRequest.current = controller;
         try {
             const slots = await requestSlots(date, controller.signal);
-            slotsCache.current.set(dateStr, slots);
+            slotsCache.current.set(cacheKey, slots);
             setDateAvailability(previous => ({
                 ...previous,
                 [dateStr]: slots.some(slot => slot.available) ? "available" : "unavailable"
@@ -368,9 +387,8 @@ export default function BookingCalendar({
             .filter((day): day is number => day !== null)
             .map(day => new Date(currentDate.getFullYear(), currentDate.getMonth(), day))
             .filter(date => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                return date >= today && !slotsCache.current.has(formatLocalDate(date));
+                const today = salonToday();
+                return date >= today && !slotsCache.current.has(slotCacheKey(date));
             });
 
         setDateAvailability(previous => {
@@ -386,7 +404,7 @@ export default function BookingCalendar({
                     const key = formatLocalDate(date);
                     try {
                         const slots = await requestSlots(date, controller.signal);
-                        slotsCache.current.set(key, slots);
+                        slotsCache.current.set(slotCacheKey(date), slots);
                         setDateAvailability(previous => ({
                             ...previous,
                             [key]: slots.some(slot => slot.available) ? "available" : "unavailable"
@@ -401,7 +419,7 @@ export default function BookingCalendar({
         };
         void prefetch();
         return () => controller.abort();
-    }, [currentDate.getFullYear(), currentDate.getMonth()]);
+    }, [currentDate.getFullYear(), currentDate.getMonth(), serviceId, lengthOptionId]);
 
     const formatTime24To12 = (dateTime: string) => {
         const [, time = "00:00"] = dateTime.split("T");
@@ -430,7 +448,7 @@ export default function BookingCalendar({
     const validateAvailability = async (date: Date, time: string): Promise<boolean> => {
         try {
             const dateStr = formatLocalDate(date);
-            const timezone = "America/Chicago";
+            const timezone = SALON_TIME_ZONE;
             const params = new URLSearchParams({ date: dateStr, timezone });
             if (serviceId) params.set("serviceId", String(serviceId));
             if (lengthOptionId) params.set("lengthOptionId", String(lengthOptionId));
@@ -530,6 +548,15 @@ export default function BookingCalendar({
 
             if (!response.ok) {
                 const errorData = await response.json();
+                if (response.status === 409) {
+                    const message = errorData.error || errorData.message || "This time slot is no longer available.";
+                    alert(message);
+                    setStep("time");
+                    setSelectedTime(null);
+                    onTimeSelected?.(null);
+                    await fetchAvailableSlots(selectedDate, true);
+                    return;
+                }
                 throw new Error(errorData.error || errorData.message || 'Failed to create appointment');
             }
 
@@ -553,7 +580,7 @@ export default function BookingCalendar({
             sessionStorage.setItem(PENDING_PAYMENT_STORAGE_KEY, JSON.stringify({
                 appointmentId: result.id,
                 paymentToken: result.paymentToken,
-                date: selectedDate.toISOString(),
+                date: formatLocalDate(selectedDate),
                 time: selectedTime,
                 formData,
             }));
@@ -566,7 +593,7 @@ export default function BookingCalendar({
                 setStep("time");
                 setSelectedTime(null);
                 onTimeSelected?.(null);
-                await fetchAvailableSlots(selectedDate);
+                await fetchAvailableSlots(selectedDate, true);
             }
         } finally {
             setIsSubmitting(false);
@@ -611,20 +638,20 @@ export default function BookingCalendar({
     };
 
     const goToPreviousMonth = () => {
-        const today = new Date();
+        const today = salonToday();
         if (currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth()) return;
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
     };
 
     const canGoToPreviousMonth = () => {
-        const today = new Date();
+        const today = salonToday();
         return currentDate.getFullYear() > today.getFullYear()
             || (currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() > today.getMonth());
     };
 
     const isToday = (day: number | null) => {
         if (!day) return false;
-        const today = new Date();
+        const today = salonToday();
         return day === today.getDate()
             && currentDate.getMonth() === today.getMonth()
             && currentDate.getFullYear() === today.getFullYear();
