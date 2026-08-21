@@ -1,8 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import Image from "next/image";
 import { useEffect, useState } from "react";
-import LazyVideo from "./LazyVideo";
 
 const reviews = [
   {
@@ -49,17 +49,13 @@ export default function ReviewSpotlight() {
       onFocusCapture={() => setIsPaused(true)}
       onBlurCapture={() => setIsPaused(false)}
     >
-      <LazyVideo
-        className="absolute inset-0 -z-20 h-full w-full object-cover"
-        autoPlay={!reduceMotion}
-        loop
-        muted
-        playsInline
-        poster="/Gallery/Salon.JPG"
-        ariaLabel="Braiding appointment in the salon"
-      >
-        <source src="/welcome/video2.m4v" type="video/mp4" />
-      </LazyVideo>
+      <Image
+        src="/Gallery/Salon.JPG"
+        alt="AH Braiding salon interior"
+        fill
+        sizes="100vw"
+        className="-z-20 object-cover"
+      />
 
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(30,15,9,.76),rgba(42,23,15,.57),rgba(22,12,8,.76))]" />
 
