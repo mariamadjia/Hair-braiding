@@ -85,12 +85,12 @@ export default function ReviewSpotlight() {
       />
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(47,25,16,.42)_0%,rgba(30,15,10,.68)_72%,rgba(20,10,7,.8)_100%)]" />
 
-      <div className="relative w-full max-w-[38rem]">
+      <div className="relative w-full max-w-[44rem]">
         <AnimatePresence mode="wait" initial={false}>
           <motion.figure
             key={`${review.name}-${activeReview}`}
             aria-live="polite"
-            className="m-0 rounded-[1.25rem] border border-white/55 bg-white/[0.14] px-6 py-8 text-center shadow-[0_20px_55px_rgba(18,9,5,.24)] backdrop-blur-md sm:px-10 sm:py-9 lg:px-12"
+            className="m-0 px-1 py-5 text-center sm:px-8 sm:py-7"
             initial={reduceMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
