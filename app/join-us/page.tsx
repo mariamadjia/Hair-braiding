@@ -91,8 +91,13 @@ export default function JoinUs() {
       const response = await fetch('/api/join-us', { method: 'POST', body: payload });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'Your application could not be submitted.');
+      if (photos.length > 0 && body.photosDelivered !== photos.length) {
+        throw new Error('The application was received, but the work photos were not attached. Please try again.');
+      }
 
-      setResult({ type: 'success', message: 'Thank you! Your application was delivered. We’ll review it and contact you if there is a match.' });
+      setResult({ type: 'success', message: photos.length > 0
+        ? `Thank you! Your application and ${photos.length} work photo${photos.length === 1 ? '' : 's'} were delivered.`
+        : 'Thank you! Your application was delivered. We’ll review it and contact you if there is a match.' });
       setFormData(initialForm);
       setPhotos([]);
     } catch (error) {

@@ -71,10 +71,12 @@ export async function POST(request: NextRequest) {
       filename: `portfolio-${index + 1}-${photo.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`,
       content: Buffer.from(await photo.arrayBuffer()),
       contentType: photo.type,
+      cid: `portfolio-photo-${index + 1}@ahbraiding`,
+      contentDisposition: 'inline' as const,
     })));
 
     const fullName = `${application.firstName} ${application.lastName}`;
-    const recipient = process.env.APPLICATION_RECIPIENT_EMAIL || process.env.CONTACT_RECIPIENT_EMAIL || 'djonretglo@gmail.com';
+    const recipient = process.env.APPLICATION_RECIPIENT_EMAIL || process.env.CONTACT_RECIPIENT_EMAIL || 'adjiashairbraiding@gmail.com';
     const fromAddress = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER;
     await transporter().sendMail({
       from: { name: 'AH Braiding Careers', address: fromAddress! },
@@ -106,12 +108,21 @@ export async function POST(request: NextRequest) {
               'Photos attached': String(attachments.length),
             }).map(([label, content]) => `<tr><th style="padding:10px;border-bottom:1px solid #eadfd5;text-align:left;vertical-align:top">${escapeHtml(label)}</th><td style="padding:10px;border-bottom:1px solid #eadfd5">${escapeHtml(content)}</td></tr>`).join('')}
           </table>
+          ${attachments.length ? `
+            <div style="margin-top:24px">
+              <h2 style="font-family:Georgia,serif;font-weight:normal;font-size:22px;margin:0 0 12px">Uploaded work photos</h2>
+              ${attachments.map((attachment, index) => `
+                <div style="margin:0 0 16px">
+                  <p style="margin:0 0 6px;font-size:12px;color:#777">Photo ${index + 1}: ${escapeHtml(attachment.filename)}</p>
+                  <img src="cid:${attachment.cid}" alt="${escapeHtml(fullName)} portfolio photo ${index + 1}" style="display:block;max-width:100%;height:auto;border-radius:8px;border:1px solid #eadfd5" />
+                </div>`).join('')}
+            </div>` : '<p style="margin-top:20px;color:#777">No work photos were uploaded.</p>'}
           <p style="color:#777;font-size:12px">Reply to this email to contact the applicant.</p>
         </div>`,
       attachments,
     });
 
-    return NextResponse.json({ success: true, message: 'Application delivered.' });
+    return NextResponse.json({ success: true, message: 'Application delivered.', photosDelivered: attachments.length });
   } catch (error) {
     console.error('Failed to deliver braider application:', error);
     return NextResponse.json(
