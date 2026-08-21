@@ -72,7 +72,6 @@ const DETAIL_OPTIONS: Record<WorkflowView, { value: DetailFilter; label: string 
     NEEDS_ACTION: [
         { value: "ALL", label: "All action items" },
         { value: "READY_FOR_APPROVAL", label: "Ready for approval" },
-        { value: "AWAITING_PAYMENT", label: "Awaiting payment" },
         { value: "CAPTURE_PROCESSING", label: "Capture processing" },
         { value: "PAYMENT_ISSUE", label: "Payment or notification issue" }
     ],
@@ -123,8 +122,10 @@ const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detai
     const captureProcessing = appointment.status === "PENDING" && Boolean(appointment.approvedAt);
     const paymentIssue = ["CAPTURE_FAILED", "CANCELLATION_FAILED", "FAILED"].includes(appointment.paymentStatus || "")
         || ["UNPAID", "PROCESSING", "FAILED"].includes(appointment.noShowFee?.paymentStatus || "");
+    const actionablePending = appointment.status === "PENDING"
+        && (appointment.paymentStatus === "AUTHORIZED" || Boolean(appointment.approvedAt));
     const viewMatch = workflow === "NEEDS_ACTION"
-        ? appointment.status === "PENDING" || paymentIssue
+        ? actionablePending || paymentIssue
         : workflow === "UPCOMING"
             ? captureProcessing || (appointment.status === "APPROVED" && appointmentTime >= now)
             : ["DENIED", "CANCELLED", "COMPLETED", "NO_SHOW"].includes(appointment.status)

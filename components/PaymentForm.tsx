@@ -28,8 +28,6 @@ export default function PaymentForm({
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [billingEmail, setBillingEmail] = useState(customerEmail);
-  const [confirmedPhone, setConfirmedPhone] = useState(customerPhone);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +61,8 @@ export default function PaymentForm({
           payment_method_data: {
             billing_details: {
               name: customerName,
-              email: billingEmail.trim(),
+              email: customerEmail.trim(),
+              phone: customerPhone.trim(),
             },
           },
         },
@@ -103,30 +102,6 @@ export default function PaymentForm({
             Payment Method
           </h3>
         </div>
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm font-medium text-neutral-800">
-            Email address <span className="text-red-600" aria-hidden="true">*</span>
-            <input
-              type="email"
-              required
-              autoComplete="email"
-              value={billingEmail}
-              onChange={(event) => setBillingEmail(event.target.value)}
-              className="mt-2 w-full rounded-sm border border-neutral-300 px-3 py-3 text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-            />
-          </label>
-          <label className="block text-sm font-medium text-neutral-800">
-            Phone number <span className="text-red-600" aria-hidden="true">*</span>
-            <input
-              type="tel"
-              required
-              autoComplete="tel"
-              value={confirmedPhone}
-              onChange={(event) => setConfirmedPhone(event.target.value)}
-              className="mt-2 w-full rounded-sm border border-neutral-300 px-3 py-3 text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
-            />
-          </label>
-        </div>
         <div className="bg-white rounded-sm">
           <PaymentElement
             options={{
@@ -139,13 +114,15 @@ export default function PaymentForm({
               defaultValues: {
                 billingDetails: {
                   name: customerName,
-                  email: billingEmail,
+                  email: customerEmail,
+                  phone: customerPhone,
                 },
               },
               fields: {
                 billingDetails: {
                   name: "never",
                   email: "never",
+                  phone: "never",
                 },
               },
               wallets: {

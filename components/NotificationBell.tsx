@@ -7,7 +7,6 @@ import {
     Bell,
     Calendar,
     Check,
-    CreditCard,
     Loader2,
     MailWarning,
     X,
@@ -102,26 +101,14 @@ function noticesFromAppointments(appointments: Appointment[]): Notice[] {
             minute: "2-digit",
         });
 
-        if (appointment.status === "PENDING") {
+        if (appointment.status === "PENDING" && appointment.paymentStatus === "AUTHORIZED") {
             notices.push({
                 id: `request-${appointment.id}`,
                 title: "New appointment request",
-                description: `${person(appointment)} requested ${style(appointment)} for ${appointmentLabel}.`,
+                description: `${person(appointment)} authorized ${money(appointment.depositAmount)} for ${style(appointment)} on ${appointmentLabel}.`,
                 timestamp: created,
                 actionLabel: "Review request",
                 icon: Calendar,
-                tone: "neutral",
-            });
-        }
-
-        if (appointment.paymentStatus === "AUTHORIZED") {
-            notices.push({
-                id: `authorized-${appointment.id}`,
-                title: "Payment authorized",
-                description: `${person(appointment)} authorized ${money(appointment.depositAmount)} for ${style(appointment)}.`,
-                timestamp: updated,
-                actionLabel: "Review and approve",
-                icon: CreditCard,
                 tone: "success",
             });
         }
