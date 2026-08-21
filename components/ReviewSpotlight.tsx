@@ -80,6 +80,7 @@ export default function ReviewSpotlight() {
         alt="Interior of the AH Braiding salon"
         fill
         sizes="100vw"
+        unoptimized
         className="-z-20 object-cover"
       />
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(47,25,16,.42)_0%,rgba(30,15,10,.68)_72%,rgba(20,10,7,.8)_100%)]" />
