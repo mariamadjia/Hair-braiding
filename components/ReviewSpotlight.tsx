@@ -51,6 +51,10 @@ export default function ReviewSpotlight() {
       <div className="absolute inset-0 -z-20 bg-[radial-gradient(ellipse_at_center,#f4ecdf_0%,#e9dece_48%,#d5c4ae_100%)]" />
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_48%,rgba(255,252,245,.88)_0%,rgba(255,250,240,.38)_34%,transparent_68%),linear-gradient(108deg,rgba(111,83,61,.13),transparent_25%,transparent_72%,rgba(101,75,56,.12))]" />
       <div className="absolute inset-0 -z-10 opacity-[0.22] [background-image:repeating-linear-gradient(0deg,rgba(104,79,58,.18)_0,rgba(104,79,58,.18)_1px,transparent_1px,transparent_4px),repeating-linear-gradient(90deg,rgba(104,79,58,.14)_0,rgba(104,79,58,.14)_1px,transparent_1px,transparent_4px)]" />
+      <div className="absolute -left-[11%] -top-[24%] -z-10 h-[72%] w-[34%] rotate-[-14deg] rounded-[50%] bg-[#705746]/28 blur-[58px] sm:blur-[78px]" />
+      <div className="absolute -bottom-[30%] -right-[8%] -z-10 h-[72%] w-[38%] rotate-[24deg] rounded-[48%] bg-[#7d624e]/24 blur-[62px] sm:blur-[86px]" />
+      <div className="absolute left-[8%] top-[4%] -z-10 h-[35%] w-[20%] rotate-[-18deg] rounded-full bg-[#8c715d]/12 blur-[34px]" />
+      <div className="absolute bottom-[5%] right-[12%] -z-10 h-[32%] w-[24%] rotate-[18deg] rounded-full bg-[#8f735c]/10 blur-[38px]" />
 
       <div className="relative w-full max-w-[44rem]">
         <AnimatePresence mode="wait" initial={false}>
