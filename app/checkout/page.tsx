@@ -291,7 +291,7 @@ function CheckoutContent() {
                                         <div className="mt-auto space-y-3">
                                             {serviceName && (
                                                 <div className="flex items-center justify-between border-b border-[#EEE3DA] pb-2">
-                                                    <span className="text-xs tracking-wide text-[#76675E]">Size</span>
+                                                    <span className="text-xs tracking-wide text-[#76675E]">{authoritativeService.pricingMode === "FIXED" && !authoritativeService.lengthOptions?.length ? "Service" : "Size"}</span>
                                                     <span className="text-sm font-medium text-[#2C1810]">{serviceName}</span>
                                                 </div>
                                             )}
