@@ -97,7 +97,7 @@ export default function ReviewSpotlight() {
             transition={{ duration: reduceMotion ? 0 : 0.75, ease: "easeInOut" }}
           >
             <figcaption className="mb-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 font-[family-name:var(--font-montserrat)] text-[9px] font-medium uppercase tracking-[0.24em] text-[#fff8ee] sm:text-[10px]">
-              <span aria-label="5 out of 5 stars" className="tracking-[0.16em] text-[#d6a45c]">
+              <span aria-label="5 out of 5 stars" className="tracking-[0.16em] text-white">
                 ★★★★★
               </span>
               <a
