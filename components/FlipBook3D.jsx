@@ -863,6 +863,13 @@ export default function FlipBook3D({
   useEffect(() => clearFlipTimers, [clearFlipTimers]);
 
   useEffect(() => {
+    if (!editMode) return;
+    clearFlipTimers();
+    setShowFlipPage(false);
+    setIsFlipping(false);
+  }, [clearFlipTimers, editMode]);
+
+  useEffect(() => {
     const query = window.matchMedia('(max-width: 640px)');
     const updateViewport = () => setIsCompactBookViewport(query.matches);
     updateViewport();
@@ -960,6 +967,16 @@ export default function FlipBook3D({
     if (isFlipping) return;
     if (next < 0 || next >= total || next === current) return;
 
+    // The editor uses the navigation controls to select a page, but should not
+    // run the decorative page-turn animation while content is being edited.
+    if (editMode) {
+      clearFlipTimers();
+      setCurrent(next);
+      setShowFlipPage(false);
+      setIsFlipping(false);
+      return;
+    }
+
     prevCurrentRef.current = current;
     nextCurrentRef.current = next;
     if (activeSpreads[next]?.image) {
@@ -990,7 +1007,7 @@ export default function FlipBook3D({
       flipTimersRef.current = [];
     }, 700);
     flipTimersRef.current = [changeTimer, finishTimer];
-  }, [activeSpreads, clearFlipTimers, current, isFlipping, reduceMotion, total]);
+  }, [activeSpreads, clearFlipTimers, current, editMode, isFlipping, reduceMotion, total]);
 
   const changePage = useCallback((dir) => {
     goToPage(current + dir);
@@ -1006,6 +1023,7 @@ export default function FlipBook3D({
   }, [activeSpreads, current]);
 
   const handleBookKeyDown = (event) => {
+    if (editMode) return;
     if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select')) return;
     if (event.key === 'ArrowRight') {
       event.preventDefault();
@@ -1018,12 +1036,14 @@ export default function FlipBook3D({
   };
 
   const onTouchStart = (e) => { 
+    if (editMode) return;
     if (e.target instanceof Element && e.target.closest('[data-no-page-flip], input, textarea, select, button, a')) return;
     touchX.current = e.touches[0].clientX; 
     touchY.current = e.touches[0].clientY; 
   };
   
   const onTouchEnd = (e) => {
+    if (editMode) return;
     if (e.target instanceof Element && e.target.closest('[data-no-page-flip], input, textarea, select, button, a')) return;
     const dx = touchX.current - e.changedTouches[0].clientX;
     const dy = Math.abs(touchY.current - e.changedTouches[0].clientY);
@@ -1379,6 +1399,7 @@ export default function FlipBook3D({
               {/* Left page */}
               <div
                 onClick={(e) => {
+                  if (editMode) return;
                   if (e.target instanceof Element && e.target.closest('[data-no-page-flip], a, button')) return;
                   changePage(-1);
                 }}
@@ -1390,12 +1411,13 @@ export default function FlipBook3D({
                   overflow: 'hidden',
                   borderRight: '1px solid #000',
                   boxShadow: 'inset -20px 0 40px rgba(0,0,0,0.5)',
-                  cursor: current === 0 ? 'default' : 'pointer'
+                  cursor: editMode || current === 0 ? 'default' : 'pointer'
                 }}
-                role={current === 0 ? undefined : 'button'}
-                tabIndex={current === 0 ? -1 : 0}
-                aria-label={current === 0 ? undefined : 'Previous page'}
+                role={editMode || current === 0 ? undefined : 'button'}
+                tabIndex={editMode || current === 0 ? -1 : 0}
+                aria-label={editMode || current === 0 ? undefined : 'Previous page'}
                 onKeyDown={(event) => {
+                  if (editMode) return;
                   if (event.target instanceof Element && event.target.closest('[data-no-page-flip], input, textarea, select, button, a')) return;
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
@@ -1797,6 +1819,7 @@ export default function FlipBook3D({
             aria-hidden="true"
             onClick={(e) => {
               e.stopPropagation();
+              if (editMode) return;
               changePage(1);
             }}
             style={{
@@ -1809,15 +1832,15 @@ export default function FlipBook3D({
               border: 'none',
               borderRadius: '0 10px 10px 0',
               background: 'linear-gradient(to left, rgba(45,31,26,0.08), transparent)',
-              color: current === total - 1 ? 'transparent' : 'rgba(45,31,26,0.32)',
-              cursor: current === total - 1 ? 'default' : 'pointer',
+              color: editMode || current === total - 1 ? 'transparent' : 'rgba(45,31,26,0.32)',
+              cursor: editMode || current === total - 1 ? 'default' : 'pointer',
               fontSize: 'clamp(1.2rem, 2.5vw, 1.8rem)',
               lineHeight: 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
               padding: '0 8px 0 0',
-              pointerEvents: current === total - 1 || isFlipping ? 'none' : 'auto',
+              pointerEvents: editMode || current === total - 1 || isFlipping ? 'none' : 'auto',
             }}
           >
             ›
