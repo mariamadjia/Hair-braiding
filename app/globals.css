@@ -860,3 +860,27 @@
     padding: 11px 12px !important;
   }
 }
+@keyframes chatAssistantPeek {
+  0% {
+    opacity: 0;
+    transform: translate3d(34px, 42px, 0) scale(0.82);
+  }
+  65% {
+    opacity: 1;
+    transform: translate3d(-3px, -3px, 0) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.chat-assistant-peek {
+  animation: chatAssistantPeek 550ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-assistant-peek {
+    animation: none;
+  }
+}

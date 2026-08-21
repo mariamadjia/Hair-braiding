@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { X, Send, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
+import { X, Send, Image as ImageIcon, MessageCircle } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config/api';
 import { IMAGE_UPLOAD_ACCEPT, normalizeImageForUpload } from '@/lib/utils/imageUpload';
 
@@ -22,24 +23,26 @@ export default function Chatbot() {
   const [error, setError] = useState('');
   const [isMounted, setIsMounted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasPlayedGreeting = useRef(false);
 
   // Ensure component only renders on client
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Give visitors time to read before showing the optional desktop prompt.
+  // Let the assistant peek in once, then quietly return to the idle launcher.
   useEffect(() => {
-    if (!isMounted) return;
-    
-    const timer = setTimeout(() => {
-      if (!isOpen) {
-        setShowPrompt(true);
-      }
-    }, 8000);
+    if (!isMounted || isOpen || pathname === '/checkout' || hasPlayedGreeting.current) return;
 
-    return () => clearTimeout(timer);
-  }, [isOpen, isMounted]);
+    hasPlayedGreeting.current = true;
+    const appearTimer = window.setTimeout(() => setShowPrompt(true), 4500);
+    const disappearTimer = window.setTimeout(() => setShowPrompt(false), 11000);
+
+    return () => {
+      window.clearTimeout(appearTimer);
+      window.clearTimeout(disappearTimer);
+    };
+  }, [isOpen, isMounted, pathname]);
 
   // Don't render on admin pages (after all hooks)
   if (pathname?.startsWith('/admin')) {
@@ -130,37 +133,28 @@ export default function Chatbot() {
   if (!isOpen) {
     return (
       <>
-        {/* Prompt Bubble */}
+        {/* Assistant peeks in, greets the visitor, then fades back to idle. */}
         {showPrompt && pathname !== '/checkout' && (
-          <div className="fixed bottom-6 right-24 z-50 hidden animate-bounce motion-reduce:animate-none sm:block">
-            <div className="bg-white dark:bg-neutral-800 rounded-2xl rounded-br-sm shadow-2xl p-4 max-w-sm border border-neutral-200 dark:border-neutral-700 relative">
+          <div className="chat-assistant-peek fixed bottom-20 right-5 z-50 hidden w-[300px] origin-bottom-right sm:block motion-reduce:animate-none">
+            <div className="relative mb-1 ml-auto w-[230px] rounded-2xl rounded-br-md border border-[#eadfd4] bg-[#fffaf5] px-5 py-3.5 shadow-[0_12px_35px_rgba(44,24,16,.16)]">
               <button
                 onClick={() => setShowPrompt(false)}
-                className="absolute -top-2 -right-2 bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 rounded-full p-1 transition-colors"
+                className="absolute -right-2 -top-2 rounded-full border border-[#eadfd4] bg-white p-1 text-[#6b5143] shadow-sm transition-colors hover:bg-[#f5ece5]"
                 aria-label="Close prompt"
               >
-                <X className="h-3 w-3 text-neutral-600 dark:text-neutral-300" />
+                <X className="h-3 w-3" />
               </button>
-              <div className="flex items-start gap-3">
-                {/* Assistant Character */}
-                <div className="w-16 h-16 flex-shrink-0">
-                  <div
-                    className="w-16 h-16 bg-gradient-to-br from-[#2C1810] to-[#4a3828] rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-md"
-                    aria-hidden="true"
-                  >
-                    AH
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-neutral-900 dark:text-white mb-1">
-                    Have a question? 👋
-                  </p>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                    We're here to help! Click to chat with us.
-                  </p>
-                </div>
-              </div>
+              <p className="text-sm font-semibold text-[#2c1810]">Have a question?</p>
+              <p className="mt-0.5 text-sm text-[#725c50]">We&apos;re here to help.</p>
+              <span className="absolute -bottom-2 right-9 h-4 w-4 rotate-45 border-b border-r border-[#eadfd4] bg-[#fffaf5]" />
             </div>
+            <Image
+              src="/chatbot-robot.png"
+              alt="AH Braiding virtual assistant waving"
+              width={180}
+              height={180}
+              className="ml-auto mr-5 h-auto w-[148px] drop-shadow-[0_14px_18px_rgba(44,24,16,.22)]"
+            />
           </div>
         )}
         
@@ -171,10 +165,10 @@ export default function Chatbot() {
             setShowWelcome(true);
             setShowPrompt(false);
           }}
-          className="fixed bottom-6 right-6 z-50 hidden bg-gradient-to-br from-[#2C1810] to-[#4a3828] p-4 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:shadow-2xl sm:block rounded-full"
+          className="fixed bottom-6 right-6 z-50 hidden rounded-full border border-white/20 bg-gradient-to-br from-[#2C1810] to-[#4a3828] p-4 text-white shadow-[0_10px_28px_rgba(44,24,16,.3)] transition-all duration-200 hover:scale-110 hover:shadow-2xl sm:block"
           aria-label="Open chat"
         >
-          <Send className="h-6 w-6" />
+          <MessageCircle className="h-6 w-6" strokeWidth={1.8} />
         </button>
       </>
     );
@@ -187,8 +181,14 @@ export default function Chatbot() {
         <div className="bg-gradient-to-br from-[#2C1810] via-[#3d2416] to-[#4a3828] text-white p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-[#2C1810] font-bold text-xl shadow-md">
-                AH
+              <div className="relative h-14 w-14 overflow-hidden rounded-full bg-[#f8efe7] shadow-md ring-2 ring-white/30">
+                <Image
+                  src="/chatbot-robot.png"
+                  alt=""
+                  fill
+                  sizes="56px"
+                  className="scale-[1.45] object-contain object-top"
+                />
               </div>
               <div>
                 <p className="text-xs text-white/80 uppercase tracking-wider">Chat with</p>
