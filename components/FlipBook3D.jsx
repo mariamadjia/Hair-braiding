@@ -388,6 +388,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
   const care = s.preserveTips && s.bestFor ? s : (styleCare[s.name] || {});
   const preserveTips = care.preserveTips || [s.wearTip].filter(Boolean);
   const bestFor = care.bestFor || (s.quote ? [s.quote] : []);
+  const visibleBestFor = mobile && !editMode ? bestFor.slice(0, 2) : bestFor;
   const bestForContent = bestFor.length > 0 && (
     <div style={{
       paddingTop: 'clamp(1px, 0.5vw, 4px)'
@@ -407,7 +408,7 @@ function RightPageContent({ s, mobile = false, editMode = false, onChange = null
         flexWrap: 'wrap',
         gap: 'clamp(5px, 1.2vw, 8px)'
       }}>
-        {bestFor.map((tag, index) => (
+        {visibleBestFor.map((tag, index) => (
           <span
             key={`best-for-${index}`}
             draggable={editMode}
