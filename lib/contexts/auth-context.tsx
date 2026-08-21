@@ -26,12 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
-    const currentUser = authApi.getCurrentUser();
-    if (currentUser) {
-      setAdmin(currentUser);
-    }
-    setIsLoading(false);
+    authApi.session()
+      .then(session => setAdmin(session.admin))
+      .catch(() => setAdmin(null))
+      .finally(() => setIsLoading(false));
   }, []);
 
   const login = async (data: LoginRequest) => {

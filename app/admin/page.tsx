@@ -31,6 +31,7 @@ type Selection =
 
 export default function AdminPage() {
     const [token, setToken] = useState("");
+    const [adminUser, setAdminUser] = useState<{ firstName: string; lastName: string; email: string } | null>(null);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
@@ -321,6 +322,7 @@ export default function AdminPage() {
         
         try {
             const response = await authApi.login({ email, password, rememberDevice: rememberMe });
+            setAdminUser(response.admin);
             setToken("cookie-session");
             setIsAuthChecking(false);
             // Only load category summaries initially, full data loaded on-demand
@@ -336,7 +338,8 @@ export default function AdminPage() {
         setIsLoading(true);
         setError("");
         try {
-            await authApi.loginWithGoogle(credential, rememberMe);
+            const response = await authApi.loginWithGoogle(credential, rememberMe);
+            setAdminUser(response.admin);
             setToken("cookie-session");
             setIsAuthChecking(false);
             void loadCategorySummaries("cookie-session");
@@ -350,12 +353,14 @@ export default function AdminPage() {
     useEffect(() => {
         const checkAuthAndLoad = async () => {
             try {
-                await authApi.session();
+                const session = await authApi.session();
+                setAdminUser(session.admin);
                 setIsAuthChecking(true);
                 setToken("cookie-session");
                 await Promise.all([pingBackend(), loadCategorySummaries("cookie-session")]);
             } catch {
                 setToken("");
+                setAdminUser(null);
                 pingBackend();
             } finally {
                 setIsAuthChecking(false);
@@ -530,6 +535,7 @@ export default function AdminPage() {
     const handleLogout = async () => {
         await authApi.logout();
         setToken("");
+        setAdminUser(null);
     };
 
     const handleSectionChange = (section: string) => {
@@ -575,7 +581,6 @@ export default function AdminPage() {
         ? (previewCat.subcategories ?? []).find((s) => s.slug === selection.subSlug)
         : null;
 
-    const adminUser = authApi.getCurrentUser();
     const adminName = adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : "Admin";
 
     return (

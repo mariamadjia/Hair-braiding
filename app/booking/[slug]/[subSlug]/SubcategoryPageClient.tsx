@@ -211,7 +211,8 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
             subcategorySlug: subcategory.slug,
             serviceId: selectedItem.id?.toString() ?? "",
             style: subcategory.name,
-            size: selectedItem.name,
+            // A fixed-price item is the service itself, not a size option.
+            size: selectedItem.pricingMode === "FIXED" ? "" : selectedItem.name,
             length: option?.name ?? "",
             lengthOptionId: option?.id?.toString() ?? "",
             price: option?.price ?? selectedItem.price ?? "",

@@ -113,28 +113,4 @@ export const authApi = {
     });
   },
 
-  // Get current user from localStorage or sessionStorage
-  getCurrentUser: () => {
-    if (typeof window !== "undefined") {
-      const userStr =
-        localStorage.getItem("admin_user") ||
-        sessionStorage.getItem("admin_user");
-
-      return userStr ? JSON.parse(userStr) : null;
-    }
-
-    return null;
-  },
-
-  // Check if user is authenticated
-  isAuthenticated: () => {
-    if (typeof window !== "undefined") {
-      return !!(
-        localStorage.getItem("auth_token") ||
-        sessionStorage.getItem("auth_token")
-      );
-    }
-
-    return false;
-  },
 };
