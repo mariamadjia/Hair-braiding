@@ -148,17 +148,13 @@ export default function Chatbot() {
               <p className="mt-0.5 text-sm text-[#725c50]">We&apos;re here to help.</p>
               <span className="absolute -bottom-2 right-8 h-4 w-4 rotate-45 border-b border-r border-[#eadfd4] bg-[#fffaf5]" />
             </div>
-            <div className="absolute bottom-0 right-0 h-[215px] w-[215px] overflow-hidden rounded-full border-2 border-[#e8d9ca] bg-[#f7eee4] shadow-[inset_0_0_42px_rgba(255,255,255,.95),0_14px_35px_rgba(44,24,16,.13)]">
+            <div className="absolute bottom-0 right-0 h-[215px] w-[215px]">
               <Image
                 src="/chatbot-robot-peek.png"
                 alt="AH Braiding virtual assistant peeking in"
                 width={170}
                 height={170}
                 className="absolute bottom-1 right-1 z-10 h-auto w-[172px] drop-shadow-[0_12px_16px_rgba(44,24,16,.2)]"
-              />
-              <div
-                aria-hidden="true"
-                className="absolute -bottom-9 -left-4 z-20 h-[74px] w-[245px] rounded-[50%] border-t border-[#e8d9ca] bg-[#f7eee4] shadow-[0_-5px_14px_rgba(255,255,255,.62)]"
               />
             </div>
           </div>
