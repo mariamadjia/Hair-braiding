@@ -9,7 +9,6 @@ const reviews = [
     quote:
       "First time here and I was impressed! Professional and kind from start to finish. They had me in and out in just 3 hours!! I’ve never had knotless braids done that quickly. My hair turned out great, the price was reasonable, and the hair was included. I’ll definitely be back and will update my review after future visits!",
     name: "Ruta SD",
-    service: "Knotless Braids",
     source: "Google Review",
     sourceUrl: "https://www.google.com/maps/contrib/104076181694074372514/reviews?hl=en",
   },
@@ -17,7 +16,6 @@ const reviews = [
     quote:
       "Excellent service... very easy to book and very helpful with the style I wanted. This was my second visit. The first time I was able to pull my braids up the same day-- no pain, not too tight. This time I got crochet boho braids. I’m very pleased with both and will be back",
     name: "Kim Ervin",
-    service: "Crochet Boho Braids",
     source: "Google Review",
     sourceUrl: "https://www.google.com/maps/contrib/115070349485538825094/reviews?hl=en",
   },
@@ -25,7 +23,6 @@ const reviews = [
     quote:
       "I have been going to AH braiding for the last 2 years and can honestly say they are the best! Miriam and her team are very professional and create any braided style to perfection. As per pictures bellow, I have gone so long as to keep my braids in for (3 months) and they still looked great!",
     name: "Zelnita Williams",
-    service: "Braided Styles",
     source: "Google Review",
     sourceUrl: "https://www.google.com/maps/contrib/106334529932890913163/reviews?hl=en-US",
   },
@@ -33,7 +30,6 @@ const reviews = [
     quote:
       "Had a wonderful experience getting my hair braided today. Got knotless braids. I am tender headed but even with two people braiding they never pulled or braided too tight. The. style was exactly what I wanted. I am so pleased.",
     name: "Jowanna Tillman",
-    service: "Knotless Braids",
     source: "Google Review",
     sourceUrl: "https://www.google.com/maps/contrib/115077777759240822689/reviews?hl=en-US",
   },
@@ -41,7 +37,6 @@ const reviews = [
     quote:
       "Miriam and her staff are the sweetest, most talented braiders. From beginning to end, the process was smooth, the salon was clean, and service was prompt and professional. I’m very happy and will definitely be back!!! Thank you!!!",
     name: "Jess Conrad",
-    service: "Braiding Service",
     source: "Google Review",
     sourceUrl: "https://www.google.com/maps/contrib/106924192576058337013/reviews?hl=en-US",
   },
@@ -116,7 +111,7 @@ export default function ReviewSpotlight() {
             </blockquote>
 
             <p className="mt-7 font-[family-name:var(--font-montserrat)] text-[9px] font-medium uppercase tracking-[0.2em] text-white/80 sm:text-[10px]">
-              {review.name} <span aria-hidden="true">·</span> {review.service}
+              {review.name}
             </p>
           </motion.figure>
         </AnimatePresence>
