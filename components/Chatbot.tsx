@@ -136,7 +136,7 @@ export default function Chatbot() {
         {/* Assistant peeks in, greets the visitor, then fades back to idle. */}
         {showPrompt && pathname !== '/checkout' && (
           <div className="chat-assistant-peek fixed bottom-7 right-5 z-40 hidden h-[310px] w-[235px] origin-bottom-right sm:block motion-reduce:animate-none">
-            <div className="relative z-20 ml-auto w-[200px] rounded-2xl rounded-br-md border border-[#eadfd4] bg-[#fffaf5] px-4 py-3 shadow-[0_12px_35px_rgba(44,24,16,.16)]">
+            <div className="absolute bottom-[164px] right-0 z-20 w-[200px] rounded-2xl rounded-br-md border border-[#eadfd4] bg-[#fffaf5] px-4 py-3 shadow-[0_12px_35px_rgba(44,24,16,.16)]">
               <button
                 onClick={() => setShowPrompt(false)}
                 className="absolute -right-2 -top-2 rounded-full border border-[#eadfd4] bg-white p-1 text-[#6b5143] shadow-sm transition-colors hover:bg-[#f5ece5]"
@@ -146,7 +146,7 @@ export default function Chatbot() {
               </button>
               <p className="text-sm font-semibold text-[#2c1810]">Have a question?</p>
               <p className="mt-0.5 text-sm text-[#725c50]">We&apos;re here to help.</p>
-              <span className="absolute -bottom-2 right-8 h-4 w-4 rotate-45 border-b border-r border-[#eadfd4] bg-[#fffaf5]" />
+              <span className="absolute -bottom-2 right-[70px] h-4 w-4 rotate-45 border-b border-r border-[#eadfd4] bg-[#fffaf5]" />
             </div>
             <div className="absolute bottom-0 right-0 h-[215px] w-[215px]">
               <Image
