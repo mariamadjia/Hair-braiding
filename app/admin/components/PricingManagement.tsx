@@ -757,6 +757,7 @@ export function PricingManagement({ token }: { token: string }) {
                             const hasBaseOnly = subRows.some(row => !row.item.lengthOptions?.length);
                             const columns = hasBaseOnly ? ["Base price", ...lengthNames] : lengthNames;
                             const hasKnotless = subRows.some(row => row.item.foundationChoicesEnabled);
+                            const usesServiceLabel = subRows.every(row => row.item.pricingMode === "FIXED" && !row.item.lengthOptions?.length);
                             const subPrices = subRows.flatMap(row => row.item.lengthOptions?.length ? row.item.lengthOptions.map(option => Number(option.price)) : [Number(row.item.price)]).filter(Number.isFinite);
                             const subPriceRange = subPrices.length ? `${money(String(Math.min(...subPrices)))}–${money(String(Math.max(...subPrices)))}` : "—";
 
@@ -771,7 +772,7 @@ export function PricingManagement({ token }: { token: string }) {
                                       <span className="font-serif text-2xl text-[#2d180f]">{subcategory.name}</span>
                                       {subClosed ? <ChevronDown className="h-4 w-4 text-neutral-400" /> : <ChevronUp className="h-4 w-4 text-neutral-400" />}
                                     </span>
-                                    <span className="mt-1 block text-xs text-neutral-500">{subRows.length} size{subRows.length === 1 ? "" : "s"} · {columns.length} length{columns.length === 1 ? "" : "s"} · {subPriceRange}</span>
+                                    <span className="mt-1 block text-xs text-neutral-500">{subRows.length} {usesServiceLabel ? `service${subRows.length === 1 ? "" : "s"}` : `size${subRows.length === 1 ? "" : "s"}`} · {columns.length} price option{columns.length === 1 ? "" : "s"} · {subPriceRange}</span>
                                     {hasBaseOnly && <span className="mt-1 block text-[11px] text-[#8c6957]">Base price applies only to rows that do not offer length choices.</span>}
                                   </button>
 
@@ -786,7 +787,7 @@ export function PricingManagement({ token }: { token: string }) {
                                       <table className="w-full min-w-max border-separate border-spacing-0 text-sm">
                                         <thead className="bg-[#fffdfa]">
                                           <tr>
-                                            <th className="sticky left-0 z-30 min-w-[150px] border-b border-[#eee5dc] bg-[#fffdfa] px-5 py-3.5 text-left text-xs font-medium text-neutral-600">Size</th>
+                                            <th className="sticky left-0 z-30 min-w-[150px] border-b border-[#eee5dc] bg-[#fffdfa] px-5 py-3.5 text-left text-xs font-medium text-neutral-600">{usesServiceLabel ? "Service" : "Size"}</th>
                                             {columns.map(column => (
                                               <th key={column} className="min-w-[112px] border-b border-[#eee5dc] px-3 py-3.5 text-center text-xs font-medium text-neutral-600">{column}</th>
                                             ))}
