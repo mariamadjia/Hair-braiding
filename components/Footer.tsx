@@ -14,13 +14,14 @@ export default function Footer({ videoSrc = null }: FooterProps = {}) {
   return (
     <footer className="bg-[#2C1810] text-white w-full">
       
-      <div className="w-full px-6 pb-14 pt-16 lg:px-24 lg:pb-10 lg:pt-14">
-        <div className="mx-auto grid w-full max-w-sm grid-cols-1 items-center gap-y-9 text-center lg:max-w-none lg:grid-cols-[1fr_450px] lg:grid-rows-[1fr_auto] lg:gap-x-12 lg:gap-y-6 lg:text-left">
-          <h2 className="text-2xl font-semibold tracking-[0.25em] lg:self-end lg:text-3xl">
+      {/* Mobile */}
+      <div className="w-full px-6 pb-14 pt-16 lg:hidden">
+        <div className="mx-auto grid w-full max-w-sm grid-cols-1 items-center gap-y-9 text-center">
+          <h2 className="text-2xl font-semibold tracking-[0.25em]">
             AH BRAIDING
           </h2>
 
-          <div className="aspect-[4/5] w-full overflow-hidden bg-[#21110b] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:aspect-[6/5] lg:w-[450px]">
+          <div className="aspect-[4/5] w-full overflow-hidden bg-[#21110b]">
             {videoSrc && (
               <LazyVideo
                 className="h-full w-full object-cover"
@@ -33,10 +34,39 @@ export default function Footer({ videoSrc = null }: FooterProps = {}) {
             )}
           </div>
 
-          <div className="flex w-full flex-wrap justify-center gap-x-6 gap-y-3 text-[11px] font-medium uppercase tracking-[0.18em] sm:text-[13px] lg:justify-start lg:self-start">
+          <div className="flex w-full flex-wrap justify-center gap-x-6 gap-y-3 text-[11px] font-medium uppercase tracking-[0.18em] sm:text-[13px]">
             <a href="https://www.instagram.com/ah_braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">INSTAGRAM</a>
             <a href="https://www.tiktok.com/@ah.braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">TIKTOK</a>
             <a href="https://www.facebook.com/adjias.braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">FACEBOOK</a>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop */}
+      <div className="hidden w-full px-24 pb-10 pt-14 lg:block">
+        <div className="flex items-center justify-between gap-12">
+          <div className="text-left">
+            <h2 className="mb-6 text-3xl font-semibold tracking-[0.25em]">
+              AH BRAIDING
+            </h2>
+            <div className="flex flex-wrap justify-start gap-6 text-[13px] font-medium uppercase tracking-[0.18em]">
+              <a href="https://www.instagram.com/ah_braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">INSTAGRAM</a>
+              <a href="https://www.tiktok.com/@ah.braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">TIKTOK</a>
+              <a href="https://www.facebook.com/adjias.braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">FACEBOOK</a>
+            </div>
+          </div>
+
+          <div className="aspect-[6/5] w-[450px] max-w-none overflow-hidden bg-[#21110b]">
+            {videoSrc && (
+              <LazyVideo
+                className="h-full w-full object-cover"
+                style={{ objectPosition: 'center 30%' }}
+                autoPlay={!reduceMotion}
+                poster={FOOTER_VIDEO_POSTER}
+              >
+                <source src={videoSrc} type="video/mp4" />
+              </LazyVideo>
+            )}
           </div>
         </div>
       </div>
