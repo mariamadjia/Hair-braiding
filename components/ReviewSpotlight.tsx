@@ -76,8 +76,8 @@ export default function ReviewSpotlight() {
       onBlurCapture={() => setIsPaused(false)}
     >
       <Image
-        src="/review-salon-background.jpg"
-        alt="Interior of the AH Braiding salon"
+        src="/services-background.png"
+        alt="Braiding services background"
         fill
         sizes="100vw"
         unoptimized
