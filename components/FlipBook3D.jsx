@@ -1854,9 +1854,9 @@ export default function FlipBook3D({
                 right: '10%',
                 bottom: isCompactBookViewport ? 14 : 28,
                 zIndex: 1000,
-                background: 'linear-gradient(135deg, #ad5d32, #c77440)',
+                background: 'linear-gradient(135deg, #24130e, #3a2118)',
                 color: '#fffaf3',
-                border: '1px solid #9d512c',
+                border: '1px solid #1b0e0a',
                 borderRadius: 3,
                 padding: isCompactBookViewport ? '8px 10px' : 'clamp(9px, 2vw, 11px) clamp(14px, 3vw, 18px)',
                 fontSize: isCompactBookViewport ? '0.46rem' : 'clamp(0.58rem, 1.3vw, 0.66rem)',
@@ -1872,13 +1872,13 @@ export default function FlipBook3D({
                 pointerEvents: 'auto',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#8f4729';
-                e.currentTarget.style.borderColor = '#8f4729';
+                e.currentTarget.style.background = '#4a2b20';
+                e.currentTarget.style.borderColor = '#4a2b20';
                 e.currentTarget.style.transform = 'translateY(-1px)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #ad5d32, #c77440)';
-                e.currentTarget.style.borderColor = '#9d512c';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #24130e, #3a2118)';
+                e.currentTarget.style.borderColor = '#1b0e0a';
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
