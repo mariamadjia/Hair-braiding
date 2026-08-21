@@ -110,16 +110,10 @@ export default function ContactPage() {
                 Book an appointment
               </Link>
 
-              <div className="mt-7 flex items-center justify-center gap-8 border-t border-[#D9A98B] pt-5" aria-label="Social media">
-                <a href="#" aria-label="Facebook" className="text-[#2C1810] transition-colors hover:text-[#B0633E]">f</a>
-                <a href="#" aria-label="Instagram" className="text-[#2C1810] transition-colors hover:text-[#B0633E]">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="3" y="3" width="18" height="18" rx="5" strokeWidth="1.7" />
-                    <circle cx="12" cy="12" r="4" strokeWidth="1.7" />
-                    <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-                  </svg>
-                </a>
-                <a href="#" aria-label="X" className="text-[#2C1810] transition-colors hover:text-[#B0633E]">𝕏</a>
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 border-t border-[#D9A98B] pt-5 text-[10px] font-medium uppercase tracking-[0.18em]" aria-label="Social media">
+                <a href="https://www.instagram.com/ah_braiding" target="_blank" rel="noopener noreferrer" className="text-[#2C1810] transition-colors hover:text-[#B0633E]">Instagram</a>
+                <a href="https://www.tiktok.com/@ah.braiding" target="_blank" rel="noopener noreferrer" className="text-[#2C1810] transition-colors hover:text-[#B0633E]">TikTok</a>
+                <a href="https://www.facebook.com/adjias.braiding" target="_blank" rel="noopener noreferrer" className="text-[#2C1810] transition-colors hover:text-[#B0633E]">Facebook</a>
               </div>
             </div>
           </div>
