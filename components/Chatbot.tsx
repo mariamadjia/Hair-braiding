@@ -178,7 +178,7 @@ export default function Chatbot() {
   }
 
   return (
-    <div key={isMounted ? 'mounted' : 'unmounted'} className="fixed bottom-3 left-3 right-3 z-50 w-auto sm:bottom-6 sm:left-auto sm:right-6 sm:w-[520px] sm:max-w-[calc(100vw-3rem)]">
+    <div key={isMounted ? 'mounted' : 'unmounted'} className="fixed bottom-3 left-3 right-3 z-50 w-auto sm:bottom-6 sm:left-auto sm:right-6 sm:w-[480px] sm:max-w-[calc(100vw-3rem)]">
       <div className="overflow-hidden rounded-[28px] border border-[#d7b477] bg-[#fffdfb] shadow-[0_24px_70px_rgba(44,24,16,.28)]">
         {/* Header */}
         <div className="relative bg-[radial-gradient(circle_at_75%_0%,#743814_0%,#482414_38%,#2c160e_100%)] px-6 pb-11 pt-6 text-white">
