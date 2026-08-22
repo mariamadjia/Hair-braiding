@@ -121,7 +121,8 @@ export default function Chatbot() {
           setIsOpen(false);
         }, 2000);
       } else {
-        setError('Failed to send message. Please try again.');
+        const responseBody = await res.json().catch(() => null);
+        setError(responseBody?.error || 'Failed to send message. Please try again.');
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
@@ -135,7 +136,7 @@ export default function Chatbot() {
       <>
         {/* Assistant peeks in, greets the visitor, then fades back to idle. */}
         {showPrompt && pathname !== '/checkout' && (
-          <div className="chat-assistant-peek fixed bottom-7 right-5 z-40 hidden h-[310px] w-[235px] origin-bottom-right sm:block motion-reduce:animate-none">
+          <div className="chat-assistant-peek fixed bottom-7 right-3 z-40 h-[310px] w-[235px] origin-bottom-right motion-reduce:animate-none sm:right-5">
             <div className="absolute bottom-[164px] right-0 z-20 w-[200px] rounded-2xl rounded-br-md border border-[#eadfd4] bg-[#fffaf5] px-4 py-3 shadow-[0_12px_35px_rgba(44,24,16,.16)]">
               <button
                 onClick={() => setShowPrompt(false)}
@@ -167,7 +168,7 @@ export default function Chatbot() {
             setShowWelcome(true);
             setShowPrompt(false);
           }}
-          className={`fixed bottom-6 z-50 hidden rounded-full border border-white/20 bg-gradient-to-br from-[#2C1810] to-[#4a3828] p-4 text-white shadow-[0_10px_28px_rgba(44,24,16,.3)] transition-all duration-500 hover:scale-110 hover:shadow-2xl sm:block ${showPrompt ? 'right-[158px]' : 'right-6'}`}
+          className={`fixed bottom-6 z-50 rounded-full border border-white/20 bg-gradient-to-br from-[#2C1810] to-[#4a3828] p-4 text-white shadow-[0_10px_28px_rgba(44,24,16,.3)] transition-all duration-500 hover:scale-110 hover:shadow-2xl ${showPrompt ? 'right-[158px]' : 'right-6'}`}
           aria-label="Open chat"
         >
           <MessageCircle className="h-6 w-6" strokeWidth={1.8} />
@@ -177,7 +178,7 @@ export default function Chatbot() {
   }
 
   return (
-    <div key={isMounted ? 'mounted' : 'unmounted'} className="fixed bottom-6 right-6 z-50 hidden w-full max-w-md mx-6 sm:mx-0 sm:block">
+    <div key={isMounted ? 'mounted' : 'unmounted'} className="fixed bottom-3 left-3 right-3 z-50 w-auto max-w-md sm:bottom-6 sm:left-auto sm:right-6">
       <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl overflow-hidden border border-neutral-200 dark:border-neutral-700">
         {/* Header */}
         <div className="bg-gradient-to-br from-[#2C1810] via-[#3d2416] to-[#4a3828] text-white p-5">
@@ -260,6 +261,7 @@ export default function Chatbot() {
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full px-4 py-3 border-2 border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:border-[#2C1810] dark:focus:border-[#4a3828] dark:bg-neutral-700 dark:text-white transition-colors"
                   placeholder="Your full name"
+                  maxLength={100}
                   required
                 />
               </div>
@@ -275,6 +277,7 @@ export default function Chatbot() {
                   onChange={(e) => setCustomerEmail(e.target.value)}
                   className="w-full px-4 py-3 border-2 border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:border-[#2C1810] dark:focus:border-[#4a3828] dark:bg-neutral-700 dark:text-white transition-colors"
                   placeholder="your@email.com"
+                  maxLength={100}
                   required
                 />
               </div>
@@ -290,6 +293,7 @@ export default function Chatbot() {
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   className="w-full px-4 py-3 border-2 border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:border-[#2C1810] dark:focus:border-[#4a3828] dark:bg-neutral-700 dark:text-white transition-colors"
                   placeholder="(123) 456-7890"
+                  maxLength={20}
                   required
                 />
               </div>
@@ -304,6 +308,7 @@ export default function Chatbot() {
                   onChange={(e) => setMessage(e.target.value)}
                   className="w-full px-4 py-3 border-2 border-neutral-200 dark:border-neutral-600 rounded-lg focus:outline-none focus:border-[#2C1810] dark:focus:border-[#4a3828] dark:bg-neutral-700 dark:text-white resize-none transition-colors"
                   rows={4}
+                  maxLength={5000}
                   placeholder="Tell us about your question or the style you're looking for..."
                   required
                 />
