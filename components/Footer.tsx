@@ -36,7 +36,7 @@ export default function Footer({ videoSrc = null }: FooterProps = {}) {
 
           <div className="flex w-full flex-wrap justify-center gap-x-6 gap-y-3 text-[11px] font-medium uppercase tracking-[0.18em] sm:text-[13px]">
             <a href="https://www.instagram.com/ah_braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">INSTAGRAM</a>
-            <a href="https://www.tiktok.com/@ah.braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">TIKTOK</a>
+            <a href="https://www.tiktok.com/@sanantoniobraidsadjias" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">TIKTOK</a>
             <a href="https://www.facebook.com/adjias.braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">FACEBOOK</a>
           </div>
         </div>
@@ -51,7 +51,7 @@ export default function Footer({ videoSrc = null }: FooterProps = {}) {
             </h2>
             <div className="flex flex-wrap justify-start gap-6 text-[13px] font-medium uppercase tracking-[0.18em]">
               <a href="https://www.instagram.com/ah_braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">INSTAGRAM</a>
-              <a href="https://www.tiktok.com/@ah.braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">TIKTOK</a>
+              <a href="https://www.tiktok.com/@sanantoniobraidsadjias" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">TIKTOK</a>
               <a href="https://www.facebook.com/adjias.braiding" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">FACEBOOK</a>
             </div>
           </div>

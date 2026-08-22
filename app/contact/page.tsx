@@ -112,7 +112,7 @@ export default function ContactPage() {
 
               <div className="mt-7 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 border-t border-[#D9A98B] pt-5 text-[10px] font-medium uppercase tracking-[0.18em]" aria-label="Social media">
                 <a href="https://www.instagram.com/ah_braiding" target="_blank" rel="noopener noreferrer" className="text-[#2C1810] transition-colors hover:text-[#B0633E]">Instagram</a>
-                <a href="https://www.tiktok.com/@ah.braiding" target="_blank" rel="noopener noreferrer" className="text-[#2C1810] transition-colors hover:text-[#B0633E]">TikTok</a>
+                <a href="https://www.tiktok.com/@sanantoniobraidsadjias" target="_blank" rel="noopener noreferrer" className="text-[#2C1810] transition-colors hover:text-[#B0633E]">TikTok</a>
                 <a href="https://www.facebook.com/adjias.braiding" target="_blank" rel="noopener noreferrer" className="text-[#2C1810] transition-colors hover:text-[#B0633E]">Facebook</a>
               </div>
             </div>

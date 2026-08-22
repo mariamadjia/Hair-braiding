@@ -178,7 +178,7 @@ export default function Contact() {
                                     </svg>
                                 </a>
                                 <a
-                                    href="https://www.tiktok.com/@zboobraids_7"
+                                    href="https://www.tiktok.com/@sanantoniobraidsadjias"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex h-12 w-12 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 transition hover:border-neutral-900 hover:bg-neutral-900 hover:text-white"

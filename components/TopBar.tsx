@@ -47,7 +47,7 @@ export default function TopBar() {
                         </svg>
                     </a>
                     <a
-                        href="https://www.tiktok.com/@zboobraids_7"
+                        href="https://www.tiktok.com/@sanantoniobraidsadjias"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="transition-colors hover:text-white"
