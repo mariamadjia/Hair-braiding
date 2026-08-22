@@ -231,7 +231,7 @@ export default function Chatbot() {
             </div>
           ) : showWelcome ? (
             <div className="space-y-4 py-2">
-              <div className="flex items-center gap-4 rounded-[22px] border border-[#eee1d4] bg-[linear-gradient(135deg,#fffaf5,#f8f0e8)] p-5 shadow-[0_8px_22px_rgba(59,33,20,.08)]">
+              <div className="flex w-fit max-w-[88%] items-center gap-4 rounded-[22px] border border-[#eee1d4] bg-[linear-gradient(135deg,#fffaf5,#f8f0e8)] p-5 shadow-[0_8px_22px_rgba(59,33,20,.08)]">
                 <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full border border-[#eadbc9] bg-[#f8eee3] text-3xl" aria-hidden="true">👋</div>
                 <p className="text-base leading-relaxed text-[#2f1b12]">
                   Hi there! If you need any assistance, I'm always here.
