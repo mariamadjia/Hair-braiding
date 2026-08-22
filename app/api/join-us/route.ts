@@ -71,8 +71,7 @@ export async function POST(request: NextRequest) {
       filename: `portfolio-${index + 1}-${photo.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`,
       content: Buffer.from(await photo.arrayBuffer()),
       contentType: photo.type,
-      cid: `portfolio-photo-${index + 1}@ahbraiding`,
-      contentDisposition: 'inline' as const,
+      contentDisposition: 'attachment' as const,
     })));
 
     const fullName = `${application.firstName} ${application.lastName}`;
@@ -110,12 +109,12 @@ export async function POST(request: NextRequest) {
           </table>
           ${attachments.length ? `
             <div style="margin-top:24px">
-              <h2 style="font-family:Georgia,serif;font-weight:normal;font-size:22px;margin:0 0 12px">Uploaded work photos</h2>
+              <h2 style="font-family:Georgia,serif;font-weight:normal;font-size:22px;margin:0 0 12px">Attached work photos</h2>
+              <p style="margin:0 0 12px;color:#777">The applicant's portfolio photos are attached to this email:</p>
+              <ul style="margin:0;padding-left:20px">
               ${attachments.map((attachment, index) => `
-                <div style="margin:0 0 16px">
-                  <p style="margin:0 0 6px;font-size:12px;color:#777">Photo ${index + 1}: ${escapeHtml(attachment.filename)}</p>
-                  <img src="cid:${attachment.cid}" alt="${escapeHtml(fullName)} portfolio photo ${index + 1}" style="display:block;max-width:100%;height:auto;border-radius:8px;border:1px solid #eadfd5" />
-                </div>`).join('')}
+                <li style="margin:0 0 6px">Photo ${index + 1}: ${escapeHtml(attachment.filename)}</li>`).join('')}
+              </ul>
             </div>` : '<p style="margin-top:20px;color:#777">No work photos were uploaded.</p>'}
           <p style="color:#777;font-size:12px">Reply to this email to contact the applicant.</p>
         </div>`,
