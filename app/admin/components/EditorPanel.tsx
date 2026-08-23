@@ -2,7 +2,7 @@
 
 import React from "react";
 import type { CategoriesData, CategorySummary, SubcategorySummary } from "@/lib/booking-types";
-import { ServicesMatrixEditor } from "./ServicesMatrixEditor";
+import { RootEditor } from "./RootEditor";
 import { CategoryEditor } from "./CategoryEditor";
 import { SubcategoryEditor } from "./SubcategoryEditor";
 
@@ -98,12 +98,14 @@ export function EditorPanel({
     );
 
     if (selection.type === "root") {
-        return wrapEditor(<ServicesMatrixEditor
+        return wrapEditor(<RootEditor 
             categorySummaries={categorySummaries}
             token={token}
-            mutate={mutate}
+            headers={headers} 
+            mutate={mutate} 
             setSelection={setSelection}
             onCategoryCreated={onCategoryCreated}
+            onCategoryDeleted={onCategoryDeleted}
             onCategorySummariesRefresh={onCategorySummariesRefresh}
         />, true);
     }
