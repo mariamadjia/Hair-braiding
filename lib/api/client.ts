@@ -102,7 +102,9 @@ export async function apiClient<T>(
       // Enhanced error messages
       let errorMessage = errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`;
       if (response.status === 401) {
-        errorMessage = 'Your session has expired. Please log in again.';
+        errorMessage = endpoint === '/api/auth/login'
+          ? (errorData.error || 'Invalid email or password.')
+          : 'Your session has expired. Please log in again.';
       } else if (response.status === 403) {
         errorMessage = 'You do not have permission to perform this action.';
       } else if (response.status === 404) {

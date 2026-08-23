@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { User, Mail, Lock, Camera, Save, X } from "lucide-react";
+import { authApi } from "@/lib/api/auth";
 
 interface ProfileSectionProps {
     adminName: string;
@@ -32,26 +33,34 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
                 setIsSaving(false);
                 return;
             }
-            if (formData.newPassword.length < 8) {
-                setMessage({ type: "error", text: "Password must be at least 8 characters" });
+            if (formData.newPassword.length < 12) {
+                setMessage({ type: "error", text: "Password must be at least 12 characters" });
+                setIsSaving(false);
+                return;
+            }
+            if (!formData.currentPassword) {
+                setMessage({ type: "error", text: "Enter your current password" });
                 setIsSaving(false);
                 return;
             }
         }
 
-        // Simulate API call
-        setTimeout(() => {
-            setMessage({ type: "success", text: "Profile updated successfully" });
+        try {
+            if (!formData.newPassword) {
+                setMessage({ type: "error", text: "There are no password changes to save" });
+                return;
+            }
+            const response = await authApi.changePassword({
+                oldPassword: formData.currentPassword,
+                newPassword: formData.newPassword,
+            });
+            setMessage({ type: "success", text: response.message });
+            window.setTimeout(() => { window.location.href = "/admin"; }, 1200);
+        } catch (error: any) {
+            setMessage({ type: "error", text: error?.message || "Password could not be changed" });
+        } finally {
             setIsSaving(false);
-            setIsEditing(false);
-            // Clear password fields
-            setFormData(prev => ({
-                ...prev,
-                currentPassword: "",
-                newPassword: "",
-                confirmPassword: "",
-            }));
-        }, 1000);
+        }
     };
 
     const handleCancel = () => {
@@ -204,7 +213,7 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
                                         type="password"
                                         value={formData.newPassword}
                                         onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                                        placeholder="Enter new password (min. 8 characters)"
+                                        placeholder="Enter new password (min. 12 characters)"
                                         className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-sm text-sm focus:outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
                                     />
                                 </div>

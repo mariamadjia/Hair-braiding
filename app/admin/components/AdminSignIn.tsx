@@ -95,7 +95,7 @@ export function AdminSignIn(props: Props) {
           <div className="mt-7 border-t border-neutral-200 pt-5 text-center text-xs text-neutral-600">
             <p className="flex items-center justify-center gap-2"><LockKeyhole size={15} />Protected admin access</p>
             <p className="mt-2">Only approved administrator accounts can sign in.</p>
-            <p className="mt-5">Need help? <a className="underline underline-offset-4" href="mailto:support@ahbraiding.com">Contact support</a></p>
+            <p className="mt-5">Need help? <a className="underline underline-offset-4" href="mailto:adjiashairbraiding@gmail.com">Contact support</a></p>
           </div>
         </div>
       </section>
