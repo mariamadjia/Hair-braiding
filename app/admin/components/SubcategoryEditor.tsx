@@ -622,8 +622,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             await mutate("PUT", `${base}/items`, { item: updatedItem, itemId, subcategoryId: sub.id });
             setSaveSuccess("Length order updated.");
             setTimeout(() => setSaveSuccess(null), 3000);
-            const freshSub = await onSubcategoryUpdate?.(sub.slug);
-            if (freshSub?.items) setItems(freshSub.items);
         } catch (error) {
             setSaveError(error instanceof Error ? error.message : "Unable to reorder lengths.");
             const freshSub = await onSubcategoryUpdate?.(sub.slug);
