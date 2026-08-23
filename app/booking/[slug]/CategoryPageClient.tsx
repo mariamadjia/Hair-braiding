@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import type { BookingCategory } from "@/lib/booking-types";
 import Navbar from "@/components/Navbar";
 import LengthGuideOverlay from "@/components/LengthGuideOverlay";
-import { formatPrice } from "@/lib/utils/price";
+import { formatPrice, sortLengthOptionsByPrice } from "@/lib/utils/price";
 import SizeGuideOverlay from "@/components/SizeGuideOverlay";
 import { guideImageUrl, guideKeyForSize, useGuideSettings } from "@/lib/guides";
 type ModalQuote = { servicePriceCents: number; depositCents: number; remainingBalanceCents: number };
@@ -62,7 +62,7 @@ export default function CategoryPageClient({ category }: { category: BookingCate
 
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
     const selectedSizeGuide = guides?.sizes.find(size => size.guideKey === (selectedItem?.sizeGuideKey || guideKeyForSize(selectedItem?.name)));
-    const lengthOptions = selectedItem?.lengthOptions ?? [];
+    const lengthOptions = sortLengthOptionsByPrice(selectedItem?.lengthOptions);
     const selectedLengthOption = lengthOptions.find((option) => option.id?.toString() === selectedLength);
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
     const photoGallery = photoItem?.images?.length ? photoItem.images : photoItem?.image ? [photoItem.image] : [];

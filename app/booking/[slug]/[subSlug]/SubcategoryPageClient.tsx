@@ -11,7 +11,7 @@ import Navbar from "@/components/Navbar";
 import LengthGuideOverlay from "@/components/LengthGuideOverlay";
 import SizeGuideOverlay from "@/components/SizeGuideOverlay";
 import { guideImageUrl, guideKeyForSize, useGuideSettings } from "@/lib/guides";
-import { formatPrice } from "@/lib/utils/price";
+import { formatPrice, sortLengthOptionsByPrice } from "@/lib/utils/price";
 import { toProxyUrl } from "@/lib/utils/image";
 import { API_BASE_URL } from "@/lib/config/api";
 
@@ -78,7 +78,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
 
     const selectedItem = selectedItemIndex !== null ? items[selectedItemIndex] : null;
     const selectedSizeGuide = guides?.sizes.find(size => size.guideKey === (selectedItem?.sizeGuideKey || guideKeyForSize(selectedItem?.name)));
-    const lengthOptions = selectedItem?.lengthOptions ?? [];
+    const lengthOptions = sortLengthOptionsByPrice(selectedItem?.lengthOptions);
     const selectedLengthOption = lengthOptions.find((option) => option.id?.toString() === selectedLength);
     const fixedAddOnTotal = availableAddOns.filter(addOn => selectedAddOnIds.includes(addOn.id) && addOn.pricingMode === "FIXED").reduce((sum, addOn) => sum + addOn.priceCents, 0);
     const photoItem = photoItemIndex !== null ? items[photoItemIndex] : null;
