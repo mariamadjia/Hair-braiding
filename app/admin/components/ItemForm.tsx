@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import type { BookingItem } from "@/lib/booking-types";
-import { inp, lbl, btnP, btnS } from "../constants";
+import { inp, lbl } from "../constants";
 import { LengthOptionsEditor } from "./LengthOptionsEditor";
 import { toProxyUrl } from "@/lib/utils/image";
 import { AlertCircle, CheckCircle, Loader2, Plus, X } from "lucide-react";
 import { uploadFile } from "../utils";
+import { ServicesSaveBar } from "./ServicesSaveBar";
 
 export function ItemForm({ initial, token, onSave, onCancel }: { initial: BookingItem; token: string; categoryId?: number; subcategoryId?: number; onSave: (item: BookingItem) => Promise<void>; onCancel: () => void }) {
     const [item, setItem] = useState<BookingItem>(() => ({
@@ -260,16 +261,13 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
             </section>
 
             </div>
-            <div className="sticky bottom-3 z-10 flex flex-col gap-3 rounded-xl border border-[#eadcca] bg-[#fffaf4]/95 px-5 py-4 shadow-lg backdrop-blur lg:flex-row lg:items-center dark:border-neutral-700 dark:bg-neutral-900/95">
-                <p className="min-w-0 flex-1 text-sm text-neutral-700 dark:text-neutral-300"><span className="font-semibold">{item.name || "Unnamed service"}</span><span className="mx-2">·</span>{item.pricingMode === "FIXED" ? "Fixed price" : "Price varies by length"}<span className="mx-2">·</span>{(item.durationMinutes ?? 60) < 60 ? `${item.durationMinutes ?? 60}-minute appointment` : `${(item.durationMinutes ?? 60) / 60}-hour appointment`}<span className="mx-2">·</span>${(Number(item.depositOverrideCents ?? defaultDepositCents) / 100).toFixed(2)} deposit</p>
-                <p className={`text-xs font-semibold ${success ? "text-green-700 dark:text-green-400" : dirty ? "text-amber-700 dark:text-amber-300" : "text-neutral-500"}`} role="status" aria-live="polite">
-                    {saving ? "Saving…" : success ? "Saved successfully" : dirty ? "Unsaved changes" : "All changes saved"}
-                </p>
-                <div className="flex gap-2 lg:ml-2">
-                    <button type="button" onClick={handleCancel} className={btnS} disabled={saving}>Cancel</button>
-                    <button type="submit" className={`${btnP} inline-flex min-w-32 flex-1 items-center justify-center gap-2 lg:flex-none`} disabled={!dirty || !item.name.trim() || saving || uploading}>{saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{saving ? "Saving…" : "Save changes"}</button>
-                </div>
-            </div>
+            <ServicesSaveBar
+                visible={dirty}
+                saving={saving}
+                disabled={!item.name.trim() || uploading}
+                onSave={() => void handleSave()}
+                onDiscard={handleCancel}
+            />
         </form>
     );
 }

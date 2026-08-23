@@ -443,7 +443,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                             disabled={saving}
                             className="px-4 py-2 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Cancel
+                            Discard
                         </button>
                         <button
                             type="button"
@@ -457,7 +457,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                             }
                             className="px-4 py-2 bg-neutral-900 dark:bg-neutral-700 text-white rounded-sm hover:bg-neutral-800 dark:hover:bg-neutral-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {saving ? "Saving..." : "Save Changes"}
+                            {saving ? "Saving…" : "Save changes"}
                         </button>
                     </div>
                 </div>
