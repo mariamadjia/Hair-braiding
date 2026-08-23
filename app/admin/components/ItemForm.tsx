@@ -168,7 +168,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                 {item.foundationChoicesEnabled && <p className="mt-4 text-xs text-neutral-500">Regular and Knotless pricing can be managed separately below.</p>}
                 </div>
             </fieldset>
-            
+
 
             {item.pricingMode === "FIXED" ? (
                 <section className="space-y-4 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
