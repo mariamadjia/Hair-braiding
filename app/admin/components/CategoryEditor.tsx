@@ -15,6 +15,15 @@ type Selection =
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
 
+const CONTENT_WORD_LIMIT = 100;
+
+const countWords = (value: string) => value.trim() ? value.trim().split(/\s+/).length : 0;
+
+const limitWords = (value: string, limit = CONTENT_WORD_LIMIT) => {
+    const words = value.match(/\S+\s*/g);
+    return words && words.length > limit ? words.slice(0, limit).join("").trimEnd() : value;
+};
+
 export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLoadSubcategorySummaries, onLoadSubcategoryDetail, isLoadingSubcategorySummaries, onSubcategoryCreated, onSubcategoryDeleted, onSubcategorySummariesRefresh }: {
     cat: BookingCategory;
     token: string;
@@ -507,17 +516,16 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                         id="service-tagline"
                                         className={`${inp} min-h-11 rounded-lg`}
                                         value={serviceTagline}
-                                        maxLength={255}
                                         placeholder="TIMELESS. NEAT. VERSATILE."
                                         onChange={(event) => {
-                                            setServiceTagline(event.target.value);
+                                            setServiceTagline(limitWords(event.target.value));
                                             setDirty(true);
                                             setErrorMessage(null);
                                         }}
                                     />
                                     <div className="mt-2 flex items-start justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-                                        <span>A short, punchy statement that represents this service.</span>
-                                        <span className="shrink-0 tabular-nums">{serviceTagline.length}/255</span>
+                                        <span>A short, punchy statement that represents this service (maximum 100 words).</span>
+                                        <span className="shrink-0 tabular-nums">{countWords(serviceTagline)}/100 words</span>
                                     </div>
                                 </div>
                                 <div>
@@ -528,17 +536,16 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                         id="service-description"
                                         className={`${inp} min-h-[4.25rem] resize-y rounded-lg py-2.5`}
                                         value={serviceDescription}
-                                        maxLength={1000}
                                         placeholder="Classic box braids in a variety of lengths and sizes to match your look."
                                         onChange={(event) => {
-                                            setServiceDescription(event.target.value);
+                                            setServiceDescription(limitWords(event.target.value));
                                             setDirty(true);
                                             setErrorMessage(null);
                                         }}
                                     />
                                     <div className="mt-2 flex items-start justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-                                        <span>Provide more detail to help clients understand what to expect.</span>
-                                        <span className="shrink-0 tabular-nums">{serviceDescription.length}/1000</span>
+                                        <span>Provide more detail to help clients understand what to expect (maximum 100 words).</span>
+                                        <span className="shrink-0 tabular-nums">{countWords(serviceDescription)}/100 words</span>
                                     </div>
                                 </div>
                             </div>
