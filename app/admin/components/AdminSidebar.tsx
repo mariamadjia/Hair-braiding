@@ -20,7 +20,8 @@ import {
     Moon,
     Home,
     Clock
-    ,X
+    ,X,
+    FileText
 } from "lucide-react";
 
 interface SidebarProps {
@@ -53,6 +54,7 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
             label: "Services", 
             icon: Scissors
         },
+        { id: "services-content", label: "Services Page", icon: FileText },
         { id: "bookings", label: "Bookings", icon: Calendar },
         { id: "availability", label: "Availability", icon: Clock },
         { id: "customers", label: "Customers", icon: Users },

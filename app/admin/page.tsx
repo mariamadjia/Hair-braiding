@@ -23,6 +23,7 @@ const CustomerTable = lazy(() => import("@/components/CustomerTable").then(m => 
 const CustomerDetails = lazy(() => import("@/components/CustomerDetails").then(m => ({ default: m.default })));
 const PricingManagement = lazy(() => import("./components/PricingManagement").then(m => ({ default: m.PricingManagement })));
 const AdministratorsSettings = lazy(() => import("./components/AdministratorsSettings").then(m => ({ default: m.AdministratorsSettings })));
+const ServicesPageContentEditor = lazy(() => import("./components/ServicesPageContentEditor").then(m => ({ default: m.ServicesPageContentEditor })));
 
 type Selection =
     | { type: "root" }
@@ -572,7 +573,7 @@ export default function AdminPage() {
         window.history.pushState({}, "", url);
         if (section !== "customers") setSelectedCustomerId(null);
         // Reset selection when changing sections
-        if (section === "categories") {
+        if (section === "categories" || section === "services-content") {
             setSelection({ type: "root" });
             // Gallery and Services share category/subcategory displayOrder.
             // Refresh instead of reusing a cache that may predate a Gallery edit.
@@ -627,6 +628,7 @@ export default function AdminPage() {
                             {({
                                 dashboard: "Dashboard",
                                 categories: "Services",
+                                "services-content": "Services Page Content",
                                 homepage: "Homepage",
                                 bookings: "Appointments",
                                 availability: "Availability Settings",
@@ -715,6 +717,22 @@ export default function AdminPage() {
                     </div>
                 )}
 
+                {currentSection === "services-content" && (
+                    <div className="flex-1 overflow-y-auto bg-[#f7f5f2] dark:bg-neutral-900">
+                        <Suspense fallback={<div className="p-12 text-neutral-500">Loading Services page content…</div>}>
+                            <ServicesPageContentEditor
+                                categorySummaries={categorySummaries}
+                                token={token}
+                                onCategoriesRefresh={refreshCategorySummaries}
+                                onEditCategory={(slug) => {
+                                    handleSectionChange("categories");
+                                    setSelection({ type: "category", catSlug: slug });
+                                }}
+                            />
+                        </Suspense>
+                    </div>
+                )}
+
                 {currentSection === "gallery" && (
                     <div className="min-h-0 flex-1 overflow-hidden">
                         <Suspense fallback={<div className="p-12 text-neutral-500">Loading gallery…</div>}>
@@ -792,7 +810,7 @@ export default function AdminPage() {
                 )}
 
                 {/* Placeholder for other sections */}
-                {currentSection !== "categories" && currentSection !== "dashboard" && currentSection !== "gallery" && currentSection !== "profile" && currentSection !== "homepage" && currentSection !== "bookings" && currentSection !== "availability" && currentSection !== "customers" && currentSection !== "pricing" && currentSection !== "administrators" && (
+                {currentSection !== "categories" && currentSection !== "services-content" && currentSection !== "dashboard" && currentSection !== "gallery" && currentSection !== "profile" && currentSection !== "homepage" && currentSection !== "bookings" && currentSection !== "availability" && currentSection !== "customers" && currentSection !== "pricing" && currentSection !== "administrators" && (
                     <div className="flex-1 overflow-y-auto bg-neutral-50 p-4 dark:bg-neutral-900 sm:p-6 lg:p-8">
                         <div className="max-w-4xl mx-auto">
                             <div className="rounded-lg border border-neutral-200 bg-white p-6 text-center dark:border-neutral-700 dark:bg-neutral-800 sm:p-12">
