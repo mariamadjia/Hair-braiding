@@ -765,7 +765,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             </div>
 
             {/* Settings shared by every size */}
-            {items.length > 0 && <section aria-labelledby="bulk-foundation-title" className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-900 sm:p-6">
+            {items.length > 0 && <div className="mx-auto w-full max-w-5xl space-y-4">
+                <header>
+                    <h3 className="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white">Size settings</h3>
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Manage choices and guides shared by all {items.length} sizes.</p>
+                </header>
+                <section aria-labelledby="bulk-foundation-title" className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 sm:p-6">
                         <div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <h4 id="bulk-foundation-title" className="text-base font-semibold text-neutral-950 dark:text-white">Settings for all sizes</h4>
@@ -774,18 +779,20 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                             </div>
                         </div>
 
-                        <div className="mt-4 divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-                            <fieldset className="grid gap-3 py-4 sm:grid-cols-[minmax(9rem,1fr)_minmax(24rem,1.45fr)] sm:items-center">
-                                <legend className="sr-only">Customer choice</legend>
-                                <p className="text-sm font-semibold text-neutral-950 dark:text-white">Customer choice</p>
-                                <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-600">
-                                    <button type="button" aria-pressed={!bulkFoundationEnabled} onClick={() => { setBulkFoundationEnabled(false); setBulkSettingsDirty(true); }} className={`min-h-10 px-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 ${!bulkFoundationEnabled ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>No foundation</button>
-                                    <button type="button" aria-pressed={bulkFoundationEnabled} onClick={() => { setBulkFoundationEnabled(true); setBulkSettingsDirty(true); }} className={`min-h-10 border-l border-neutral-300 px-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 dark:border-neutral-600 ${bulkFoundationEnabled ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950" : "bg-white text-neutral-700 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"}`}>Regular + Knotless</button>
+                        <div className="mt-5">
+                            <div className="flex flex-wrap items-center gap-4 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700 sm:flex-nowrap">
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-semibold text-neutral-950 dark:text-white">Braid foundation for all sizes</p>
+                                    <p className="mt-1 text-xs text-neutral-500">Let customers choose Regular or Knotless for every size.</p>
                                 </div>
-                            </fieldset>
+                                <div className="ml-auto flex items-center gap-3">
+                                    <button type="button" role="switch" aria-label="Offer Regular and Knotless for all sizes" aria-checked={bulkFoundationEnabled} onClick={() => { setBulkFoundationEnabled(current => !current); setBulkSettingsDirty(true); }} className={`relative h-7 w-12 shrink-0 rounded-full transition focus-visible:ring-2 focus-visible:ring-[#7a4a28] focus-visible:ring-offset-2 ${bulkFoundationEnabled ? "bg-[#7a4a28]" : "bg-neutral-300 dark:bg-neutral-700"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${bulkFoundationEnabled ? "left-6" : "left-1"}`} /></button>
+                                    <span className="min-w-7 text-xs font-medium text-neutral-500">{bulkFoundationEnabled ? "On" : "Off"}</span>
+                                </div>
+                            </div>
 
                             {bulkFoundationEnabled && (
-                                <div className={`grid gap-3 py-4 sm:items-center ${bulkUseAdjustment ? "sm:grid-cols-[minmax(9rem,1fr)_auto_12rem]" : "sm:grid-cols-[minmax(9rem,1fr)_auto]"}`}>
+                                <div className={`mt-4 grid gap-3 rounded-xl border border-neutral-200 p-4 sm:items-center dark:border-neutral-700 ${bulkUseAdjustment ? "sm:grid-cols-[minmax(9rem,1fr)_auto_12rem]" : "sm:grid-cols-[minmax(9rem,1fr)_auto]"}`}>
                                     <div>
                                         <p className="text-sm font-semibold text-neutral-950 dark:text-white">Knotless adjustment</p>
                                         <p className="mt-0.5 text-xs text-neutral-500">Add to every Regular length price.</p>
@@ -818,7 +825,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                     type="button"
                                     onClick={() => void applyFoundationToAllSizes()}
                                     disabled={!bulkSettingsDirty || applyingFoundations || saving || !items.some(item => item.id) || (bulkFoundationEnabled && bulkUseAdjustment && (!/^\d+(?:\.\d{1,2})?$/.test(bulkFoundationAdjustment.trim()) || Number(bulkFoundationAdjustment) <= 0))}
-                                    className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-neutral-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+                                    className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#5b3219] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#442412] focus:outline-none focus:ring-2 focus:ring-[#7a4a28] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
                                 >
                                     {applyingFoundations && <Loader2 className="h-4 w-4 animate-spin" />}
                                     {applyingFoundations ? "Applying to all sizes…" : `Apply to ${items.length} sizes`}
@@ -829,21 +836,21 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                             <div className="mb-4"><h5 className="text-sm font-semibold text-neutral-950 dark:text-white">Customer guides</h5><p className="mt-1 text-xs text-neutral-500">Manage the guides customers see while booking.</p></div>
                             <div className="space-y-3">
                                 {([
-                                    { kind: "length" as const, title: "Length guide", subtitle: "One image for all sizes", enabled: guideSettings.lengthGuideEnabled, ready: Boolean(guideSettings.lengthGuideImageUrl), status: guideSettings.lengthGuideImageUrl ? "Image uploaded" : "No image", icon: Ruler },
-                                    { kind: "size" as const, title: "Size guide", subtitle: `${guideSettings.sizes.length} individual size images`, enabled: guideSettings.sizeGuideEnabled, ready: guideSettings.sizes.some(size => size.imageUrl), status: `${guideSettings.sizes.filter(size => size.imageUrl).length} of ${guideSettings.sizes.length} uploaded`, icon: Images }
-                                ]).map(row => <div key={row.kind} className="flex flex-wrap items-center gap-4 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700 sm:flex-nowrap">
+                                    { kind: "length" as const, title: "Length guide", subtitle: "One image shared by all sizes", enabled: guideSettings.lengthGuideEnabled, ready: Boolean(guideSettings.lengthGuideImageUrl), status: guideSettings.lengthGuideImageUrl ? "Ready" : "No image", icon: Ruler },
+                                    { kind: "size" as const, title: "Size guide", subtitle: "Individual images for each size", enabled: guideSettings.sizeGuideEnabled, ready: guideSettings.sizes.every(size => Boolean(size.imageUrl)), status: guideSettings.sizes.every(size => Boolean(size.imageUrl)) ? "Ready" : `Incomplete · ${guideSettings.sizes.filter(size => size.imageUrl).length} of ${guideSettings.sizes.length}`, icon: Images }
+                                ]).map(row => <div key={row.kind} className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-1 py-3.5 last:border-b-0 dark:border-neutral-800 sm:flex-nowrap">
                                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800"><row.icon className="h-5 w-5" /></span>
                                     <div className="min-w-40 flex-1"><p className="text-sm font-semibold">{row.title}</p><p className="text-xs text-neutral-500">{row.subtitle}</p></div>
-                                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${row.ready ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800"}`}>{row.status}</span>
+                                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${row.ready ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"}`}>{row.status}</span>
                                     <div className="ml-auto flex items-center gap-3">
                                         <span className="text-xs font-medium text-neutral-500">{row.enabled ? "Enabled" : "Disabled"}</span>
                                         <button type="button" role="switch" aria-label={`${row.enabled ? "Disable" : "Enable"} ${row.title}`} aria-checked={row.enabled} disabled={savingGuides} onClick={() => toggleGuide(row.kind)} className={`relative h-7 w-12 rounded-full transition disabled:opacity-50 ${row.enabled ? "bg-emerald-600" : "bg-neutral-300 dark:bg-neutral-700"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${row.enabled ? "left-6" : "left-1"}`} /></button>
-                                        <button type="button" onClick={() => openGuideEditor(row.kind)} aria-label={`Edit ${row.title}`} className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 bg-white transition hover:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:border-neutral-600 dark:bg-neutral-900 dark:hover:bg-neutral-800"><Pencil className="h-4 w-4" /></button>
+                                        <button type="button" onClick={() => openGuideEditor(row.kind)} aria-label={`Manage ${row.title}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-3 text-xs font-semibold transition hover:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:border-neutral-600 dark:bg-neutral-900 dark:hover:bg-neutral-800"><Pencil className="h-4 w-4" />Manage</button>
                                     </div>
                                 </div>)}
                             </div>
                         </div>}
-            </section>}
+            </section></div>}
 
             {guideSettings && editingGuide && <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/45 p-2 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="guide-editor-title" onMouseDown={event => { if (event.target === event.currentTarget) cancelGuideEditor(); }}>
                 <div className="max-h-[calc(100dvh-1rem)] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-white shadow-2xl dark:bg-neutral-900 sm:max-h-[90vh] sm:rounded-2xl">
