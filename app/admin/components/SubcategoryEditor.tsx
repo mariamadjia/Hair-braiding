@@ -13,6 +13,7 @@ import { ChevronRight, Package, Plus, Trash2, CheckCircle, AlertCircle, Loader2,
 import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
 import type { GuideSettings } from "@/lib/guides";
+import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
 
 function sortItemsBySize(items: BookingItem[]): { item: BookingItem; originalIdx: number }[] {
     return items.map((item, idx) => ({ item, originalIdx: idx })).sort((a, b) => {
@@ -902,8 +903,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                             <button type="button" onClick={() => { setAddingItem(true); setEditingId(null); }} className="mt-4 min-h-10 rounded-lg bg-neutral-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200">+ Add size</button>
                         </div>
                     ) : (
-                        <div className="space-y-2">
-                            {sortItemsBySize(items).map(({ item, originalIdx }, orderedIndex, orderedEntries) => (
+                        <SortableList items={sortItemsBySize(items)} getId={({ item, originalIdx }) => item.id ?? `new-${originalIdx}`} getLabel={({ item }) => item.name} onReorder={(_, meta) => { if (typeof meta.activeId === "number" && typeof meta.overId === "number") void reorderItemTo(meta.activeId, meta.overId); }} disabled={saving} ariaLabel="Size order" className="space-y-2">
+                            {({ item, originalIdx }, orderedIndex) => (
                                 <div key={item.id ?? `new-${originalIdx}`}>
                                     {editingId === item.id ? (
                                         <ItemForm
@@ -916,37 +917,11 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                         />
                                     ) : (
                                         <div
-                                            draggable={Boolean(item.id) && !saving}
-                                            onDragStart={() => item.id && setDraggedItemId(item.id)}
-                                            onDragEnd={() => setDraggedItemId(null)}
-                                            onDragOver={(event) => {
-                                                if (draggedItemId && draggedItemId !== item.id) event.preventDefault();
-                                            }}
-                                            onDrop={(event) => {
-                                                event.preventDefault();
-                                                if (draggedItemId && item.id && draggedItemId !== item.id) {
-                                                    void reorderItemTo(draggedItemId, item.id);
-                                                }
-                                                setDraggedItemId(null);
-                                            }}
-                                            className={`overflow-hidden rounded-lg border bg-white transition dark:bg-neutral-900 ${draggedItemId === item.id ? "border-neutral-400 opacity-60 dark:border-neutral-500" : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}
+                                            className="overflow-hidden rounded-lg border border-neutral-200 bg-white transition hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900"
                                         >
                                             {/* Compact summary keeps pricing mode, photos, and actions scannable. */}
                                             <div className="group grid min-h-[4.5rem] grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 sm:grid-cols-[auto_auto_auto_minmax(0,1fr)_auto_auto] sm:px-5">
-                                                <button
-                                                    type="button"
-                                                    onKeyDown={(event) => {
-                                                        if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
-                                                        event.preventDefault();
-                                                        const targetIndex = orderedIndex + (event.key === "ArrowUp" ? -1 : 1);
-                                                        const targetId = orderedEntries[targetIndex]?.item.id;
-                                                        if (item.id && targetId) void reorderItemTo(item.id, targetId);
-                                                    }}
-                                                    className="cursor-grab rounded text-neutral-500 focus-visible:ring-2 focus-visible:ring-neutral-950 active:cursor-grabbing dark:focus-visible:ring-white"
-                                                    aria-label={`Reorder ${item.name}. Use Arrow Up or Arrow Down to move it.`}
-                                                >
-                                                    <GripVertical className="h-5 w-5" aria-hidden="true" />
-                                                </button>
+                                                <SortableHandle className="flex h-10 w-8 items-center justify-center" />
                                                 <span className="w-5 text-center text-xs font-semibold text-neutral-400">{orderedIndex + 1}</span>
                                                 {item.sizePhotos?.[0] ? <img src={toProxyUrl(item.sizePhotos[0])} alt="" className="hidden h-10 w-10 rounded-md border border-neutral-200 object-cover sm:block dark:border-neutral-700" /> : <div className="hidden h-10 w-10 place-items-center rounded-md bg-neutral-100 text-neutral-400 sm:grid dark:bg-neutral-800"><Package className="h-4 w-4" /></div>}
                                                 <button type="button" onClick={() => toggleExpand(item.id)} aria-expanded={item.id ? expandedItems.has(item.id) : false} className="col-start-3 min-w-0 text-left focus:outline-none focus:ring-2 focus:ring-neutral-950 sm:col-start-4">
@@ -985,52 +960,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                     {item.lengthOptions && item.lengthOptions.length > 0 && (
                                                         <>
                                                             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-2">Length Options</p>
-                                                            <div className="grid grid-cols-1 gap-1.5">
-                                                                {item.lengthOptions.map((option, optIdx) => (
+                                                            <SortableList items={item.lengthOptions} getId={option => option.id ?? `${item.id}-${option.name ?? "length"}`} getLabel={option => option.name ?? "Length"} onReorder={(_, meta) => { if (item.id) void reorderLengthOption(item.id, meta.fromIndex, meta.toIndex); }} disabled={saving} ariaLabel={`${item.name} length order`} className="grid grid-cols-1 gap-1.5" itemClassName="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 transition hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900">
+                                                                {(option, optIdx) => (<>
                                                                     <div
-                                                                        key={option.id ?? `${option.name}-${optIdx}`}
                                                                         data-length-option-row
-                                                                        draggable={!saving}
-                                                                        onDragStart={(event) => {
-                                                                            event.stopPropagation();
-                                                                            if (!item.id) return;
-                                                                            event.dataTransfer.effectAllowed = "move";
-                                                                            setDraggedLength({ itemId: item.id, optionIndex: optIdx });
-                                                                        }}
-                                                                        onDragEnd={(event) => {
-                                                                            event.stopPropagation();
-                                                                            setDraggedLength(null);
-                                                                        }}
-                                                                        onDragOver={(event) => {
-                                                                            if (!draggedLength || draggedLength.itemId !== item.id || draggedLength.optionIndex === optIdx) return;
-                                                                            event.preventDefault();
-                                                                            event.stopPropagation();
-                                                                            event.dataTransfer.dropEffect = "move";
-                                                                        }}
-                                                                        onDrop={(event) => {
-                                                                            event.preventDefault();
-                                                                            event.stopPropagation();
-                                                                            if (item.id && draggedLength?.itemId === item.id) {
-                                                                                void reorderLengthOption(item.id, draggedLength.optionIndex, optIdx);
-                                                                            }
-                                                                        }}
-                                                                        className={`grid cursor-grab grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border bg-white px-3 py-2 transition active:cursor-grabbing dark:bg-neutral-900 ${draggedLength?.itemId === item.id && draggedLength?.optionIndex === optIdx ? "border-neutral-400 opacity-55 dark:border-neutral-500" : "border-neutral-200 hover:border-neutral-400 dark:border-neutral-700"}`}
+                                                                        className="contents"
                                                                     >
-                                                                        <button
-                                                                            type="button"
-                                                                            aria-label={`Reorder ${option.name}. Use Arrow Up or Arrow Down to move it.`}
-                                                                            onKeyDown={(event) => {
-                                                                                if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
-                                                                                event.preventDefault();
-                                                                                const targetIndex = optIdx + (event.key === "ArrowUp" ? -1 : 1);
-                                                                                if (item.id && targetIndex >= 0 && targetIndex < (item.lengthOptions?.length ?? 0)) {
-                                                                                    void reorderLengthOption(item.id, optIdx, targetIndex);
-                                                                                }
-                                                                            }}
-                                                                            className="rounded text-neutral-400 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
-                                                                        >
-                                                                            <GripVertical className="h-4 w-4" aria-hidden="true" />
-                                                                        </button>
+                                                                        <SortableHandle className="flex h-9 w-8 items-center justify-center" />
                                                                         <div className="flex min-w-0 items-center gap-2">
                                                                             {option.imageUrl && (
                                                                         <img src={toProxyUrl(option.imageUrl)} alt={option.name} className="w-8 h-8 rounded object-cover flex-shrink-0 border border-neutral-200" />
@@ -1038,9 +974,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                                                     <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate">{option.name}</span>
                                                                 </div>
                                                                 <span className="ml-3 flex-shrink-0 text-sm font-semibold text-neutral-800 dark:text-neutral-200">{formatPrice(option.price)}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                                    </div>
+                                                                </>)}
+                                                            </SortableList>
                                                     {item.lengthOptions.length > 1 && (
                                                         <p className="mt-2 text-[11px] text-neutral-500">Drag a length row to reorder it</p>
                                                     )}
@@ -1051,8 +987,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                         </div>
                                     )}
                                 </div>
-                            ))}
-                        </div>
+                            )}
+                        </SortableList>
                     )}
                     {items.length > 1 && !addingItem && (
                         <p className="pt-1 text-xs text-neutral-500">Drag rows to reorder</p>

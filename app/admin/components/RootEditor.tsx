@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import type { CategorySummary } from "@/lib/booking-types";
 import { btnP } from "../constants";
-import { AlertCircle, Clock3, EllipsisVertical, GripVertical, Pencil, Scissors, Search, Trash2 } from "lucide-react";
+import { AlertCircle, Clock3, EllipsisVertical, Pencil, Scissors, Search, Trash2 } from "lucide-react";
 import { NewCategoryWizard } from "./NewCategoryWizard";
+import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
 
 type Selection =
     | { type: "root" }
@@ -245,39 +246,15 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                     <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
                         {sortOrder === "custom" ? "Drag to reorder" : "Choose Custom order to reorder categories"}
                     </p>
-                    <div className="space-y-2">
-                {visibleCategories.map((cat, index) => {
+                    <SortableList items={visibleCategories} getId={cat => cat.slug} getLabel={cat => cat.name} onReorder={(next) => { if (sortOrder === "custom") void persistCategoryOrder(next); }} disabled={sortOrder !== "custom"} ariaLabel="Service category order" className="space-y-2" itemClassName="group relative flex min-h-20 items-center gap-3 rounded-xl border border-[#e7e3dd] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(35,28,22,0.04)] transition-all hover:border-neutral-300 hover:shadow-[0_5px_16px_rgba(35,28,22,0.07)] dark:border-neutral-700 dark:bg-neutral-900/20">
+                {(cat, index) => {
                     return (
                         <div 
-                            key={cat.slug} 
-                            draggable={sortOrder === "custom"}
-                            onDragStart={(event) => handleDragStart(event, cat.slug)}
-                            onDragEnd={handleDragEnd}
-                            onDragOver={(e) => handleDragOver(e, cat.slug)}
-                            onDragLeave={handleDragLeave}
-                            onDrop={(e) => handleDrop(e, cat.slug)}
-                            className={`group relative flex min-h-20 items-center gap-3 rounded-xl border border-[#e7e3dd] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(35,28,22,0.04)] transition-all hover:border-neutral-300 hover:shadow-[0_5px_16px_rgba(35,28,22,0.07)] dark:border-neutral-700 dark:bg-neutral-900/20 ${sortOrder === "custom" ? "cursor-grab active:cursor-grabbing" : ""} ${
-                                draggedSlug === cat.slug ? 'z-10 scale-[1.005] bg-white opacity-70 shadow-lg dark:bg-neutral-800' : ''
-                            } ${
-                                dragOverSlug === cat.slug && draggedSlug !== cat.slug ? 'before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-neutral-950 dark:before:bg-white' : ''
-                            }`}
+                            className="contents"
                         >
                             {sortOrder === "custom" && (
                                 <>
-                                    <button
-                                        type="button"
-                                        data-no-drag="true"
-                                        onKeyDown={(event) => {
-                                            if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-                                                event.preventDefault();
-                                                void moveCategory(cat.slug, event.key === "ArrowUp" ? -1 : 1);
-                                            }
-                                        }}
-                                        className="flex h-10 w-8 shrink-0 touch-none items-center justify-center rounded text-neutral-500 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
-                                        aria-label={`Reorder ${cat.name}. Use Arrow Up or Arrow Down to move it.`}
-                                    >
-                                        <GripVertical className="h-5 w-5" aria-hidden="true" />
-                                    </button>
+                                    <SortableHandle className="flex h-10 w-8 shrink-0 items-center justify-center" />
                                     <span className="w-8 shrink-0 text-sm tabular-nums text-neutral-500" aria-hidden="true">
                                         {String(index + 1).padStart(2, "0")}
                                     </span>
@@ -350,7 +327,8 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                             </div>
                         </div>
                     );
-                })}
+                }}
+                    </SortableList>
                     {visibleCategories.length === 0 && (
                         query.trim() ? (
                             <div className="rounded-xl border border-neutral-200 px-4 py-10 text-center dark:border-neutral-700">
@@ -365,7 +343,6 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                             </div>
                         )
                     )}
-                    </div>
                 </div>
             </div>
         </div>

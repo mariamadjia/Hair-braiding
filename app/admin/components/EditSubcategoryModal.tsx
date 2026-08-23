@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, GripVertical, Trash2, Plus, Upload, AlertCircle, CheckCircle } from "lucide-react";
+import { X, Trash2, Plus, Upload, AlertCircle, CheckCircle } from "lucide-react";
 import { API_BASE_URL } from '@/lib/config/api';
 import { GalleryImage } from "@/lib/api/gallery";
 import { validateFile, formatFileSize } from "../utils/fileValidation";
 import { compressImages } from "../utils/imageCompression";
+import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
 
 interface EditSubcategoryModalProps {
     subcategory: {
@@ -29,7 +30,6 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
         () => subcategory.images ?? []
     );
     const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
-    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [saving, setSaving] = useState(false);
@@ -142,27 +142,6 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
             cancelled = true;
         };
     }, [subcategory.id]);
-
-    const handleDragStart = (index: number) => {
-        setDraggedIndex(index);
-    };
-
-    const handleDragOver = (e: React.DragEvent, index: number) => {
-        e.preventDefault();
-        if (draggedIndex === null || draggedIndex === index) return;
-
-        const newImages = [...images];
-        const draggedImage = newImages[draggedIndex];
-        newImages.splice(draggedIndex, 1);
-        newImages.splice(index, 0, draggedImage);
-        
-        setImages(newImages);
-        setDraggedIndex(index);
-    };
-
-    const handleDragEnd = () => {
-        setDraggedIndex(null);
-    };
 
     const handleDelete = (index: number) => {
         if (images.length <= 1) {
@@ -367,22 +346,10 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                                 <p className="text-neutral-500 dark:text-neutral-400">Loading images...</p>
                             </div>
                         ) : images.length > 0 ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-                                {images.map((image, index) => (
-                                    <div
-                                        key={image.id}
-                                        draggable
-                                        onDragStart={() => handleDragStart(index)}
-                                        onDragOver={(e) => handleDragOver(e, index)}
-                                        onDragEnd={handleDragEnd}
-                                        className={`relative group cursor-move border-2 rounded-sm overflow-hidden ${
-                                            draggedIndex === index ? 'border-neutral-900 dark:border-neutral-400 opacity-50' : 'border-neutral-200 dark:border-neutral-700'
-                                        }`}
-                                    >
+                            <SortableList items={images} getId={image => image.id} getLabel={image => image.title || "Image"} onReorder={(next) => { setImages(next); setDirty(true); }} strategy="grid" ariaLabel="Style images order" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6" itemClassName={(_, __, dragging) => `relative group border-2 rounded-sm overflow-hidden ${dragging ? 'border-neutral-900 dark:border-neutral-400 opacity-50' : 'border-neutral-200 dark:border-neutral-700'}`}>
+                                {(image, index) => (<>
                                         {/* Drag Handle */}
-                                        <div className="absolute top-2 left-2 bg-white/90 dark:bg-neutral-800/90 rounded p-1 shadow-sm">
-                                            <GripVertical className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
-                                        </div>
+                                        <SortableHandle className="absolute left-2 top-2 z-10 flex h-10 w-10 items-center justify-center bg-white/90 shadow-sm dark:bg-neutral-800/90" />
 
                                         {/* Image */}
                                         <div className="aspect-square bg-neutral-100 dark:bg-neutral-800">
@@ -402,9 +369,8 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </button>
-                                    </div>
-                                ))}
-                            </div>
+                                </>)}
+                            </SortableList>
                         ) : (
                             <div className="text-center py-12 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg mb-6">
                                 <p className="text-neutral-500 dark:text-neutral-400">No images yet</p>

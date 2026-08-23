@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Edit, ArrowUp, ArrowDown } from "lucide-react";
+import { Edit } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
 import { galleryApi, GalleryImage } from '@/lib/api/gallery';
 import { API_BASE_URL } from '@/lib/config/api';
@@ -13,6 +13,7 @@ import {
   getDisplayImages,
   saveCategoryFlippingImages,
 } from "@/lib/api/categoryDisplayPhotos";
+import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
 
 interface Category {
     id: number;
@@ -197,6 +198,19 @@ export function GalleryAdminNew() {
         if (!response.ok) throw new Error(`Failed to update display order: ${response.status}`);
     };
 
+    const reorderCategories = async (next: Category[]) => {
+        const previous = categories;
+        setCategories(next);
+        try {
+            await saveCategoryOrder(next);
+            setStatusMessage("Gallery order saved.");
+        } catch (error) {
+            console.error("Failed to update order:", error);
+            setCategories(previous);
+            setStatusMessage("Gallery order could not be saved. The previous order was restored.");
+        }
+    };
+
     const moveCategory = async (index: number, direction: -1 | 1) => {
         const target = index + direction;
         if (target < 0 || target >= categories.length) return;
@@ -271,8 +285,8 @@ export function GalleryAdminNew() {
                     {loadError && <div role="alert" className="border border-red-200 bg-red-50 p-4 text-sm text-red-800">{loadError}<button type="button" onClick={loadData} className="ml-3 underline">Retry</button></div>}
                     {statusMessage && <p className="mt-2 text-sm text-neutral-600">{statusMessage}</p>}
                 </div>
-                <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-8">
-                    {categories.map((category, index) => {
+                <SortableList items={categories} getId={category => category.id} getLabel={category => category.name} onReorder={reorderCategories} strategy="grid" ariaLabel="Gallery category order" className="mx-auto grid max-w-7xl grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-8" itemClassName="group relative">
+                    {(category) => {
                         const categoryImages = getCategoryImages(category.id);
                         const isEditing = editingCategory === category.id;
                         
@@ -283,18 +297,10 @@ export function GalleryAdminNew() {
                             : category.image;
 
                         return (
-                            <div 
-                                key={category.id} 
-                                className={`group cursor-move relative ${draggedIndex === index ? 'opacity-50' : ''}`}
-                                draggable
-                                onDragStart={() => handleDragStart(index)}
-                                onDragOver={(e) => handleDragOver(e, index)}
-                                onDragEnd={handleDragEnd}
-                            >
+                            <div className="contents">
                                 {/* Edit Button */}
                                 <div className="absolute top-4 right-4 z-10 flex gap-1">
-                                    <button type="button" onClick={(event) => { event.stopPropagation(); moveCategory(index, -1); }} disabled={index === 0} className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow disabled:opacity-30" aria-label={`Move ${category.name} up`}><ArrowUp className="h-4 w-4" /></button>
-                                    <button type="button" onClick={(event) => { event.stopPropagation(); moveCategory(index, 1); }} disabled={index === categories.length - 1} className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow disabled:opacity-30" aria-label={`Move ${category.name} down`}><ArrowDown className="h-4 w-4" /></button>
+                                    <SortableHandle className="flex h-10 w-10 items-center justify-center bg-white shadow" />
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -360,8 +366,8 @@ export function GalleryAdminNew() {
                                 </div>
                             </div>
                         );
-                    })}
-                </div>
+                    }}
+                </SortableList>
                 {!loadError && categories.length === 0 && (
                     <div className="mx-auto max-w-xl border border-neutral-200 bg-white p-10 text-center">
                         <h2 className="text-lg font-semibold text-neutral-900">No gallery categories yet</h2>

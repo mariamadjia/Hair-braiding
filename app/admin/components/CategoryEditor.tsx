@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
-import { ChevronRight, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle, EllipsisVertical, GripVertical, Pencil } from "lucide-react";
+import { ChevronRight, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle, EllipsisVertical, Pencil } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
+import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
 
 type Selection =
     | { type: "root" }
@@ -40,8 +41,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     const [saving, setSaving] = useState(false);
     const [loadingCategory, setLoadingCategory] = useState(false);
     const [reorderingSubcategories, setReorderingSubcategories] = useState(false);
-    const [draggedSubcategoryIndex, setDraggedSubcategoryIndex] = useState<number | null>(null);
-    const [subcategoryDropIndex, setSubcategoryDropIndex] = useState<number | null>(null);
     const [openSubcategoryMenuSlug, setOpenSubcategoryMenuSlug] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -591,60 +590,12 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                             <button type="button" onClick={() => setAddingSub(true)} className={`${btnP} mt-4 min-h-10 rounded-lg px-4 py-2 text-xs normal-case tracking-normal`}>+ Add subcategory</button>
                         </div>
                     ) : (
-                        subSummaries.map((sub, index) => (
+                        <SortableList items={subSummaries} getId={sub => sub.id ?? sub.slug} getLabel={sub => sub.name} onReorder={(_, meta) => void moveSubcategory(meta.fromIndex, meta.toIndex)} disabled={reorderingSubcategories} ariaLabel={`${cat.name} style order`} className="space-y-2.5" itemClassName="grid min-h-16 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-neutral-200 px-4 py-2.5 transition-all hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:border-neutral-600 dark:hover:bg-neutral-900/40 sm:gap-4 sm:px-5">
+                            {(sub, index) => (<>
                             <div 
-                                key={sub.id || sub.slug}
-                                draggable={!reorderingSubcategories}
-                                onDragStart={(event) => {
-                                    setDraggedSubcategoryIndex(index);
-                                    setSubcategoryDropIndex(index);
-                                    event.dataTransfer.effectAllowed = "move";
-                                    event.dataTransfer.setData("text/plain", String(index));
-                                }}
-                                onDragEnter={() => {
-                                    if (draggedSubcategoryIndex !== null && draggedSubcategoryIndex !== index) {
-                                        setSubcategoryDropIndex(index);
-                                    }
-                                }}
-                                onDragOver={(event) => {
-                                    event.preventDefault();
-                                    event.dataTransfer.dropEffect = "move";
-                                }}
-                                onDrop={(event) => {
-                                    event.preventDefault();
-                                    const fromIndex = draggedSubcategoryIndex;
-                                    setDraggedSubcategoryIndex(null);
-                                    setSubcategoryDropIndex(null);
-                                    if (fromIndex !== null && fromIndex !== index) {
-                                        void moveSubcategory(fromIndex, index);
-                                    }
-                                }}
-                                onDragEnd={() => {
-                                    setDraggedSubcategoryIndex(null);
-                                    setSubcategoryDropIndex(null);
-                                }}
-                                className={`grid min-h-16 cursor-grab grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border px-4 py-2.5 transition-all active:cursor-grabbing sm:gap-4 sm:px-5 ${
-                                    draggedSubcategoryIndex === index
-                                        ? "border-neutral-400 bg-neutral-50 opacity-60 shadow-sm dark:border-neutral-500 dark:bg-neutral-900/60"
-                                        : subcategoryDropIndex === index
-                                            ? "border-neutral-500 bg-neutral-50 shadow-sm dark:border-neutral-400 dark:bg-neutral-900/40"
-                                            : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:border-neutral-600 dark:hover:bg-neutral-900/40"
-                                }`}
+                                className="contents"
                             >
-                                <button
-                                    type="button"
-                                    draggable={false}
-                                    data-no-drag="true"
-                                    onKeyDown={(event) => {
-                                        if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
-                                        event.preventDefault();
-                                        void moveSubcategory(index, index + (event.key === "ArrowUp" ? -1 : 1));
-                                    }}
-                                    className="flex h-8 w-5 items-center justify-center rounded text-neutral-500 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
-                                    aria-label={`Reorder ${sub.name}. Use Arrow Up or Arrow Down to move it.`}
-                                >
-                                    <GripVertical className="h-5 w-5" />
-                                </button>
+                                <SortableHandle className="flex h-10 w-8 items-center justify-center" />
                                 <span className="w-7 text-sm tabular-nums text-neutral-500" aria-hidden="true">
                                     {String(index + 1).padStart(2, "0")}
                                 </span>
@@ -709,7 +660,8 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                     </div>
                                 </div>
                             </div>
-                        ))
+                            </>)}
+                        </SortableList>
                     )}
                 </div>
             </section>

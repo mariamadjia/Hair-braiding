@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { X, GripVertical, Trash2, Plus, ArrowLeft, ArrowRight } from "lucide-react";
+import { X, Trash2, Plus } from "lucide-react";
 import { GalleryImage } from "@/lib/api/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ImageUploader } from "./ImageUploader";
+import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
 
 interface FlippingImagesModalProps {
     category: {
@@ -26,7 +27,6 @@ export function FlippingImagesModal({
   onSave,
 }: FlippingImagesModalProps) {
     const [selectedImages, setSelectedImages] = useState<string[]>(category.images || []);
-    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [showImagePicker, setShowImagePicker] = useState(false);
     const [saving, setSaving] = useState(false);
     const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
@@ -35,26 +35,6 @@ export function FlippingImagesModal({
     const MIN_IMAGES = 2;
     const MAX_IMAGES = 5;
 
-    const handleDragStart = (index: number) => {
-        setDraggedIndex(index);
-    };
-
-    const handleDragOver = (e: React.DragEvent, index: number) => {
-        e.preventDefault();
-        if (draggedIndex === null || draggedIndex === index) return;
-
-        const newImages = [...selectedImages];
-        const draggedImage = newImages[draggedIndex];
-        newImages.splice(draggedIndex, 1);
-        newImages.splice(index, 0, draggedImage);
-        
-        setSelectedImages(newImages);
-        setDraggedIndex(index);
-    };
-
-    const handleDragEnd = () => {
-        setDraggedIndex(null);
-    };
 
     const handleRemove = (index: number) => {
         if (selectedImages.length <= MIN_IMAGES) {
@@ -91,15 +71,6 @@ export function FlippingImagesModal({
         } finally {
             setSaving(false);
         }
-    };
-
-    const moveImage = (index: number, direction: -1 | 1) => {
-        const target = index + direction;
-        if (target < 0 || target >= selectedImages.length) return;
-        const next = [...selectedImages];
-        [next[index], next[target]] = [next[target], next[index]];
-        setSelectedImages(next);
-        setMessage(`Image moved to position ${target + 1}.`);
     };
 
     const allSelectableImageUrls = Array.from(
@@ -155,24 +126,10 @@ export function FlippingImagesModal({
                                 </button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 lg:gap-4">
-                                {selectedImages.map((imageUrl, index) => (
-                                    <div
-                                        key={index}
-                                        draggable
-                                        onDragStart={() => handleDragStart(index)}
-                                        onDragOver={(e) => handleDragOver(e, index)}
-                                        onDragEnd={handleDragEnd}
-                                        className={`relative group cursor-move border-2 rounded-lg overflow-hidden transition-all ${
-                                            draggedIndex === index
-                                                ? 'border-neutral-900 opacity-50'
-                                                : 'border-neutral-200 hover:border-neutral-400'
-                                        }`}
-                                    >
+                            <SortableList items={selectedImages} getId={imageUrl => imageUrl} getLabel={() => "Image"} onReorder={setSelectedImages} strategy="grid" ariaLabel="Flipping images order" className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 lg:gap-4" itemClassName={(_, __, dragging) => `relative group border-2 rounded-lg overflow-hidden transition-all ${dragging ? 'border-neutral-900 opacity-50' : 'border-neutral-200 hover:border-neutral-400'}`}>
+                                {(imageUrl, index) => (<>
                                         {/* Drag Handle */}
-                                        <div className="absolute top-2 left-2 z-10 bg-white rounded p-1 shadow-sm">
-                                            <GripVertical className="h-4 w-4 text-neutral-600" />
-                                        </div>
+                                        <SortableHandle className="absolute left-2 top-2 z-10 flex h-10 w-10 items-center justify-center bg-white shadow-sm" />
 
                                         {/* Order Badge */}
                                         <div className="absolute top-2 right-2 z-10 bg-neutral-900 text-white text-xs font-semibold rounded-full h-6 w-6 flex items-center justify-center">
@@ -189,10 +146,6 @@ export function FlippingImagesModal({
                                         </div>
 
                                         {/* Delete Button */}
-                                        <div className="absolute bottom-2 left-2 z-10 flex gap-1">
-                                            <button type="button" onClick={() => moveImage(index, -1)} disabled={index === 0} className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow disabled:opacity-30" aria-label={`Move image ${index + 1} left`}><ArrowLeft className="h-4 w-4" /></button>
-                                            <button type="button" onClick={() => moveImage(index, 1)} disabled={index === selectedImages.length - 1} className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow disabled:opacity-30" aria-label={`Move image ${index + 1} right`}><ArrowRight className="h-4 w-4" /></button>
-                                        </div>
                                         <button
                                             onClick={() => handleRemove(index)}
                                             disabled={selectedImages.length <= MIN_IMAGES}
@@ -206,9 +159,8 @@ export function FlippingImagesModal({
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </button>
-                                    </div>
-                                ))}
-                            </div>
+                                </>)}
+                            </SortableList>
                         )}
                     </div>
 
