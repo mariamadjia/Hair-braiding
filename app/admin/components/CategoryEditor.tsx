@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
-import { ChevronRight, FileText, Trash2, AlertCircle, CheckCircle, AlertTriangle, EllipsisVertical, Pencil } from "lucide-react";
+import { ChevronRight, Trash2, AlertCircle, CheckCircle, AlertTriangle, EllipsisVertical, Pencil, Tag, PanelsTopLeft, Sparkles } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
@@ -382,7 +382,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     };
 
     return (
-        <div className="w-full space-y-7 px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
+        <div className="mx-auto w-full max-w-6xl space-y-7 px-4 py-5 sm:px-6 lg:py-8">
             {loadingCategory && (
                 <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neutral-900"></div>
@@ -418,62 +418,89 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 <span className="font-semibold text-neutral-950 dark:text-white">{cat.name}</span>
             </nav>
 
-            {/* Category Stats */}
-            <div className="rounded-xl border border-neutral-200 bg-white px-6 py-7 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-                <div className="flex items-center gap-5 text-sm">
-                    <FileText className="h-6 w-6 text-neutral-700 dark:text-neutral-200" />
-                    <div className="flex items-center gap-5">
-                        <span className="text-base font-semibold text-neutral-950 dark:text-white">Subcategories</span>
-                    <span className="text-neutral-300 dark:text-neutral-600">•</span>
-                    <span className="text-base text-neutral-500 dark:text-neutral-400">
-                        {isLoadingSubcategorySummaries
-                            ? "Loading total…"
-                            : `${subSummaries.length} total ${subSummaries.length === 1 ? "subcategory" : "subcategories"}`}
-                    </span>
-                    </div>
+            <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 className="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white">Edit category</h2>
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                        Update the details and content shown for this service category.
+                    </p>
                 </div>
-            </div>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => guardedSetSelection({ type: "root" })}
+                        className={`${btnS} min-h-10 rounded-lg px-4 py-2 text-sm normal-case tracking-normal`}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={save}
+                        className={`${btnP} min-h-10 rounded-lg px-5 py-2 text-sm normal-case tracking-normal`}
+                        disabled={images.length < 3 || images.length > 5 || saving || nameError !== ""}
+                    >
+                        {saving ? "Saving…" : "Save changes"}
+                    </button>
+                </div>
+            </header>
 
-            <section className="space-y-6 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7 dark:border-neutral-700 dark:bg-neutral-800">
-                <h3 className="text-xl font-semibold text-neutral-950 dark:text-white">Category Details</h3>
+            <section className="space-y-5">
                 {loadingCategory ? (
-                    <div className="space-y-4">
-                        <div className="h-10 bg-neutral-200 dark:bg-neutral-700 rounded-sm animate-pulse"></div>
-                        <div className="border border-neutral-200 dark:border-neutral-700 rounded-sm p-4 bg-neutral-50 dark:bg-neutral-800">
-                            <div className="h-6 bg-neutral-200 dark:bg-neutral-700 rounded-sm animate-pulse mb-3"></div>
-                            <div className="h-32 bg-neutral-200 dark:bg-neutral-700 rounded-sm animate-pulse"></div>
-                        </div>
+                    <div className="space-y-5">
+                        <div className="h-52 animate-pulse rounded-xl bg-neutral-200 dark:bg-neutral-700" />
+                        <div className="h-96 animate-pulse rounded-xl bg-neutral-200 dark:bg-neutral-700" />
                     </div>
                 ) : (
                     <>
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">Category Name</label>
-                            <input 
-                                className={`${inp} min-h-12 rounded-lg ${nameError ? "border-neutral-950" : ""}`}
-                                value={name} 
-                                onChange={(e) => handleNameChange(e.target.value)} 
-                            />
-                            {nameError && (
-                                <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" />
-                                    {nameError}
-                                </p>
-                            )}
-                            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                                Choose a clear, descriptive name for your category (e.g., "Box Braids")
-                            </p>
+                        <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
+                            <div className="mb-6 flex items-start gap-4">
+                                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f6f0e8] text-[#6b4426] dark:bg-neutral-700 dark:text-amber-200">
+                                    <Tag className="h-5 w-5" aria-hidden />
+                                </span>
+                                <div>
+                                    <h3 className="text-base font-semibold text-neutral-950 dark:text-white">Category information</h3>
+                                    <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">This information helps keep your services organized.</p>
+                                </div>
+                            </div>
+                            <div>
+                                <label htmlFor="category-name" className="mb-2 block text-sm font-semibold text-neutral-800 dark:text-neutral-200">Category name</label>
+                                <input
+                                    id="category-name"
+                                    className={`${inp} min-h-11 rounded-lg ${nameError ? "border-red-500" : ""}`}
+                                    value={name}
+                                    maxLength={100}
+                                    onChange={(e) => handleNameChange(e.target.value)}
+                                    aria-invalid={Boolean(nameError)}
+                                    aria-describedby={nameError ? "category-name-error" : "category-name-help"}
+                                />
+                                {nameError ? (
+                                    <p id="category-name-error" className="mt-2 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                                        <AlertCircle className="h-3 w-3" /> {nameError}
+                                    </p>
+                                ) : (
+                                    <div id="category-name-help" className="mt-2 flex items-start justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+                                        <span>Choose a clear, descriptive name for your category (e.g., “Box Braids”).</span>
+                                        <span className="shrink-0 tabular-nums">{name.length}/100</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 p-4 dark:border-neutral-700 dark:bg-neutral-900/30">
-                            <div className="mb-4">
-                                <h4 className="text-sm font-semibold text-neutral-950 dark:text-white">Services Page Content</h4>
-                                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                                    Shown on the public Signature Services page.
-                                </p>
-                            </div>
-                            <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:items-start">
+                        <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
+                            <div className="mb-6 flex items-start gap-4">
+                                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f6f0e8] text-[#6b4426] dark:bg-neutral-700 dark:text-amber-200">
+                                    <PanelsTopLeft className="h-5 w-5" aria-hidden />
+                                </span>
                                 <div>
-                                    <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300" htmlFor="service-tagline">
+                                    <h3 className="text-base font-semibold text-neutral-950 dark:text-white">Services page content</h3>
+                                    <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                                    Shown on the public Signature Services page.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="space-y-5">
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-neutral-800 dark:text-neutral-200" htmlFor="service-tagline">
                                         Tagline
                                     </label>
                                     <input
@@ -488,9 +515,13 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                             setErrorMessage(null);
                                         }}
                                     />
+                                    <div className="mt-2 flex items-start justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+                                        <span>A short, punchy statement that represents this service.</span>
+                                        <span className="shrink-0 tabular-nums">{serviceTagline.length}/255</span>
+                                    </div>
                                 </div>
                                 <div>
-                                    <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300" htmlFor="service-description">
+                                    <label className="mb-2 block text-sm font-semibold text-neutral-800 dark:text-neutral-200" htmlFor="service-description">
                                         Description
                                     </label>
                                     <textarea
@@ -505,12 +536,33 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                             setErrorMessage(null);
                                         }}
                                     />
+                                    <div className="mt-2 flex items-start justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+                                        <span>Provide more detail to help clients understand what to expect.</span>
+                                        <span className="shrink-0 tabular-nums">{serviceDescription.length}/1000</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 border-t border-neutral-200 pt-5 dark:border-neutral-700">
+                                <p className="mb-3 text-sm font-semibold text-[#6b4426] dark:text-amber-200">Preview</p>
+                                <div className="rounded-lg border border-[#dfd2c2] bg-[#fcf9f5] p-5 dark:border-neutral-600 dark:bg-neutral-900/50">
+                                    <p className="text-sm font-semibold tracking-wide text-[#5b3219] dark:text-amber-100">
+                                        {serviceTagline.trim() || "Your service tagline"}
+                                    </p>
+                                    <p className="mt-2 text-sm leading-6 text-neutral-700 dark:text-neutral-300">
+                                        {serviceDescription.trim() || "Your service description will appear here."}
+                                    </p>
                                 </div>
                             </div>
                         </div>
+
+                        <p className="flex items-center justify-center gap-2 text-center text-xs text-neutral-500 dark:text-neutral-400">
+                            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                            These changes will be visible on your public Signature Services page.
+                        </p>
                 
                 {/* Gallery Photos Section */}
-                <div className="border-t border-neutral-200 pt-6 dark:border-neutral-700">
+                <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
                     <div className="mb-5 flex items-center gap-3">
                         <h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Gallery Photos</h3>
                         <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">Required 3–5</span>
@@ -546,7 +598,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     </div>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end border-t border-neutral-200 pt-5 dark:border-neutral-700">
                     <button
                         type="button"
                         onClick={save}
