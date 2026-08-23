@@ -523,16 +523,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     </div>
                 </div>
 
-                <div className="flex justify-end border-t border-neutral-200 pt-5 dark:border-neutral-700">
-                    <button
-                        type="button"
-                        onClick={save}
-                        className={`${btnP} min-h-11 rounded-lg px-6 py-2.5 text-sm normal-case tracking-normal`}
-                        disabled={images.length < 3 || images.length > 5 || saving || nameError !== ""}
-                    >
-                        {saving ? 'Saving...' : 'Save changes'}
-                    </button>
-                </div>
                 </>
                 )}
             </section>

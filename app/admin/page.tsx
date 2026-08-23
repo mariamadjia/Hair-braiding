@@ -566,6 +566,16 @@ export default function AdminPage() {
             && !window.confirm("Discard your unsaved pricing changes and leave Pricing?")) {
             return;
         }
+        if (section !== currentSection
+            && document.documentElement.dataset.servicesContentDirty === "true"
+            && !window.confirm("Discard your unsaved Services page changes?")) {
+            return;
+        }
+        if (section !== currentSection
+            && document.documentElement.dataset.servicesDirty === "true"
+            && !window.confirm("Discard your unsaved Services changes?")) {
+            return;
+        }
         setCurrentSection(section);
         const url = new URL(window.location.href);
         url.searchParams.set("section", section);
