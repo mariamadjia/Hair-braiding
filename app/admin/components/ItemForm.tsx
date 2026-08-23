@@ -126,12 +126,6 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                     <h2 className="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white">Edit service</h2>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Configure availability, pricing, and customer choices.</p>
                 </div>
-                <div className="flex gap-2">
-                    <button type="button" onClick={handleCancel} className={btnS} disabled={saving}>Cancel</button>
-                    <button type="submit" className={`${btnP} inline-flex min-w-32 items-center justify-center gap-2`} disabled={!dirty || !item.name.trim() || saving || uploading}>
-                        {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{saving ? "Saving…" : "Save changes"}
-                    </button>
-                </div>
             </header>
             <div className="space-y-5">
             {error && <div role="alert" tabIndex={-1} className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"><AlertCircle className="h-4 w-4" /><span className="flex-1">{error}</span><button type="button" aria-label="Dismiss error" onClick={() => setError(null)}><X className="h-4 w-4" /></button></div>}
@@ -168,6 +162,28 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                 {item.foundationChoicesEnabled && <p className="mt-4 text-xs text-neutral-500">Regular and Knotless pricing can be managed separately below.</p>}
                 </div>
             </fieldset>
+            </section>
+
+            <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
+                <div className="mb-5 flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#b9855b] text-sm font-semibold text-[#7a4a28]">3</span><h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Booking deposit</h3></div>
+                <p className="text-xs text-neutral-500">Amount required to request this service. The balance is due later.</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <button type="button" aria-pressed={!customDeposit} onClick={() => { setCustomDeposit(false); set("depositOverrideCents", null); }} className={`rounded-lg border px-4 py-3 text-left transition ${!customDeposit ? "border-[#a96835] bg-[#fcf7f1] dark:border-amber-300 dark:bg-neutral-800" : "border-neutral-200 dark:border-neutral-700"}`}><span className="block text-sm font-semibold">Salon default · ${(defaultDepositCents / 100).toFixed(2)}</span><span className="mt-1 block text-xs text-neutral-500">Automatically follows the salon default.</span></button>
+                    <button type="button" aria-pressed={customDeposit} onClick={() => { const cents = item.depositOverrideCents ?? defaultDepositCents; setCustomDeposit(true); setDepositInput((cents / 100).toFixed(2)); set("depositOverrideCents", cents); }} className={`rounded-lg border px-4 py-3 text-left transition ${customDeposit ? "border-[#a96835] bg-[#fcf7f1] dark:border-amber-300 dark:bg-neutral-800" : "border-neutral-200 dark:border-neutral-700"}`}><span className="block text-sm font-semibold">Custom amount</span><span className="mt-1 block text-xs text-neutral-500">Set a different amount for this service.</span></button>
+                </div>
+                {customDeposit && <label className="mt-3 block max-w-xs"><span className={lbl}>Deposit amount *</span><span className="flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-900"><span className="border-r border-neutral-200 px-3 text-neutral-500 dark:border-neutral-700">$</span><input aria-label="Deposit amount" inputMode="decimal" className="min-w-0 flex-1 bg-transparent px-3 outline-none" value={depositInput} onChange={event => { const clean = event.target.value.replace(/[^0-9.]/g, ""); setDepositInput(clean); set("depositOverrideCents", clean && Number.isFinite(Number(clean)) ? Math.round(Number(clean) * 100) : null); }} /></span></label>}
+                <p className="mt-3 text-xs font-medium text-neutral-700 dark:text-neutral-300">Customers will see a ${(Number(item.depositOverrideCents ?? defaultDepositCents) / 100).toFixed(2)} deposit required.</p>
+            </section>
+
+            <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
+                <div className="mb-4 flex items-center justify-between gap-3"><h3 className="text-base font-semibold text-neutral-900 dark:text-white">Photos for this size</h3><span className="text-xs text-neutral-500">{photos.length} uploaded</span></div>
+                <div className="flex flex-wrap gap-2.5">
+                    <label aria-label="Upload size photos" className={`flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-neutral-300 text-neutral-500 transition focus-within:ring-2 focus-within:ring-neutral-400 ${uploading ? "opacity-50" : "hover:border-neutral-500 hover:bg-neutral-50"}`}>{uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Plus className="h-5 w-5" /><span className="text-[10px] font-medium">Add photo</span></>}<input type="file" accept="image/*" multiple className="sr-only" disabled={uploading || saving} onChange={uploadPhotos} /></label>
+                    {photos.map((photo, index) => <div key={`${photo}-${index}`} className="group relative"><img src={toProxyUrl(photo)} alt={`Size photo ${index + 1}`} className="h-20 w-20 rounded-lg border object-cover" /><button type="button" aria-label={`Remove size photo ${index + 1}`} onClick={() => set("sizePhotos", photos.filter((_, photoIndex) => photoIndex !== index))} className="absolute -right-1 -top-1 rounded-full bg-red-600 p-1 text-white opacity-100 focus:ring-2 focus:ring-red-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"><X className="h-3 w-3" /></button></div>)}
+                </div>
+            </section>
+
+            <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
 
 
             {item.pricingMode === "FIXED" ? (
@@ -243,29 +259,16 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
             )}
             </section>
 
-            <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
-                <div className="mb-5 flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#b9855b] text-sm font-semibold text-[#7a4a28]">3</span><h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Booking deposit</h3></div>
-                <p className="text-xs text-neutral-500">Amount required to request this service. The balance is due later.</p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    <button type="button" aria-pressed={!customDeposit} onClick={() => { setCustomDeposit(false); set("depositOverrideCents", null); }} className={`rounded-lg border px-4 py-3 text-left transition ${!customDeposit ? "border-[#a96835] bg-[#fcf7f1] dark:border-amber-300 dark:bg-neutral-800" : "border-neutral-200 dark:border-neutral-700"}`}><span className="block text-sm font-semibold">Salon default · ${(defaultDepositCents / 100).toFixed(2)}</span><span className="mt-1 block text-xs text-neutral-500">Automatically follows the salon default.</span></button>
-                    <button type="button" aria-pressed={customDeposit} onClick={() => { const cents = item.depositOverrideCents ?? defaultDepositCents; setCustomDeposit(true); setDepositInput((cents / 100).toFixed(2)); set("depositOverrideCents", cents); }} className={`rounded-lg border px-4 py-3 text-left transition ${customDeposit ? "border-[#a96835] bg-[#fcf7f1] dark:border-amber-300 dark:bg-neutral-800" : "border-neutral-200 dark:border-neutral-700"}`}><span className="block text-sm font-semibold">Custom amount</span><span className="mt-1 block text-xs text-neutral-500">Set a different amount for this service.</span></button>
-                </div>
-                {customDeposit && <label className="mt-3 block max-w-xs"><span className={lbl}>Deposit amount *</span><span className="flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-900"><span className="border-r border-neutral-200 px-3 text-neutral-500 dark:border-neutral-700">$</span><input aria-label="Deposit amount" inputMode="decimal" className="min-w-0 flex-1 bg-transparent px-3 outline-none" value={depositInput} onChange={event => { const clean = event.target.value.replace(/[^0-9.]/g, ""); setDepositInput(clean); set("depositOverrideCents", clean && Number.isFinite(Number(clean)) ? Math.round(Number(clean) * 100) : null); }} /></span></label>}
-                <p className="mt-3 text-xs font-medium text-neutral-700 dark:text-neutral-300">Customers will see a ${(Number(item.depositOverrideCents ?? defaultDepositCents) / 100).toFixed(2)} deposit required.</p>
-            </section>
-
-            <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
-                <div className="mb-4 flex items-center justify-between gap-3"><h3 className="text-base font-semibold text-neutral-900 dark:text-white">Photos for this size</h3><span className="text-xs text-neutral-500">{photos.length} uploaded</span></div>
-                <div className="flex flex-wrap gap-2.5">
-                    <label aria-label="Upload size photos" className={`flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-neutral-300 text-neutral-500 transition focus-within:ring-2 focus-within:ring-neutral-400 ${uploading ? "opacity-50" : "hover:border-neutral-500 hover:bg-neutral-50"}`}>{uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Plus className="h-5 w-5" /><span className="text-[10px] font-medium">Add photo</span></>}<input type="file" accept="image/*" multiple className="sr-only" disabled={uploading || saving} onChange={uploadPhotos} /></label>
-                    {photos.map((photo, index) => <div key={`${photo}-${index}`} className="group relative"><img src={toProxyUrl(photo)} alt={`Size photo ${index + 1}`} className="h-20 w-20 rounded-lg border object-cover" /><button type="button" aria-label={`Remove size photo ${index + 1}`} onClick={() => set("sizePhotos", photos.filter((_, photoIndex) => photoIndex !== index))} className="absolute -right-1 -top-1 rounded-full bg-red-600 p-1 text-white opacity-100 focus:ring-2 focus:ring-red-400 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"><X className="h-3 w-3" /></button></div>)}
-                </div>
-            </section>
-
             </div>
-            <div className="sticky bottom-3 z-10 flex flex-col gap-3 rounded-xl border border-[#eadcca] bg-[#fffaf4]/95 px-5 py-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between dark:border-neutral-700 dark:bg-neutral-900/95">
-                <p className="text-sm text-neutral-700 dark:text-neutral-300"><span className="font-semibold">{item.name || "Unnamed service"}</span><span className="mx-2">·</span>{item.pricingMode === "FIXED" ? "Fixed price" : "Price varies by length"}<span className="mx-2">·</span>{(item.durationMinutes ?? 60) < 60 ? `${item.durationMinutes ?? 60}-minute appointment` : `${(item.durationMinutes ?? 60) / 60}-hour appointment`}<span className="mx-2">·</span>${(Number(item.depositOverrideCents ?? defaultDepositCents) / 100).toFixed(2)} deposit</p>
-                <button type="submit" className={`${btnP} inline-flex min-w-32 items-center justify-center gap-2`} disabled={!dirty || !item.name.trim() || saving || uploading}>{saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{saving ? "Saving…" : "Save changes"}</button>
+            <div className="sticky bottom-3 z-10 flex flex-col gap-3 rounded-xl border border-[#eadcca] bg-[#fffaf4]/95 px-5 py-4 shadow-lg backdrop-blur lg:flex-row lg:items-center dark:border-neutral-700 dark:bg-neutral-900/95">
+                <p className="min-w-0 flex-1 text-sm text-neutral-700 dark:text-neutral-300"><span className="font-semibold">{item.name || "Unnamed service"}</span><span className="mx-2">·</span>{item.pricingMode === "FIXED" ? "Fixed price" : "Price varies by length"}<span className="mx-2">·</span>{(item.durationMinutes ?? 60) < 60 ? `${item.durationMinutes ?? 60}-minute appointment` : `${(item.durationMinutes ?? 60) / 60}-hour appointment`}<span className="mx-2">·</span>${(Number(item.depositOverrideCents ?? defaultDepositCents) / 100).toFixed(2)} deposit</p>
+                <p className={`text-xs font-semibold ${success ? "text-green-700 dark:text-green-400" : dirty ? "text-amber-700 dark:text-amber-300" : "text-neutral-500"}`} role="status" aria-live="polite">
+                    {saving ? "Saving…" : success ? "Saved successfully" : dirty ? "Unsaved changes" : "All changes saved"}
+                </p>
+                <div className="flex gap-2 lg:ml-2">
+                    <button type="button" onClick={handleCancel} className={btnS} disabled={saving}>Cancel</button>
+                    <button type="submit" className={`${btnP} inline-flex min-w-32 flex-1 items-center justify-center gap-2 lg:flex-none`} disabled={!dirty || !item.name.trim() || saving || uploading}>{saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{saving ? "Saving…" : "Save changes"}</button>
+                </div>
             </div>
         </form>
     );
