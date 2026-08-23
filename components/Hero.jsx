@@ -151,21 +151,6 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
                   />
                 </motion.div>
               </AnimatePresence>
-
-              {/* Image Indicators */}
-              <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-0">
-                {images.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className="flex h-11 w-6 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                    aria-label={`Go to image ${index + 1}`}
-                    aria-current={index === currentImageIndex ? "true" : undefined}
-                  >
-                    <span className={`block h-1.5 rounded-full transition-all ${index === currentImageIndex ? "w-5 bg-white" : "w-1.5 bg-white/60"}`} />
-                  </button>
-                ))}
-              </div>
             </>
           ) : (
             <div className="flex items-center justify-center h-full">
