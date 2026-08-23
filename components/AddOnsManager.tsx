@@ -135,7 +135,7 @@ export function AddOnsManager({ sub, items, data, token, onError, onSuccess }: P
   };
 
   return <>
-    <section className="mx-auto w-full max-w-5xl overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+    <section className="w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
       <div className="flex items-center justify-between gap-4 border-b border-neutral-200 px-5 py-4 dark:border-neutral-800 sm:px-6">
         <div><div className="flex items-center gap-2"><h3 className="text-base font-semibold text-neutral-950 dark:text-white">Add-ons</h3><span className="rounded-md bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">{addOns.length}</span></div><p className="mt-1 text-xs text-neutral-500">Optional extras customers can select after choosing a length.</p></div>
         <div className="flex flex-wrap justify-end gap-2"><button onClick={() => void showLibrary()} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-neutral-300 px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"><Library className="h-4 w-4" />Add existing</button><button onClick={showCreate} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#5b3219] px-4 text-xs font-semibold text-white transition hover:bg-[#442412] dark:bg-white dark:text-neutral-950"><Plus className="h-4 w-4" />Create new</button></div>

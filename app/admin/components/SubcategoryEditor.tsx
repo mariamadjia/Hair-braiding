@@ -759,7 +759,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             </div>
 
             {/* Settings shared by every size */}
-            {items.length > 0 && <div className="mx-auto w-full max-w-5xl space-y-4">
+            {items.length > 0 && <div className="w-full space-y-4">
                 <header>
                     <h3 className="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white">Size settings</h3>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Manage choices and guides shared by all {items.length} sizes.</p>
