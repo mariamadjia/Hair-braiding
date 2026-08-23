@@ -7,7 +7,6 @@ import { GalleryImage } from "@/lib/api/gallery";
 import { validateFile, formatFileSize } from "../utils/fileValidation";
 import { compressImages } from "../utils/imageCompression";
 import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
-import { ServicesSaveBar } from "./ServicesSaveBar";
 
 interface EditSubcategoryModalProps {
     subcategory: {
@@ -423,7 +422,8 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                     </div>
                 </div>
 
-                <div className="px-6 pt-3 text-sm text-neutral-600 dark:text-neutral-400">
+                {/* Gallery keeps its original local footer behavior. */}
+                <div className="p-6 border-t border-neutral-200 dark:border-neutral-700 flex items-center justify-between bg-neutral-50 dark:bg-neutral-800/50 shrink-0">
                     <div className="text-sm text-neutral-600 dark:text-neutral-400">
                         {!name.trim() && (
                             <span className="text-red-600 dark:text-red-400 font-medium">
@@ -436,8 +436,25 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                             </span>
                         )}
                     </div>
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={handleClose}
+                            disabled={saving}
+                            className="px-4 py-2 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={!name.trim() || images.length < 1 || uploading || saving || loadingImages}
+                            className="px-4 py-2 bg-neutral-900 dark:bg-neutral-700 text-white rounded-sm hover:bg-neutral-800 dark:hover:bg-neutral-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {saving ? "Saving..." : "Save Changes"}
+                        </button>
+                    </div>
                 </div>
-                <ServicesSaveBar visible={true} saving={saving} disabled={!name.trim() || images.length < 1 || uploading || loadingImages} onSave={() => void handleSave()} onDiscard={handleClose} mode="dialog" />
             </div>
         </div>
     );
