@@ -14,6 +14,7 @@ import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
 import type { GuideSettings } from "@/lib/guides";
 import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
+import { ServicesSaveBar } from "./ServicesSaveBar";
 
 function sortItemsBySize(items: BookingItem[]): { item: BookingItem; originalIdx: number }[] {
     return items.map((item, idx) => ({ item, originalIdx: idx })).sort((a, b) => {
@@ -750,16 +751,6 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                         )}
                     </div>
 
-                    <div className="flex justify-end pt-1">
-                        <button
-                            type="button"
-                            onClick={save}
-                            disabled={!dirty || saving}
-                            className="min-h-10 rounded-lg bg-neutral-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
-                        >
-                            {saving ? 'Saving…' : 'Save changes'}
-                        </button>
-                    </div>
                     </div>
                 </div>
             </div>
@@ -1002,6 +993,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                     )}
                 </div>
             </div>
+            <ServicesSaveBar
+                visible={dirty}
+                saving={saving}
+                disabled={!name.trim()}
+                onSave={() => void save()}
+            />
         </div>
     );
 }

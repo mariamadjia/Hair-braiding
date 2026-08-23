@@ -9,6 +9,7 @@ import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
 import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
+import { ServicesSaveBar } from "./ServicesSaveBar";
 
 type Selection =
     | { type: "root" }
@@ -433,14 +434,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     >
                         Cancel
                     </button>
-                    <button
-                        type="button"
-                        onClick={save}
-                        className={`${btnP} min-h-10 rounded-lg px-5 py-2 text-sm normal-case tracking-normal`}
-                        disabled={images.length < 3 || images.length > 5 || saving || nameError !== ""}
-                    >
-                        {saving ? "Saving…" : "Save changes"}
-                    </button>
                 </div>
             </header>
 
@@ -523,16 +516,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     </div>
                 </div>
 
-                <div className="flex justify-end border-t border-neutral-200 pt-5 dark:border-neutral-700">
-                    <button
-                        type="button"
-                        onClick={save}
-                        className={`${btnP} min-h-11 rounded-lg px-6 py-2.5 text-sm normal-case tracking-normal`}
-                        disabled={images.length < 3 || images.length > 5 || saving || nameError !== ""}
-                    >
-                        {saving ? 'Saving...' : 'Save changes'}
-                    </button>
-                </div>
                 </>
                 )}
             </section>
@@ -642,6 +625,13 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     )}
                 </div>
             </section>
+
+            <ServicesSaveBar
+                visible={dirty}
+                saving={saving}
+                disabled={images.length < 3 || images.length > 5 || Boolean(nameError)}
+                onSave={() => void save()}
+            />
         </div>
     );
 }
