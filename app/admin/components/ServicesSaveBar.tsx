@@ -25,7 +25,7 @@ export function ServicesSaveBar({
 
     return (
         <div className={mode === "page" ? "fixed bottom-0 left-0 right-0 z-40 border-t border-[#e4d8cc] bg-[#fffdf9]/95 px-3 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_35px_rgba(45,24,15,.10)] backdrop-blur md:left-64 md:px-4 dark:border-neutral-700 dark:bg-neutral-900/95" : "sticky bottom-0 z-20 -mx-6 mt-8 border-t border-[#e4d8cc] bg-[#fffdf9]/95 px-6 py-3 shadow-[0_-12px_35px_rgba(45,24,15,.10)] backdrop-blur dark:border-neutral-700 dark:bg-neutral-900/95 sm:-mx-8 sm:px-8"}>
-            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+            <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div className="flex min-w-0 items-center gap-3">
                     <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#b7734d]" />
                     <div>
@@ -33,7 +33,7 @@ export function ServicesSaveBar({
                         <p className="hidden text-xs text-neutral-500 sm:block">Review your changes before saving.</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-3">
                     <button
                         type="button"
                         onClick={onDiscard}

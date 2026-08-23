@@ -392,7 +392,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     };
 
     return (
-        <div className="mx-auto w-full max-w-6xl space-y-7 px-4 py-5 sm:px-6 lg:py-8">
+        <div className="mx-auto w-full min-w-0 max-w-6xl space-y-5 px-3 py-4 pb-28 sm:space-y-7 sm:px-6 sm:py-5 lg:py-8">
             {loadingCategory && (
                 <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neutral-900"></div>
@@ -416,7 +416,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             )}
 
             {/* Breadcrumb Navigation */}
-            <nav className="flex items-center gap-3 text-base text-neutral-500 dark:text-neutral-400" aria-label="Breadcrumb">
+            <nav className="flex min-w-0 items-center gap-2 text-sm text-neutral-500 sm:gap-3 sm:text-base dark:text-neutral-400" aria-label="Breadcrumb">
                 <button 
                     type="button" 
                     onClick={() => guardedSetSelection({ type: "root" })} 
@@ -425,12 +425,12 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                     All Categories
                 </button>
                 <ChevronRight className="h-5 w-5" />
-                <span className="font-semibold text-neutral-950 dark:text-white">{cat.name}</span>
+                <span className="truncate font-semibold text-neutral-950 dark:text-white">{cat.name}</span>
             </nav>
 
             <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h2 className="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white">Edit category</h2>
+                    <h2 className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl dark:text-white">Edit category</h2>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                         Update the details and content shown for this service category.
                     </p>
@@ -489,7 +489,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                         </div>
 
                 {/* Gallery Photos Section */}
-                <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
                     <div className="mb-5 flex items-center gap-3">
                         <h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Gallery Photos</h3>
                         <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">Required 3–5</span>
@@ -529,10 +529,10 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 )}
             </section>
 
-            <section className="space-y-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7 dark:border-neutral-700 dark:bg-neutral-800">
-                <div className="flex items-center justify-between">
+            <section className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-7 dark:border-neutral-700 dark:bg-neutral-800">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h3 className="text-xl font-semibold text-neutral-950 dark:text-white">Subcategories</h3>
-                    <button type="button" onClick={() => setAddingSub(true)} className={`${btnP} min-h-10 rounded-lg px-4 py-2 text-xs normal-case tracking-normal`}>+ Add subcategory</button>
+                    <button type="button" onClick={() => setAddingSub(true)} className={`${btnP} min-h-11 w-full rounded-lg px-4 py-2 text-xs normal-case tracking-normal sm:w-auto`}>+ Add subcategory</button>
                 </div>
 
                 {addingSub && (
@@ -559,13 +559,13 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                             <button type="button" onClick={() => setAddingSub(true)} className={`${btnP} mt-4 min-h-10 rounded-lg px-4 py-2 text-xs normal-case tracking-normal`}>+ Add subcategory</button>
                         </div>
                     ) : (
-                        <SortableList items={subSummaries} getId={sub => sub.id ?? sub.slug} getLabel={sub => sub.name} onReorder={(_, meta) => void moveSubcategory(meta.fromIndex, meta.toIndex)} disabled={reorderingSubcategories} ariaLabel={`${cat.name} style order`} className="space-y-2.5" itemClassName="grid min-h-16 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-neutral-200 px-4 py-2.5 transition-all hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:border-neutral-600 dark:hover:bg-neutral-900/40 sm:gap-4 sm:px-5">
+                        <SortableList items={subSummaries} getId={sub => sub.id ?? sub.slug} getLabel={sub => sub.name} onReorder={(_, meta) => void moveSubcategory(meta.fromIndex, meta.toIndex)} disabled={reorderingSubcategories} ariaLabel={`${cat.name} style order`} className="space-y-2.5" itemClassName="grid min-h-16 min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-neutral-200 px-2.5 py-2.5 transition-all hover:border-neutral-300 hover:bg-neutral-50 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto] sm:gap-4 sm:px-5 dark:border-neutral-700 dark:hover:border-neutral-600 dark:hover:bg-neutral-900/40">
                             {(sub, index) => (<>
                             <div 
                                 className="contents"
                             >
                                 <SortableHandle className="flex h-10 w-8 items-center justify-center" />
-                                <span className="w-7 text-sm tabular-nums text-neutral-500" aria-hidden="true">
+                                <span className="hidden w-7 text-sm tabular-nums text-neutral-500 sm:block" aria-hidden="true">
                                     {String(index + 1).padStart(2, "0")}
                                 </span>
                                 <button 
@@ -592,7 +592,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                             await onLoadSubcategoryDetail(sub.slug, token);
                                             setSelection({ type: "subcategory", catSlug: cat.slug, subSlug: sub.slug });
                                         }}
-                                        className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
+                                        className="hidden h-11 w-11 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 sm:flex dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
                                         aria-label={`Edit ${sub.name}`}
                                     >
                                         <Pencil className="h-4 w-4" />
@@ -603,7 +603,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                             draggable={false}
                                             data-no-drag="true"
                                             onClick={() => setOpenSubcategoryMenuSlug((current) => current === sub.slug ? null : sub.slug)}
-                                            className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
+                                            className="flex h-11 w-11 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
                                             aria-label={`More actions for ${sub.name}`}
                                             aria-expanded={openSubcategoryMenuSlug === sub.slug}
                                         >

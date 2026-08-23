@@ -121,10 +121,10 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
     };
 
     return (
-        <form onSubmit={(event) => { event.preventDefault(); void handleSave(); }} className="mx-auto max-w-5xl space-y-5">
+        <form onSubmit={(event) => { event.preventDefault(); void handleSave(); }} className="mx-auto max-w-5xl space-y-4 pb-24 sm:space-y-5">
             <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h2 className="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white">Edit service</h2>
+                    <h2 className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl dark:text-white">Edit service</h2>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Configure availability, pricing, and customer choices.</p>
                 </div>
             </header>
@@ -132,7 +132,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
             {error && <div role="alert" tabIndex={-1} className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"><AlertCircle className="h-4 w-4" /><span className="flex-1">{error}</span><button type="button" aria-label="Dismiss error" onClick={() => setError(null)}><X className="h-4 w-4" /></button></div>}
             {success && <div role="status" className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700"><CheckCircle className="h-4 w-4" />{success}</div>}
 
-            <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
+            <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
                 <div className="mb-5 flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#b9855b] text-sm font-semibold text-[#7a4a28]">1</span><h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Basic information</h3></div>
                 <div className="grid gap-4 md:grid-cols-2">
                     <label className="block"><span className={lbl}>Size name *</span><input className={inp} value={item.name} onChange={event => set("name", event.target.value)} placeholder="Small" /></label>
@@ -142,7 +142,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                 </div>
             </section>
 
-            <section className="space-y-6 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
+            <section className="space-y-5 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:space-y-6 sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
             <div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#b9855b] text-sm font-semibold text-[#7a4a28]">2</span><h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Pricing</h3></div>
             <fieldset>
                 <legend className="text-sm font-semibold text-neutral-900 dark:text-white">Pricing method</legend>
@@ -165,7 +165,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
             </fieldset>
             </section>
 
-            <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
+            <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
                 <div className="mb-5 flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#b9855b] text-sm font-semibold text-[#7a4a28]">3</span><h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Booking deposit</h3></div>
                 <p className="text-xs text-neutral-500">Amount required to request this service. The balance is due later.</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">

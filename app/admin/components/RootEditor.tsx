@@ -183,8 +183,8 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
     };
 
     return (
-        <div className="w-full bg-[#f7f5f2] px-4 py-5 sm:px-6 lg:px-10 lg:py-8 dark:bg-neutral-900">
-            <div className="space-y-5 rounded-2xl border border-[#e8e3dc] bg-[#fcfbf9] p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <div className="w-full min-w-0 bg-[#f7f5f2] px-3 py-3 sm:px-6 sm:py-5 lg:px-10 lg:py-8 dark:bg-neutral-900">
+            <div className="space-y-4 rounded-xl border border-[#e8e3dc] bg-[#fcfbf9] p-3 shadow-sm sm:space-y-5 sm:rounded-2xl sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
             {errorMsg && (
                 <div role="alert" className="flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -195,13 +195,13 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
             {reorderStatus && (
                 <div role="status" aria-live="polite" className="sr-only">{reorderStatus}</div>
             )}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 className="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white">Service categories</h2>
+                    <h2 className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl dark:text-white">Service categories</h2>
                     <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">Organize and manage your braiding service categories.</p>
                 </div>
                 {!adding && (
-                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-11 rounded-lg px-5 py-2.5 text-sm normal-case tracking-normal`}>+ Add category</button>
+                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-11 w-full rounded-lg px-5 py-2.5 text-sm normal-case tracking-normal sm:w-auto`}>+ Add category</button>
                 )}
             </div>
 
@@ -246,7 +246,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                     <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
                         {sortOrder === "custom" ? "Drag to reorder" : "Choose Custom order to reorder categories"}
                     </p>
-                    <SortableList items={visibleCategories} getId={cat => cat.slug} getLabel={cat => cat.name} onReorder={(next) => { if (sortOrder === "custom") void persistCategoryOrder(next); }} disabled={sortOrder !== "custom"} ariaLabel="Service category order" className="space-y-2" itemClassName="group relative flex min-h-20 items-center gap-3 rounded-xl border border-[#e7e3dd] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(35,28,22,0.04)] transition-all hover:border-neutral-300 hover:shadow-[0_5px_16px_rgba(35,28,22,0.07)] dark:border-neutral-700 dark:bg-neutral-900/20">
+                    <SortableList items={visibleCategories} getId={cat => cat.slug} getLabel={cat => cat.name} onReorder={(next) => { if (sortOrder === "custom") void persistCategoryOrder(next); }} disabled={sortOrder !== "custom"} ariaLabel="Service category order" className="space-y-2" itemClassName="group relative flex min-h-20 min-w-0 items-center gap-2 rounded-xl border border-[#e7e3dd] bg-white px-2.5 py-3 shadow-[0_2px_8px_rgba(35,28,22,0.04)] transition-all hover:border-neutral-300 hover:shadow-[0_5px_16px_rgba(35,28,22,0.07)] sm:gap-3 sm:px-4 dark:border-neutral-700 dark:bg-neutral-900/20">
                 {(cat, index) => {
                     return (
                         <div 
@@ -255,7 +255,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                             {sortOrder === "custom" && (
                                 <>
                                     <SortableHandle className="flex h-10 w-8 shrink-0 items-center justify-center" />
-                                    <span className="w-8 shrink-0 text-sm tabular-nums text-neutral-500" aria-hidden="true">
+                                    <span className="hidden w-8 shrink-0 text-sm tabular-nums text-neutral-500 sm:block" aria-hidden="true">
                                         {String(index + 1).padStart(2, "0")}
                                     </span>
                                 </>
@@ -286,12 +286,12 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                             </button>
                             
                             {/* Actions */}
-                            <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2">
                                 <button
                                     type="button" 
                                     data-no-drag="true"
                                     onClick={() => setSelection({ type: "category", catSlug: cat.slug })} 
-                                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
+                                    className="hidden h-11 w-11 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 sm:flex dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
                                     aria-label={`Edit ${cat.name}`}
                                 >
                                     <Pencil className="h-4 w-4" />
@@ -301,7 +301,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
                                         type="button"
                                         data-no-drag="true"
                                         onClick={() => setOpenMenuSlug((current) => current === cat.slug ? null : cat.slug)}
-                                        className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
+                                        className="flex h-11 w-11 items-center justify-center rounded-lg border border-neutral-300 text-neutral-700 transition hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-white dark:hover:bg-neutral-700"
                                         aria-label={`More actions for ${cat.name}`}
                                         aria-expanded={openMenuSlug === cat.slug}
                                     >

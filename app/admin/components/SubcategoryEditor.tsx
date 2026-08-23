@@ -655,7 +655,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const totalLengths = items.reduce((acc, i) => acc + (i.lengthOptions?.length ?? 0), 0);
 
     return (
-        <div className="w-full space-y-7 px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
+        <div className="w-full min-w-0 space-y-5 px-3 py-4 pb-28 sm:space-y-7 sm:px-6 sm:py-5 lg:px-10 lg:py-8">
             {/* Banners */}
             {saveSuccess && (
                 <div role="status" className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-800 dark:text-green-200 text-sm">
@@ -672,19 +672,19 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             )}
 
             {/* Breadcrumb */}
-            <nav className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400">
+            <nav className="flex min-w-0 items-center gap-1.5 overflow-hidden text-xs text-neutral-500 sm:text-sm dark:text-neutral-400">
                 <button type="button" onClick={() => guardedSetSelection({ type: "root" })} className="transition-colors hover:text-neutral-950 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:hover:text-white dark:focus-visible:ring-white">All Categories</button>
                 <ChevronRight className="w-3.5 h-3.5" />
                 <button type="button" onClick={() => guardedSetSelection({ type: "category", catSlug: cat.slug })} className="transition-colors hover:text-neutral-950 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:hover:text-white dark:focus-visible:ring-white">{cat.name}</button>
                 <ChevronRight className="w-3.5 h-3.5" />
-                <span className="text-neutral-900 dark:text-white font-semibold">{sub.name}</span>
+                <span className="truncate font-semibold text-neutral-900 dark:text-white">{sub.name}</span>
             </nav>
 
             {/* Compact header and details card */}
             <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
-                <div className="p-5 sm:p-6">
-                    <div className="flex items-center gap-5">
-                        <div className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-800">
+                <div className="p-4 sm:p-6">
+                    <div className="flex items-center gap-3 sm:gap-5">
+                        <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-100 sm:h-28 sm:w-28 dark:bg-neutral-800">
                             {coverPhoto ? (
                                 <img src={coverPhoto} alt={sub.name} className="h-full w-full object-cover" />
                             ) : (
@@ -694,8 +694,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                             )}
                         </div>
                         <div className="min-w-0">
-                            <h2 className="truncate text-2xl font-semibold text-neutral-950 dark:text-white">{sub.name}</h2>
-                            <p className="mt-2 text-sm text-neutral-500">
+                            <h2 className="truncate text-xl font-semibold text-neutral-950 sm:text-2xl dark:text-white">{sub.name}</h2>
+                            <p className="mt-1 flex flex-wrap text-xs text-neutral-500 sm:mt-2 sm:text-sm">
                                 {items.length} {items.length === 1 ? "size" : "sizes"}
                                 <span className="px-2" aria-hidden="true">·</span>
                                 {totalLengths} {totalLengths === 1 ? "length option" : "length options"}
@@ -724,9 +724,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                 {[1,2,3].map(i => <div key={i} className="h-24 w-24 animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-800" />)}
                             </div>
                         ) : (
-                            <div className="flex flex-wrap gap-2">
+                            <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
                                 {galleryImages.map((img, i) => (
-                                    <div key={img.id} className="group relative h-24 w-24 overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
+                                    <div key={img.id} className="group relative h-24 w-24 shrink-0 snap-start overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
                                         {i === 0 && (
                                             <span className="absolute left-1.5 top-1.5 z-10 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white">Cover</span>
                                         )}
@@ -745,7 +745,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                         {i !== 0 && <button type="button" onClick={() => void setCoverPhoto(img.id)} className="absolute bottom-1.5 left-1.5 right-1.5 rounded bg-black/75 px-1 py-1 text-[9px] font-semibold text-white opacity-100 focus:ring-2 focus:ring-neutral-950 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">Set cover</button>}
                                     </div>
                                 ))}
-                                <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-neutral-300 text-neutral-500 transition hover:border-neutral-500 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800">
+                                <label className="flex h-24 w-24 shrink-0 snap-start cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-neutral-300 text-neutral-500 transition hover:border-neutral-500 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800">
                                     <Plus className="w-5 h-5 mb-0.5" />
                                     <span className="text-[10px] font-medium">Add photo</span>
                                     <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { uploadGalleryImage(f); e.target.value = ''; } }} />
@@ -761,10 +761,10 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             {/* Settings shared by every size */}
             {items.length > 0 && <div className="w-full space-y-4">
                 <header>
-                    <h3 className="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white">Size settings</h3>
+                    <h3 className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl dark:text-white">Size settings</h3>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Manage choices and guides shared by all {items.length} sizes.</p>
                 </header>
-                <section aria-labelledby="bulk-foundation-title" className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 sm:p-6">
+                <section aria-labelledby="bulk-foundation-title" className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
                         <div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <h4 id="bulk-foundation-title" className="text-base font-semibold text-neutral-950 dark:text-white">Settings for all sizes</h4>
