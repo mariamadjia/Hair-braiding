@@ -606,7 +606,7 @@ export default function AdminPage() {
 
     return (
         <ThemeProvider>
-            <div className={`${currentSection === "categories" ? "min-h-dvh" : "h-dvh"} flex bg-neutral-50 transition-colors dark:bg-neutral-900`}>
+            <div className={`admin-shell ${currentSection === "categories" ? "min-h-dvh" : "h-dvh"} flex bg-neutral-50 transition-colors dark:bg-neutral-900`}>
                 {/* Sidebar */}
                 <AdminSidebar
                     currentSection={currentSection}

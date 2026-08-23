@@ -197,7 +197,7 @@ export function RootEditor({ categorySummaries, headers, mutate, setSelection, o
             )}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 className="font-serif text-3xl font-semibold tracking-tight text-neutral-950 dark:text-white">Service Categories</h2>
+                    <h2 className="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white">Service categories</h2>
                     <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">Organize and manage your braiding service categories.</p>
                 </div>
                 {!adding && (

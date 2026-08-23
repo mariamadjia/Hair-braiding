@@ -536,8 +536,8 @@ export function PricingManagement({ token }: { token: string }) {
   if (!data) return <div className="m-8 rounded-xl border border-red-200 bg-red-50 p-6"><p className="text-red-800">{error || "Pricing data could not be loaded."}</p><button onClick={load} className="mt-4 rounded bg-neutral-900 px-4 py-2 text-sm text-white">Retry</button></div>;
 
   return (
-    <div className="min-h-full bg-[#f8f5ef] text-[#2d180f]">
-      <div className="mx-auto max-w-7xl p-4 pb-32 sm:p-8 sm:pb-28">
+    <div className="min-h-full bg-neutral-50 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
+      <div className="admin-page pb-32 sm:pb-28">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm text-neutral-600">Edit only the prices customers see. Names, photos, availability, and ordering stay in Services.</p>
@@ -557,7 +557,7 @@ export function PricingManagement({ token }: { token: string }) {
                 <div className={`rounded-full border p-4 ${card.label === "Pricing Issues" && pricingIssues.length ? "border-[#efc28e] bg-[#fff7ed] text-[#b7662f]" : "border-[#d9c8b9] bg-[#f6f0e7]"}`}><card.icon className="h-5 w-5" /></div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-neutral-600">{card.label}</p>
-                  <p className="mt-1 font-serif text-3xl">{card.value}</p>
+                  <p className="mt-1 text-2xl font-semibold tracking-tight">{card.value}</p>
                   {card.label === "Pricing Issues" && pricingIssues.length > 0 && (
                     <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-[#8d4f31]">
                       Needs attention <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
@@ -620,7 +620,7 @@ export function PricingManagement({ token }: { token: string }) {
           <div className="space-y-5">
             <div className="grid gap-5 lg:grid-cols-[1fr_1.1fr]">
               <section className="rounded-xl border border-[#ded2c7] bg-white p-6">
-                <h3 className="font-serif text-2xl">Catalog health</h3>
+                <h3 className="text-lg font-semibold">Catalog health</h3>
                 <div className="mt-7 grid grid-cols-3 divide-x divide-[#decfc1] text-center">
                   <div><p className="font-serif text-4xl">{rows.length}</p><p className="mt-1 text-sm text-neutral-600">priced services</p></div>
                   <div><p className="font-serif text-4xl">{rows.reduce((total, row) => total + (row.item.lengthOptions?.length || 1), 0)}</p><p className="mt-1 text-sm text-neutral-600">price options</p></div>
@@ -630,7 +630,7 @@ export function PricingManagement({ token }: { token: string }) {
                 <p className="mt-3 text-right text-xs font-medium text-neutral-500">{rows.length ? Math.round(((rows.length - new Set(pricingIssues.map(issue => issue.item.id)).size) / rows.length) * 100) : 0}% of services have complete pricing</p>
               </section>
               <section className="rounded-xl border border-[#ded2c7] bg-white p-6">
-                <div className="flex items-center justify-between"><h3 className="font-serif text-2xl">Recent changes</h3><button onClick={() => setTab("history")} className="flex items-center gap-1 text-sm underline">View history <ChevronRight className="h-4 w-4" /></button></div>
+                <div className="flex items-center justify-between"><h3 className="text-lg font-semibold">Recent changes</h3><button onClick={() => setTab("history")} className="flex items-center gap-1 text-sm underline">View history <ChevronRight className="h-4 w-4" /></button></div>
                 {history.length ? <div className="mt-4 divide-y divide-[#e7ddd3]">{history.slice(0, 4).map(entry => <div key={entry.id} className="grid grid-cols-[36px_1fr_auto] items-center gap-3 py-3">
                   <div className="rounded-full bg-[#f3eadf] p-2"><Clock3 className="h-4 w-4" /></div>
                   <div className="min-w-0"><p className="truncate text-sm font-medium">{entry.serviceName}</p><p className="truncate text-xs text-neutral-500">{entry.summary}</p></div>
@@ -639,7 +639,7 @@ export function PricingManagement({ token }: { token: string }) {
               </section>
             </div>
             <section className="rounded-xl border border-[#ded2c7] bg-white p-5">
-              <div className="flex items-center justify-between"><h3 className="font-serif text-2xl">Pricing by category</h3><button onClick={() => setTab("matrix")} className="flex items-center gap-1 text-sm underline">View price matrix <ChevronRight className="h-4 w-4" /></button></div>
+              <div className="flex items-center justify-between"><h3 className="text-lg font-semibold">Pricing by category</h3><button onClick={() => setTab("matrix")} className="flex items-center gap-1 text-sm underline">View price matrix <ChevronRight className="h-4 w-4" /></button></div>
               <div className="mt-4 overflow-x-auto rounded-lg border border-[#e2d7cd]">
                 <table className="w-full min-w-[600px] text-sm"><thead><tr className="bg-[#f6f1ea] text-left"><th className="px-4 py-3">Category</th><th className="px-4 py-3">Services</th><th className="px-4 py-3">Price Range</th><th className="px-4 py-3">Deposit</th></tr></thead><tbody>
                 {data.categories.map(category => {
@@ -769,7 +769,7 @@ export function PricingManagement({ token }: { token: string }) {
                                     className="min-w-0 flex-1 text-left"
                                   >
                                     <span className="flex items-center gap-2">
-                                      <span className="font-serif text-2xl text-[#2d180f]">{subcategory.name}</span>
+                                      <span className="text-xl font-semibold text-[#2d180f]">{subcategory.name}</span>
                                       {subClosed ? <ChevronDown className="h-4 w-4 text-neutral-400" /> : <ChevronUp className="h-4 w-4 text-neutral-400" />}
                                     </span>
                                     <span className="mt-1 block text-xs text-neutral-500">{subRows.length} {usesServiceLabel ? `service${subRows.length === 1 ? "" : "s"}` : `size${subRows.length === 1 ? "" : "s"}`} · {columns.length} price option{columns.length === 1 ? "" : "s"} · {subPriceRange}</span>
@@ -915,7 +915,7 @@ export function PricingManagement({ token }: { token: string }) {
 
         {tab === "deposits" && <div className="space-y-5">
           <div>
-            <h2 className="font-serif text-3xl text-[#2f1a12]">Deposit settings</h2>
+            <h2 className="text-xl font-semibold text-neutral-950">Deposit settings</h2>
             <p className="mt-1 text-sm text-neutral-600">Control the authorization amount collected when customers request an appointment.</p>
           </div>
 
@@ -946,7 +946,7 @@ export function PricingManagement({ token }: { token: string }) {
                 <p className="text-sm font-medium">Customer sees</p>
                 <div className="mt-4 flex items-center justify-between border-t border-dashed border-[#ddd0c5] pt-4">
                   <strong className="text-base">Deposit Today</strong>
-                  <span className="font-serif text-3xl text-[#351a10]">${(defaultDepositCents / 100).toFixed(2)}</span>
+                  <span className="text-2xl font-semibold text-[#351a10]">${(defaultDepositCents / 100).toFixed(2)}</span>
                 </div>
                 <p className="mt-4 text-xs text-neutral-500">Remaining balance is calculated from the selected service price.</p>
               </div>
@@ -957,7 +957,7 @@ export function PricingManagement({ token }: { token: string }) {
             <section className="overflow-hidden rounded-xl border border-[#e1d5c9] bg-white shadow-sm">
               <div className="flex flex-wrap items-end justify-between gap-4 p-5">
                 <div>
-                  <h3 className="font-serif text-2xl text-[#2f1a12]">Service-specific overrides</h3>
+                  <h3 className="text-lg font-semibold text-neutral-950">Service-specific overrides</h3>
                   <p className="mt-1 text-xs text-neutral-500">Leave a deposit blank to use the default amount.</p>
                 </div>
                 <button onClick={() => document.querySelector<HTMLInputElement>("[data-deposit-input]")?.focus()} className="flex items-center gap-2 rounded-md border border-[#a46645] px-4 py-2 text-sm font-medium text-[#6b3824]">
@@ -1031,7 +1031,7 @@ export function PricingManagement({ token }: { token: string }) {
             </section>
 
             <aside className="h-fit rounded-xl border border-[#e1d5c9] bg-white p-5 shadow-sm">
-              <h3 className="font-serif text-2xl text-[#2f1a12]">Authorization behavior</h3>
+              <h3 className="text-lg font-semibold text-neutral-950">Authorization behavior</h3>
               <div className="mt-6 space-y-5">
                 {["Authorize now, capture after admin approval", "Release authorization when denied", "Warn when authorization is close to expiring"].map(text => <div key={text} className="flex gap-3 text-sm leading-5">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#351a10] text-white"><Check className="h-4 w-4" /></span><span>{text}</span>
@@ -1041,7 +1041,7 @@ export function PricingManagement({ token }: { token: string }) {
           </div>
         </div>}
 
-        {tab === "history" && <div className="rounded-2xl border border-[#e4d8cc] bg-white p-6"><div className="flex items-center gap-3"><History className="h-5 w-5 text-[#ad6b45]" /><h3 className="font-serif text-2xl">Pricing activity</h3></div>{history.length ? <div className="mt-5 divide-y">{history.map(entry => <div key={entry.id} className="grid gap-1 py-4 sm:grid-cols-[180px_1fr_1.5fr]"><span className="text-xs text-neutral-500">{new Date(entry.createdAt).toLocaleString()}</span><span><strong className="block text-sm">{entry.serviceName}</strong><span className="text-[10px] uppercase tracking-wider text-[#ad6b45]">{entry.action.replaceAll("_", " ")}</span>{entry.changedBy && <span className="mt-1 block text-xs text-neutral-500">by {entry.changedBy}</span>}</span><span className="text-sm text-neutral-600">{entry.summary}</span></div>)}</div> : <div className="py-14 text-center text-sm text-neutral-500">No pricing changes have been recorded yet.</div>}</div>}
+        {tab === "history" && <div className="rounded-xl border border-[#e4d8cc] bg-white p-6"><div className="flex items-center gap-3"><History className="h-5 w-5 text-[#ad6b45]" /><h3 className="text-lg font-semibold">Pricing activity</h3></div>{history.length ? <div className="mt-5 divide-y">{history.map(entry => <div key={entry.id} className="grid gap-1 py-4 sm:grid-cols-[180px_1fr_1.5fr]"><span className="text-xs text-neutral-500">{new Date(entry.createdAt).toLocaleString()}</span><span><strong className="block text-sm">{entry.serviceName}</strong><span className="text-xs font-medium text-[#ad6b45]">{entry.action.replaceAll("_", " ")}</span>{entry.changedBy && <span className="mt-1 block text-xs text-neutral-500">by {entry.changedBy}</span>}</span><span className="text-sm text-neutral-600">{entry.summary}</span></div>)}</div> : <div className="py-14 text-center text-sm text-neutral-500">No pricing changes have been recorded yet.</div>}</div>}
       </div>
 
       {false && showPricingIssues && (
@@ -1057,7 +1057,7 @@ export function PricingManagement({ token }: { token: string }) {
           >
             <div className="flex items-start justify-between gap-5 border-b border-[#eee4da] px-6 py-6">
               <div>
-                <h3 id="pricing-issues-title" className="font-serif text-3xl text-[#2d180f]">Pricing Issues</h3>
+                <h2 id="pricing-issues-title" className="text-xl font-semibold text-[#2d180f]">Pricing issues</h2>
                 <p className="mt-1 text-sm text-neutral-500">{pricingIssues.length} issue{pricingIssues.length === 1 ? "" : "s"} across {pricingIssueGroups.length} service group{pricingIssueGroups.length === 1 ? "" : "s"}</p>
               </div>
               <button type="button" aria-label="Close pricing issues" onClick={() => setShowPricingIssues(false)} className="rounded-lg p-2 text-neutral-500 transition hover:bg-[#f3ebe3] hover:text-[#351a10]">
@@ -1138,7 +1138,7 @@ export function PricingManagement({ token }: { token: string }) {
           <section role="dialog" aria-modal="true" aria-labelledby="add-length-title" className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-2xl border border-[#dfd1c4] bg-[#fffdf9] p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 id="add-length-title" className="font-serif text-3xl text-[#2d180f]">Add a length</h3>
+                <h2 id="add-length-title" className="text-xl font-semibold text-[#2d180f]">Add a length</h2>
                 <p className="mt-1 text-sm text-neutral-500">Set the customer-facing price separately for every size in {addLengthTarget.subcategoryName}.</p>
               </div>
               <button type="button" aria-label="Close add length dialog" onClick={() => setAddLengthTarget(null)} className="rounded-lg p-2 text-neutral-500 hover:bg-[#f3ebe3]"><X className="h-5 w-5" /></button>
@@ -1154,7 +1154,7 @@ export function PricingManagement({ token }: { token: string }) {
                   {rows.filter(row => row.groupKey === addLengthTarget.groupKey && row.item.id).map(row => (
                     <div key={row.item.id} className="grid items-center gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_9rem_9rem]">
                       <span className="min-w-0 flex-1 text-sm font-medium text-[#351a10]">{row.item.name}</span>
-                      <label className="text-[10px] uppercase tracking-wide text-neutral-500">Regular
+                      <label className="text-xs font-medium text-neutral-500">Regular
                         <input aria-label={`${row.item.name} new length price`} inputMode="decimal"
                           value={newLengthPrices[row.item.id!] ?? ""}
                           onChange={event => setNewLengthPrices(previous => ({ ...previous, [row.item.id!]: event.target.value }))}
@@ -1162,7 +1162,7 @@ export function PricingManagement({ token }: { token: string }) {
                           className="mt-1 w-full rounded-lg border border-[#e1d5c9] px-3 py-2 text-right text-sm normal-case outline-none focus:border-[#a46645] focus:ring-3 focus:ring-[#b7734d]/10" />
                       </label>
                       {row.item.foundationChoicesEnabled && row.item.knotlessPricingMode === "SEPARATE" ?
-                        <label className="text-[10px] uppercase tracking-wide text-neutral-500">Knotless
+                        <label className="text-xs font-medium text-neutral-500">Knotless
                           <input aria-label={`${row.item.name} new Knotless length price`} inputMode="decimal"
                             value={newLengthKnotlessPrices[row.item.id!] ?? ""}
                             onChange={event => setNewLengthKnotlessPrices(previous => ({ ...previous, [row.item.id!]: event.target.value }))}

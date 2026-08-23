@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { User, Mail, Lock, Camera, Save, X } from "lucide-react";
 import { authApi } from "@/lib/api/auth";
+import { AdminAlert, AdminButton, AdminCard, AdminPage, AdminPageHeader, adminUi } from "@/components/admin/AdminUI";
 
 interface ProfileSectionProps {
     adminName: string;
@@ -77,10 +78,11 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
     };
 
     return (
-        <div className="flex-1 overflow-y-auto bg-neutral-50 p-4 dark:bg-neutral-900 sm:p-6 lg:p-8">
-            <div className="max-w-3xl mx-auto space-y-6">
+        <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
+            <AdminPage className="max-w-4xl space-y-6">
+                <AdminPageHeader title="Profile" description="Manage your administrator profile and account security." />
                 {/* Profile Header */}
-                <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800 sm:p-6 lg:p-8">
+                <AdminCard className="p-5 sm:p-6">
                     <div className="flex items-start gap-6">
                         {/* Avatar */}
                         <div className="relative group">
@@ -110,30 +112,23 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
 
                         {/* Edit Button */}
                         {!isEditing && (
-                            <button
+                            <AdminButton
                                 onClick={() => setIsEditing(true)}
-                                className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 border border-neutral-300 dark:border-neutral-600 rounded-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
                             >
                                 Edit Profile
-                            </button>
+                            </AdminButton>
                         )}
                     </div>
-                </div>
+                </AdminCard>
 
                 {/* Message */}
                 {message && (
-                    <div className={`p-4 rounded-lg border ${
-                        message.type === "success" 
-                            ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300" 
-                            : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300"
-                    }`}>
-                        <p className="text-sm">{message.text}</p>
-                    </div>
+                    <AdminAlert tone={message.type}>{message.text}</AdminAlert>
                 )}
 
                 {/* Personal Information */}
-                <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-6">
-                    <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-6">Personal Information</h3>
+                <AdminCard className="p-5 sm:p-6">
+                    <h2 className="admin-card-title mb-6">Personal information</h2>
                     
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
@@ -146,7 +141,7 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
                                     value={formData.firstName}
                                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                                     disabled={!isEditing}
-                                    className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-sm text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white disabled:bg-neutral-50 dark:disabled:bg-neutral-800 disabled:text-neutral-500 dark:disabled:text-neutral-500 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-500 focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-500"
+                                    className={adminUi.input}
                                 />
                             </div>
                             <div>
@@ -158,7 +153,7 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
                                     value={formData.lastName}
                                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                                     disabled={!isEditing}
-                                    className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-sm text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white disabled:bg-neutral-50 dark:disabled:bg-neutral-800 disabled:text-neutral-500 dark:disabled:text-neutral-500 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-500 focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-500"
+                                    className={adminUi.input}
                                 />
                             </div>
                         </div>
@@ -174,17 +169,17 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     disabled={!isEditing}
-                                    className="w-full pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-sm text-sm bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white disabled:bg-neutral-50 dark:disabled:bg-neutral-800 disabled:text-neutral-500 dark:disabled:text-neutral-500 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-500 focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-500"
+                                    className={`${adminUi.input} pl-10`}
                                 />
                             </div>
                         </div>
                     </div>
-                </div>
+                </AdminCard>
 
                 {/* Change Password */}
                 {isEditing && (
-                    <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-6">
-                        <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-6">Change Password</h3>
+                    <AdminCard className="p-5 sm:p-6">
+                        <h2 className="admin-card-title mb-6">Change password</h2>
                         
                         <div className="space-y-4">
                             <div>
@@ -198,7 +193,7 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
                                         value={formData.currentPassword}
                                         onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
                                         placeholder="Enter current password"
-                                        className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-sm text-sm focus:outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+                                        className={`${adminUi.input} pl-10`}
                                     />
                                 </div>
                             </div>
@@ -214,7 +209,7 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
                                         value={formData.newPassword}
                                         onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
                                         placeholder="Enter new password (min. 12 characters)"
-                                        className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-sm text-sm focus:outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+                                        className={`${adminUi.input} pl-10`}
                                     />
                                 </div>
                             </div>
@@ -230,7 +225,7 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
                                         value={formData.confirmPassword}
                                         onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                                         placeholder="Confirm new password"
-                                        className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-sm text-sm focus:outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+                                        className={`${adminUi.input} pl-10`}
                                     />
                                 </div>
                             </div>
@@ -239,34 +234,33 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
                                 Leave password fields empty if you don't want to change your password.
                             </p>
                         </div>
-                    </div>
+                    </AdminCard>
                 )}
 
                 {/* Action Buttons */}
                 {isEditing && (
                     <div className="flex items-center gap-3">
-                        <button
+                        <AdminButton
+                            variant="primary"
                             onClick={handleSave}
                             disabled={isSaving}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-neutral-900 dark:bg-neutral-700 text-white rounded-sm hover:bg-neutral-800 dark:hover:bg-neutral-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Save className="h-4 w-4" />
                             {isSaving ? "Saving..." : "Save Changes"}
-                        </button>
-                        <button
+                        </AdminButton>
+                        <AdminButton
                             onClick={handleCancel}
                             disabled={isSaving}
-                            className="flex items-center gap-2 px-6 py-2.5 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 rounded-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <X className="h-4 w-4" />
                             Cancel
-                        </button>
+                        </AdminButton>
                     </div>
                 )}
 
                 {/* Account Stats */}
-                <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-6">
-                    <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-6">Account Information</h3>
+                <AdminCard className="p-5 sm:p-6">
+                    <h2 className="admin-card-title mb-6">Account information</h2>
                     
                     <div className="grid grid-cols-2 gap-6">
                         <div>
@@ -286,8 +280,8 @@ export function ProfileSection({ adminName, adminEmail = "admin@example.com" }: 
                             <p className="text-base font-medium text-green-600 dark:text-green-400">Active</p>
                         </div>
                     </div>
-                </div>
-            </div>
+                </AdminCard>
+            </AdminPage>
         </div>
     );
 }

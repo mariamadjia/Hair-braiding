@@ -60,7 +60,7 @@ export function WizardProgressBar({ step }: { step: number }) {
               <div aria-current={active ? "step" : undefined} aria-label={`Step ${index + 1}: ${item.label}${done ? " (completed)" : active ? " (current)" : ""}`} className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all border-2 ${done || active ? "bg-violet-600 border-violet-600 text-white" : "bg-white border-neutral-300 text-neutral-400 dark:bg-neutral-800 dark:border-neutral-600"}`}>
                 {done ? <Check className="w-3.5 h-3.5" aria-hidden /> : index + 1}
               </div>
-              <span className={`text-[10px] font-bold uppercase tracking-widest whitespace-nowrap mt-0.5 ${active ? "text-neutral-900 dark:text-white" : "text-neutral-400"}`}>{item.label}</span>
+              <span className={`mt-0.5 whitespace-nowrap text-xs font-semibold ${active ? "text-neutral-900 dark:text-white" : "text-neutral-400"}`}>{item.label}</span>
               <span className="text-[10px] text-neutral-400 whitespace-nowrap">{item.sub}</span>
             </div>
             {index < STEPS.length - 1 && <div aria-hidden className={`flex-1 h-0.5 mt-4 mx-2 transition-all ${done ? "bg-violet-600" : "bg-neutral-200 dark:bg-neutral-700"}`} />}

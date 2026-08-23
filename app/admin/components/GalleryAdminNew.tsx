@@ -14,6 +14,7 @@ import {
   saveCategoryFlippingImages,
 } from "@/lib/api/categoryDisplayPhotos";
 import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
+import { AdminAlert, AdminEmptyState, AdminPage, AdminPageHeader } from "@/components/admin/AdminUI";
 
 interface Category {
     id: number;
@@ -270,22 +271,14 @@ export function GalleryAdminNew() {
     }
 
     return (
-        <div className="h-full flex flex-col bg-neutral-50 dark:bg-neutral-900">
-            {/* Header */}
-            <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-5 dark:border-neutral-700 dark:bg-neutral-800 sm:px-6 lg:px-8 lg:py-6">
-                <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Gallery Management</h1>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                    {categories.length} categories
-                </p>
-            </div>
-
-            {/* Gallery Grid - Same as Public */}
-            <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
-                <div aria-live="polite" className="mx-auto mb-5 max-w-7xl">
-                    {loadError && <div role="alert" className="border border-red-200 bg-red-50 p-4 text-sm text-red-800">{loadError}<button type="button" onClick={loadData} className="ml-3 underline">Retry</button></div>}
+        <div className="h-full overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
+            <AdminPage>
+                <AdminPageHeader title="Gallery" description={`${categories.length} ${categories.length === 1 ? "category" : "categories"}. Choose rotating images and arrange how categories appear publicly.`} />
+                <div aria-live="polite" className="mb-5">
+                    {loadError && <AdminAlert tone="error">{loadError}<button type="button" onClick={loadData} className="ml-auto font-semibold underline">Retry</button></AdminAlert>}
                     {statusMessage && <p className="mt-2 text-sm text-neutral-600">{statusMessage}</p>}
                 </div>
-                <SortableList items={categories} getId={category => category.id} getLabel={category => category.name} onReorder={reorderCategories} strategy="grid" ariaLabel="Gallery category order" className="mx-auto grid max-w-7xl grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-8" itemClassName="group relative">
+                <SortableList items={categories} getId={category => category.id} getLabel={category => category.name} onReorder={reorderCategories} strategy="grid" ariaLabel="Gallery category order" className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-8" itemClassName="group relative">
                     {(category) => {
                         const categoryImages = getCategoryImages(category.id);
                         const isEditing = editingCategory === category.id;
@@ -369,12 +362,9 @@ export function GalleryAdminNew() {
                     }}
                 </SortableList>
                 {!loadError && categories.length === 0 && (
-                    <div className="mx-auto max-w-xl border border-neutral-200 bg-white p-10 text-center">
-                        <h2 className="text-lg font-semibold text-neutral-900">No gallery categories yet</h2>
-                        <p className="mt-2 text-sm text-neutral-500">Create a service category first, then return here to choose its gallery photos.</p>
-                    </div>
+                    <AdminEmptyState title="No gallery categories yet" description="Create a service category first, then return here to choose its gallery photos." />
                 )}
-            </div>
+            </AdminPage>
 
             {/* Flipping Images Modal */}
             {flippingModalOpen && selectedCategoryForFlipping && (

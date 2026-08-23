@@ -15,6 +15,7 @@ import {
     XCircle,
 } from "lucide-react";
 import type { CategorySummary } from "@/lib/booking-types";
+import { AdminButton, AdminCard, AdminPage, AdminPageHeader } from "@/components/admin/AdminUI";
 
 type Appointment = {
     id: number;
@@ -212,18 +213,14 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
     ] as const;
 
     return (
-        <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8" aria-label="Dashboard overview" aria-busy={loading}>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Dashboard</h1>
-                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Welcome back! Here&apos;s what&apos;s happening today.</p>
-                    {lastUpdated && <p role="status" aria-live="polite" className="mt-1 text-xs text-neutral-400">Last updated {lastUpdated.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</p>}
-                </div>
-                <button type="button" onClick={() => void loadDashboard()} disabled={loading} className="flex min-h-10 items-center justify-center gap-2 rounded-sm border border-neutral-300 bg-white px-4 py-2 text-sm text-neutral-800 transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700">
+        <AdminPage className="space-y-6" aria-label="Dashboard overview" aria-busy={loading}>
+            <AdminPageHeader title="Dashboard" description="Welcome back! Here’s what’s happening today." actions={
+                <AdminButton type="button" onClick={() => void loadDashboard()} disabled={loading}>
                     <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
                     {loading ? "Refreshing…" : "Refresh"}
-                </button>
-            </div>
+                </AdminButton>
+            } />
+            {lastUpdated && <p role="status" aria-live="polite" className="-mt-5 text-xs text-neutral-400">Last updated {lastUpdated.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</p>}
 
             {error && (
                 <div role="alert" className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200 sm:flex-row sm:items-center sm:justify-between">
@@ -267,7 +264,7 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
             </section>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <section className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800 lg:col-span-2" aria-labelledby="schedule-heading">
+                <AdminCard className="lg:col-span-2" aria-labelledby="schedule-heading">
                     <div className="border-b border-neutral-200 p-6 dark:border-neutral-700">
                         <h2 id="schedule-heading" className="text-lg font-semibold text-neutral-900 dark:text-white">Today&apos;s Schedule</h2>
                         <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{dashboard.todaySchedule.length} appointments scheduled</p>
@@ -289,7 +286,7 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
                                 </button>;
                             })}
                         </div>}
-                </section>
+                </AdminCard>
 
                 <section className="rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800" aria-labelledby="status-heading">
                     <div className="border-b border-neutral-200 p-6 dark:border-neutral-700"><h2 id="status-heading" className="text-lg font-semibold text-neutral-900 dark:text-white">Booking Status</h2><p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Current breakdown</p></div>
@@ -334,6 +331,6 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
                     <button type="button" onClick={() => onNavigate("pricing")} className="flex min-h-11 items-center justify-center gap-2 rounded-sm border border-neutral-300 px-4 py-3 text-neutral-700 transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-700"><DollarSign className="h-4 w-4" /><span className="text-sm font-medium">Pricing</span></button>
                 </div>
             </section>
-        </main>
+        </AdminPage>
     );
 }
