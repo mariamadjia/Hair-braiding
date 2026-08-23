@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { API_BASE_URL } from "@/lib/config/api";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
@@ -355,7 +354,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         setErrorMessage(null);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/subcategories/reorder`, {
+            const response = await fetch("/api/admin/subcategories/reorder", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

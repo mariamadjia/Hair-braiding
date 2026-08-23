@@ -39,7 +39,12 @@ next-env.d.ts
 *.zip
 .DS_Store
 app/.DS_Store
-/app/api
+/app/api/*
+!/app/api/admin/
+/app/api/admin/*
+!/app/api/admin/subcategories/
+/app/api/admin/subcategories/*
+!/app/api/admin/subcategories/reorder/
 public/.DS_Store
 lib/.DS_Store
 app/api/.DS_Store
