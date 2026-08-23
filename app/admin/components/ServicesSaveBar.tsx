@@ -7,11 +7,13 @@ export function ServicesSaveBar({
     saving,
     disabled = false,
     onSave,
+    onDiscard,
 }: {
     visible: boolean;
     saving: boolean;
     disabled?: boolean;
     onSave: () => void;
+    onDiscard: () => void;
 }) {
     if (!visible && !saving) return null;
 
@@ -25,15 +27,25 @@ export function ServicesSaveBar({
                         <p className="hidden text-xs text-neutral-500 sm:block">Review your changes before saving.</p>
                     </div>
                 </div>
-                <button
-                    type="button"
-                    onClick={onSave}
-                    disabled={disabled || saving}
-                    className="inline-flex min-h-10 min-w-36 items-center justify-center gap-2 rounded-xl bg-[#351a10] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(53,26,16,.16)] transition hover:bg-[#4b2819] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
-                >
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    {saving ? "Saving…" : "Save changes"}
-                </button>
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <button
+                        type="button"
+                        onClick={onDiscard}
+                        disabled={saving}
+                        className="min-h-10 rounded-xl border border-[#d9cabd] bg-white px-4 py-2.5 text-sm font-semibold text-[#351a10] transition hover:bg-[#fbf7f2] disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800 sm:px-6"
+                    >
+                        Discard
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onSave}
+                        disabled={disabled || saving}
+                        className="inline-flex min-h-10 min-w-36 items-center justify-center gap-2 rounded-xl bg-[#351a10] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(53,26,16,.16)] transition hover:bg-[#4b2819] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 sm:px-6"
+                    >
+                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        {saving ? "Saving…" : "Save changes"}
+                    </button>
+                </div>
             </div>
         </div>
     );

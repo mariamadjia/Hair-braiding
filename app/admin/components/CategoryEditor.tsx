@@ -46,6 +46,12 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [subSummaries, setSubSummaries] = useState<SubcategorySummary[]>([]);
+    const [savedCategory, setSavedCategory] = useState(() => ({
+        name: cat.name,
+        serviceTagline: cat.serviceTagline ?? "",
+        serviceDescription: cat.serviceDescription ?? "",
+        images: (cat.flippingImages ?? []).map(toProxyUrl),
+    }));
 
     useEffect(() => { 
         setName(cat.name); 
@@ -53,6 +59,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
         setServiceDescription(cat.serviceDescription ?? "");
         setNameError("");
         setImages((cat.flippingImages ?? []).map(toProxyUrl));
+        setSavedCategory({ name: cat.name, serviceTagline: cat.serviceTagline ?? "", serviceDescription: cat.serviceDescription ?? "", images: (cat.flippingImages ?? []).map(toProxyUrl) });
         setDirty(false); 
 
         // Fetch the full category detail from the admin endpoint so we always
@@ -87,6 +94,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 setImages(proxiedImages);
                 setServiceTagline(detail.serviceTagline ?? "");
                 setServiceDescription(detail.serviceDescription ?? "");
+                setSavedCategory({ name: detail.name ?? cat.name, serviceTagline: detail.serviceTagline ?? "", serviceDescription: detail.serviceDescription ?? "", images: proxiedImages });
             } catch (error) {
                 console.error('[CategoryEditor] Failed to fetch category detail:', error);
             } finally {
@@ -201,6 +209,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
 
             // Only update local state after server confirms
             setImages(backendUrls.map(toProxyUrl));
+            setSavedCategory({ name, serviceTagline, serviceDescription, images: backendUrls.map(toProxyUrl) });
             setDirty(false);
             setSuccessMessage("Category saved successfully!");
             setTimeout(() => setSuccessMessage(null), 3000);
@@ -631,6 +640,15 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 saving={saving}
                 disabled={images.length < 3 || images.length > 5 || Boolean(nameError)}
                 onSave={() => void save()}
+                onDiscard={() => {
+                    setName(savedCategory.name);
+                    setServiceTagline(savedCategory.serviceTagline);
+                    setServiceDescription(savedCategory.serviceDescription);
+                    setImages(savedCategory.images);
+                    setNameError("");
+                    setErrorMessage(null);
+                    setDirty(false);
+                }}
             />
         </div>
     );

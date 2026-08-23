@@ -55,6 +55,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [items, setItems] = useState<BookingItem[]>(Array.isArray(sub.items) ? sub.items : []);
 
     const [name, setName] = useState(sub.name);
+    const [savedName, setSavedName] = useState(sub.name);
     const [image, setImage] = useState(sub.image ?? "");
     const [images, setImages] = useState(sub.images ?? []);
     const [dirty, setDirty] = useState(false);
@@ -169,6 +170,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
     useEffect(() => {
         setName(sub.name);
+        setSavedName(sub.name);
         setImage(sub.image ?? "");
         setDirty(false);
         const nextItems = Array.isArray(sub.items) ? sub.items : [];
@@ -406,6 +408,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
             }
             
             // Only update local state after server confirms
+            setSavedName(freshSub?.name ?? name);
             setDirty(false);
             setSaveSuccess("Subcategory saved successfully!");
             setTimeout(() => setSaveSuccess(null), 3000);
@@ -998,6 +1001,11 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 saving={saving}
                 disabled={!name.trim()}
                 onSave={() => void save()}
+                onDiscard={() => {
+                    setName(savedName);
+                    setSaveError(null);
+                    setDirty(false);
+                }}
             />
         </div>
     );
