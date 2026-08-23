@@ -15,6 +15,7 @@ import {
   saveCategoryFlippingImages,
 } from "@/lib/api/categoryDisplayPhotos";
 import { IMAGE_UPLOAD_ACCEPT, normalizeImageForUpload } from "@/lib/utils/imageUpload";
+import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
 
 interface WelcomeItem {
   type: 'video' | 'image';
@@ -976,6 +977,36 @@ export function HomePageEditor() {
     }
   };
 
+  const reorderHeroImages = async (nextImages: HeroImage[]) => {
+    const previousImages = heroImages;
+    setHeroImages(nextImages);
+    setStatusMessage('Saving Hero image order…');
+
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/api/gallery/reorder`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'include',
+        body: JSON.stringify(nextImages.map(({ id }) => id)),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Hero order could not be saved (${response.status}).`);
+      }
+
+      setStatusMessage('Hero image order saved.');
+    } catch (error) {
+      setHeroImages(previousImages);
+      setStatusMessage(error instanceof Error
+        ? `${error.message} The previous order was restored.`
+        : 'Hero order could not be saved. The previous order was restored.');
+    }
+  };
+
   const updateHeroFocalPosition = async (
     image: HeroImage,
     focalPosition: HeroImage['focalPosition']
@@ -1472,12 +1503,8 @@ export function HomePageEditor() {
 
                     {/* Image Grid */}
                     {heroImages.length > 0 && (
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                        {heroImages.map((image, index) => (
-                          <div
-                            key={image.id}
-                            className="relative group aspect-[4/5] overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 transition dark:border-neutral-600 dark:bg-neutral-700"
-                          >
+                      <SortableList items={heroImages} getId={image => image.id} getLabel={() => "Hero image"} onReorder={reorderHeroImages} strategy="grid" disabled={uploading || deletingHeroImageId !== null} ariaLabel="Hero image order" className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3" itemClassName={(_, __, dragging) => `group relative aspect-[4/5] overflow-hidden rounded-lg border bg-neutral-100 transition dark:bg-neutral-700 ${dragging ? 'border-[#2C1810] opacity-60 shadow-xl' : 'border-neutral-200 dark:border-neutral-600'}`}>
+                        {(image, index) => (<>
                             <img
                               src={image.imageUrl}
                               alt={`Hero image ${index + 1}`}
@@ -1501,6 +1528,7 @@ export function HomePageEditor() {
                             <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                               #{index + 1}
                             </div>
+                            <SortableHandle className="absolute right-2 top-2 z-20 flex h-10 w-10 items-center justify-center bg-white/95 text-neutral-700 shadow" />
                             <label className="absolute bottom-2 left-2 right-2 z-20">
                               <span className="sr-only">Focal position for Hero image {index + 1}</span>
                               <select
@@ -1516,9 +1544,8 @@ export function HomePageEditor() {
                                 <option value="bottom">Focus: Bottom</option>
                               </select>
                             </label>
-                          </div>
-                        ))}
-                      </div>
+                        </>)}
+                      </SortableList>
                     )}
                   </>
                 )}
