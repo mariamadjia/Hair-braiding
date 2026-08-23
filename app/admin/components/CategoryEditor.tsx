@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
-import { ChevronRight, Trash2, AlertCircle, CheckCircle, AlertTriangle, EllipsisVertical, Pencil, Tag, PanelsTopLeft, Sparkles } from "lucide-react";
+import { ChevronRight, Trash2, AlertCircle, CheckCircle, AlertTriangle, EllipsisVertical, Pencil, Tag } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
@@ -14,15 +14,6 @@ type Selection =
     | { type: "root" }
     | { type: "category"; catSlug: string }
     | { type: "subcategory"; catSlug: string; subSlug: string };
-
-const CONTENT_WORD_LIMIT = 100;
-
-const countWords = (value: string) => value.trim() ? value.trim().split(/\s+/).length : 0;
-
-const limitWords = (value: string, limit = CONTENT_WORD_LIMIT) => {
-    const words = value.match(/\S+\s*/g);
-    return words && words.length > limit ? words.slice(0, limit).join("").trimEnd() : value;
-};
 
 export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLoadSubcategorySummaries, onLoadSubcategoryDetail, isLoadingSubcategorySummaries, onSubcategoryCreated, onSubcategoryDeleted, onSubcategorySummariesRefresh }: {
     cat: BookingCategory;
@@ -495,79 +486,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                             </div>
                         </div>
 
-                        <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
-                            <div className="mb-6 flex items-start gap-4">
-                                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f6f0e8] text-[#6b4426] dark:bg-neutral-700 dark:text-amber-200">
-                                    <PanelsTopLeft className="h-5 w-5" aria-hidden />
-                                </span>
-                                <div>
-                                    <h3 className="text-base font-semibold text-neutral-950 dark:text-white">Services page content</h3>
-                                    <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
-                                    Shown on the public Signature Services page.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="space-y-5">
-                                <div>
-                                    <label className="mb-2 block text-sm font-semibold text-neutral-800 dark:text-neutral-200" htmlFor="service-tagline">
-                                        Tagline
-                                    </label>
-                                    <input
-                                        id="service-tagline"
-                                        className={`${inp} min-h-11 rounded-lg`}
-                                        value={serviceTagline}
-                                        placeholder="TIMELESS. NEAT. VERSATILE."
-                                        onChange={(event) => {
-                                            setServiceTagline(limitWords(event.target.value));
-                                            setDirty(true);
-                                            setErrorMessage(null);
-                                        }}
-                                    />
-                                    <div className="mt-2 flex items-start justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-                                        <span>A short, punchy statement that represents this service (maximum 100 words).</span>
-                                        <span className="shrink-0 tabular-nums">{countWords(serviceTagline)}/100 words</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="mb-2 block text-sm font-semibold text-neutral-800 dark:text-neutral-200" htmlFor="service-description">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        id="service-description"
-                                        className={`${inp} min-h-[4.25rem] resize-y rounded-lg py-2.5`}
-                                        value={serviceDescription}
-                                        placeholder="Classic box braids in a variety of lengths and sizes to match your look."
-                                        onChange={(event) => {
-                                            setServiceDescription(limitWords(event.target.value));
-                                            setDirty(true);
-                                            setErrorMessage(null);
-                                        }}
-                                    />
-                                    <div className="mt-2 flex items-start justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-                                        <span>Provide more detail to help clients understand what to expect (maximum 100 words).</span>
-                                        <span className="shrink-0 tabular-nums">{countWords(serviceDescription)}/100 words</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 border-t border-neutral-200 pt-5 dark:border-neutral-700">
-                                <p className="mb-3 text-sm font-semibold text-[#6b4426] dark:text-amber-200">Preview</p>
-                                <div className="rounded-lg border border-[#dfd2c2] bg-[#fcf9f5] p-5 dark:border-neutral-600 dark:bg-neutral-900/50">
-                                    <p className="text-sm font-semibold tracking-wide text-[#5b3219] dark:text-amber-100">
-                                        {serviceTagline.trim() || "Your service tagline"}
-                                    </p>
-                                    <p className="mt-2 text-sm leading-6 text-neutral-700 dark:text-neutral-300">
-                                        {serviceDescription.trim() || "Your service description will appear here."}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <p className="flex items-center justify-center gap-2 text-center text-xs text-neutral-500 dark:text-neutral-400">
-                            <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                            These changes will be visible on your public Signature Services page.
-                        </p>
-                
                 {/* Gallery Photos Section */}
                 <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
                     <div className="mb-5 flex items-center gap-3">
