@@ -381,6 +381,27 @@ export default function AdminPage() {
         checkAuthAndLoad();
     }, []);
 
+    useEffect(() => {
+        if (!token) return;
+
+        const renewSession = () => {
+            if (document.visibilityState !== "visible") return;
+            void authApi.session().catch(() => {
+                // A temporary network failure should not interrupt active admin work.
+                // Protected requests will still require a valid session.
+            });
+        };
+        const interval = window.setInterval(renewSession, 10 * 60 * 1000);
+        window.addEventListener("focus", renewSession);
+        document.addEventListener("visibilitychange", renewSession);
+
+        return () => {
+            window.clearInterval(interval);
+            window.removeEventListener("focus", renewSession);
+            document.removeEventListener("visibilitychange", renewSession);
+        };
+    }, [token]);
+
     const handleUpdate = (updated: CategoriesData | any) => {
         // Some optimized mutation routes return { success: true } or a single saved item.
         // Only replace the old full data state when a real category tree is returned.
