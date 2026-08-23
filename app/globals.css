@@ -108,7 +108,6 @@
 
 .admin-shell :where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--admin-text); outline-offset: 2px; }
 .admin-shell :where(button, input, select, textarea):disabled { cursor: not-allowed; }
-.admin-shell :where(button, [role="button"]) { min-height: 2.5rem; }
 .admin-shell :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select) { min-height: 2.75rem; }
 .admin-shell :where(textarea) { min-height: 6rem; }
 .admin-shell .rounded-sm { border-radius: 0.5rem; }
