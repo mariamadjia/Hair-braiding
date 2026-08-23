@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, lazy, Suspense } from "react";
-import { Menu } from "lucide-react";
+import { Calendar, LayoutDashboard, Menu, MoreHorizontal, Scissors } from "lucide-react";
 import type { CategoriesData, CategorySummary, SubcategorySummary } from "@/lib/booking-types";
 import { EditorPanel } from "./components/EditorPanel";
 import { PreviewCategoryDetail, PreviewSubcategoryDetail } from "./components/PreviewComponents";
@@ -403,6 +403,10 @@ export default function AdminPage() {
         };
     }, [token]);
 
+    useEffect(() => {
+        if (token && currentSection === "categories" && !data) void loadCategories(token);
+    }, [token, currentSection, data]);
+
     const handleUpdate = (updated: CategoriesData | any) => {
         // Some optimized mutation routes return { success: true } or a single saved item.
         // Only replace the old full data state when a real category tree is returned.
@@ -720,6 +724,15 @@ export default function AdminPage() {
                             />
                         )}
                     </div>
+                )}
+
+                {currentSection === "categories" && selection.type === "root" && (
+                    <nav aria-label="Mobile admin navigation" className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(4.5rem+env(safe-area-inset-bottom))] grid-cols-4 border-t border-[#e4d8cc] bg-[#fffdf9]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden dark:border-neutral-700 dark:bg-neutral-900/95">
+                        <button type="button" onClick={() => handleSectionChange("dashboard")} className="flex flex-col items-center justify-center gap-1 text-[10px] text-neutral-500"><LayoutDashboard className="h-5 w-5" />Dashboard</button>
+                        <button type="button" className="flex flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#5b3219] dark:text-amber-200"><Scissors className="h-5 w-5" />Services</button>
+                        <button type="button" onClick={() => handleSectionChange("bookings")} className="flex flex-col items-center justify-center gap-1 text-[10px] text-neutral-500"><Calendar className="h-5 w-5" />Bookings</button>
+                        <button type="button" onClick={() => setMobileNavigationOpen(true)} className="flex flex-col items-center justify-center gap-1 text-[10px] text-neutral-500"><MoreHorizontal className="h-5 w-5" />More</button>
+                    </nav>
                 )}
 
                 {currentSection === "services-content" && (

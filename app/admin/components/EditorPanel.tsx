@@ -99,11 +99,13 @@ export function EditorPanel({
 
     if (selection.type === "root") {
         return wrapEditor(<RootEditor 
+            data={data}
             categorySummaries={categorySummaries}
             token={token}
             headers={headers} 
             mutate={mutate} 
             setSelection={setSelection}
+            onLoadSubcategoryDetail={onLoadSubcategoryDetail}
             onCategoryCreated={onCategoryCreated}
             onCategoryDeleted={onCategoryDeleted}
             onCategorySummariesRefresh={onCategorySummariesRefresh}
