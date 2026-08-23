@@ -6,6 +6,7 @@ import { GalleryImage } from "@/lib/api/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ImageUploader } from "./ImageUploader";
 import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
+import { ServicesSaveBar } from "./ServicesSaveBar";
 
 interface FlippingImagesModalProps {
     category: {
@@ -230,8 +231,7 @@ export function FlippingImagesModal({
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-neutral-200 flex items-center justify-between bg-neutral-50 shrink-0">
+                <div className="px-6 pt-3 text-sm text-neutral-600">
                     <div className="text-sm text-neutral-600">
                         {selectedImages.length < MIN_IMAGES && (
                             <span className="text-red-600 font-medium">
@@ -239,22 +239,8 @@ export function FlippingImagesModal({
                             </span>
                         )}
                     </div>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={onClose}
-                            className="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-sm hover:bg-neutral-100 transition-colors"
-                        >
-                            Discard
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            disabled={selectedImages.length < MIN_IMAGES || saving}
-                            className="px-4 py-2 bg-neutral-900 text-white rounded-sm hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            {saving ? 'Saving…' : 'Save changes'}
-                        </button>
-                    </div>
                 </div>
+                <ServicesSaveBar visible={true} saving={saving} disabled={selectedImages.length < MIN_IMAGES} onSave={() => void handleSave()} onDiscard={onClose} mode="dialog" />
             </div>
         </div>
     );
