@@ -500,6 +500,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                         token={token}
                         categoryId={cat.id}
                         large
+                        horizontal
                         onChange={(urls: string[]) => { setImages(urls); setDirty(true); setErrorMessage(null); }}
                     />
                     

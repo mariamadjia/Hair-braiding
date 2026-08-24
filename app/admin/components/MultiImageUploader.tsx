@@ -13,6 +13,7 @@ export function MultiImageUploader({
   subcategoryId,
   serviceItemId,
   large = false,
+  horizontal = false,
   onChange,
 }: {
   images: string[];
@@ -21,6 +22,7 @@ export function MultiImageUploader({
   subcategoryId?: number;
   serviceItemId?: number;
   large?: boolean;
+  horizontal?: boolean;
   onChange: (urls: string[]) => void;
 }) {
     const [uploading, setUploading] = useState(false);
@@ -83,9 +85,9 @@ export function MultiImageUploader({
 
     return (
         <div className="space-y-3">
-            <div className="flex flex-wrap gap-3">
+            <div className={`flex gap-3 ${horizontal ? "snap-x overflow-x-auto px-1 pb-2 pt-1" : "flex-wrap"}`}>
                 {images.map((url, i) => (
-                    <div key={i} className="relative shrink-0 group">
+                    <div key={i} className={`relative shrink-0 group ${horizontal ? "snap-start" : ""}`}>
                         <img src={url} alt={`photo ${i + 1}`} className={`${large ? "h-40 w-40 sm:h-48 sm:w-48" : "h-24 w-24"} rounded-xl border border-neutral-200 object-cover shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700`} />
                         <button 
                             type="button" 
@@ -97,7 +99,7 @@ export function MultiImageUploader({
                         </button>
                     </div>
                 ))}
-                <label className={`${large ? "h-40 w-40 sm:h-48 sm:w-48" : "h-24 w-24"} group relative flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 text-center transition-all hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800 dark:hover:border-white dark:hover:bg-neutral-700`}>
+                <label className={`${large ? "h-40 w-40 sm:h-48 sm:w-48" : "h-24 w-24"} group relative flex shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 text-center transition-all hover:border-neutral-950 hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800 dark:hover:border-white dark:hover:bg-neutral-700 ${horizontal ? "snap-start" : ""}`}>
                     {uploading && (
                         <div className="absolute inset-0 bg-white/80 dark:bg-neutral-800/80 flex flex-col items-center justify-center rounded-lg">
                             <div className="mb-2 h-12 w-12 animate-spin rounded-full border-2 border-neutral-950 border-t-transparent dark:border-white dark:border-t-transparent"></div>
