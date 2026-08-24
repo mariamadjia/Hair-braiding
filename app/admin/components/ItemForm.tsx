@@ -23,7 +23,10 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
     const [defaultDepositCents, setDefaultDepositCents] = useState(5000);
     const [customDeposit, setCustomDeposit] = useState(initial.depositOverrideCents != null);
     const [depositInput, setDepositInput] = useState(initial.depositOverrideCents == null ? "" : (initial.depositOverrideCents / 100).toFixed(2));
-    const [sections, setSections] = useState({ basic: false, pricing: false, deposit: false });
+    const [sections, setSections] = useState(() => {
+        const addingNewSize = initial.id == null;
+        return { basic: addingNewSize, pricing: addingNewSize, deposit: addingNewSize };
+    });
     const photos = item.sizePhotos ?? [];
 
     const SectionHeader = ({ section, number, title }: { section: keyof typeof sections; number: string; title: string }) => (
