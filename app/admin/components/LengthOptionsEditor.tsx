@@ -9,12 +9,14 @@ export function LengthOptionsEditor({
     onChange,
     priceField = "price",
     title = "Length Options",
+    contextLabel,
     editStructure = true,
 }: {
     options: LengthOption[];
     onChange: (opts: LengthOption[]) => void;
     priceField?: "price" | "knotlessPrice";
     title?: string;
+    contextLabel?: string;
     editStructure?: boolean;
 }) {
     const update = (i: number, field: keyof LengthOption, val: string) =>
@@ -22,7 +24,10 @@ export function LengthOptionsEditor({
 
     return (
         <div className="space-y-2">
-            <p className={lbl}>{title}</p>
+            <div className="flex items-center justify-between gap-4">
+                <p className={lbl}>{title}</p>
+                {contextLabel?.trim() && <p className="max-w-[45%] truncate font-serif text-base font-semibold text-[#5d2f1d] sm:text-lg dark:text-amber-200">{contextLabel}</p>}
+            </div>
             <div className="hidden grid-cols-[1fr_1fr_auto] gap-1.5 px-3 text-xs font-semibold text-neutral-500 sm:grid">
                 <span>Length</span><span>Price</span><span className="w-9" />
             </div>

@@ -233,6 +233,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                                 options={item.lengthOptions ?? []}
                                 onChange={options => set("lengthOptions", options)}
                                 title="Regular length prices"
+                                contextLabel={item.name}
                             />
                         ) : (
                             <>
@@ -262,6 +263,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                                         onChange={options => set("lengthOptions", options)}
                                         priceField="knotlessPrice"
                                         title="Knotless length prices"
+                                        contextLabel={item.name}
                                         editStructure={false}
                                     />
                                 )}
@@ -270,7 +272,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                     </div>
                 </section>
             ) : (
-                <LengthOptionsEditor options={item.lengthOptions ?? []} onChange={options => set("lengthOptions", options)} />
+                <LengthOptionsEditor options={item.lengthOptions ?? []} onChange={options => set("lengthOptions", options)} contextLabel={item.name} />
             )}
             </section>
 
