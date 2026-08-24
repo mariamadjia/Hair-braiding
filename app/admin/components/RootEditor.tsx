@@ -196,7 +196,7 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
 
     return (
         <div className="w-full min-w-0 bg-[#f7f5f2] px-3 py-3 pb-24 sm:px-6 sm:py-5 md:pb-5 lg:px-10 lg:py-8 dark:bg-neutral-900">
-            <div className="space-y-4 rounded-xl border border-[#e8e3dc] bg-[#fcfbf9] p-3 shadow-sm sm:space-y-5 sm:rounded-2xl sm:p-6 dark:border-neutral-700 dark:bg-neutral-800">
+            <div className="space-y-6 rounded-[1.5rem] border border-[#e8e3dc] bg-[#fcfbf9] p-5 shadow-[0_2px_12px_rgba(45,24,15,0.07)] sm:space-y-5 sm:rounded-2xl sm:p-6 sm:shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
             {errorMsg && (
                 <div role="alert" className="flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-800 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -207,13 +207,13 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
             {reorderStatus && (
                 <div role="status" aria-live="polite" className="sr-only">{reorderStatus}</div>
             )}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                 <div>
-                    <h2 className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl dark:text-white">Service categories</h2>
-                    <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">Organize and manage your braiding service categories.</p>
+                    <h2 className="text-[1.75rem] font-semibold leading-tight tracking-tight text-neutral-950 sm:text-2xl dark:text-white">Service categories</h2>
+                    <p className="mt-3 text-[1.05rem] leading-7 text-neutral-500 sm:mt-1.5 sm:text-sm sm:leading-normal dark:text-neutral-400">Organize and manage your braiding service categories.</p>
                 </div>
                 {!adding && (
-                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-11 w-full rounded-lg px-5 py-2.5 text-sm normal-case tracking-normal sm:w-auto`}>+ Add category</button>
+                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-14 w-full rounded-xl px-5 py-3 text-base normal-case tracking-normal sm:min-h-11 sm:w-auto sm:rounded-lg sm:py-2.5 sm:text-sm`}>+ Add category</button>
                 )}
             </div>
 
@@ -229,15 +229,15 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
 
             <div className="space-y-4">
                     <div className="flex flex-col gap-3 border-b border-[#e8e3dc] pb-5 lg:flex-row lg:items-center lg:justify-between dark:border-neutral-700">
-                        <label className="relative block w-full max-w-md">
+                        <label className="relative block w-full sm:max-w-md">
                             <span className="sr-only">Search categories</span>
-                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-500 sm:left-3 sm:h-4 sm:w-4" />
                             <input
                                 type="search"
                                 value={query}
                                 onChange={(event) => setQuery(event.target.value)}
                                 placeholder="Search categories…"
-                                className="h-11 w-full rounded-lg border border-neutral-300 bg-white pl-10 pr-3 text-sm text-neutral-950 outline-none transition focus:border-neutral-950 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:focus:border-white"
+                                className="h-14 w-full rounded-xl border border-neutral-300 bg-white pl-12 pr-4 text-base text-neutral-950 outline-none transition focus:border-neutral-950 sm:h-11 sm:rounded-lg sm:pl-10 sm:pr-3 sm:text-sm dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:focus:border-white"
                             />
                         </label>
                         <div className="flex w-full items-center gap-3 lg:w-auto">
@@ -246,7 +246,7 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
                                 id="category-sort"
                                 value={sortOrder}
                                 onChange={(event) => setSortOrder(event.target.value as typeof sortOrder)}
-                                className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-4 text-sm text-neutral-800 outline-none transition focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100 dark:focus-visible:ring-white lg:w-auto"
+                                className="h-14 w-full rounded-xl border border-neutral-300 bg-white px-5 text-base text-neutral-800 outline-none transition focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 sm:h-11 sm:rounded-lg sm:px-4 sm:text-sm dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100 dark:focus-visible:ring-white lg:w-auto"
                             >
                                 <option value="custom">Custom order</option>
                                 <option value="newest">Newest first</option>
