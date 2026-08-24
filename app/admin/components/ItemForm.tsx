@@ -143,11 +143,8 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
             <section className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
                 <SectionHeader section="basic" number="1" title="Basic information" />
                 <div className={`${sections.basic ? "block" : "hidden"} border-t border-neutral-200 p-4 sm:p-6 dark:border-neutral-800`}>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div>
                     <label className="block"><span className={lbl}>Size name *</span><input className={inp} value={item.name} onChange={event => set("name", event.target.value)} placeholder="Small" /></label>
-                    <label className="block"><span className={lbl}>Appointment duration *</span><select className={inp} value={item.durationMinutes ?? 60} onChange={event => set("durationMinutes", Number(event.target.value))}>
-                        {[30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480, 600, 720].map(value => <option key={value} value={value}>{value < 60 ? `${value} minutes` : `${value / 60} hour${value === 60 ? "" : "s"}`}</option>)}
-                    </select><span className="mt-1 block text-xs text-neutral-500">The calendar reserves this full amount of time for the service.</span></label>
                 </div>
                 </div>
             </section>
