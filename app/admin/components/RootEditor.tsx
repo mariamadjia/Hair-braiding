@@ -58,6 +58,7 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
     const [dragOverSlug, setDragOverSlug] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [query, setQuery] = useState("");
+    const [mobileCategoryFilter, setMobileCategoryFilter] = useState("all");
     const [sortOrder, setSortOrder] = useState<"custom" | "newest" | "oldest" | "name">("custom");
     const [openMenuSlug, setOpenMenuSlug] = useState<string | null>(null);
     const [reorderStatus, setReorderStatus] = useState<string | null>(null);
@@ -65,10 +66,11 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
 
     const visibleCategories = useMemo(() => {
         const normalizedQuery = query.trim().toLocaleLowerCase();
-        const filtered = normalizedQuery ? categorySummaries.filter((category) => {
+        const categoryFiltered = mobileCategoryFilter === "all" ? categorySummaries : categorySummaries.filter(category => category.slug === mobileCategoryFilter);
+        const filtered = normalizedQuery ? categoryFiltered.filter((category) => {
             const full = data.categories.find(entry => entry.slug === category.slug);
             return `${category.name} ${(full?.subcategories ?? []).map(style => style.name).join(" ")}`.toLocaleLowerCase().includes(normalizedQuery);
-        }) : [...categorySummaries];
+        }) : [...categoryFiltered];
 
         return filtered.sort((left, right) => {
             if (sortOrder === "name") return left.name.localeCompare(right.name);
@@ -80,7 +82,7 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
             }
             return (left.displayOrder ?? 0) - (right.displayOrder ?? 0);
         });
-    }, [categorySummaries, data.categories, query, sortOrder]);
+    }, [categorySummaries, data.categories, mobileCategoryFilter, query, sortOrder]);
 
     const handleWizardDone = (summary: CategorySummary) => {
         onCategoryCreated?.(summary);
@@ -213,7 +215,7 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
                     <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">Organize and manage your braiding service categories.</p>
                 </div>
                 {!adding && (
-                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-11 w-full rounded-lg px-5 py-2.5 text-sm normal-case tracking-normal sm:w-auto`}>+ Add category</button>
+                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} hidden min-h-11 rounded-lg px-5 py-2.5 text-sm normal-case tracking-normal md:inline-flex`}>+ Add category</button>
                 )}
             </div>
 
@@ -240,7 +242,7 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
                                 className="h-11 w-full rounded-lg border border-neutral-300 bg-white pl-10 pr-3 text-sm text-neutral-950 outline-none transition focus:border-neutral-950 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:focus:border-white"
                             />
                         </label>
-                        <div className="flex w-full items-center gap-3 lg:w-auto">
+                        <div className="hidden w-full items-center gap-3 md:flex lg:w-auto">
                             <label className="sr-only" htmlFor="category-sort">Sort categories</label>
                             <select
                                 id="category-sort"
@@ -254,8 +256,16 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
                                 <option value="name">Name A–Z</option>
                             </select>
                         </div>
+                        <div className="flex w-full items-center justify-between gap-3 md:hidden">
+                            <label className="sr-only" htmlFor="mobile-category-filter">Filter categories</label>
+                            <select id="mobile-category-filter" value={mobileCategoryFilter} onChange={event => setMobileCategoryFilter(event.target.value)} className="h-11 min-w-0 max-w-[70%] rounded-full border border-[#dfd2c5] bg-white px-4 text-sm text-[#351a10] outline-none focus-visible:ring-2 focus-visible:ring-[#7a4a28] dark:border-neutral-600 dark:bg-neutral-900 dark:text-white">
+                                <option value="all">All categories</option>
+                                {categorySummaries.map(category => <option key={category.slug} value={category.slug}>{category.name}</option>)}
+                            </select>
+                            {!adding && <button type="button" onClick={() => setAdding(true)} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-[#351a10] px-4 text-sm font-semibold text-white shadow-sm">+ Add</button>}
+                        </div>
                     </div>
-                    <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                    <p className="hidden text-xs font-medium text-neutral-500 md:block dark:text-neutral-400">
                         {sortOrder === "custom" ? "Drag to reorder" : "Choose Custom order to reorder categories"}
                     </p>
                     <div className="space-y-3 md:hidden">
