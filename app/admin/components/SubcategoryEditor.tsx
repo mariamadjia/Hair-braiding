@@ -661,12 +661,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const toggleMobileSection = (section: keyof typeof mobileSections) => {
         setMobileSections(current => ({ ...current, [section]: !current[section] }));
     };
-    const MobileSectionButton = ({ section, title }: { section: keyof typeof mobileSections; title: string }) => (
+    const SectionButton = ({ section, title }: { section: keyof typeof mobileSections; title: string }) => (
         <button
             type="button"
             onClick={() => toggleMobileSection(section)}
             aria-expanded={mobileSections[section]}
-            className="flex min-h-13 w-full items-center justify-between px-4 py-3 text-left md:hidden"
+            className="flex min-h-13 w-full items-center justify-between px-4 py-3 text-left sm:px-6"
         >
             <span className="font-serif text-lg font-semibold text-[#351a10] dark:text-white">{title}</span>
             {mobileSections[section] ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -779,13 +779,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
             {/* Settings shared by every size */}
             {items.length > 0 && <div className="w-full space-y-4">
-                <header className="hidden md:block">
+                <header className="sr-only">
                     <h3 className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl dark:text-white">Size settings</h3>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Manage choices and guides shared by all {items.length} sizes.</p>
                 </header>
                 <section aria-labelledby="bulk-foundation-title" className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-                    <MobileSectionButton section="settings" title="Size settings" />
-                    <div className={`${mobileSections.settings ? "block" : "hidden"} border-t border-neutral-200 p-4 md:block md:border-t-0 sm:p-6 dark:border-neutral-800`}>
+                    <SectionButton section="settings" title="Size settings" />
+                    <div className={`${mobileSections.settings ? "block" : "hidden"} border-t border-neutral-200 p-4 sm:p-6 dark:border-neutral-800`}>
                         <div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <h4 id="bulk-foundation-title" className="text-base font-semibold text-neutral-950 dark:text-white">Settings for all sizes</h4>
@@ -849,9 +849,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
                     </div>
                         {guideSettings && <div className="border-t border-neutral-200 dark:border-neutral-800">
-                            <MobileSectionButton section="guides" title="Customer guides" />
-                            <div className={`${mobileSections.guides ? "block" : "hidden"} border-t border-neutral-200 p-4 md:block md:border-t-0 md:p-6 dark:border-neutral-800`}>
-                            <div className="mb-4 hidden md:block"><h5 className="text-sm font-semibold text-neutral-950 dark:text-white">Customer guides</h5><p className="mt-1 text-xs text-neutral-500">Manage the guides customers see while booking.</p></div>
+                            <SectionButton section="guides" title="Customer guides" />
+                            <div className={`${mobileSections.guides ? "block" : "hidden"} border-t border-neutral-200 p-4 sm:p-6 dark:border-neutral-800`}>
                             <div className="space-y-3">
                                 {([
                                     { kind: "length" as const, title: "Length guide", subtitle: "One image shared by all sizes", enabled: guideSettings.lengthGuideEnabled, ready: Boolean(guideSettings.lengthGuideImageUrl), status: guideSettings.lengthGuideImageUrl ? "Ready" : "No image", icon: Ruler },
@@ -884,9 +883,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 </div>
             </div>}
 
-            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white md:block md:overflow-visible md:rounded-none md:border-0 md:bg-transparent dark:border-neutral-700 dark:bg-neutral-900 dark:md:bg-transparent">
-            <MobileSectionButton section="addons" title="Add-ons" />
-            <div className={`${mobileSections.addons ? "block" : "hidden"} border-t border-neutral-200 md:block md:border-t-0 dark:border-neutral-800`}>
+            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
+            <SectionButton section="addons" title="Add-ons" />
+            <div className={`${mobileSections.addons ? "block" : "hidden"} border-t border-neutral-200 dark:border-neutral-800`}>
             <AddOnsManager
                 sub={sub}
                 items={items}
