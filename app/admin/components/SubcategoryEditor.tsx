@@ -62,8 +62,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [addingItem, setAddingItem] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
-    const [mobileSections, setMobileSections] = useState<Record<"details" | "settings" | "guides" | "addons", boolean>>({
-        details: false,
+    const [mobileSections, setMobileSections] = useState<Record<"settings" | "guides" | "addons", boolean>>({
         settings: true,
         guides: false,
         addons: false,
@@ -702,8 +701,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
             {/* Compact header and details card */}
             <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
-                <MobileSectionButton section="details" title="Basic details" />
-                <div className={`${mobileSections.details ? "block" : "hidden"} border-t border-neutral-200 p-4 md:block md:border-t-0 sm:p-6 dark:border-neutral-800`}>
+                <div className="p-4 sm:p-6">
                     <div className="flex items-center gap-3 sm:gap-5">
                         <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-100 sm:h-28 sm:w-28 dark:bg-neutral-800">
                             {coverPhoto ? (
