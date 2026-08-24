@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { CategoriesData, CategorySummary, BookingItem } from "@/lib/booking-types";
 import { btnP } from "../constants";
-import { AlertCircle, ChevronDown, ChevronRight, ChevronUp, Clock3, EllipsisVertical, Image as ImageIcon, Pencil, Scissors, Search, Trash2 } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronRight, ChevronUp, Clock3, EllipsisVertical, Image as ImageIcon, Pencil, Scissors, Search } from "lucide-react";
 import { NewCategoryWizard } from "./NewCategoryWizard";
 import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
 import { toProxyUrl } from "@/lib/utils/image";
@@ -372,7 +372,7 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
                                                 }}
                                                 className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-700"
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                <EllipsisVertical className="h-4 w-4" />
                                                 Delete
                                             </button>
                                         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Upload, Trash2, Plus, Edit, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Upload, EllipsisVertical, Plus, Edit, X, ChevronLeft, ChevronRight } from "lucide-react";
 import Hero from "@/components/Hero";
 import Welcome from "@/components/Welcome";
 import Gallery from "@/components/Gallery";
@@ -1439,7 +1439,7 @@ export function HomePageEditor() {
                           }}
                           className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <EllipsisVertical className="h-4 w-4" />
                         </button>
                       </div>
                       <button
@@ -1521,7 +1521,7 @@ export function HomePageEditor() {
                                 className="p-3 text-white rounded-full transition-colors bg-red-600 hover:bg-red-700 disabled:opacity-50"
                                 aria-label={`Delete Hero image ${index + 1}`}
                               >
-                                <Trash2 className="h-5 w-5" />
+                                <EllipsisVertical className="h-5 w-5" />
                               </button>
                             </div>
 
@@ -1806,7 +1806,7 @@ export function HomePageEditor() {
                           className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
                           aria-label={`Remove image ${imgIndex + 1}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <EllipsisVertical className="h-4 w-4" />
                         </button>
                         <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded">
                           {imgIndex + 1}

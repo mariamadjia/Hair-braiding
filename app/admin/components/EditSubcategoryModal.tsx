@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Trash2, Plus, Upload, AlertCircle, CheckCircle } from "lucide-react";
+import { EllipsisVertical, X, Plus, Upload, AlertCircle, CheckCircle } from "lucide-react";
 import { API_BASE_URL } from '@/lib/config/api';
 import { GalleryImage } from "@/lib/api/gallery";
 import { validateFile, formatFileSize } from "../utils/fileValidation";
@@ -367,7 +367,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                                             disabled={saving}
                                             className="absolute bottom-2 right-2 p-2 bg-red-600 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            <EllipsisVertical className="h-4 w-4" />
                                         </button>
                                 </>)}
                             </SortableList>
@@ -417,7 +417,7 @@ export function EditSubcategoryModal({ subcategory, categoryId, onClose, onSave 
                         {/* Info */}
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 flex items-center gap-2">
                             <span className="inline-block w-4 h-4 rounded-full bg-neutral-200 dark:bg-neutral-700 text-center text-[10px] leading-4">ⓘ</span>
-                            Drag images to reorder • Click trash to delete
+                            Drag images to reorder • Use the action button to delete
                         </p>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-import { AlertCircle, Check, ChevronRight, ChevronUp, MoreVertical, Plus, Trash2, X } from "lucide-react";
+import { AlertCircle, Check, ChevronRight, ChevronUp, MoreVertical, Plus, X } from "lucide-react";
 import { isSizeComplete, type SizeEntry, type SubEntry } from "./model";
 import type { NewCategoryWizardController } from "./useNewCategoryWizard";
 import { LengthOptionRow } from "./LengthOptionRow";
@@ -115,7 +115,7 @@ export function SizePricingPanel({ sub, size, controller }: Props) {
             <button type="button" onClick={() => setOpenSizeMenu(null)} aria-label="Close size menu" className="rounded p-0.5 text-neutral-400 hover:text-neutral-700"><X className="h-4 w-4" /></button>
           </div>
           <input value={size.name} onChange={(event) => updateSizeName(sub.uid, size.uid, event.target.value)} aria-label={`Rename ${size.name}`} className="h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200 dark:border-neutral-600 dark:bg-neutral-800" />
-          <button type="button" onClick={() => { deleteSize(sub.uid, size.uid); setOpenSizeMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"><Trash2 className="h-4 w-4" /> Delete size</button>
+          <button type="button" onClick={() => { deleteSize(sub.uid, size.uid); setOpenSizeMenu(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"><MoreVertical className="h-4 w-4" /> Delete size</button>
         </div>
       )}
 

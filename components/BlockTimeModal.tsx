@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Calendar, Clock, Trash2, Loader2, Plus } from "lucide-react";
+import { X, Calendar, Clock, EllipsisVertical, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/lib/config/api";
@@ -445,7 +445,7 @@ export default function BlockTimeModal() {
                                 onClick={() => deleteBlockedSlot(slot.id)}
                                 className="p-2 text-red-600 hover:bg-red-50 rounded-sm transition"
                             >
-                                <Trash2 className="h-4 w-4" />
+                                <EllipsisVertical className="h-4 w-4" />
                             </button>
                         </div>
                     ))}

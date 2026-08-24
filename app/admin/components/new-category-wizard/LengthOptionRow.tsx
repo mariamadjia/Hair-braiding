@@ -1,4 +1,4 @@
-import { GripVertical, Trash2 } from "lucide-react";
+import { EllipsisVertical, GripVertical } from "lucide-react";
 import type { LengthEntry, SizeEntry } from "./model";
 import type { NewCategoryWizardController } from "./useNewCategoryWizard";
 
@@ -55,7 +55,7 @@ export function LengthOptionRow({ subUid, size, length, index, controller }: Pro
         <span className="text-xs text-neutral-500 md:hidden">Deposit / Notes</span>
         <input value={length.notes ?? ""} onChange={(event) => updateLengthOption(subUid, size.uid, length.uid, "notes", event.target.value)} aria-label={`${size.name} notes ${index + 1}`} placeholder="$50.00 deposit required" className="h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200 dark:border-neutral-600 dark:bg-neutral-900" />
       </label>
-      <button type="button" onClick={() => deleteLengthOption(subUid, size.uid, length.uid)} disabled={size.lengths.length === 1} aria-label={`Delete ${size.name} length ${index + 1}`} className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-500 hover:border-red-400 hover:bg-red-50 disabled:opacity-30 md:mx-auto dark:hover:bg-red-950/30"><Trash2 className="h-4 w-4" /></button>
+      <button type="button" onClick={() => deleteLengthOption(subUid, size.uid, length.uid)} disabled={size.lengths.length === 1} aria-label={`Delete ${size.name} length ${index + 1}`} className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 text-red-500 hover:border-red-400 hover:bg-red-50 disabled:opacity-30 md:mx-auto dark:hover:bg-red-950/30"><EllipsisVertical className="h-4 w-4" /></button>
     </div>
   );
 }

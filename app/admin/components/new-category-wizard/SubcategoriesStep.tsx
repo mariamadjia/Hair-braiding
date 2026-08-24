@@ -1,4 +1,4 @@
-import { AlertCircle, Check, CheckCircle, ImageIcon, Lock, Plus, Trash2, X } from "lucide-react";
+import { AlertCircle, Check, CheckCircle, EllipsisVertical, ImageIcon, Lock, Plus, X } from "lucide-react";
 import { isSizeComplete, PRESET_SIZES, type SubEntry } from "./model";
 import type { NewCategoryWizardController } from "./useNewCategoryWizard";
 import { SizePricingPanel } from "./SizePricingPanel";
@@ -68,7 +68,7 @@ function SubcategoryCard({ sub, index, count, controller }: { sub: SubEntry; ind
               <label className="flex items-center gap-1.5 text-sm font-semibold text-neutral-700 dark:text-neutral-200"><Lock className="w-3.5 h-3.5 text-violet-500" aria-hidden /> Subcategory name</label>
               <div className="flex items-center gap-1">
                 {complete && <CheckCircle className="w-4 h-4 text-green-500" aria-label="Complete" />}
-                {count > 1 && <button type="button" onClick={() => removeSubRow(sub.uid)} aria-label={`Remove subcategory ${index + 1}`} className="p-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"><Trash2 className="w-3.5 h-3.5" aria-hidden /></button>}
+                {count > 1 && <button type="button" onClick={() => removeSubRow(sub.uid)} aria-label={`Remove subcategory ${index + 1}`} className="p-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"><EllipsisVertical className="w-3.5 h-3.5" aria-hidden /></button>}
               </div>
             </div>
             <input aria-label={`Subcategory ${index + 1} name`} className={`w-full border rounded-lg px-3 py-2.5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-violet-500 bg-white dark:bg-neutral-800 ${subInputError && !sub.name.trim() ? "border-red-400" : "border-neutral-300 dark:border-neutral-600"}`} value={sub.name} onChange={(event) => updateSubName(sub.uid, event.target.value)} placeholder="e.g. Knotless" />

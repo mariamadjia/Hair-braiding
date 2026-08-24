@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { BookingCategory, CategoriesData, SubcategorySummary } from "@/lib/booking-types";
 import { inp, lbl, btnP, btnS, btnD } from "../constants";
 import { slugify } from "../utils";
-import { ChevronRight, Trash2, AlertCircle, CheckCircle, AlertTriangle, EllipsisVertical, Pencil, Tag } from "lucide-react";
+import { ChevronRight, AlertCircle, CheckCircle, AlertTriangle, EllipsisVertical, Pencil, Tag } from "lucide-react";
 import { MultiImageUploader } from "./MultiImageUploader";
 import { galleryApi } from "@/lib/api/gallery";
 import { fromProxyUrl, toProxyUrl } from "@/lib/utils/image";
@@ -609,7 +609,7 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                                     }}
                                                     className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-700"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <EllipsisVertical className="h-4 w-4" />
                                                     Delete
                                                 </button>
                                             </div>

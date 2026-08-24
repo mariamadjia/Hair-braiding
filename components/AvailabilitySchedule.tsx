@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Ban, CalendarDays, CheckCircle2, ChevronRight, Clock, Copy, LayoutTemplate, Loader2, Minus, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Ban, CalendarDays, CheckCircle2, ChevronRight, Clock, Copy, EllipsisVertical, LayoutTemplate, Loader2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/lib/config/api";
 
@@ -407,7 +407,7 @@ export default function AvailabilitySchedule({ onManageBlockedDates }: { onManag
                             {selectedDay.windows.map((window, index) => <div key={window.id} className="grid gap-3 rounded-lg border border-[#e8ddd2] bg-white p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                                 <label className="text-xs font-medium text-neutral-600">Available from<input type="time" value={window.startTime} onChange={event => updateWindow(selectedDay.dayOfWeek, window.id, "startTime", event.target.value)} className="mt-1.5 min-h-12 w-full rounded-md border border-[#d9cabe] bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700" /></label>
                                 <label className="text-xs font-medium text-neutral-600">Available until<input type="time" value={window.endTime} onChange={event => updateWindow(selectedDay.dayOfWeek, window.id, "endTime", event.target.value)} className="mt-1.5 min-h-12 w-full rounded-md border border-[#d9cabe] bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700" /></label>
-                                <button type="button" disabled={selectedDay.windows.length === 1} aria-label={`Remove window ${index + 1}`} onClick={() => updateDay(selectedDay.dayOfWeek, current => ({ ...current, windows: current.windows.filter(item => item.id !== window.id) }))} className="flex min-h-12 items-center justify-center rounded-md border border-[#e8ddd2] px-3 text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-30"><Trash2 className="h-4 w-4" /></button>
+                                <button type="button" disabled={selectedDay.windows.length === 1} aria-label={`Remove window ${index + 1}`} onClick={() => updateDay(selectedDay.dayOfWeek, current => ({ ...current, windows: current.windows.filter(item => item.id !== window.id) }))} className="flex min-h-12 items-center justify-center rounded-md border border-[#e8ddd2] px-3 text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-30"><EllipsisVertical className="h-4 w-4" /></button>
                             </div>)}
                             <button type="button" onClick={() => updateDay(selectedDay.dayOfWeek, current => ({ ...current, windows: [...current.windows, { id: windowId(), startTime: "14:00", endTime: "18:00" }] }))} className="flex min-h-11 items-center gap-2 rounded-md border border-dashed border-[#d9cabe] px-4 text-sm font-medium text-[#68402c] hover:bg-[#fbf6f0] focus:outline-none focus:ring-2 focus:ring-[#7f4b2e]"><Plus className="h-4 w-4" />Add another window</button>
                         </div>

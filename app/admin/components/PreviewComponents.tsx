@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Edit2, Trash2, Plus } from "lucide-react";
+import { Edit2, EllipsisVertical, Plus } from "lucide-react";
 import type { BookingCategory, BookingSubcategory, BookingItem } from "@/lib/booking-types";
 
 export function PreviewServicesList({ categories }: { categories: BookingCategory[] }) {
@@ -79,7 +79,7 @@ export function PreviewServicesList({ categories }: { categories: BookingCategor
                                         className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                                         title="Delete service"
                                     >
-                                        <Trash2 className="h-4 w-4" />
+                                        <EllipsisVertical className="h-4 w-4" />
                                     </button>
                                 </>
                             )}
@@ -237,7 +237,7 @@ export function PreviewCategoryDetail({ category }: { category: BookingCategory 
                                                 className="p-1.5 rounded hover:bg-red-50 text-neutral-400 hover:text-red-600 transition-colors"
                                                 title="Delete subcategory"
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                <EllipsisVertical className="h-4 w-4" />
                                             </button>
                                         </>
                                     )}

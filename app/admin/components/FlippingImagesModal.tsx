@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Trash2, Plus } from "lucide-react";
+import { EllipsisVertical, X, Plus } from "lucide-react";
 import { GalleryImage } from "@/lib/api/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ImageUploader } from "./ImageUploader";
@@ -157,7 +157,7 @@ export function FlippingImagesModal({
                                             title={selectedImages.length <= MIN_IMAGES ? `Minimum ${MIN_IMAGES} images required` : 'Remove'}
                                             aria-label={`Remove image ${index + 1}`}
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            <EllipsisVertical className="h-4 w-4" />
                                         </button>
                                 </>)}
                             </SortableList>
