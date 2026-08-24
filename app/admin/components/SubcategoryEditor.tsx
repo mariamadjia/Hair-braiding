@@ -9,7 +9,7 @@ import type { GalleryImage } from "@/lib/types/gallery";
 import { toProxyUrl } from "@/lib/utils/image";
 import { ItemForm } from "./ItemForm";
 import { AddOnsManager } from "@/components/AddOnsManager";
-import { ChevronRight, Package, Plus, Trash2, CheckCircle, AlertCircle, Loader2, GripVertical, Pencil, Ruler, Images, X } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Package, Plus, Trash2, CheckCircle, AlertCircle, Loader2, GripVertical, Pencil, Ruler, Images, X } from "lucide-react";
 import { validateFile } from "../utils/fileValidation";
 import { compressImage } from "../utils/imageCompression";
 import type { GuideSettings } from "@/lib/guides";
@@ -62,6 +62,12 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [addingItem, setAddingItem] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+    const [mobileSections, setMobileSections] = useState<Record<"details" | "settings" | "guides" | "addons", boolean>>({
+        details: false,
+        settings: true,
+        guides: false,
+        addons: false,
+    });
     const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(
         (sub.galleryImages ?? []) as GalleryImage[]
     );
@@ -653,6 +659,20 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
     const coverPhoto = galleryImages[0] ? toProxyUrl(galleryImages[0].imageUrl) : null;
     const totalLengths = items.reduce((acc, i) => acc + (i.lengthOptions?.length ?? 0), 0);
+    const toggleMobileSection = (section: keyof typeof mobileSections) => {
+        setMobileSections(current => ({ ...current, [section]: !current[section] }));
+    };
+    const MobileSectionButton = ({ section, title }: { section: keyof typeof mobileSections; title: string }) => (
+        <button
+            type="button"
+            onClick={() => toggleMobileSection(section)}
+            aria-expanded={mobileSections[section]}
+            className="flex min-h-13 w-full items-center justify-between px-4 py-3 text-left md:hidden"
+        >
+            <span className="font-serif text-lg font-semibold text-[#351a10] dark:text-white">{title}</span>
+            {mobileSections[section] ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+        </button>
+    );
 
     return (
         <div className="w-full min-w-0 space-y-5 px-3 py-4 pb-28 sm:space-y-7 sm:px-6 sm:py-5 lg:px-10 lg:py-8">
@@ -682,7 +702,8 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
             {/* Compact header and details card */}
             <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
-                <div className="p-4 sm:p-6">
+                <MobileSectionButton section="details" title="Basic details" />
+                <div className={`${mobileSections.details ? "block" : "hidden"} border-t border-neutral-200 p-4 md:block md:border-t-0 sm:p-6 dark:border-neutral-800`}>
                     <div className="flex items-center gap-3 sm:gap-5">
                         <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-100 sm:h-28 sm:w-28 dark:bg-neutral-800">
                             {coverPhoto ? (
@@ -760,11 +781,13 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
             {/* Settings shared by every size */}
             {items.length > 0 && <div className="w-full space-y-4">
-                <header>
+                <header className="hidden md:block">
                     <h3 className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl dark:text-white">Size settings</h3>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Manage choices and guides shared by all {items.length} sizes.</p>
                 </header>
-                <section aria-labelledby="bulk-foundation-title" className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
+                <section aria-labelledby="bulk-foundation-title" className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                    <MobileSectionButton section="settings" title="Size settings" />
+                    <div className={`${mobileSections.settings ? "block" : "hidden"} border-t border-neutral-200 p-4 md:block md:border-t-0 sm:p-6 dark:border-neutral-800`}>
                         <div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <h4 id="bulk-foundation-title" className="text-base font-semibold text-neutral-950 dark:text-white">Settings for all sizes</h4>
@@ -826,8 +849,11 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                 </button>
                             </div>
 
-                        {guideSettings && <div className="mt-6 border-t border-neutral-200 pt-6 dark:border-neutral-800">
-                            <div className="mb-4"><h5 className="text-sm font-semibold text-neutral-950 dark:text-white">Customer guides</h5><p className="mt-1 text-xs text-neutral-500">Manage the guides customers see while booking.</p></div>
+                    </div>
+                        {guideSettings && <div className="border-t border-neutral-200 dark:border-neutral-800">
+                            <MobileSectionButton section="guides" title="Customer guides" />
+                            <div className={`${mobileSections.guides ? "block" : "hidden"} border-t border-neutral-200 p-4 md:block md:border-t-0 md:p-6 dark:border-neutral-800`}>
+                            <div className="mb-4 hidden md:block"><h5 className="text-sm font-semibold text-neutral-950 dark:text-white">Customer guides</h5><p className="mt-1 text-xs text-neutral-500">Manage the guides customers see while booking.</p></div>
                             <div className="space-y-3">
                                 {([
                                     { kind: "length" as const, title: "Length guide", subtitle: "One image shared by all sizes", enabled: guideSettings.lengthGuideEnabled, ready: Boolean(guideSettings.lengthGuideImageUrl), status: guideSettings.lengthGuideImageUrl ? "Ready" : "No image", icon: Ruler },
@@ -842,7 +868,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                         <button type="button" onClick={() => openGuideEditor(row.kind)} aria-label={`Manage ${row.title}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-3 text-xs font-semibold transition hover:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-neutral-950 dark:border-neutral-600 dark:bg-neutral-900 dark:hover:bg-neutral-800"><Pencil className="h-4 w-4" />Manage</button>
                                     </div>
                                 </div>)}
-                            </div>
+                            </div></div>
                         </div>}
             </section></div>}
 
@@ -860,14 +886,20 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 </div>
             </div>}
 
+            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white md:contents dark:border-neutral-700 dark:bg-neutral-900">
+            <MobileSectionButton section="addons" title="Add-ons" />
+            <div className={`${mobileSections.addons ? "block" : "hidden"} border-t border-neutral-200 md:block md:border-t-0 dark:border-neutral-800`}>
             <AddOnsManager
                 sub={sub}
                 items={items}
                 data={data}
                 token={token}
+                embeddedMobile
                 onError={setSaveError}
                 onSuccess={(message) => { setSaveSuccess(message); setTimeout(() => setSaveSuccess(null), 3000); }}
             />
+            </div>
+            </div>
 
             {/* Sizes card */}
             <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">

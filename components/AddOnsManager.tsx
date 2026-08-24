@@ -7,13 +7,13 @@ import type { BookingAddOn, BookingItem, BookingSubcategory, CategoriesData } fr
 import { SortableHandle, SortableList } from "@/components/sortable/SortableList";
 import { ServicesSaveBar } from "@/app/admin/components/ServicesSaveBar";
 
-type Props = { sub: BookingSubcategory; items: BookingItem[]; data: CategoriesData; token: string; onError: (message: string) => void; onSuccess: (message: string) => void };
+type Props = { sub: BookingSubcategory; items: BookingItem[]; data: CategoriesData; token: string; onError: (message: string) => void; onSuccess: (message: string) => void; embeddedMobile?: boolean };
 type Form = { name: string; description: string; pricingMode: "FIXED" | "STARTING_AT"; price: string; depositBehavior: "NO_CHANGE" | "ADD_FIXED"; deposit: string; active: boolean; styleIds: number[]; allSizes: boolean; allLengths: boolean; serviceItemIds: number[]; lengthOptionIds: number[] };
 
 const emptyForm = (subId?: number): Form => ({ name: "", description: "", pricingMode: "FIXED", price: "", depositBehavior: "NO_CHANGE", deposit: "", active: true, styleIds: subId ? [subId] : [], allSizes: true, allLengths: true, serviceItemIds: [], lengthOptionIds: [] });
 const money = (cents: number) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 
-export function AddOnsManager({ sub, items, data, token, onError, onSuccess }: Props) {
+export function AddOnsManager({ sub, items, data, token, onError, onSuccess, embeddedMobile = false }: Props) {
   const [addOns, setAddOns] = useState<BookingAddOn[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -135,8 +135,8 @@ export function AddOnsManager({ sub, items, data, token, onError, onSuccess }: P
   };
 
   return <>
-    <section className="w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-      <div className="flex items-center justify-between gap-4 border-b border-neutral-200 px-5 py-4 dark:border-neutral-800 sm:px-6">
+    <section className={`w-full overflow-hidden bg-white dark:bg-neutral-900 ${embeddedMobile ? "border-0 shadow-none md:rounded-xl md:border md:border-neutral-200 md:shadow-sm dark:md:border-neutral-700" : "rounded-xl border border-neutral-200 shadow-sm dark:border-neutral-700"}`}>
+      <div className={`${embeddedMobile ? "hidden md:flex" : "flex"} items-center justify-between gap-4 border-b border-neutral-200 px-5 py-4 dark:border-neutral-800 sm:px-6`}>
         <div><div className="flex items-center gap-2"><h3 className="text-base font-semibold text-neutral-950 dark:text-white">Add-ons</h3><span className="rounded-md bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">{addOns.length}</span></div><p className="mt-1 text-xs text-neutral-500">Optional extras customers can select after choosing a length.</p></div>
         <div className="flex flex-wrap justify-end gap-2"><button onClick={() => void showLibrary()} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-neutral-300 px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"><Library className="h-4 w-4" />Add existing</button><button onClick={showCreate} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#5b3219] px-4 text-xs font-semibold text-white transition hover:bg-[#442412] dark:bg-white dark:text-neutral-950"><Plus className="h-4 w-4" />Create new</button></div>
       </div>
