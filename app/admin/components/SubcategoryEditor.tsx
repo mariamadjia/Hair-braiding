@@ -63,7 +63,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [editingId, setEditingId] = useState<number | null>(null);
     const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
     const [mobileSections, setMobileSections] = useState<Record<"settings" | "guides" | "addons", boolean>>({
-        settings: true,
+        settings: false,
         guides: false,
         addons: false,
     });
