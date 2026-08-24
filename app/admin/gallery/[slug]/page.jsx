@@ -15,6 +15,7 @@ export default function AdminCategoryDetailPage() {
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingSubcategory, setEditingSubcategory] = useState(null);
+    const [openActionMenuId, setOpenActionMenuId] = useState(null);
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [draggedIndex, setDraggedIndex] = useState(null);
     const [loadError, setLoadError] = useState("");
@@ -109,6 +110,23 @@ export default function AdminCategoryDetailPage() {
             ...subcategory,
             images: subcategory.images ?? [],
         });
+    };
+
+    const handleDeleteSubcategory = async (subcategory) => {
+        setOpenActionMenuId(null);
+        if (!confirm(`Delete ${subcategory.name}? This will also delete all associated images.`)) return;
+        try {
+            const token = getAuthToken();
+            const response = await fetch(`${API_BASE_URL}/api/subcategories/${subcategory.id}`, {
+                method: 'DELETE',
+                headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+            });
+            if (!response.ok) throw new Error('Failed to delete subcategory');
+            await loadCategoryData();
+        } catch (error) {
+            console.error('Failed to delete subcategory:', error);
+            alert('Failed to delete subcategory. Please try again.');
+        }
     };
 
     const getAuthToken = () => {
@@ -396,33 +414,23 @@ export default function AdminCategoryDetailPage() {
                                 >
                                     <Edit className="h-4 w-4 text-neutral-700 dark:text-neutral-200" />
                                 </button>
-                                <button
-                                    onClick={async () => {
-                                        if (confirm(`Delete ${subcategory.name}? This will also delete all associated images.`)) {
-                                            try {
-                                                const token = getAuthToken();
-                                                const response = await fetch(`${API_BASE_URL}/api/subcategories/${subcategory.id}`, {
-                                                    method: 'DELETE',
-                                                    headers: {
-                                                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                                                    },
-                                                });
-                                                
-                                                if (!response.ok) {
-                                                    throw new Error('Failed to delete subcategory');
-                                                }
-                                                
-                                                await loadCategoryData();
-                                            } catch (error) {
-                                                console.error('Failed to delete subcategory:', error);
-                                                alert('Failed to delete subcategory. Please try again.');
-                                            }
-                                        }
-                                    }}
-                                    className="p-2 bg-white dark:bg-neutral-700 rounded-full shadow-lg hover:bg-red-50 dark:hover:bg-red-900"
-                                >
-                                    <EllipsisVertical className="h-4 w-4 text-red-600" />
-                                </button>
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        aria-label={`Actions for ${subcategory.name}`}
+                                        aria-haspopup="menu"
+                                        aria-expanded={openActionMenuId === subcategory.id}
+                                        onClick={(event) => { event.stopPropagation(); setOpenActionMenuId(current => current === subcategory.id ? null : subcategory.id); }}
+                                        className="rounded-full bg-white p-2 text-neutral-700 shadow-lg hover:bg-neutral-100 dark:bg-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-600"
+                                    >
+                                        <EllipsisVertical className="h-4 w-4" />
+                                    </button>
+                                    {openActionMenuId === subcategory.id && (
+                                        <div role="menu" className="absolute right-0 top-11 z-20 min-w-32 rounded-lg border border-neutral-200 bg-white p-1.5 shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
+                                            <button type="button" role="menuitem" onClick={(event) => { event.stopPropagation(); void handleDeleteSubcategory(subcategory); }} className="flex min-h-10 w-full items-center rounded-md px-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40">Delete</button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Subcategory Card */}
