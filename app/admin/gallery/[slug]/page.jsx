@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
-import { ChevronLeft, Edit, Trash2, Plus, ArrowUp, ArrowDown } from 'lucide-react';
+import { ChevronLeft, Edit, EllipsisVertical, Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { API_BASE_URL } from "@/lib/config/api";
 import { EditSubcategoryModal } from '../../components/EditSubcategoryModal';
 import { CreateSubcategoryModal } from '../../components/CreateSubcategoryModal';
@@ -421,7 +421,7 @@ export default function AdminCategoryDetailPage() {
                                     }}
                                     className="p-2 bg-white dark:bg-neutral-700 rounded-full shadow-lg hover:bg-red-50 dark:hover:bg-red-900"
                                 >
-                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                    <EllipsisVertical className="h-4 w-4 text-red-600" />
                                 </button>
                             </div>
 
