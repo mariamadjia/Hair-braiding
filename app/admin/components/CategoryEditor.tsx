@@ -431,9 +431,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
             <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h2 className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl dark:text-white">Edit category</h2>
-                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                        Update the details and content shown for this service category.
-                    </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
@@ -461,7 +458,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                                 </span>
                                 <div>
                                     <h3 className="text-base font-semibold text-neutral-950 dark:text-white">Category information</h3>
-                                    <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">This information helps keep your services organized.</p>
                                 </div>
                             </div>
                             <div>
