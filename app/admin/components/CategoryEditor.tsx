@@ -432,15 +432,6 @@ export function CategoryEditor({ cat, token, headers, mutate, setSelection, onLo
                 <div>
                     <h2 className="text-xl font-semibold tracking-tight text-neutral-950 sm:text-2xl dark:text-white">Edit category</h2>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => guardedSetSelection({ type: "root" })}
-                        className={`${btnS} min-h-10 rounded-lg px-4 py-2 text-sm normal-case tracking-normal`}
-                    >
-                        Cancel
-                    </button>
-                </div>
             </header>
 
             <section className="space-y-5">
