@@ -12,7 +12,7 @@ import { ServicesSaveBar } from "./ServicesSaveBar";
 export function ItemForm({ initial, token, onSave, onCancel }: { initial: BookingItem; token: string; categoryId?: number; subcategoryId?: number; onSave: (item: BookingItem) => Promise<void>; onCancel: () => void }) {
     const [item, setItem] = useState<BookingItem>(() => ({
         ...initial,
-        pricingMode: initial.pricingMode ?? (initial.lengthOptions?.length ? "BY_LENGTH" : "FIXED"),
+        pricingMode: initial.pricingMode ?? "BY_LENGTH",
     }));
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);

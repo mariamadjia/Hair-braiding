@@ -9,7 +9,7 @@ export function slugify(s: string) {
 }
 
 export function emptyItem(): BookingItem {
-    return { name: "", price: "", pricingMode: "FIXED", description: "", lengthOptions: [], foundationChoicesEnabled: false, knotlessPriceAdjustment: "0", knotlessPricingMode: "ADJUSTMENT" };
+    return { name: "", price: "", pricingMode: "BY_LENGTH", description: "", lengthOptions: [], foundationChoicesEnabled: false, knotlessPriceAdjustment: "0", knotlessPricingMode: "ADJUSTMENT" };
 }
 
 export function emptyLengthOption(): LengthOption {
