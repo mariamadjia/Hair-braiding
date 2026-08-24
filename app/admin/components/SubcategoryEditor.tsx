@@ -884,7 +884,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 </div>
             </div>}
 
-            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white md:contents dark:border-neutral-700 dark:bg-neutral-900">
+            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white md:block md:overflow-visible md:rounded-none md:border-0 md:bg-transparent dark:border-neutral-700 dark:bg-neutral-900 dark:md:bg-transparent">
             <MobileSectionButton section="addons" title="Add-ons" />
             <div className={`${mobileSections.addons ? "block" : "hidden"} border-t border-neutral-200 md:block md:border-t-0 dark:border-neutral-800`}>
             <AddOnsManager
