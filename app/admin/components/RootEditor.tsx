@@ -215,7 +215,9 @@ export function RootEditor({ data, categorySummaries, headers, mutate, setSelect
                     <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">Organize and manage your braiding service categories.</p>
                 </div>
                 {!adding && (
-                    <button type="button" onClick={() => setAdding(true)} className={`${btnP} hidden min-h-11 rounded-lg px-5 py-2.5 text-sm normal-case tracking-normal md:inline-flex`}>+ Add category</button>
+                    <div className="hidden md:block">
+                        <button type="button" onClick={() => setAdding(true)} className={`${btnP} min-h-11 rounded-lg px-5 py-2.5 text-sm normal-case tracking-normal`}>+ Add category</button>
+                    </div>
                 )}
             </div>
 
