@@ -5,7 +5,7 @@ import type { BookingItem } from "@/lib/booking-types";
 import { inp, lbl } from "../constants";
 import { LengthOptionsEditor } from "./LengthOptionsEditor";
 import { toProxyUrl } from "@/lib/utils/image";
-import { AlertCircle, CheckCircle, Loader2, Plus, X } from "lucide-react";
+import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Loader2, Plus, X } from "lucide-react";
 import { uploadFile } from "../utils";
 import { ServicesSaveBar } from "./ServicesSaveBar";
 
@@ -23,7 +23,15 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
     const [defaultDepositCents, setDefaultDepositCents] = useState(5000);
     const [customDeposit, setCustomDeposit] = useState(initial.depositOverrideCents != null);
     const [depositInput, setDepositInput] = useState(initial.depositOverrideCents == null ? "" : (initial.depositOverrideCents / 100).toFixed(2));
+    const [sections, setSections] = useState({ basic: true, pricing: true, deposit: true });
     const photos = item.sizePhotos ?? [];
+
+    const SectionHeader = ({ section, number, title }: { section: keyof typeof sections; number: string; title: string }) => (
+        <button type="button" onClick={() => setSections(current => ({ ...current, [section]: !current[section] }))} aria-expanded={sections[section]} className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left sm:px-6">
+            <span className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#b9855b] text-sm font-semibold text-[#7a4a28]">{number}</span><span className="font-serif text-lg font-semibold text-[#351a10] dark:text-white">{title}</span></span>
+            {sections[section] ? <ChevronUp className="h-5 w-5 shrink-0" /> : <ChevronDown className="h-5 w-5 shrink-0" />}
+        </button>
+    );
 
     useEffect(() => {
         fetch("/api/admin/pricing/deposits", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
@@ -132,18 +140,21 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
             {error && <div role="alert" tabIndex={-1} className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"><AlertCircle className="h-4 w-4" /><span className="flex-1">{error}</span><button type="button" aria-label="Dismiss error" onClick={() => setError(null)}><X className="h-4 w-4" /></button></div>}
             {success && <div role="status" className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700"><CheckCircle className="h-4 w-4" />{success}</div>}
 
-            <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
-                <div className="mb-5 flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#b9855b] text-sm font-semibold text-[#7a4a28]">1</span><h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Basic information</h3></div>
+            <section className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                <SectionHeader section="basic" number="1" title="Basic information" />
+                <div className={`${sections.basic ? "block" : "hidden"} border-t border-neutral-200 p-4 sm:p-6 dark:border-neutral-800`}>
                 <div className="grid gap-4 md:grid-cols-2">
                     <label className="block"><span className={lbl}>Size name *</span><input className={inp} value={item.name} onChange={event => set("name", event.target.value)} placeholder="Small" /></label>
                     <label className="block"><span className={lbl}>Appointment duration *</span><select className={inp} value={item.durationMinutes ?? 60} onChange={event => set("durationMinutes", Number(event.target.value))}>
                         {[30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480, 600, 720].map(value => <option key={value} value={value}>{value < 60 ? `${value} minutes` : `${value / 60} hour${value === 60 ? "" : "s"}`}</option>)}
                     </select><span className="mt-1 block text-xs text-neutral-500">The calendar reserves this full amount of time for the service.</span></label>
                 </div>
+                </div>
             </section>
 
-            <section className="space-y-5 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:space-y-6 sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
-            <div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#b9855b] text-sm font-semibold text-[#7a4a28]">2</span><h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Pricing</h3></div>
+            <section className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+            <SectionHeader section="pricing" number="2" title="Pricing" />
+            <div className={`${sections.pricing ? "block" : "hidden"} space-y-5 border-t border-neutral-200 p-4 sm:space-y-6 sm:p-6 dark:border-neutral-800`}>
             <fieldset>
                 <legend className="text-sm font-semibold text-neutral-900 dark:text-white">Pricing method</legend>
                 <p className="mt-1 text-xs text-neutral-500">Choose how this service is priced.</p>
@@ -163,10 +174,12 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                 {item.foundationChoicesEnabled && <p className="mt-4 text-xs text-neutral-500">Regular and Knotless pricing can be managed separately below.</p>}
                 </div>
             </fieldset>
+            </div>
             </section>
 
-            <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
-                <div className="mb-5 flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#b9855b] text-sm font-semibold text-[#7a4a28]">3</span><h3 className="text-lg font-semibold text-neutral-950 dark:text-white">Booking deposit</h3></div>
+            <section className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                <SectionHeader section="deposit" number="3" title="Booking deposit" />
+                <div className={`${sections.deposit ? "block" : "hidden"} border-t border-neutral-200 p-4 sm:p-6 dark:border-neutral-800`}>
                 <p className="text-xs text-neutral-500">Amount required to request this service. The balance is due later.</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                     <button type="button" aria-pressed={!customDeposit} onClick={() => { setCustomDeposit(false); set("depositOverrideCents", null); }} className={`rounded-lg border px-4 py-3 text-left transition ${!customDeposit ? "border-[#a96835] bg-[#fcf7f1] dark:border-amber-300 dark:bg-neutral-800" : "border-neutral-200 dark:border-neutral-700"}`}><span className="block text-sm font-semibold">Salon default · ${(defaultDepositCents / 100).toFixed(2)}</span><span className="mt-1 block text-xs text-neutral-500">Automatically follows the salon default.</span></button>
@@ -174,6 +187,7 @@ export function ItemForm({ initial, token, onSave, onCancel }: { initial: Bookin
                 </div>
                 {customDeposit && <label className="mt-3 block max-w-xs"><span className={lbl}>Deposit amount *</span><span className="flex min-h-11 items-center rounded-lg border border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-900"><span className="border-r border-neutral-200 px-3 text-neutral-500 dark:border-neutral-700">$</span><input aria-label="Deposit amount" inputMode="decimal" className="min-w-0 flex-1 bg-transparent px-3 outline-none" value={depositInput} onChange={event => { const clean = event.target.value.replace(/[^0-9.]/g, ""); setDepositInput(clean); set("depositOverrideCents", clean && Number.isFinite(Number(clean)) ? Math.round(Number(clean) * 100) : null); }} /></span></label>}
                 <p className="mt-3 text-xs font-medium text-neutral-700 dark:text-neutral-300">Customers will see a ${(Number(item.depositOverrideCents ?? defaultDepositCents) / 100).toFixed(2)} deposit required.</p>
+                </div>
             </section>
 
             <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">
