@@ -77,6 +77,7 @@ const policySections = (depositAmountCents: number) => [
             "All braiding services are available by appointment.",
             `A card authorization of $${(depositAmountCents / 100).toFixed(2)} is required to submit your appointment request. Your card is charged only if the salon approves your appointment.`,
             `Once approved, the $${(depositAmountCents / 100).toFixed(2)} deposit is non-refundable and will be applied toward your total service balance. If your request is denied, the authorization hold is released.`,
+            "Please note that all payments are final and non-refundable. No refunds will be issued under any circumstances.",
         ],
     },
     {
