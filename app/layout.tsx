@@ -40,7 +40,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://hair-braiding-coral.vercel.app"),
+  metadataBase: new URL("https://ahbraiding.com"),
   title: {
     default: "AH Braiding | Professional Hair Braiding in San Antonio",
     template: "%s | AH Braiding",
@@ -55,13 +55,20 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "AH Braiding",
     type: "website",
-    images: [{ url: "/hero/IMG_9011.jpg", alt: "AH Braiding" }],
+    images: [
+      {
+        url: "/social/ah-braiding-cover.jpg",
+        width: 1200,
+        height: 630,
+        alt: "A client wearing silver braids styled by AH Braiding",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "AH Braiding | The Art of Elegant Braiding",
     description: "Professional protective styling in San Antonio, Texas.",
-    images: ["/hero/IMG_9011.jpg"],
+    images: ["/social/ah-braiding-cover.jpg"],
   },
   robots: { index: true, follow: true },
   icons: { icon: "/logo/logo2.PNG", apple: "/logo/logo2.PNG" },
