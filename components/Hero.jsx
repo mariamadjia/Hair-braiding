@@ -5,12 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
-// Default fallback images - these will show when backend/API is unavailable
-const DEFAULT_HERO_IMAGES = [
-  '/hero/IMG_9011.jpg',
-  '/hero/ISIMG-678789.JPG',
-  '/hero/ISIMG-680068.JPG'
-];
+// Temporarily leave the hero empty when no API/preview images are available.
+const DEFAULT_HERO_IMAGES = [];
 
 const normalizeHeroImages = (images) => images.map((image) =>
   typeof image === "string"
@@ -34,7 +30,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
       setCurrentImageIndex(0);
       return;
     }
-    // Try to fetch images from API, but keep defaults if it fails
+    // Try to fetch images from API; leave the hero empty if it fails.
     fetch('/api/hero-images')
       .then(res => res.json())
       .then(data => {
@@ -44,8 +40,7 @@ export default function Hero({ videoSrc, useVideo, previewImages = /** @type {an
         }
       })
       .catch(err => {
-        console.error('Using default hero images because the API is unavailable.', err);
-        // Keep default images on error
+        console.error('Hero images are unavailable.', err);
       });
   }, [previewImages]);
 
