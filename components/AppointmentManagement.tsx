@@ -3,13 +3,14 @@
 import { memo, useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import {
     Calendar, CalendarDays, Check, ChevronRight, Clock, CreditCard, List,
-    Loader2, Mail, MessageSquare, Phone, RefreshCw, Search, ShieldCheck, User, X
+    Loader2, Mail, MessageSquare, Phone, Plus, RefreshCw, Search, ShieldCheck, User, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getAuthToken, removeAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
 import CalendarView, { CalendarRange } from "./CalendarView";
+import OwnerAppointmentModal from "./OwnerAppointmentModal";
 
 type NoShowFee = {
     appointmentId: number; scheduledServicePriceCents: number; feeRatePercent: number;
@@ -56,6 +57,10 @@ export type Appointment = {
     lastSelfServiceChangeAt?: string;
     rescheduledFromDateTime?: string;
     noShowFee?: NoShowFee;
+    bookingSource?: "CUSTOMER" | "OWNER";
+    depositRequired?: boolean;
+    depositLinkExpiresAt?: string;
+    depositWaivedAt?: string;
 };
 
 type WorkflowView = "NEEDS_ACTION" | "UPCOMING" | "HISTORY";
@@ -71,6 +76,7 @@ const WORKFLOW_VIEWS: { value: WorkflowView; label: string; description: string 
 const DETAIL_OPTIONS: Record<WorkflowView, { value: DetailFilter; label: string }[]> = {
     NEEDS_ACTION: [
         { value: "ALL", label: "All action items" },
+        { value: "AWAITING_PAYMENT", label: "Awaiting deposit" },
         { value: "READY_FOR_APPROVAL", label: "Ready for approval" },
         { value: "CAPTURE_PROCESSING", label: "Capture processing" },
         { value: "PAYMENT_ISSUE", label: "Payment or notification issue" }
@@ -124,8 +130,10 @@ const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detai
         || ["UNPAID", "PROCESSING", "FAILED"].includes(appointment.noShowFee?.paymentStatus || "");
     const actionablePending = appointment.status === "PENDING"
         && (appointment.paymentStatus === "AUTHORIZED" || Boolean(appointment.approvedAt));
+    const ownerAwaitingPayment = appointment.bookingSource === "OWNER"
+        && appointment.status === "PENDING" && appointment.depositRequired && appointment.paymentStatus === "PENDING";
     const viewMatch = workflow === "NEEDS_ACTION"
-        ? actionablePending || paymentIssue
+        ? actionablePending || ownerAwaitingPayment || paymentIssue
         : workflow === "UPCOMING"
             ? captureProcessing || (appointment.status === "APPROVED" && appointmentTime >= now)
             : ["DENIED", "CANCELLED", "COMPLETED", "NO_SHOW"].includes(appointment.status)
@@ -172,6 +180,7 @@ function AppointmentManagement() {
     const [totalElements, setTotalElements] = useState(0);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [activeCalendarRange, setActiveCalendarRange] = useState<CalendarRange | null>(null);
+    const [createOpen, setCreateOpen] = useState(false);
     const listRequestRef = useRef<AbortController | null>(null);
     const calendarRequestRef = useRef<AbortController | null>(null);
     const actionDialogRef = useRef<HTMLElement | null>(null);
@@ -304,6 +313,20 @@ function AppointmentManagement() {
         && !appointment.approvedAt
         && appointment.paymentStatus === "AUTHORIZED"
         && !isPast(appointment);
+    const awaitingOwnerDeposit = (appointment: Appointment) => appointment.bookingSource === "OWNER"
+        && appointment.status === "PENDING" && appointment.depositRequired && appointment.paymentStatus === "PENDING";
+
+    const ownerDepositAction = async (appointment: Appointment, action: "resend" | "waive") => {
+        setActionLoading(appointment.id); setError(null); setNotice(null);
+        try {
+            await readResponse(await fetch(`${API_BASE_URL}/api/admin/appointments/${appointment.id}/${action === "resend" ? "deposit-link/resend" : "deposit/waive"}`, {
+                method: "POST", headers: authHeaders(), credentials: "include"
+            }));
+            setNotice(action === "resend" ? "Deposit link sent again by email and SMS." : "Deposit waived. The appointment is confirmed and the customer was notified.");
+            await refreshCurrentView();
+        } catch (reason) { setError(reason instanceof Error ? reason.message : "The action could not be completed"); }
+        finally { setActionLoading(null); }
+    };
 
     const openNoShow = (appointment: Appointment) => {
         const savedDecision = appointment.noShowFee?.feeDecision;
@@ -511,6 +534,7 @@ function AppointmentManagement() {
                     {lastUpdated && <p className="mt-1 text-xs text-neutral-400">Last updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>}
                 </div>
                 <div className="grid w-full grid-cols-[auto_1fr] items-center gap-2 lg:flex lg:w-auto lg:flex-wrap">
+                    <Button size="sm" className="col-span-2 h-11 bg-[#351d12] text-white hover:bg-[#4b2a1b] lg:col-span-1 lg:h-9" onClick={() => setCreateOpen(true)}><Plus className="mr-2 h-4 w-4"/>Create appointment</Button>
                     <Button variant="outline" size="sm" className="h-11 px-3 sm:h-9" onClick={() => void refreshCurrentView()} disabled={loading || calendarLoading}>
                         <RefreshCw className={cn("mr-2 h-4 w-4", (loading || calendarLoading) && "animate-spin")} /> Refresh
                     </Button>
@@ -643,6 +667,7 @@ function AppointmentManagement() {
                                         {appointment.paymentStatus === "CAPTURE_FAILED" && <Button size="sm" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "capture")}><CreditCard className="mr-1 h-4 w-4" />Retry capture</Button>}
                                         {appointment.paymentStatus === "CANCELLATION_FAILED" && <Button size="sm" variant="outline" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "release")}>Retry release</Button>}
                                         {appointment.notificationStatus?.includes("FAILED") && <Button size="sm" variant="outline" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}><Mail className="mr-1 h-4 w-4" />Retry notification</Button>}
+                                        {awaitingOwnerDeposit(appointment) && <><Button size="sm" variant="outline" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void ownerDepositAction(appointment, "resend")}><Mail className="mr-1 h-4 w-4"/>Resend deposit link</Button><Button size="sm" variant="outline" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void ownerDepositAction(appointment, "waive")}>Waive deposit</Button></>}
                                         {appointment.status === "APPROVED" && isPast(appointment) && <>
                                             <Button size="sm" className="h-10 sm:h-9" onClick={() => { setAction({ kind: "complete", appointment }); setActionNotes(""); }}>Mark complete</Button>
                                             {appointment.noShowFee && <Button size="sm" variant="destructive" className="h-10 sm:h-9" disabled={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime()} title={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime() ? `Available after ${formatDateTime(appointment.noShowFee.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</Button>}
@@ -651,7 +676,7 @@ function AppointmentManagement() {
                                         {(appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing && <Button size="sm" variant="outline" className="h-10 text-red-700 sm:h-9" onClick={() => { setAction({ kind: "cancel", appointment }); setActionNotes(""); }}>Cancel appointment</Button>}
                                     </div>
                                 </div>
-                                {appointment.status === "PENDING" && !captureProcessing && !canApprove(appointment) && !overdue && <p className="mt-3 pl-2 text-xs font-medium text-amber-700">Approval is unavailable until payment is authorized.</p>}
+                                {awaitingOwnerDeposit(appointment) ? <p className="mt-3 pl-2 text-xs font-medium text-amber-700">Awaiting the customer’s deposit payment{appointment.depositLinkExpiresAt ? ` · link expires ${formatDateTime(appointment.depositLinkExpiresAt)}` : ""}.</p> : appointment.status === "PENDING" && !captureProcessing && !canApprove(appointment) && !overdue && <p className="mt-3 pl-2 text-xs font-medium text-amber-700">Approval is unavailable until payment is authorized.</p>}
                             </article>
                         );
                     })}
@@ -663,6 +688,10 @@ function AppointmentManagement() {
                 <div className="grid grid-cols-2 gap-2"><Button variant="outline" size="sm" className="h-10" disabled={page === 0} onClick={() => setPage(value => Math.max(0, value - 1))}>Previous</Button><Button variant="outline" size="sm" className="h-10" disabled={page >= totalPages - 1} onClick={() => setPage(value => Math.min(totalPages - 1, value + 1))}>Next</Button></div>
             </nav>}
 
+            {createOpen && <OwnerAppointmentModal
+                onClose={() => setCreateOpen(false)}
+                onCreated={async () => { setNotice("Appointment created and the customer was notified by email and SMS."); await refreshCurrentView(); }}
+            />}
             {selectedAppointment && <AppointmentDialog appointment={selectedAppointment} formatDateTime={formatDateTime} onClose={() => setSelectedAppointment(null)} onApprove={canApprove(selectedAppointment) ? () => { setSelectedAppointment(null); setAction({ kind: "approve", appointment: selectedAppointment }); setActionNotes(""); } : undefined} onDeny={selectedAppointment.status === "PENDING" && !selectedAppointment.approvedAt ? () => { setSelectedAppointment(null); setAction({ kind: "deny", appointment: selectedAppointment }); setActionNotes(""); } : undefined} />}
 
             {action && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && actionLoading === null) setAction(null); }}>
