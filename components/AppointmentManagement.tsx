@@ -632,7 +632,7 @@ function AppointmentManagement() {
                             || (appointment.status === "NO_SHOW" && appointment.noShowFee?.paymentStatus === "FAILED")
                             || ((appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing);
                         return (
-                            <article key={appointment.id} className={cn("group relative overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white p-4 shadow-[0_7px_24px_rgba(53,29,18,0.05)] transition sm:p-6 sm:hover:-translate-y-0.5 sm:hover:border-[#d7c6bb] sm:hover:shadow-[0_12px_32px_rgba(53,29,18,0.09)]", (overdue || paymentIssue) && "border-red-200 bg-red-50/30")}>
+                            <article key={appointment.id} className={cn("group relative overflow-visible rounded-2xl border border-[#e6ddd6] bg-white p-4 shadow-[0_7px_24px_rgba(53,29,18,0.05)] transition has-[details[open]]:z-30 sm:p-6 sm:hover:-translate-y-0.5 sm:hover:border-[#d7c6bb] sm:hover:shadow-[0_12px_32px_rgba(53,29,18,0.09)]", (overdue || paymentIssue) && "border-red-200 bg-red-50/30")}>
                                 <div className={cn("absolute inset-y-4 left-0 w-1 rounded-r-full", paymentIssue || overdue ? "bg-red-500" : canApprove(appointment) ? "bg-amber-500" : appointment.status === "APPROVED" ? "bg-emerald-500" : "bg-neutral-300")} />
                                 <div className="grid gap-5 pl-2 lg:grid-cols-[minmax(230px,0.85fr)_minmax(300px,1.2fr)_auto] lg:items-center">
                                     <div className="min-w-0">
