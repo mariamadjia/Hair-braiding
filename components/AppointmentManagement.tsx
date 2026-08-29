@@ -3,7 +3,7 @@
 import { memo, useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import {
     Calendar, CalendarDays, Check, ChevronRight, Clock, CreditCard, List,
-    Loader2, Mail, MessageSquare, Phone, Plus, RefreshCw, Search, ShieldCheck, User, X
+    EllipsisVertical, Loader2, Mail, MessageSquare, Phone, Plus, RefreshCw, Search, ShieldCheck, User, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -623,6 +623,14 @@ function AppointmentManagement() {
                                 : canApprove(appointment) ? "READY FOR APPROVAL"
                                     : appointment.status === "PENDING" ? "AWAITING PAYMENT"
                                         : appointment.status;
+                        const hasMoreActions = (appointment.status === "PENDING" && !captureProcessing)
+                            || appointment.paymentStatus === "CAPTURE_FAILED"
+                            || appointment.paymentStatus === "CANCELLATION_FAILED"
+                            || Boolean(appointment.notificationStatus?.includes("FAILED"))
+                            || awaitingOwnerDeposit(appointment)
+                            || (appointment.status === "APPROVED" && isPast(appointment))
+                            || (appointment.status === "NO_SHOW" && appointment.noShowFee?.paymentStatus === "FAILED")
+                            || ((appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing);
                         return (
                             <article key={appointment.id} className={cn("group relative overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white p-4 shadow-[0_7px_24px_rgba(53,29,18,0.05)] transition sm:p-6 sm:hover:-translate-y-0.5 sm:hover:border-[#d7c6bb] sm:hover:shadow-[0_12px_32px_rgba(53,29,18,0.09)]", (overdue || paymentIssue) && "border-red-200 bg-red-50/30")}>
                                 <div className={cn("absolute inset-y-4 left-0 w-1 rounded-r-full", paymentIssue || overdue ? "bg-red-500" : canApprove(appointment) ? "bg-amber-500" : appointment.status === "APPROVED" ? "bg-emerald-500" : "bg-neutral-300")} />
@@ -656,24 +664,24 @@ function AppointmentManagement() {
                                         {appointment.cancelledByCustomer && <p className="mt-2 text-xs font-medium text-violet-700">Cancelled by customer{appointment.customerCancellationReason ? `: ${appointment.customerCancellationReason}` : ""}</p>}
                                         <p className="mt-2 text-xs text-neutral-400">Requested {formatDateTime(appointment.createdAt)}</p>
                                     </div>
-                                    <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:max-w-[260px] lg:justify-end">
-                                        <Button variant="outline" size="sm" className="col-span-2 h-10 border-[#d7c6bb] sm:col-span-1 sm:h-9" onClick={() => setSelectedAppointment(appointment)}>Review <ChevronRight className="ml-1 h-4 w-4" /></Button>
-                                        {appointment.status === "PENDING" && !captureProcessing && <>
-                                            <Button size="sm" className="h-10 bg-[#351d12] text-white hover:bg-[#4b2a1b] sm:h-9" disabled={!canApprove(appointment) || actionLoading === appointment.id}
-                                                title={overdue ? "Past appointments cannot be approved" : appointment.paymentStatus !== "AUTHORIZED" ? "Payment authorization is required" : undefined}
-                                                onClick={() => { setAction({ kind: "approve", appointment }); setActionNotes(""); }}><Check className="mr-1 h-4 w-4" />Approve</Button>
-                                            <Button size="sm" variant="outline" className="h-10 text-red-700 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => { setAction({ kind: "deny", appointment }); setActionNotes(""); }}>Deny</Button>
-                                        </>}
-                                        {appointment.paymentStatus === "CAPTURE_FAILED" && <Button size="sm" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "capture")}><CreditCard className="mr-1 h-4 w-4" />Retry capture</Button>}
-                                        {appointment.paymentStatus === "CANCELLATION_FAILED" && <Button size="sm" variant="outline" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "release")}>Retry release</Button>}
-                                        {appointment.notificationStatus?.includes("FAILED") && <Button size="sm" variant="outline" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}><Mail className="mr-1 h-4 w-4" />Retry notification</Button>}
-                                        {awaitingOwnerDeposit(appointment) && <><Button size="sm" variant="outline" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void ownerDepositAction(appointment, "resend")}><Mail className="mr-1 h-4 w-4"/>Resend deposit link</Button><Button size="sm" variant="outline" className="h-10 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void ownerDepositAction(appointment, "waive")}>Waive deposit</Button></>}
-                                        {appointment.status === "APPROVED" && isPast(appointment) && <>
-                                            <Button size="sm" className="h-10 sm:h-9" onClick={() => { setAction({ kind: "complete", appointment }); setActionNotes(""); }}>Mark complete</Button>
-                                            {appointment.noShowFee && <Button size="sm" variant="destructive" className="h-10 sm:h-9" disabled={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime()} title={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime() ? `Available after ${formatDateTime(appointment.noShowFee.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</Button>}
-                                        </>}
-                                        {appointment.status === "NO_SHOW" && appointment.noShowFee?.paymentStatus === "FAILED" && <Button size="sm" variant="destructive" className="h-10 sm:h-9" onClick={() => openNoShow(appointment)}>Retry no-show charge</Button>}
-                                        {(appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing && <Button size="sm" variant="outline" className="h-10 text-red-700 sm:h-9" onClick={() => { setAction({ kind: "cancel", appointment }); setActionNotes(""); }}>Cancel appointment</Button>}
+                                    <div className="relative flex shrink-0 items-center justify-end gap-2">
+                                        <Button variant="outline" size="sm" className="h-10 border-[#d7c6bb] sm:h-9" onClick={() => setSelectedAppointment(appointment)}>Review <ChevronRight className="ml-1 h-4 w-4" /></Button>
+                                        {appointment.status === "PENDING" && !captureProcessing && <Button size="sm" className="h-10 bg-[#351d12] text-white hover:bg-[#4b2a1b] sm:h-9" disabled={!canApprove(appointment) || actionLoading === appointment.id}
+                                            title={overdue ? "Past appointments cannot be approved" : appointment.paymentStatus !== "AUTHORIZED" ? "Payment authorization is required" : undefined}
+                                            onClick={() => { setAction({ kind: "approve", appointment }); setActionNotes(""); }}><Check className="mr-1 h-4 w-4" />Approve</Button>}
+                                        {hasMoreActions && <details className="group/menu relative [&>summary::-webkit-details-marker]:hidden">
+                                            <summary aria-label="More appointment actions" className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-md border border-[#d7c6bb] bg-white text-[#351d12] shadow-sm transition hover:bg-[#f8f5f2] focus:outline-none focus:ring-2 focus:ring-[#b99782] sm:h-9 sm:w-9"><EllipsisVertical className="h-5 w-5" /></summary>
+                                            <div className="absolute right-0 top-11 z-30 w-56 overflow-hidden rounded-xl border border-[#ded3cb] bg-white p-1.5 shadow-[0_14px_38px_rgba(53,29,18,.18)]">
+                                                {appointment.status === "PENDING" && !captureProcessing && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50 disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => { setAction({ kind: "deny", appointment }); setActionNotes(""); }}>Deny</button>}
+                                                {appointment.paymentStatus === "CAPTURE_FAILED" && <button className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "capture")}><CreditCard className="mr-2 h-4 w-4" />Retry capture</button>}
+                                                {appointment.paymentStatus === "CANCELLATION_FAILED" && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "release")}>Retry release</button>}
+                                                {appointment.notificationStatus?.includes("FAILED") && <button className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}><Mail className="mr-2 h-4 w-4" />Retry notification</button>}
+                                                {awaitingOwnerDeposit(appointment) && <><button className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void ownerDepositAction(appointment, "resend")}><Mail className="mr-2 h-4 w-4"/>Resend deposit link</button><button className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void ownerDepositAction(appointment, "waive")}>Waive deposit</button></>}
+                                                {appointment.status === "APPROVED" && isPast(appointment) && <><button className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2]" onClick={() => { setAction({ kind: "complete", appointment }); setActionNotes(""); }}>Mark complete</button>{appointment.noShowFee && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50 disabled:opacity-50" disabled={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime()} title={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime() ? `Available after ${formatDateTime(appointment.noShowFee.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</button>}</>}
+                                                {appointment.status === "NO_SHOW" && appointment.noShowFee?.paymentStatus === "FAILED" && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50" onClick={() => openNoShow(appointment)}>Retry no-show charge</button>}
+                                                {(appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50" onClick={() => { setAction({ kind: "cancel", appointment }); setActionNotes(""); }}>Cancel appointment</button>}
+                                            </div>
+                                        </details>}
                                     </div>
                                 </div>
                                 {awaitingOwnerDeposit(appointment) ? <p className="mt-3 pl-2 text-xs font-medium text-amber-700">Awaiting the customer’s deposit payment{appointment.depositLinkExpiresAt ? ` · link expires ${formatDateTime(appointment.depositLinkExpiresAt)}` : ""}.</p> : appointment.status === "PENDING" && !captureProcessing && !canApprove(appointment) && !overdue && <p className="mt-3 pl-2 text-xs font-medium text-amber-700">Approval is unavailable until payment is authorized.</p>}
