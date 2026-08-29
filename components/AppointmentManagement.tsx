@@ -316,13 +316,13 @@ function AppointmentManagement() {
     const awaitingOwnerDeposit = (appointment: Appointment) => appointment.bookingSource === "OWNER"
         && appointment.status === "PENDING" && appointment.depositRequired && appointment.paymentStatus === "PENDING";
 
-    const ownerDepositAction = async (appointment: Appointment, action: "resend" | "waive") => {
+    const resendOwnerDepositLink = async (appointment: Appointment) => {
         setActionLoading(appointment.id); setError(null); setNotice(null);
         try {
-            await readResponse(await fetch(`${API_BASE_URL}/api/admin/appointments/${appointment.id}/${action === "resend" ? "deposit-link/resend" : "deposit/waive"}`, {
+            await readResponse(await fetch(`${API_BASE_URL}/api/admin/appointments/${appointment.id}/deposit-link/resend`, {
                 method: "POST", headers: authHeaders(), credentials: "include"
             }));
-            setNotice(action === "resend" ? "Deposit link sent again by email and SMS." : "Deposit waived. The appointment is confirmed and the customer was notified.");
+            setNotice("Deposit link sent again by email and SMS.");
             await refreshCurrentView();
         } catch (reason) { setError(reason instanceof Error ? reason.message : "The action could not be completed"); }
         finally { setActionLoading(null); }
@@ -676,7 +676,7 @@ function AppointmentManagement() {
                                                 {appointment.paymentStatus === "CAPTURE_FAILED" && <button className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "capture")}><CreditCard className="mr-2 h-4 w-4" />Retry capture</button>}
                                                 {appointment.paymentStatus === "CANCELLATION_FAILED" && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "release")}>Retry release</button>}
                                                 {appointment.notificationStatus?.includes("FAILED") && <button className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}><Mail className="mr-2 h-4 w-4" />Retry notification</button>}
-                                                {awaitingOwnerDeposit(appointment) && <><button className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void ownerDepositAction(appointment, "resend")}><Mail className="mr-2 h-4 w-4"/>Resend deposit link</button><button className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void ownerDepositAction(appointment, "waive")}>Waive deposit</button></>}
+                                                {awaitingOwnerDeposit(appointment) && <button className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void resendOwnerDepositLink(appointment)}><Mail className="mr-2 h-4 w-4"/>Resend deposit link</button>}
                                                 {appointment.status === "APPROVED" && isPast(appointment) && <><button className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2]" onClick={() => { setAction({ kind: "complete", appointment }); setActionNotes(""); }}>Mark complete</button>{appointment.noShowFee && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50 disabled:opacity-50" disabled={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime()} title={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime() ? `Available after ${formatDateTime(appointment.noShowFee.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</button>}</>}
                                                 {appointment.status === "NO_SHOW" && appointment.noShowFee?.paymentStatus === "FAILED" && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50" onClick={() => openNoShow(appointment)}>Retry no-show charge</button>}
                                                 {(appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50" onClick={() => { setAction({ kind: "cancel", appointment }); setActionNotes(""); }}>Cancel appointment</button>}
