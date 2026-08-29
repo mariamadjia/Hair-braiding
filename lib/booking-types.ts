@@ -66,6 +66,8 @@ export type BookingSubcategory = {
     name: string;
     slug: string;
     summary?: string;
+    lengthGuideNoteEnabled?: boolean;
+    lengthGuideNote?: string | null;
     image?: string;
     images?: string[];
     items: BookingItem[];

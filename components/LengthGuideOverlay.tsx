@@ -3,7 +3,7 @@
 import { ArrowLeft, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function LengthGuideOverlay({ onClose, imageUrl = "/images/length-guide.png", onShowSize }: { onClose: () => void; imageUrl?: string; onShowSize?: () => void }) {
+export default function LengthGuideOverlay({ onClose, imageUrl = "/images/length-guide.png", onShowSize, note }: { onClose: () => void; imageUrl?: string; onShowSize?: () => void; note?: string | null }) {
     return (
         <div
             className="fixed inset-0 z-[60] flex flex-col bg-white text-neutral-900 lg:absolute lg:inset-auto lg:left-[calc(100%+1rem)] lg:top-0 lg:h-full lg:w-[32rem] lg:overflow-hidden lg:rounded-xl lg:border lg:border-neutral-200 lg:shadow-[0_20px_60px_rgb(0,0,0,0.3)]"
@@ -32,6 +32,9 @@ export default function LengthGuideOverlay({ onClose, imageUrl = "/images/length
                 <p className="mb-3 flex items-center justify-center gap-2 text-xs text-neutral-500">
                     <ZoomIn className="h-4 w-4" /> Pinch to zoom
                 </p>
+                {note && <div className="mb-4 rounded-xl border border-[#9a5f62] bg-[#fff8f7] px-4 py-3 text-sm leading-relaxed text-neutral-800" role="note">
+                    <span className="font-semibold">NB:</span> {note}
+                </div>}
                 <div className="m-auto flex max-w-4xl items-center justify-center overflow-auto rounded-xl bg-white p-2 shadow-sm sm:p-4">
                     <img
                         src={imageUrl}

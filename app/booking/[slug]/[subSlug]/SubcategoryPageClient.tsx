@@ -497,7 +497,7 @@ export default function SubcategoryPageClient({ category, subcategory }: { categ
                                 Book Now{selectedItem.pricingMode === "FIXED" && modalQuote ? ` · ${formatPrice(modalQuote.servicePriceCents / 100)}` : selectedLengthOption?.price ? ` · ${formatPrice(optionPrice(selectedItem, selectedLengthOption, selectedFoundation) + fixedAddOnTotal / 100)}` : ""}
                             </Button>
                         </div>
-                        {showLengthGuide && guides?.lengthGuideImageUrl && <LengthGuideOverlay imageUrl={guideImageUrl(guides.lengthGuideImageUrl)} onClose={() => setShowLengthGuide(false)} onShowSize={guides.sizeGuideEnabled && selectedSizeGuide?.imageUrl ? () => { setShowLengthGuide(false); setShowSizeGuide(true); } : undefined} />}
+                        {showLengthGuide && guides?.lengthGuideImageUrl && <LengthGuideOverlay imageUrl={guideImageUrl(guides.lengthGuideImageUrl)} note={subcategory.lengthGuideNoteEnabled ? subcategory.lengthGuideNote : null} onClose={() => setShowLengthGuide(false)} onShowSize={guides.sizeGuideEnabled && selectedSizeGuide?.imageUrl ? () => { setShowLengthGuide(false); setShowSizeGuide(true); } : undefined} />}
                         {showSizeGuide && selectedSizeGuide && <SizeGuideOverlay profile={selectedSizeGuide} onClose={() => setShowSizeGuide(false)} onShowLength={guides?.lengthGuideEnabled && guides.lengthGuideImageUrl ? () => { setShowSizeGuide(false); setShowLengthGuide(true); } : undefined} />}
                     </div>
                 </div>

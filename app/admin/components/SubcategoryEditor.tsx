@@ -87,6 +87,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [uploadingGuide, setUploadingGuide] = useState<string | null>(null);
     const [editingGuide, setEditingGuide] = useState<"length" | "size" | null>(null);
     const [guideSnapshot, setGuideSnapshot] = useState<GuideSettings | null>(null);
+    const [lengthGuideNoteEnabled, setLengthGuideNoteEnabled] = useState(Boolean(sub.lengthGuideNoteEnabled));
+    const [lengthGuideNote, setLengthGuideNote] = useState(sub.lengthGuideNote ?? "");
+    const [guideNoteSnapshot, setGuideNoteSnapshot] = useState<{ enabled: boolean; note: string } | null>(null);
 
     const base = `/${cat.slug}/subcategories/${sub.slug}`;
     const guideAuthHeaders: Record<string, string> = token && token !== "cookie-session"
@@ -132,6 +135,15 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
 
     const saveGuideSettings = async (settingsToSave: GuideSettings | null = guideSettings, closeEditor = false) => {
         if (!settingsToSave) return;
+        const cleanedNote = lengthGuideNote.trim();
+        if (lengthGuideNoteEnabled && !cleanedNote) {
+            setSaveError("Enter a length guide note or turn the note off.");
+            return;
+        }
+        if (cleanedNote.length > 500) {
+            setSaveError("Length guide note must be 500 characters or fewer.");
+            return;
+        }
         setSavingGuides(true); setSaveError(null);
         try {
             const response = await fetch(`${API_BASE_URL}/api/admin/guides`, {
@@ -142,8 +154,16 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                 throw new Error(detail || `Could not save guide settings (${response.status})`);
             }
             const savedSettings = await response.json();
+            await mutate("PUT", base, {
+                lengthGuideNoteEnabled,
+                lengthGuideNote: cleanedNote,
+                subcategoryId: sub.id,
+            });
+            await onSubcategoryUpdate?.(sub.slug);
             setGuideSettings(savedSettings); setGuideSnapshot(savedSettings); setGuidesDirty(false);
-            if (closeEditor) { setEditingGuide(null); setGuideSnapshot(null); }
+            setLengthGuideNote(cleanedNote);
+            setGuideNoteSnapshot({ enabled: lengthGuideNoteEnabled, note: cleanedNote });
+            if (closeEditor) { setEditingGuide(null); setGuideSnapshot(null); setGuideNoteSnapshot(null); }
             setSaveSuccess("Guide settings saved and published.");
             setTimeout(() => setSaveSuccess(null), 3000);
         } catch (error) { setSaveError(error instanceof Error ? error.message : "Could not save guide settings."); }
@@ -163,6 +183,7 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         if (!guideSettings) return;
         setSaveError(null);
         setGuideSnapshot(structuredClone(guideSettings));
+        setGuideNoteSnapshot({ enabled: lengthGuideNoteEnabled, note: lengthGuideNote });
         setEditingGuide(kind);
     };
 
@@ -170,13 +191,20 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         if (uploadingGuide) return;
         if (guidesDirty && !window.confirm("Discard your unsaved guide changes?")) return;
         if (guideSnapshot) setGuideSettings(guideSnapshot);
+        if (guideNoteSnapshot) {
+            setLengthGuideNoteEnabled(guideNoteSnapshot.enabled);
+            setLengthGuideNote(guideNoteSnapshot.note);
+        }
         setGuidesDirty(false); setEditingGuide(null); setGuideSnapshot(null);
+        setGuideNoteSnapshot(null);
     };
 
     useEffect(() => {
         setName(sub.name);
         setSavedName(sub.name);
         setImage(sub.image ?? "");
+        setLengthGuideNoteEnabled(Boolean(sub.lengthGuideNoteEnabled));
+        setLengthGuideNote(sub.lengthGuideNote ?? "");
         setDirty(false);
         const nextItems = Array.isArray(sub.items) ? sub.items : [];
         setItems(nextItems);
@@ -874,9 +902,29 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                     <div className="sticky top-0 z-10 flex items-start justify-between border-b border-neutral-200 bg-white px-5 py-4 dark:border-neutral-700 dark:bg-neutral-900 sm:px-6"><div><h3 id="guide-editor-title" className="text-lg font-semibold">Edit {editingGuide} guide</h3><p className="mt-1 text-sm text-neutral-500">{editingGuide === "length" ? "Upload the one image customers use to compare hair lengths." : "Upload the image that belongs to each size."}</p></div><button type="button" onClick={cancelGuideEditor} aria-label="Close editor" className="rounded-lg p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"><X className="h-5 w-5" /></button></div>
                     <div className="p-5 sm:p-6">
                         {saveError && <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">{saveError}</div>}
-                        {editingGuide === "length" ? <div className="mx-auto max-w-sm rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
-                            {guideSettings.lengthGuideImageUrl ? <img src={toProxyUrl(guideSettings.lengthGuideImageUrl)} alt="Length guide preview" className="mx-auto h-72 w-full rounded-lg object-contain" /> : <div className="flex h-72 items-center justify-center rounded-lg border border-dashed border-neutral-300 text-sm text-neutral-400 dark:border-neutral-700">No image uploaded</div>}
-                            <div className="mt-3 flex gap-2"><label className="flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-neutral-300 text-sm font-semibold dark:border-neutral-600">{uploadingGuide === "length" ? "Uploading…" : guideSettings.lengthGuideImageUrl ? "Replace image" : "Upload image"}<input type="file" accept="image/*" disabled={uploadingGuide !== null} className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) void uploadGuideImage(file); event.target.value = ""; }} /></label>{guideSettings.lengthGuideImageUrl && <button type="button" onClick={() => updateGuides(current => ({ ...current, lengthGuideImageUrl: null, lengthGuideEnabled: false }))} className="rounded-lg px-3 text-sm font-medium text-red-700">Remove</button>}</div>
+                        {editingGuide === "length" ? <div className="mx-auto max-w-sm space-y-4">
+                            <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
+                                {guideSettings.lengthGuideImageUrl ? <img src={toProxyUrl(guideSettings.lengthGuideImageUrl)} alt="Length guide preview" className="mx-auto h-72 w-full rounded-lg object-contain" /> : <div className="flex h-72 items-center justify-center rounded-lg border border-dashed border-neutral-300 text-sm text-neutral-400 dark:border-neutral-700">No image uploaded</div>}
+                                <div className="mt-3 flex gap-2"><label className="flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-neutral-300 text-sm font-semibold dark:border-neutral-600">{uploadingGuide === "length" ? "Uploading…" : guideSettings.lengthGuideImageUrl ? "Replace image" : "Upload image"}<input type="file" accept="image/*" disabled={uploadingGuide !== null} className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) void uploadGuideImage(file); event.target.value = ""; }} /></label>{guideSettings.lengthGuideImageUrl && <button type="button" onClick={() => updateGuides(current => ({ ...current, lengthGuideImageUrl: null, lengthGuideEnabled: false }))} className="rounded-lg px-3 text-sm font-medium text-red-700">Remove</button>}</div>
+                            </div>
+                            <section className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-700" aria-labelledby="length-guide-note-title">
+                                <div className="flex items-start gap-4">
+                                    <div className="min-w-0 flex-1">
+                                        <h4 id="length-guide-note-title" className="text-sm font-semibold">Style-specific note</h4>
+                                        <p className="mt-1 text-xs leading-relaxed text-neutral-500">Show a note for this style when customers open the Length Guide.</p>
+                                    </div>
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        <span className="text-xs font-medium text-neutral-500">Show note</span>
+                                        <button type="button" role="switch" aria-checked={lengthGuideNoteEnabled} onClick={() => { setLengthGuideNoteEnabled(current => !current); setGuidesDirty(true); }} className={`relative h-7 w-12 rounded-full transition focus-visible:ring-2 focus-visible:ring-[#7a4a28] focus-visible:ring-offset-2 ${lengthGuideNoteEnabled ? "bg-[#7a4a28]" : "bg-neutral-300 dark:bg-neutral-700"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${lengthGuideNoteEnabled ? "left-6" : "left-1"}`} /></button>
+                                    </div>
+                                </div>
+                                <label className="mt-4 block">
+                                    <span className="text-xs font-medium text-neutral-700 dark:text-neutral-200">Note</span>
+                                    <textarea value={lengthGuideNote} maxLength={500} disabled={!lengthGuideNoteEnabled} onChange={event => { setLengthGuideNote(event.target.value); setGuidesDirty(true); }} rows={3} placeholder="This is based on the length of your natural hair." className="mt-1.5 w-full resize-y rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-neutral-950 focus:ring-2 focus:ring-neutral-950/10 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400 dark:border-neutral-600 dark:bg-neutral-900 dark:disabled:bg-neutral-800" />
+                                </label>
+                                <div className="mt-1 flex items-center justify-between gap-3 text-[11px] text-neutral-500"><span>NB: is added automatically.</span><span>{lengthGuideNote.length}/500</span></div>
+                                {lengthGuideNoteEnabled && lengthGuideNote.trim() && <div className="mt-3 rounded-lg border border-[#9a5f62] bg-[#fff8f7] px-3 py-2.5 text-xs leading-relaxed text-neutral-800"><span className="font-semibold">NB:</span> {lengthGuideNote.trim()}</div>}
+                            </section>
                         </div> : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[...guideSettings.sizes].sort((a,b) => a.displayOrder - b.displayOrder).map(size => <div key={size.guideKey} className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-700"><p className="text-sm font-semibold">{size.displayName}</p><p className="mb-3 text-xs text-neutral-400">Key: {size.guideKey}</p>{size.imageUrl ? <img src={toProxyUrl(size.imageUrl)} alt={`${size.displayName} guide`} className="h-36 w-full rounded-lg object-cover" /> : <div className="flex h-36 items-center justify-center rounded-lg border border-dashed border-neutral-300 text-xs text-neutral-400 dark:border-neutral-700">No image</div>}<div className="mt-2 flex gap-1"><label className="flex min-h-9 flex-1 cursor-pointer items-center justify-center rounded-lg border border-neutral-300 text-xs font-semibold dark:border-neutral-600">{uploadingGuide === size.guideKey ? "Uploading…" : size.imageUrl ? "Replace" : "Upload"}<input type="file" accept="image/*" disabled={uploadingGuide !== null} className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) void uploadGuideImage(file, size.guideKey); event.target.value = ""; }} /></label>{size.imageUrl && <button type="button" aria-label={`Remove ${size.displayName} image`} onClick={() => updateGuides(current => ({ ...current, sizes: current.sizes.map(entry => entry.guideKey === size.guideKey ? { ...entry, imageUrl: null } : entry) }))} className="px-2 text-red-700"><EllipsisVertical className="h-4 w-4" /></button>}</div></div>)}</div>}
                     </div>
                     <ServicesSaveBar visible={true} saving={savingGuides} disabled={!guidesDirty || uploadingGuide !== null} onSave={() => void saveGuideSettings(guideSettings, true)} onDiscard={cancelGuideEditor} mode="dialog" statusLabel={guidesDirty ? "Unsaved changes" : "No changes to save"} />
