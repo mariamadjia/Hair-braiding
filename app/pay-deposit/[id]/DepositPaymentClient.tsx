@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
-import { CalendarDays, CheckCircle2, CircleHelp, FileText, Loader2, Lock, Mail, ShieldCheck, TriangleAlert, UserRound } from "lucide-react";
+import { CalendarDays, CheckCircle2, CircleHelp, Loader2, Lock, Mail, ShieldCheck, TriangleAlert, UserRound } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config/api";
 import { getStripe } from "@/lib/stripe";
 
@@ -66,7 +66,7 @@ export default function DepositPaymentClient({ appointmentId }: { appointmentId:
           <div className="mt-5 space-y-3 px-1 text-sm text-neutral-600"><p className="flex items-center gap-3"><ShieldCheck className="h-5 w-5 shrink-0 text-[#78432d]"/>Payment securely processed by Stripe.</p><p className="flex items-center gap-3"><Mail className="h-5 w-5 shrink-0 text-[#78432d]"/>You’ll receive a receipt by email.</p></div>
         </div>
         <footer className="border-t border-[#e8ded7] pt-5 text-sm text-neutral-600 lg:col-span-2">
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3"><a href="mailto:adjiashairbraiding@gmail.com" className="flex items-center gap-2 underline decoration-[#b98b73] underline-offset-4"><CircleHelp className="h-4 w-4"/>Need help? Contact AH Braiding</a><a href="/policies" className="flex items-center gap-2 underline decoration-[#b98b73] underline-offset-4"><FileText className="h-4 w-4"/>Cancellation &amp; refund policy</a></div>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3"><a href="mailto:adjiashairbraiding@gmail.com" className="flex items-center gap-2 underline decoration-[#b98b73] underline-offset-4"><CircleHelp className="h-4 w-4"/>Need help? Contact AH Braiding</a></div>
           <p className="mt-4 text-center text-xs text-neutral-400">Payment link expires {dateTime(data.expiresAt)}.</p>
         </footer>
       </div>
