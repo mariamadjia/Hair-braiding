@@ -17,14 +17,18 @@ export function ServicesSaveBar({
     disabled?: boolean;
     onSave: () => void;
     onDiscard: () => void;
-    mode?: "page" | "dialog";
+    mode?: "page" | "dialog" | "modal";
     saveLabel?: string;
     statusLabel?: string;
 }) {
     if (!visible && !saving) return null;
 
     return (
-        <div className={mode === "page" ? "fixed bottom-0 left-0 right-0 z-40 border-t border-[#e4d8cc] bg-[#fffdf9]/95 px-3 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_35px_rgba(45,24,15,.10)] backdrop-blur md:left-64 md:px-4 dark:border-neutral-700 dark:bg-neutral-900/95" : "sticky bottom-0 z-20 -mx-6 mt-8 border-t border-[#e4d8cc] bg-[#fffdf9]/95 px-6 py-3 shadow-[0_-12px_35px_rgba(45,24,15,.10)] backdrop-blur dark:border-neutral-700 dark:bg-neutral-900/95 sm:-mx-8 sm:px-8"}>
+        <div className={mode === "page"
+            ? "fixed bottom-0 left-0 right-0 z-40 border-t border-[#e4d8cc] bg-[#fffdf9]/95 px-3 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_35px_rgba(45,24,15,.10)] backdrop-blur md:left-64 md:px-4 dark:border-neutral-700 dark:bg-neutral-900/95"
+            : mode === "modal"
+                ? "z-20 shrink-0 border-t border-[#e4d8cc] bg-[#fffdf9]/95 px-5 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_35px_rgba(45,24,15,.10)] backdrop-blur dark:border-neutral-700 dark:bg-neutral-900/95 sm:px-6"
+                : "sticky bottom-0 z-20 -mx-6 mt-8 border-t border-[#e4d8cc] bg-[#fffdf9]/95 px-6 py-3 shadow-[0_-12px_35px_rgba(45,24,15,.10)] backdrop-blur dark:border-neutral-700 dark:bg-neutral-900/95 sm:-mx-8 sm:px-8"}>
             <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div className="flex min-w-0 items-center gap-3">
                     <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#b7734d]" />
