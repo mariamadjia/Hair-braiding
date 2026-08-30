@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getStripe } from "@/lib/stripe";
+import BookingConfirmationStatus from "@/components/BookingConfirmationStatus";
 import PaymentForm from "@/components/PaymentForm";
 import { API_BASE_URL } from "@/lib/config/api";
 
@@ -75,7 +76,7 @@ const policySections = (depositAmountCents: number) => [
         title: "Appointments, Deposits & Approval",
         points: [
             "All braiding services are available by appointment.",
-            `A card authorization of $${(depositAmountCents / 100).toFixed(2)} is required to submit your appointment request. Your card is charged only if the salon approves your appointment.`,
+            `A card authorization of $${(depositAmountCents / 100).toFixed(2)} is required to submit your appointment request. Your card is charged when the appointment is approved, automatically or after salon review according to the booking policy.`,
             `Once approved, the $${(depositAmountCents / 100).toFixed(2)} deposit is non-refundable and will be applied toward your total service balance. If your request is denied, the authorization hold is released.`,
             "Please note that all payments are final and non-refundable. No refunds will be issued under any circumstances.",
         ],
@@ -1138,11 +1139,8 @@ export default function BookingCalendar({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h3 className="text-2xl font-light text-neutral-900 mb-4">Appointment Request Submitted</h3>
-                    <p className="text-neutral-600 mb-6">
-                        Your payment method has been authorized for ${(authorizedAmountCents / 100).toFixed(2)}. The salon will review your request before the hold is captured.
-                    </p>
-                    
+                    <BookingConfirmationStatus appointmentId={createdAppointmentId} paymentToken={paymentToken} />
+
                     {confirmationNumber && (
                         <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-6">
                             <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Confirmation Number</p>
@@ -1150,7 +1148,7 @@ export default function BookingCalendar({
                         </div>
                     )}
                     
-                    <p className="text-sm text-neutral-600 mb-6">The salon will contact you after reviewing your request. All appointment times are San Antonio Central Time.</p>
+                    <p className="text-sm text-neutral-600 mb-6">Your latest booking status is shown above. All appointment times are San Antonio Central Time.</p>
 
                     
                     <Button

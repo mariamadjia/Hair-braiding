@@ -37,10 +37,13 @@ export default function AppointmentSettingsTab() {
         bufferTimeBetweenAppointments: 0,
         timezone: "America/Chicago"
     });
+    const [loaded, setLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const loadedRef = useRef(loaded);
+    loadedRef.current = loaded;
     const settingsRef = useRef(settings);
     settingsRef.current = settings;
 
@@ -68,6 +71,8 @@ export default function AppointmentSettingsTab() {
 
     const fetchSettings = async () => {
         setLoading(true);
+        setLoaded(false);
+        setError(null);
         try {
             // Fetch appointment settings
             const settingsResponse = await fetch(`${API_BASE_URL}/api/appointments/settings`, {
@@ -77,7 +82,9 @@ export default function AppointmentSettingsTab() {
                 }
             });
 
+            if (!settingsResponse.ok) throw new Error("Could not load saved settings. Please retry or sign in again.");
             if (settingsResponse.ok) {
+                setLoaded(true);
                 const data = await settingsResponse.json();
                 setSettings({
                     version: data.version ?? 0,
@@ -91,13 +98,15 @@ export default function AppointmentSettingsTab() {
                 });
             }
         } catch (error) {
-            console.error('Error fetching settings:', error);
+            setLoaded(false);
+            setError(error instanceof Error ? error.message : 'Could not load saved settings.');
         } finally {
             setLoading(false);
         }
     };
 
     const saveSettings = async () => {
+        if (!loadedRef.current) return;
         const currentSettings = settingsRef.current;
         setSaving(true);
         setError(null);
@@ -116,6 +125,10 @@ export default function AppointmentSettingsTab() {
                 body: JSON.stringify({ ...currentSettings, timezone: "America/Chicago" })
             });
 
+            if (settingsResponse.status === 409) {
+                await fetchSettings();
+                throw new Error("Settings changed. The saved values have been reloaded; review your change and save again.");
+            }
             if (!settingsResponse.ok) {
                 const errorData = await settingsResponse.json().catch(() => ({}));
                 throw new Error(errorData.error || 'Failed to save appointment settings');
@@ -161,6 +174,10 @@ export default function AppointmentSettingsTab() {
         return `${hour12}:${minutes} ${ampm}`;
     };
 
+    if (!loading && !loaded) {
+        return <div role="alert" className="p-6 text-red-700"><p>{error || 'Settings could not be loaded.'}</p><Button onClick={() => void fetchSettings()}>Retry loading settings</Button></div>;
+    }
+
     if (loading) {
         return (
             <div className="flex justify-center items-center py-12">
@@ -170,7 +187,7 @@ export default function AppointmentSettingsTab() {
     }
 
     return (
-        <div className="space-y-6">
+        <fieldset disabled={saving} className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-lg font-medium text-neutral-900">Appointment Configuration</h3>
@@ -310,7 +327,7 @@ export default function AppointmentSettingsTab() {
                             Require admin approval for appointments
                         </label>
                         <p className="text-xs text-neutral-500 mt-1">
-                            When enabled, appointments will be pending until you approve them. When disabled, appointments are automatically confirmed.
+                            Applies to new customer bookings after you save. When enabled, bookings wait for your approval. When disabled, bookings confirm automatically after successful deposit payment. Existing requests keep their approval policy.
                         </p>
                     </div>
                 </div>
@@ -368,6 +385,6 @@ export default function AppointmentSettingsTab() {
                     <span className="text-red-600 text-sm">{error}</span>
                 )}
             </div>
-        </div>
+        </fieldset>
     );
 }

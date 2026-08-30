@@ -1,6 +1,9 @@
 import { apiClient } from './client';
 
 export interface AppointmentSettings {
+  version: number;
+  bufferTimeBetweenAppointments: number;
+  timezone: string;
   slotDurationMinutes: number;
   advanceBookingDays: number;
   maxAppointmentsPerSlot: number;

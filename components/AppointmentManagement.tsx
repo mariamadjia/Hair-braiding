@@ -129,7 +129,7 @@ const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detai
     const paymentIssue = ["CAPTURE_FAILED", "CANCELLATION_FAILED", "FAILED"].includes(appointment.paymentStatus || "")
         || ["UNPAID", "PROCESSING", "FAILED"].includes(appointment.noShowFee?.paymentStatus || "");
     const actionablePending = appointment.status === "PENDING"
-        && (appointment.paymentStatus === "AUTHORIZED" || Boolean(appointment.approvedAt));
+        && (["AUTHORIZED", "CAPTURED"].includes(appointment.paymentStatus || "") || Boolean(appointment.approvedAt));
     const ownerAwaitingPayment = appointment.bookingSource === "OWNER"
         && appointment.status === "PENDING" && appointment.depositRequired && appointment.paymentStatus === "PENDING";
     const viewMatch = workflow === "NEEDS_ACTION"
@@ -140,7 +140,7 @@ const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detai
                 || (appointment.status === "APPROVED" && appointmentTime < now);
     if (!viewMatch || detail === "ALL") return viewMatch;
     return {
-        READY_FOR_APPROVAL: appointment.status === "PENDING" && !appointment.approvedAt && appointment.paymentStatus === "AUTHORIZED" && appointmentTime > now,
+        READY_FOR_APPROVAL: appointment.status === "PENDING" && !appointment.approvedAt && ["AUTHORIZED", "CAPTURED"].includes(appointment.paymentStatus || "") && appointmentTime > now,
         AWAITING_PAYMENT: appointment.status === "PENDING" && !appointment.approvedAt && ["PENDING", "CANCELLED"].includes(appointment.paymentStatus || ""),
         CAPTURE_PROCESSING: captureProcessing,
         PAYMENT_ISSUE: paymentIssue,
@@ -329,7 +329,7 @@ function AppointmentManagement() {
     const isPast = (appointment: Appointment) => (salonDate(appointment.appointmentDateTime)?.getTime() ?? 0) <= centralNow().getTime();
     const canApprove = (appointment: Appointment) => appointment.status === "PENDING"
         && !appointment.approvedAt
-        && appointment.paymentStatus === "AUTHORIZED"
+        && ["AUTHORIZED", "CAPTURED"].includes(appointment.paymentStatus || "")
         && !isPast(appointment);
     const awaitingOwnerDeposit = (appointment: Appointment) => appointment.bookingSource === "OWNER"
         && appointment.status === "PENDING" && appointment.depositRequired && appointment.paymentStatus === "PENDING";
@@ -676,7 +676,7 @@ function AppointmentManagement() {
                                                 {appointment.selectedFoundation && <span><b>Foundation:</b> {appointment.selectedFoundation === "KNOTLESS" ? "Knotless" : "Regular"}</span>}
                                                 {parseMoney(appointment.price) && <span className="font-bold text-[#241711]">{parseMoney(appointment.price)}</span>}
                                             </div>
-                                        {appointment.paymentAuthorizationExpiresAt && appointment.paymentStatus === "AUTHORIZED" && <p className={cn("mt-2 flex items-center gap-1.5 text-xs font-medium", expiryHours !== null && expiryHours < 24 ? "text-red-700" : "text-amber-700")}><Clock className="h-3.5 w-3.5" />Authorization {expiryHours !== null && expiryHours < 24 ? "expires in less than 24 hours" : `expires ${formatDateTime(appointment.paymentAuthorizationExpiresAt)}`}</p>}
+                                        {appointment.paymentAuthorizationExpiresAt && ["AUTHORIZED", "CAPTURED"].includes(appointment.paymentStatus || "") && <p className={cn("mt-2 flex items-center gap-1.5 text-xs font-medium", expiryHours !== null && expiryHours < 24 ? "text-red-700" : "text-amber-700")}><Clock className="h-3.5 w-3.5" />Authorization {expiryHours !== null && expiryHours < 24 ? "expires in less than 24 hours" : `expires ${formatDateTime(appointment.paymentAuthorizationExpiresAt)}`}</p>}
                                         {captureProcessing && <p className="mt-2 flex items-center gap-2 text-xs font-medium text-blue-700"><Loader2 className="h-3.5 w-3.5 animate-spin" />Capturing authorized deposit</p>}
                                         {appointment.rescheduledFromDateTime && <p className="mt-2 text-xs font-medium text-blue-700">Customer rescheduled from {formatDateTime(appointment.rescheduledFromDateTime)}</p>}
                                         {appointment.cancelledByCustomer && <p className="mt-2 text-xs font-medium text-violet-700">Cancelled by customer{appointment.customerCancellationReason ? `: ${appointment.customerCancellationReason}` : ""}</p>}
