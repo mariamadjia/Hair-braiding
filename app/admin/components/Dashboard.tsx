@@ -59,6 +59,12 @@ const parseSalonDateTime = (value: string) => new Date(`${value.replace(/Z$/, ""
 const salonDayKey = (value: string) => value.slice(0, 10);
 const dateKey = ({ year, month, day }: ReturnType<typeof salonDateParts>) =>
     `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+const createdDayKey = (value?: string) => {
+    if (!value) return "";
+    const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
+    const instant = new Date(hasTimezone ? value : `${value}Z`);
+    return Number.isNaN(instant.getTime()) ? "" : dateKey(salonDateParts(instant));
+};
 const customerName = (appointment: Appointment) =>
     [appointment.customer?.firstName, appointment.customer?.lastName].filter(Boolean).join(" ") || "Customer";
 const serviceName = (appointment: Appointment) =>
@@ -83,6 +89,7 @@ const statusStyle = (status: string) => {
 
 export function Dashboard({ token, categorySummaries, onNavigate }: DashboardProps) {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [recentRequests, setRecentRequests] = useState<Appointment[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -101,12 +108,24 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
                 endDate: localDateTime(rangeEnd),
                 size: "200",
             });
-            const response = await fetch(`/api/appointments?${params}`, {
-                cache: "no-store",
+            const recentParams = new URLSearchParams({
+                page: "0",
+                size: "200",
+                sortBy: "createdAt",
+                sortDir: "desc",
             });
-            const body = await response.json().catch(() => null);
-            if (!response.ok) throw new Error(body?.error || "Dashboard data could not be loaded.");
-            setAppointments(Array.isArray(body) ? body : body?.content ?? []);
+            const [scheduleResponse, recentResponse] = await Promise.all([
+                fetch(`/api/appointments?${params}`, { cache: "no-store" }),
+                fetch(`/api/appointments?${recentParams}`, { cache: "no-store" }),
+            ]);
+            const [scheduleBody, recentBody] = await Promise.all([
+                scheduleResponse.json().catch(() => null),
+                recentResponse.json().catch(() => null),
+            ]);
+            if (!scheduleResponse.ok) throw new Error(scheduleBody?.error || "Dashboard schedule could not be loaded.");
+            if (!recentResponse.ok) throw new Error(recentBody?.error || "Recent bookings could not be loaded.");
+            setAppointments(Array.isArray(scheduleBody) ? scheduleBody : scheduleBody?.content ?? []);
+            setRecentRequests(Array.isArray(recentBody) ? recentBody : recentBody?.content ?? []);
             setLastUpdated(new Date());
         } catch (err) {
             if (!quiet) setError(err instanceof Error ? err.message : "Dashboard data could not be loaded.");
@@ -148,9 +167,8 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
         const todaySchedule = appointments
             .filter((item) => salonDayKey(item.appointmentDateTime) === todayKey && scheduleStatuses.includes(item.status))
             .sort((a, b) => a.appointmentDateTime.localeCompare(b.appointmentDateTime));
-        const yesterdayBookings = appointments.filter((item) =>
-            salonDayKey(item.appointmentDateTime) === yesterdayKey && scheduleStatuses.includes(item.status)
-        ).length;
+        const todayBookings = recentRequests.filter((item) => createdDayKey(item.createdAt) === todayKey).length;
+        const yesterdayBookings = recentRequests.filter((item) => createdDayKey(item.createdAt) === yesterdayKey).length;
         const captured = (item: Appointment) =>
             item.paymentStatus === "CAPTURED" || item.paymentStatus === "SUCCEEDED" || item.status === "COMPLETED";
         const depositDollars = (item: Appointment) => (item.depositAmount ?? 0) / 100;
@@ -193,12 +211,12 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
             now,
             todaySchedule,
             stats: {
-                todayBookings: todaySchedule.length,
+                todayBookings,
                 weekRevenue,
                 monthCustomers: uniqueCustomers(monthAppointments),
                 totalServices: categorySummaries.reduce((sum, item) => sum + (item.styleCount ?? 0), 0),
                 trends: {
-                    bookings: percentChange(todaySchedule.length, yesterdayBookings),
+                    bookings: percentChange(todayBookings, yesterdayBookings),
                     revenue: percentChange(weekRevenue, previousWeekRevenue),
                     customers: percentChange(uniqueCustomers(monthAppointments), uniqueCustomers(previousMonthAppointments)),
                 },
@@ -213,12 +231,12 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
                 .map(([name, values]) => ({ name, ...values }))
                 .sort((a, b) => b.bookings - a.bookings)
                 .slice(0, 5),
-            recentActivity: [...appointments]
+            recentActivity: [...recentRequests]
                 .filter((item) => item.updatedAt || item.createdAt)
                 .sort((a, b) => new Date(b.updatedAt || b.createdAt!).getTime() - new Date(a.updatedAt || a.createdAt!).getTime())
                 .slice(0, 5),
         };
-    }, [appointments, categorySummaries]);
+    }, [appointments, categorySummaries, recentRequests]);
 
     const Trend = ({ value, comparison }: { value: number; comparison: string }) => (
         <span className={`flex items-center gap-1 text-xs ${value >= 0 ? "text-green-600" : "text-red-600"}`} aria-label={`${value >= 0 ? "Up" : "Down"} ${Math.abs(value)} percent ${comparison}`}>
@@ -260,6 +278,7 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
                     </div>
                     <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{loading ? "—" : dashboard.stats.todayBookings}</p>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Today&apos;s Bookings</p>
+                    <p className="mt-1 text-xs text-neutral-400">Requests submitted today</p>
                 </button>
                 <button type="button" onClick={() => onNavigate("pricing")} className="rounded-lg border border-neutral-200 bg-white p-6 text-left transition hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:border-neutral-700 dark:bg-neutral-800">
                     <div className="mb-4 flex items-center justify-between">
