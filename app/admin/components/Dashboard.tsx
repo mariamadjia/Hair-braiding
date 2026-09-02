@@ -40,17 +40,25 @@ type DashboardProps = {
     onNavigate: (section: string) => void;
 };
 
-const sameDay = (left: Date, right: Date) =>
-    left.getFullYear() === right.getFullYear()
-    && left.getMonth() === right.getMonth()
-    && left.getDate() === right.getDate();
-
-const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
-const shiftDays = (date: Date, days: number) => {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
+const SALON_TIME_ZONE = "America/Chicago";
+const salonDateParts = (date = new Date()) => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: SALON_TIME_ZONE,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).formatToParts(date);
+    const value = (type: "year" | "month" | "day") => Number(parts.find((part) => part.type === type)?.value);
+    return { year: value("year"), month: value("month"), day: value("day") };
 };
+const localDateTime = (date: Date) => {
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+const parseSalonDateTime = (value: string) => new Date(`${value.replace(/Z$/, "")}Z`);
+const salonDayKey = (value: string) => value.slice(0, 10);
+const dateKey = ({ year, month, day }: ReturnType<typeof salonDateParts>) =>
+    `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 const customerName = (appointment: Appointment) =>
     [appointment.customer?.firstName, appointment.customer?.lastName].filter(Boolean).join(" ") || "Customer";
 const serviceName = (appointment: Appointment) =>
@@ -83,7 +91,17 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
         if (!quiet) setLoading(true);
         if (!quiet) setError("");
         try {
-            const response = await fetch("/api/appointments", {
+            const today = salonDateParts();
+            const anchor = new Date(today.year, today.month - 1, today.day);
+            const rangeStart = new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1);
+            const rangeEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 2, 1);
+            const params = new URLSearchParams({
+                dateRange: "true",
+                startDate: localDateTime(rangeStart),
+                endDate: localDateTime(rangeEnd),
+                size: "200",
+            });
+            const response = await fetch(`/api/appointments?${params}`, {
                 cache: "no-store",
             });
             const body = await response.json().catch(() => null);
@@ -112,37 +130,43 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
 
     const dashboard = useMemo(() => {
         const now = new Date();
-        const todayStart = startOfDay(now);
-        const yesterdayStart = shiftDays(todayStart, -1);
-        const tomorrowStart = shiftDays(todayStart, 1);
-        const weekStart = shiftDays(todayStart, -6);
-        const previousWeekStart = shiftDays(weekStart, -7);
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const salonToday = salonDateParts(now);
+        const todayKey = dateKey(salonToday);
+        const calendarAnchor = new Date(salonToday.year, salonToday.month - 1, salonToday.day);
+        const yesterday = new Date(calendarAnchor); yesterday.setDate(yesterday.getDate() - 1);
+        const weekStart = new Date(calendarAnchor); weekStart.setDate(weekStart.getDate() - 6);
+        const previousWeekStart = new Date(weekStart); previousWeekStart.setDate(previousWeekStart.getDate() - 7);
+        const monthStart = new Date(calendarAnchor.getFullYear(), calendarAnchor.getMonth(), 1);
+        const previousMonthStart = new Date(calendarAnchor.getFullYear(), calendarAnchor.getMonth() - 1, 1);
+        const yesterdayKey = localDateTime(yesterday).slice(0, 10);
+        const weekStartKey = localDateTime(weekStart).slice(0, 10);
+        const previousWeekStartKey = localDateTime(previousWeekStart).slice(0, 10);
+        const monthStartKey = localDateTime(monthStart).slice(0, 10);
+        const previousMonthStartKey = localDateTime(previousMonthStart).slice(0, 10);
 
+        const scheduleStatuses = ["PENDING", "APPROVED", "COMPLETED"];
         const todaySchedule = appointments
-            .filter((item) => sameDay(new Date(item.appointmentDateTime), now) && ["PENDING", "APPROVED"].includes(item.status))
-            .sort((a, b) => new Date(a.appointmentDateTime).getTime() - new Date(b.appointmentDateTime).getTime());
-        const yesterdayBookings = appointments.filter((item) => {
-            const date = new Date(item.appointmentDateTime);
-            return date >= yesterdayStart && date < todayStart;
-        }).length;
+            .filter((item) => salonDayKey(item.appointmentDateTime) === todayKey && scheduleStatuses.includes(item.status))
+            .sort((a, b) => a.appointmentDateTime.localeCompare(b.appointmentDateTime));
+        const yesterdayBookings = appointments.filter((item) =>
+            salonDayKey(item.appointmentDateTime) === yesterdayKey && scheduleStatuses.includes(item.status)
+        ).length;
         const captured = (item: Appointment) =>
             item.paymentStatus === "CAPTURED" || item.paymentStatus === "SUCCEEDED" || item.status === "COMPLETED";
         const depositDollars = (item: Appointment) => (item.depositAmount ?? 0) / 100;
         const weekRevenue = appointments
-            .filter((item) => new Date(item.appointmentDateTime) >= weekStart && captured(item))
+            .filter((item) => salonDayKey(item.appointmentDateTime) >= weekStartKey && captured(item))
             .reduce((sum, item) => sum + depositDollars(item), 0);
         const previousWeekRevenue = appointments
             .filter((item) => {
-                const date = new Date(item.appointmentDateTime);
-                return date >= previousWeekStart && date < weekStart && captured(item);
+                const key = salonDayKey(item.appointmentDateTime);
+                return key >= previousWeekStartKey && key < weekStartKey && captured(item);
             })
             .reduce((sum, item) => sum + depositDollars(item), 0);
-        const monthAppointments = appointments.filter((item) => new Date(item.appointmentDateTime) >= monthStart);
+        const monthAppointments = appointments.filter((item) => salonDayKey(item.appointmentDateTime) >= monthStartKey);
         const previousMonthAppointments = appointments.filter((item) => {
-            const date = new Date(item.appointmentDateTime);
-            return date >= previousMonthStart && date < monthStart;
+            const key = salonDayKey(item.appointmentDateTime);
+            return key >= previousMonthStartKey && key < monthStartKey;
         });
         const uniqueCustomers = (items: Appointment[]) =>
             new Set(items.map((item) => item.customer?.id ?? customerName(item))).size;
@@ -193,7 +217,6 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
                 .filter((item) => item.updatedAt || item.createdAt)
                 .sort((a, b) => new Date(b.updatedAt || b.createdAt!).getTime() - new Date(a.updatedAt || a.createdAt!).getTime())
                 .slice(0, 5),
-            tomorrowStart,
         };
     }, [appointments, categorySummaries]);
 
@@ -273,10 +296,10 @@ export function Dashboard({ token, categorySummaries, onNavigate }: DashboardPro
                         : dashboard.todaySchedule.length === 0 ? <div className="p-12 text-center text-sm text-neutral-500">No appointments scheduled today.</div>
                         : <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
                             {dashboard.todaySchedule.map((appointment) => {
-                                const date = new Date(appointment.appointmentDateTime);
+                                const date = parseSalonDateTime(appointment.appointmentDateTime);
                                 return <button type="button" key={appointment.id} onClick={() => onNavigate("bookings")} className="flex w-full flex-col gap-3 p-4 text-left transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-900 dark:hover:bg-neutral-700 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-16 text-center"><p className="text-sm font-medium text-neutral-900 dark:text-white">{date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</p></div>
+                                        <div className="w-16 text-center"><p className="text-sm font-medium text-neutral-900 dark:text-white">{date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: "UTC" })}</p></div>
                                         <div><p className="text-sm font-medium text-neutral-900 dark:text-white">{customerName(appointment)}</p><p className="text-xs text-neutral-500 dark:text-neutral-400">{serviceName(appointment)}</p></div>
                                     </div>
                                     <span className={`flex w-fit items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusStyle(appointment.status)}`}>

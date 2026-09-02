@@ -9,9 +9,14 @@ export async function GET(request: Request) {
         const cookieHeader = request.headers.get('cookie');
 
         const status = searchParams.get('status');
+        const dateRange = searchParams.get('dateRange') === 'true';
         searchParams.delete('status');
+        searchParams.delete('dateRange');
 
-        let url = `${BACKEND_URL}/api/appointments${status && status !== 'ALL' ? `/status/${encodeURIComponent(status)}` : ''}`;
+        let endpoint = '';
+        if (dateRange) endpoint = '/date-range';
+        else if (status && status !== 'ALL') endpoint = `/status/${encodeURIComponent(status)}`;
+        let url = `${BACKEND_URL}/api/appointments${endpoint}`;
         const query = searchParams.toString();
         if (query) {
             url += `?${query}`;
