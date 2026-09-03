@@ -7,9 +7,9 @@ type Status = { appointmentStatus?: string; paymentStatus?: string; requireAppro
 export function bookingStatusMessage(status: Status | null): { title: string; body: string } {
     if (!status) return { title: "Checking your booking", body: "Payment was submitted. We are checking confirmation; please do not submit another booking." };
     if (["CANCELLED", "DENIED"].includes(status.appointmentStatus || "")) return { title: "Booking not confirmed", body: "This booking is no longer active. Contact the salon for assistance." };
-    if (status.appointmentStatus === "APPROVED") return { title: "Appointment confirmed", body: "Your appointment is confirmed. Your confirmation will be sent by email." };
+    if (status.appointmentStatus === "APPROVED") return { title: "Appointment confirmed", body: "Your appointment is confirmed. Your confirmation will be sent by email and, if you opted in, by text." };
     if (status.paymentStatus?.includes("FAILED")) return { title: "Confirmation needs attention", body: "Your booking is not confirmed yet. The salon is retrying the payment operation. Please do not book again." };
-    if (status.appointmentStatus === "PENDING" && !status.approvalRequested && status.requireApproval !== false && status.paymentStatus === "AUTHORIZED") return { title: "Awaiting salon approval", body: "Your deposit is authorized, not charged. The salon will review your request and email its decision." };
+    if (status.appointmentStatus === "PENDING" && !status.approvalRequested && status.requireApproval !== false && status.paymentStatus === "AUTHORIZED") return { title: "Awaiting salon approval", body: "Your deposit is authorized, not charged. The salon will review your request and send its decision by email and, if you opted in, by text." };
     return { title: "Confirmation processing", body: "Your booking is not confirmed yet. This page updates automatically. Please do not submit another booking." };
 }
 

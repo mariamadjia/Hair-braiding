@@ -155,6 +155,7 @@ export default function BookingCalendar({
     const slotsCache = useRef(new Map<string, TimeSlot[]>());
     const [dateAvailability, setDateAvailability] = useState<Record<string, DateAvailability>>({});
     const [policyAccepted, setPolicyAccepted] = useState(false);
+    const [smsConsentAccepted, setSmsConsentAccepted] = useState(false);
     const [policyModalOpen, setPolicyModalOpen] = useState(false);
     const [expandedPolicy, setExpandedPolicy] = useState(0);
 
@@ -545,6 +546,7 @@ export default function BookingCalendar({
                     quoteToken,
                     depositPolicyAccepted: policyAccepted,
                     offSessionConsentAccepted: policyAccepted,
+                    smsConsentAccepted,
                 })
             });
 
@@ -1071,6 +1073,22 @@ export default function BookingCalendar({
                         </label>
                     </section>
 
+                    <section className="border border-[#D9C4B3] bg-white p-4" aria-labelledby="sms-consent">
+                        <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-[#4F4038]">
+                            <input
+                                type="checkbox"
+                                checked={smsConsentAccepted}
+                                onChange={(event) => setSmsConsentAccepted(event.target.checked)}
+                                className="mt-1 h-5 w-5 flex-shrink-0 rounded-sm border-[#BBA18E] text-[#2C1810] focus:ring-[#B8754E]"
+                            />
+                            <span id="sms-consent">
+                                I agree to receive transactional SMS messages from AH Braiding about my appointments. Message frequency varies. Message and data rates may apply. Reply HELP for help or STOP to opt out. Stopping texts does not cancel an appointment. Consent is not a condition of purchase. View our{" "}
+                                <a href="/privacy" target="_blank" className="font-medium text-[#A25735] underline underline-offset-4">Privacy Policy</a>{" "}
+                                and{" "}<a href="/terms" target="_blank" className="font-medium text-[#A25735] underline underline-offset-4">Terms &amp; Conditions</a>.
+                            </span>
+                        </label>
+                    </section>
+
                     {error && step === "details" && (
                         <p role="alert" className="text-xs text-red-700">{error}</p>
                     )}
@@ -1167,6 +1185,7 @@ export default function BookingCalendar({
                             setPaymentToken(null);
                             setConfirmationNumber(null);
                             setPolicyAccepted(false);
+                            setSmsConsentAccepted(false);
                             setStep("date");
                         }}
                         className="w-full rounded-none bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-3 text-xs font-medium uppercase tracking-[0.25em] transition"

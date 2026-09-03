@@ -95,6 +95,8 @@ export default function Footer({ videoSrc = null }: FooterProps = {}) {
             <a href="/gallery" className="hover:opacity-70 transition-opacity">GALLERY</a>
             <a href="/services" className="hover:opacity-70 transition-opacity">SERVICES</a>
             <a href="/contact" className="hover:opacity-70 transition-opacity">CONTACT</a>
+            <a href="/privacy" className="hover:opacity-70 transition-opacity">PRIVACY</a>
+            <a href="/terms" className="hover:opacity-70 transition-opacity">TERMS</a>
           </nav>
 
           <div className="text-[10px] uppercase tracking-[0.15em] opacity-100">

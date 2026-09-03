@@ -45,6 +45,7 @@ export interface CreateAppointmentRequest {
   lastName: string;
   email: string;
   phoneNumber: string;
+  smsConsentAccepted?: boolean;
   appointmentDateTime: string;
   serviceId?: number | null;
   serviceName?: string | null;
