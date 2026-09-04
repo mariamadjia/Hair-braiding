@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Loader2, TriangleAlert } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config/api";
+import { getAuthToken } from "@/lib/utils/auth";
 
 export type ManageSlot = { startTime: string; endTime: string; isAvailable?: boolean; availableSpots?: number };
 type DateStatus = "loading" | "available" | "unavailable" | "error";
@@ -29,8 +30,9 @@ const fullDateTime = (value: string) => {
   return new Intl.DateTimeFormat("en-US", { dateStyle: "full", timeStyle: "short", timeZone: "UTC" }).format(preserved) + " CT";
 };
 
-export default function ManageAvailabilityPicker({ token, serviceId, lengthOptionId, currentAppointmentDateTime, busy, onClose, onConfirm, title = "Choose a new date and time", confirmLabel = "Confirm one-time reschedule", compact = false }: {
+export default function ManageAvailabilityPicker({ token, appointmentId, serviceId, lengthOptionId, currentAppointmentDateTime, busy, onClose, onConfirm, title = "Choose a new date and time", confirmLabel = "Confirm one-time reschedule", reviewNotice, compact = false }: {
   token?: string;
+  appointmentId?: number;
   serviceId?: number;
   lengthOptionId?: number;
   currentAppointmentDateTime?: string;
@@ -39,6 +41,7 @@ export default function ManageAvailabilityPicker({ token, serviceId, lengthOptio
   onConfirm: (slot: ManageSlot) => Promise<void>;
   title?: string;
   confirmLabel?: string;
+  reviewNotice?: string;
   compact?: boolean;
 }) {
   const todayKey = useMemo(centralTodayKey, []);
@@ -64,8 +67,14 @@ export default function ManageAvailabilityPicker({ token, serviceId, lengthOptio
   const requestSlots = async (key: string, signal?: AbortSignal) => {
     const url = token
       ? `${API_BASE_URL}/api/public/appointments/manage/${encodeURIComponent(token)}/slots?date=${key}`
-      : `${API_BASE_URL}/api/availability/slots?date=${key}&timezone=America%2FChicago&serviceId=${serviceId}${lengthOptionId ? `&lengthOptionId=${lengthOptionId}` : ""}`;
-    const response = await fetch(url, { cache: "no-store", signal });
+      : appointmentId
+        ? `${API_BASE_URL}/api/appointments/${appointmentId}/reschedule-slots?date=${key}`
+        : `${API_BASE_URL}/api/availability/slots?date=${key}&timezone=America%2FChicago&serviceId=${serviceId}${lengthOptionId ? `&lengthOptionId=${lengthOptionId}` : ""}`;
+    const authToken = appointmentId ? getAuthToken() : null;
+    const response = await fetch(url, {
+      cache: "no-store", signal,
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined
+    });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body.error || body.message || "Unable to load available times.");
     return Array.isArray(body) ? body as ManageSlot[] : [];
@@ -95,7 +104,7 @@ export default function ManageAvailabilityPicker({ token, serviceId, lengthOptio
       }
     })();
     return () => controller.abort();
-  }, [days, month, todayKey, token]);
+  }, [appointmentId, days, month, todayKey, token]);
 
   useEffect(() => () => { monthRequest.current?.abort(); timesRequest.current?.abort(); }, []);
 
@@ -143,6 +152,6 @@ export default function ManageAvailabilityPicker({ token, serviceId, lengthOptio
 
     {step === "time" && <div className={compact ? "mx-auto min-h-[280px] max-w-2xl p-4" : "min-h-[360px] p-5 sm:p-7"}><button onClick={() => { setStep("date"); setSelectedDate(null); setSelectedSlot(null); }} className="mb-5 flex items-center text-xs uppercase tracking-wider text-[#8b735f]"><ChevronLeft className="mr-1 h-4 w-4"/>Back to dates</button><h3 className="mb-5 font-serif text-xl">{selectedDate ? new Intl.DateTimeFormat("en-US", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${selectedDate}T12:00:00Z`)) : "Selected date"}</h3>{loadingTimes ? <div className="space-y-4"><p className="text-sm text-[#76675e]"><Loader2 className="mr-2 inline h-4 w-4 animate-spin"/>Loading available times…</p><div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{[1,2,3,4,5,6].map(value => <div key={value} className="h-11 animate-pulse rounded border bg-[#fbf7f2]"/>)}</div></div> : error ? <div className="rounded-lg bg-red-50 p-4 text-red-800"><TriangleAlert className="mr-2 inline h-4 w-4"/>{error}</div> : !slots.length ? <p>No available times. Please choose another date.</p> : <div className="space-y-6">{groups.map(group => <fieldset key={group.label}><legend className="mb-3 text-[10px] font-semibold uppercase tracking-[.22em] text-[#b0633e]">{group.label}</legend><div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{group.slots.map(slot => <button key={slot.startTime} aria-pressed={selectedSlot?.startTime === slot.startTime} aria-label={`${slotTime(slot.startTime)} available`} onClick={() => setSelectedSlot(slot)} className={`rounded border px-4 py-3 text-sm ${selectedSlot?.startTime === slot.startTime ? "border-[#2c1810] bg-[#2c1810] text-white" : "border-[#d9c4b3] bg-[#fffdf9] hover:bg-[#f8efe7]"}`}>{slotTime(slot.startTime)}</button>)}</div></fieldset>)}</div>}<button disabled={!selectedSlot} onClick={() => setStep("review")} className="mt-7 w-full rounded-lg bg-[#351d12] p-4 text-white disabled:opacity-40">Review new appointment</button></div>}
 
-    {step === "review" && selectedSlot && <div className={compact ? "mx-auto max-w-2xl space-y-4 p-4" : "space-y-5 p-5 sm:p-7"}><button onClick={() => setStep("time")} className="flex items-center text-xs uppercase tracking-wider text-[#8b735f]"><ChevronLeft className="mr-1 h-4 w-4"/>Back to times</button><div className={`grid gap-4 ${currentAppointmentDateTime ? "sm:grid-cols-2" : ""}`}>{currentAppointmentDateTime && <div className="rounded-lg border border-[#e2d4c5] bg-[#faf7f3] p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-stone-500">Current appointment</p><p className="mt-2 font-serif text-lg">{fullDateTime(currentAppointmentDateTime)}</p></div>}<div className="rounded-lg border-2 border-[#7a4832] bg-[#fffaf5] p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-[#9b5837]">{currentAppointmentDateTime ? "New appointment" : "Selected appointment"}</p><p className="mt-2 font-serif text-lg">{fullDateTime(selectedSlot.startTime)}</p></div></div>{currentAppointmentDateTime && <div className="rounded-lg bg-[#f4eadc] p-4 text-sm">Your current appointment stays reserved until you confirm. Confirming uses your one self-service change and cannot be undone online.</div>}<button disabled={busy} onClick={() => void onConfirm(selectedSlot)} className="w-full rounded-lg bg-[#351d12] p-4 text-white disabled:opacity-50">{busy ? "Saving…" : confirmLabel}</button></div>}
+    {step === "review" && selectedSlot && <div className={compact ? "mx-auto max-w-2xl space-y-4 p-4" : "space-y-5 p-5 sm:p-7"}><button onClick={() => setStep("time")} className="flex items-center text-xs uppercase tracking-wider text-[#8b735f]"><ChevronLeft className="mr-1 h-4 w-4"/>Back to times</button><div className={`grid gap-4 ${currentAppointmentDateTime ? "sm:grid-cols-2" : ""}`}>{currentAppointmentDateTime && <div className="rounded-lg border border-[#e2d4c5] bg-[#faf7f3] p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-stone-500">Current appointment</p><p className="mt-2 font-serif text-lg">{fullDateTime(currentAppointmentDateTime)}</p></div>}<div className="rounded-lg border-2 border-[#7a4832] bg-[#fffaf5] p-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-[#9b5837]">{currentAppointmentDateTime ? "New appointment" : "Selected appointment"}</p><p className="mt-2 font-serif text-lg">{fullDateTime(selectedSlot.startTime)}</p></div></div>{currentAppointmentDateTime && <div className="rounded-lg bg-[#f4eadc] p-4 text-sm">{reviewNotice || "Your current appointment stays reserved until you confirm. Confirming uses your one self-service change and cannot be undone online."}</div>}<button disabled={busy} onClick={() => void onConfirm(selectedSlot)} className="w-full rounded-lg bg-[#351d12] p-4 text-white disabled:opacity-50">{busy ? "Saving…" : confirmLabel}</button></div>}
   </section>;
 }

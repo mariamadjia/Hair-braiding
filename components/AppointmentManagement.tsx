@@ -11,6 +11,7 @@ import { getAuthToken, removeAuthToken } from "@/lib/utils/auth";
 import { API_BASE_URL } from "@/lib/config/api";
 import CalendarView, { CalendarRange } from "./CalendarView";
 import OwnerAppointmentModal from "./OwnerAppointmentModal";
+import ManageAvailabilityPicker, { ManageSlot } from "./ManageAvailabilityPicker";
 
 type NoShowFee = {
     appointmentId: number; scheduledServicePriceCents: number; feeRatePercent: number;
@@ -181,6 +182,8 @@ function AppointmentManagement() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [activeCalendarRange, setActiveCalendarRange] = useState<CalendarRange | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
+    const [rescheduleAppointment, setRescheduleAppointment] = useState<Appointment | null>(null);
+    const [rescheduleReason, setRescheduleReason] = useState("");
     const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
     const listRequestRef = useRef<AbortController | null>(null);
     const calendarRequestRef = useRef<AbortController | null>(null);
@@ -333,6 +336,24 @@ function AppointmentManagement() {
         && !isPast(appointment);
     const awaitingOwnerDeposit = (appointment: Appointment) => appointment.bookingSource === "OWNER"
         && appointment.status === "PENDING" && appointment.depositRequired && appointment.paymentStatus === "PENDING";
+    const canReschedule = (appointment: Appointment) => ["PENDING", "APPROVED"].includes(appointment.status)
+        && !isPast(appointment) && Boolean(appointment.service?.id);
+
+    const submitReschedule = async (slot: ManageSlot) => {
+        if (!rescheduleAppointment) return;
+        setActionLoading(rescheduleAppointment.id); setError(null); setNotice(null);
+        try {
+            await readResponse(await fetch(`${API_BASE_URL}/api/appointments/${rescheduleAppointment.id}/reschedule`, {
+                method: "PUT", headers: authHeaders(),
+                body: JSON.stringify({ appointmentDateTime: slot.startTime, reason: rescheduleReason.trim() || null })
+            }));
+            setNotice("Appointment rescheduled. The customer notification has been queued.");
+            setRescheduleAppointment(null); setRescheduleReason(""); setSelectedAppointment(null);
+            await refreshCurrentView();
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : "The appointment could not be rescheduled");
+        } finally { setActionLoading(null); }
+    };
 
     const resendOwnerDepositLink = async (appointment: Appointment) => {
         setActionLoading(appointment.id); setError(null); setNotice(null);
@@ -658,7 +679,7 @@ function AppointmentManagement() {
                                             <h2 className="text-base font-semibold text-[#241711]">{appointment.customer.firstName} {appointment.customer.lastName}</h2>
                                             <span className={cn("rounded-full border px-2.5 py-1 text-xs font-semibold", statusClass(appointment.status))}>{operationalLabel}</span>
                                             {appointment.cancelledByCustomer && <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800">CANCELLED BY CUSTOMER</span>}
-                                            {!appointment.cancelledByCustomer && appointment.rescheduledFromDateTime && <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">RESCHEDULED BY CUSTOMER</span>}
+                                            {!appointment.cancelledByCustomer && appointment.rescheduledFromDateTime && <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">RESCHEDULED</span>}
                                             {overdue && <span className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white">OVERDUE</span>}
                                             {appointment.paymentStatus && <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", paymentClass(appointment.paymentStatus))}>PAYMENT: {appointment.paymentStatus.replaceAll("_", " ")}</span>}
                                         </div>
@@ -678,12 +699,13 @@ function AppointmentManagement() {
                                             </div>
                                         {appointment.paymentAuthorizationExpiresAt && ["AUTHORIZED", "CAPTURED"].includes(appointment.paymentStatus || "") && <p className={cn("mt-2 flex items-center gap-1.5 text-xs font-medium", expiryHours !== null && expiryHours < 24 ? "text-red-700" : "text-amber-700")}><Clock className="h-3.5 w-3.5" />Authorization {expiryHours !== null && expiryHours < 24 ? "expires in less than 24 hours" : `expires ${formatDateTime(appointment.paymentAuthorizationExpiresAt)}`}</p>}
                                         {captureProcessing && <p className="mt-2 flex items-center gap-2 text-xs font-medium text-blue-700"><Loader2 className="h-3.5 w-3.5 animate-spin" />Capturing authorized deposit</p>}
-                                        {appointment.rescheduledFromDateTime && <p className="mt-2 text-xs font-medium text-blue-700">Customer rescheduled from {formatDateTime(appointment.rescheduledFromDateTime)}</p>}
+                                        {appointment.rescheduledFromDateTime && <p className="mt-2 text-xs font-medium text-blue-700">Rescheduled from {formatDateTime(appointment.rescheduledFromDateTime)}</p>}
                                         {appointment.cancelledByCustomer && <p className="mt-2 text-xs font-medium text-violet-700">Cancelled by customer{appointment.customerCancellationReason ? `: ${appointment.customerCancellationReason}` : ""}</p>}
                                         <p className="mt-2 text-xs text-neutral-400">Requested {formatDateTime(appointment.createdAt)}</p>
                                     </div>
                                     <div className="relative flex shrink-0 items-center justify-end gap-2">
                                         <Button variant="outline" size="sm" className="h-10 border-[#d7c6bb] sm:h-9" onClick={() => setSelectedAppointment(appointment)}>Review <ChevronRight className="ml-1 h-4 w-4" /></Button>
+                                        {canReschedule(appointment) && <Button variant="outline" size="sm" className="h-10 border-[#9b6a4d] text-[#5f351f] hover:bg-[#f8efe7] sm:h-9" disabled={actionLoading === appointment.id} onClick={() => { setRescheduleAppointment(appointment); setRescheduleReason(""); setError(null); }}><CalendarDays className="mr-1.5 h-4 w-4"/>Reschedule</Button>}
                                         {appointment.status === "PENDING" && !captureProcessing && <Button size="sm" className="h-10 bg-[#351d12] text-white hover:bg-[#4b2a1b] sm:h-9" disabled={!canApprove(appointment) || actionLoading === appointment.id}
                                             title={overdue ? "Past appointments cannot be approved" : appointment.paymentStatus !== "AUTHORIZED" ? "Payment authorization is required" : undefined}
                                             onClick={() => { setAction({ kind: "approve", appointment }); setActionNotes(""); }}><Check className="mr-1 h-4 w-4" />Approve</Button>}
@@ -718,6 +740,14 @@ function AppointmentManagement() {
                 onClose={() => setCreateOpen(false)}
                 onCreated={async () => { setNotice("Appointment created and the customer was notified by email and SMS."); await refreshCurrentView(); }}
             />}
+            {rescheduleAppointment && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && actionLoading === null) setRescheduleAppointment(null); }}>
+                <div role="dialog" aria-modal="true" aria-label="Reschedule appointment" className="max-h-[94dvh] w-full max-w-3xl overflow-y-auto rounded-t-3xl bg-[#fcfaf8] p-4 shadow-xl sm:max-h-[92vh] sm:rounded-2xl sm:p-6">
+                    <ManageAvailabilityPicker appointmentId={rescheduleAppointment.id} currentAppointmentDateTime={rescheduleAppointment.appointmentDateTime} busy={actionLoading === rescheduleAppointment.id} onClose={() => { if (actionLoading === null) { setRescheduleAppointment(null); setRescheduleReason(""); } }} onConfirm={submitReschedule} title={`Reschedule ${rescheduleAppointment.customer.firstName}'s appointment`} confirmLabel="Confirm reschedule" reviewNotice="The customer will be notified immediately. Their service, price, appointment status, and deposit will stay unchanged." compact />
+                    <label className="mt-4 block text-sm font-medium text-neutral-800">Reason (optional)<textarea value={rescheduleReason} maxLength={500} rows={3} onChange={event => setRescheduleReason(event.target.value)} placeholder="For the appointment activity history" className="mt-2 w-full rounded-lg border border-neutral-300 bg-white p-3 font-normal outline-none focus:border-neutral-700 focus:ring-2 focus:ring-neutral-200" /></label>
+                    <p className="mt-1 text-right text-xs text-neutral-400">{rescheduleReason.length}/500</p>
+                    {error && <div role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
+                </div>
+            </div>}
             {selectedAppointment && <AppointmentDialog appointment={selectedAppointment} formatDateTime={formatDateTime} onClose={() => setSelectedAppointment(null)} onApprove={canApprove(selectedAppointment) ? () => { setSelectedAppointment(null); setAction({ kind: "approve", appointment: selectedAppointment }); setActionNotes(""); } : undefined} onDeny={selectedAppointment.status === "PENDING" && !selectedAppointment.approvedAt ? () => { setSelectedAppointment(null); setAction({ kind: "deny", appointment: selectedAppointment }); setActionNotes(""); } : undefined} />}
 
             {action && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && actionLoading === null) setAction(null); }}>
@@ -840,7 +870,7 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
                 </dl>
             </section>
             <section className="mt-5 rounded-2xl border border-[#e7ddd6] bg-white p-5 text-sm"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><h3 className="font-semibold text-[#241711]">Customer</h3><span className="w-fit rounded-full bg-[#f2e8e1] px-3 py-1 text-xs font-medium text-[#6b3d27]">{appointment.selfServiceChangeCount ?? 0} of 1 changes used</span></div><p className="mt-4 flex items-center gap-2"><User className="h-4 w-4 shrink-0 text-[#9a6d50]" />{appointment.customer.firstName} {appointment.customer.lastName}</p><a href={`mailto:${appointment.customer.email}`} className="mt-3 flex min-w-0 items-center gap-2 hover:underline"><Mail className="h-4 w-4 shrink-0 text-[#9a6d50]" /><span className="break-all">{appointment.customer.email}</span></a><a href={`tel:${appointment.customer.phoneNumber}`} className="mt-3 flex items-center gap-2 hover:underline"><Phone className="h-4 w-4 shrink-0 text-[#9a6d50]" />{appointment.customer.phoneNumber}</a>{appointment.lastSelfServiceChangeAt && <p className="mt-3 text-xs text-neutral-500">Last customer change: {formatDateTime(appointment.lastSelfServiceChangeAt)}</p>}</section>
-            {appointment.rescheduledFromDateTime && <div className="mt-6 border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"><h3 className="font-semibold">Rescheduled by customer</h3><p className="mt-2">Previous: {formatDateTime(appointment.rescheduledFromDateTime)}</p><p>Current: {formatDateTime(appointment.appointmentDateTime)}</p></div>}
+            {appointment.rescheduledFromDateTime && <div className="mt-6 border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"><h3 className="font-semibold">Appointment rescheduled</h3><p className="mt-2">Previous: {formatDateTime(appointment.rescheduledFromDateTime)}</p><p>Current: {formatDateTime(appointment.appointmentDateTime)}</p></div>}
             {appointment.cancelledByCustomer && <div className="mt-6 border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900"><h3 className="font-semibold">Cancelled by customer</h3><p className="mt-2">Reason: {appointment.customerCancellationReason || "No reason provided"}</p></div>}
             {appointment.notes && <div className="mt-6 border-t pt-5 text-sm"><h3 className="flex items-center gap-2 font-semibold"><MessageSquare className="h-4 w-4" />Customer notes</h3><p className="mt-2 whitespace-pre-wrap text-neutral-700">{appointment.notes}</p></div>}
             {appointment.adminNotes && <div className="mt-6 border-t pt-5 text-sm"><h3 className="font-semibold">Admin notes</h3><p className="mt-2 whitespace-pre-wrap text-neutral-700">{appointment.adminNotes}</p></div>}
