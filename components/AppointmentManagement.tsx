@@ -330,6 +330,12 @@ function AppointmentManagement() {
 
     const centralNow = salonNow;
     const isPast = (appointment: Appointment) => (salonDate(appointment.appointmentDateTime)?.getTime() ?? 0) <= centralNow().getTime();
+    const isToday = (appointment: Appointment) => {
+        const date = salonDate(appointment.appointmentDateTime);
+        const now = centralNow();
+        return Boolean(date) && date!.getUTCFullYear() === now.getUTCFullYear()
+            && date!.getUTCMonth() === now.getUTCMonth() && date!.getUTCDate() === now.getUTCDate();
+    };
     const canApprove = (appointment: Appointment) => appointment.status === "PENDING"
         && !appointment.approvedAt
         && ["AUTHORIZED", "CAPTURED"].includes(appointment.paymentStatus || "")
@@ -337,7 +343,7 @@ function AppointmentManagement() {
     const awaitingOwnerDeposit = (appointment: Appointment) => appointment.bookingSource === "OWNER"
         && appointment.status === "PENDING" && appointment.depositRequired && appointment.paymentStatus === "PENDING";
     const canReschedule = (appointment: Appointment) => ["PENDING", "APPROVED"].includes(appointment.status)
-        && !isPast(appointment) && Boolean(appointment.service?.id);
+        && (!isPast(appointment) || isToday(appointment)) && Boolean(appointment.service?.id);
 
     const submitReschedule = async (slot: ManageSlot) => {
         if (!rescheduleAppointment) return;
