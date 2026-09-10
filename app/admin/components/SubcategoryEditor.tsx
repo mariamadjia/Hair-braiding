@@ -604,16 +604,20 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         setApplyingDeposit(true);
         setSaveError(null);
         try {
-            await Promise.all(persistedItems.map(async item => {
-                const response = await fetch(`/api/admin/pricing/deposits/services/${item.id}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json", ...headers },
-                    body: JSON.stringify({ version: item.version ?? 0, depositCents }),
-                });
-                const payload = await response.json().catch(() => ({}));
-                if (!response.ok) throw new Error(payload.error || `Unable to update ${item.name}.`);
-                return payload;
-            }));
+            const settingsResponse = await fetch("/api/admin/pricing/deposits", { headers, cache: "no-store" });
+            const settings = await settingsResponse.json().catch(() => ({}));
+            if (!settingsResponse.ok) throw new Error(settings.error || "Unable to load current deposit settings.");
+            const response = await fetch("/api/admin/pricing/deposits", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", ...headers },
+                body: JSON.stringify({
+                    version: settings.version,
+                    defaultDepositCents: settings.defaultDepositCents,
+                    overrides: persistedItems.map(item => ({ serviceId: item.id, version: item.version ?? 0, depositCents })),
+                }),
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || "Unable to update deposits for all sizes.");
             const freshSub = await onSubcategoryUpdate?.(sub.slug);
             if (freshSub?.items) setItems(freshSub.items);
             setBulkDepositInput(depositCents == null ? "" : (depositCents / 100).toFixed(2));
