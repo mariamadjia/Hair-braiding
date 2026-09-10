@@ -5,10 +5,11 @@ import { API_BASE_URL } from "@/lib/config/api";
 
 type Status = { appointmentStatus?: string; paymentStatus?: string; requireApproval?: boolean; approvalRequested?: boolean };
 export function bookingStatusMessage(status: Status | null): { title: string; body: string } {
-    if (!status) return { title: "Checking your booking", body: "Payment was submitted. We are checking confirmation; please do not submit another booking." };
+    if (!status) return { title: "Checking your booking", body: "Your booking was submitted. We are checking its status; please do not submit another booking." };
     if (["CANCELLED", "DENIED"].includes(status.appointmentStatus || "")) return { title: "Booking not confirmed", body: "This booking is no longer active. Contact the salon for assistance." };
     if (status.appointmentStatus === "APPROVED") return { title: "Appointment confirmed", body: "Your appointment is confirmed. Your confirmation will be sent by email and, if you opted in, by text." };
     if (status.paymentStatus?.includes("FAILED")) return { title: "Confirmation needs attention", body: "Your booking is not confirmed yet. The salon is retrying the payment operation. Please do not book again." };
+    if (status.appointmentStatus === "PENDING" && status.paymentStatus === "NOT_REQUIRED") return { title: "Awaiting salon approval", body: "No deposit or card was required. The salon will review your request and send its decision by email and, if you opted in, by text." };
     if (status.appointmentStatus === "PENDING" && !status.approvalRequested && status.requireApproval !== false && status.paymentStatus === "AUTHORIZED") return { title: "Awaiting salon approval", body: "Your deposit is authorized, not charged. The salon will review your request and send its decision by email and, if you opted in, by text." };
     return { title: "Confirmation processing", body: "Your booking is not confirmed yet. This page updates automatically. Please do not submit another booking." };
 }
@@ -29,6 +30,7 @@ export default function BookingConfirmationStatus({ appointmentId, paymentToken 
                 if (stopped) return;
                 setStatus(value); setError(false);
                 if (["APPROVED", "DENIED", "CANCELLED"].includes(value.appointmentStatus || "")) return;
+                if (value.appointmentStatus === "PENDING" && value.paymentStatus === "NOT_REQUIRED") return;
                 if (!value.approvalRequested && value.requireApproval !== false && value.paymentStatus === "AUTHORIZED") return;
             } catch { if (stopped) return; setError(true); }
             timer = setTimeout(refresh, 5000);

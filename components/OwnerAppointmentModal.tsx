@@ -64,7 +64,7 @@ export default function OwnerAppointmentModal({ onClose, onCreated }: { onClose:
     const controller = new AbortController();
     void fetch(`${API_BASE_URL}/api/booking/quote`, { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal,
       body: JSON.stringify({ serviceId, lengthOptionId, foundation: foundation || null, addOnIds }) })
-      .then(read).then(setQuote).catch(reason => { if (reason?.name !== "AbortError") setError(reason instanceof Error ? reason.message : "Unable to calculate price"); });
+      .then(read).then(value => { setQuote(value); if (value.depositCents === 0) setDepositRequired(false); }).catch(reason => { if (reason?.name !== "AbortError") setError(reason instanceof Error ? reason.message : "Unable to calculate price"); });
     return () => controller.abort();
   }, [serviceId, lengthOptionId, foundation, addOnIds, selectedService?.foundationChoicesEnabled, selectedService?.pricingMode]);
 
@@ -90,7 +90,7 @@ export default function OwnerAppointmentModal({ onClose, onCreated }: { onClose:
       await read(await fetch(`${API_BASE_URL}/api/admin/appointments`, { method: "POST", headers: headers(), credentials: "include", body: JSON.stringify({
         ...details, quoteToken: quote.quoteToken, serviceId: selectedService.id,
         lengthOptionId, selectedLength: selectedLength?.name || null, selectedFoundation: foundation || null,
-        selectedTexture: texture || null, appointmentDateTime, depositRequired
+        selectedTexture: texture || null, appointmentDateTime, depositRequired: depositRequired && quote.depositCents > 0
       }) }));
       await onCreated(); onClose();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to create appointment"); }

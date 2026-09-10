@@ -74,7 +74,12 @@ const parseStoredCalendarDate = (value: string) => {
 const policySections = (depositAmountCents: number) => [
     {
         title: "Appointments, Deposits & Approval",
-        points: [
+        points: depositAmountCents === 0 ? [
+            "All braiding services are available by appointment.",
+            "No deposit or credit card is required for this appointment request.",
+            "Your request is still subject to salon approval unless automatic confirmation is enabled.",
+            "Please note that all payments made directly to the salon are final and non-refundable.",
+        ] : [
             "All braiding services are available by appointment.",
             `A card authorization of $${(depositAmountCents / 100).toFixed(2)} is required to submit your appointment request. Your card is charged when the appointment is approved, automatically or after salon review according to the booking policy.`,
             `Once approved, the $${(depositAmountCents / 100).toFixed(2)} deposit is non-refundable and will be applied toward your total service balance. If your request is denied, the authorization hold is released.`,
@@ -102,7 +107,12 @@ const policySections = (depositAmountCents: number) => [
     },
     {
         title: "Cancellations, Rescheduling & No-Shows",
-        points: [
+        points: depositAmountCents === 0 ? [
+            "At least 72 hours’ notice is required to cancel or reschedule.",
+            "An appointment is considered a no-show when a client misses their scheduled appointment without providing notice.",
+            "No card-based no-show fee will be charged for a $0-deposit booking because no payment method is collected.",
+            "Repeated no-shows may result in the loss of future booking privileges.",
+        ] : [
             "At least 72 hours’ notice is required to cancel or reschedule.",
             "Late cancellations and no-shows may result in loss of the deposit and/or a requirement to pay a new deposit before booking another appointment.",
             "An appointment is considered a no-show when a client misses their scheduled appointment without providing notice.",
@@ -579,6 +589,12 @@ export default function BookingCalendar({
                 throw new Error(paymentError.error || paymentError.message || "Failed to initialize payment");
             }
             const payment = await paymentResponse.json();
+            if (payment.paymentStatus === "NOT_REQUIRED") {
+                setPaymentClientSecret(null);
+                setAuthorizedAmountCents(0);
+                setStep("success");
+                return;
+            }
             setPaymentClientSecret(payment.clientSecret);
             setAuthorizedAmountCents(payment.amount);
             sessionStorage.setItem(PENDING_PAYMENT_STORAGE_KEY, JSON.stringify({
@@ -1104,7 +1120,7 @@ export default function BookingCalendar({
                                 Confirming...
                             </>
                         ) : (
-                            "Continue to Payment"
+                            depositAmountCents === 0 ? "Submit Appointment Request" : "Continue to Payment"
                         )}
                     </Button>
                 </form>

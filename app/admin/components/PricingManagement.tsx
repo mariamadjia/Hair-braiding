@@ -462,8 +462,8 @@ export function PricingManagement({ token }: { token: string }) {
     setSaving(true); setError(""); setSuccess("");
     try {
       const parsedDefault = Number(defaultDepositInput);
-      if (!Number.isFinite(parsedDefault) || parsedDefault <= 0 || parsedDefault > 1000) {
-        throw new Error("Default deposit must be between $0.01 and $1,000.");
+      if (!Number.isFinite(parsedDefault) || parsedDefault < 0 || parsedDefault > 1000) {
+        throw new Error("Default deposit must be between $0 and $1,000.");
       }
       const nextDefaultCents = Math.round(parsedDefault * 100);
       const nextOverrides = { ...depositOverrides };
@@ -475,8 +475,8 @@ export function PricingManagement({ token }: { token: string }) {
           continue;
         }
         const amount = Number(raw);
-        if (!Number.isFinite(amount) || amount <= 0 || amount > 1000) {
-          throw new Error(`${item.name} deposit must be between $0.01 and $1,000.`);
+        if (!Number.isFinite(amount) || amount < 0 || amount > 1000) {
+          throw new Error(`${item.name} deposit must be between $0 and $1,000.`);
         }
         nextOverrides[item.id] = Math.round(amount * 100);
       }
@@ -927,12 +927,12 @@ export function PricingManagement({ token }: { token: string }) {
                   <span className="border-r border-[#ded3c8] px-4 py-3">$</span>
                   <input id="default-deposit" inputMode="decimal" value={defaultDepositInput} onFocus={event => event.currentTarget.select()} onChange={event => setDefaultDepositInput(event.target.value)} onBlur={() => {
                     const amount = Number(defaultDepositInput);
-                    if (Number.isFinite(amount) && amount > 0 && amount <= 1000) {
+                    if (Number.isFinite(amount) && amount >= 0 && amount <= 1000) {
                       setDefaultDepositCents(Math.round(amount * 100));
                       setDefaultDepositInput(amount.toFixed(2));
                     } else {
                       setDefaultDepositInput((defaultDepositCents / 100).toFixed(2));
-                      setError("Default deposit must be between $0.01 and $1,000.");
+                      setError("Default deposit must be between $0 and $1,000.");
                     }
                   }} className="min-w-0 flex-1 bg-transparent px-4 font-medium outline-none" />
                 </div>
@@ -1004,12 +1004,12 @@ export function PricingManagement({ token }: { token: string }) {
                               return;
                             }
                             const amount = Number(raw);
-                            if (Number.isFinite(amount) && amount > 0 && amount <= 1000) {
+                            if (Number.isFinite(amount) && amount >= 0 && amount <= 1000) {
                               setDepositOverrides(previous => ({ ...previous, [item.id!]: Math.round(amount * 100) }));
                               setDepositOverrideInputs(previous => ({ ...previous, [item.id!]: amount.toFixed(2) }));
                             } else {
                               setDepositOverrideInputs(previous => ({ ...previous, [item.id!]: hasOverride ? (depositOverrides[item.id!]! / 100).toFixed(2) : "" }));
-                              setError(`${item.name} deposit must be between $0.01 and $1,000.`);
+                              setError(`${item.name} deposit must be between $0 and $1,000.`);
                             }
                           }} className="min-w-0 flex-1 bg-transparent py-2 pr-2 outline-none" />
                         </div>
