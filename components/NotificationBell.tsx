@@ -101,13 +101,19 @@ function noticesFromAppointments(appointments: Appointment[]): Notice[] {
             minute: "2-digit",
         });
 
-        if (appointment.status === "PENDING" && appointment.paymentStatus === "AUTHORIZED") {
+        const authorizedRequest = appointment.status === "PENDING" && appointment.paymentStatus === "AUTHORIZED";
+        const zeroDepositReservation = appointment.paymentStatus === "NOT_REQUIRED"
+            && ["PENDING", "APPROVED"].includes(appointment.status);
+        if (authorizedRequest || zeroDepositReservation) {
+            const zeroDeposit = appointment.paymentStatus === "NOT_REQUIRED";
             notices.push({
                 id: `request-${appointment.id}`,
-                title: "New appointment request",
-                description: `${person(appointment)} authorized ${money(appointment.depositAmount)} for ${style(appointment)} on ${appointmentLabel}.`,
+                title: appointment.status === "APPROVED" ? "New confirmed appointment" : "New appointment request",
+                description: zeroDeposit
+                    ? `${person(appointment)} requested ${style(appointment)} on ${appointmentLabel}. No deposit is required.`
+                    : `${person(appointment)} authorized ${money(appointment.depositAmount)} for ${style(appointment)} on ${appointmentLabel}.`,
                 timestamp: created,
-                actionLabel: "Review request",
+                actionLabel: appointment.status === "APPROVED" ? "View appointment" : "Review request",
                 icon: Calendar,
                 tone: "success",
             });

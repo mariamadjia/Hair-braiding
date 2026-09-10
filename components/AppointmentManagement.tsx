@@ -130,7 +130,7 @@ const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detai
     const paymentIssue = ["CAPTURE_FAILED", "CANCELLATION_FAILED", "FAILED"].includes(appointment.paymentStatus || "")
         || ["UNPAID", "PROCESSING", "FAILED"].includes(appointment.noShowFee?.paymentStatus || "");
     const actionablePending = appointment.status === "PENDING"
-        && (["AUTHORIZED", "CAPTURED"].includes(appointment.paymentStatus || "") || Boolean(appointment.approvedAt));
+        && (["AUTHORIZED", "CAPTURED", "NOT_REQUIRED"].includes(appointment.paymentStatus || "") || Boolean(appointment.approvedAt));
     const ownerAwaitingPayment = appointment.bookingSource === "OWNER"
         && appointment.status === "PENDING" && appointment.depositRequired && appointment.paymentStatus === "PENDING";
     const viewMatch = workflow === "NEEDS_ACTION"
@@ -141,7 +141,7 @@ const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detai
                 || (appointment.status === "APPROVED" && appointmentTime < now);
     if (!viewMatch || detail === "ALL") return viewMatch;
     return {
-        READY_FOR_APPROVAL: appointment.status === "PENDING" && !appointment.approvedAt && ["AUTHORIZED", "CAPTURED"].includes(appointment.paymentStatus || "") && appointmentTime > now,
+        READY_FOR_APPROVAL: appointment.status === "PENDING" && !appointment.approvedAt && ["AUTHORIZED", "CAPTURED", "NOT_REQUIRED"].includes(appointment.paymentStatus || "") && appointmentTime > now,
         AWAITING_PAYMENT: appointment.status === "PENDING" && !appointment.approvedAt && ["PENDING", "CANCELLED"].includes(appointment.paymentStatus || ""),
         CAPTURE_PROCESSING: captureProcessing,
         PAYMENT_ISSUE: paymentIssue,
@@ -338,7 +338,7 @@ function AppointmentManagement() {
     };
     const canApprove = (appointment: Appointment) => appointment.status === "PENDING"
         && !appointment.approvedAt
-        && ["AUTHORIZED", "CAPTURED"].includes(appointment.paymentStatus || "")
+        && ["AUTHORIZED", "CAPTURED", "NOT_REQUIRED"].includes(appointment.paymentStatus || "")
         && !isPast(appointment);
     const awaitingOwnerDeposit = (appointment: Appointment) => appointment.bookingSource === "OWNER"
         && appointment.status === "PENDING" && appointment.depositRequired && appointment.paymentStatus === "PENDING";
@@ -712,7 +712,7 @@ function AppointmentManagement() {
                                     <div className="relative flex shrink-0 items-center justify-end gap-2">
                                         <Button variant="outline" size="sm" className="h-10 border-[#d7c6bb] sm:h-9" onClick={() => setSelectedAppointment(appointment)}>Review <ChevronRight className="ml-1 h-4 w-4" /></Button>
                                         {appointment.status === "PENDING" && !captureProcessing && <Button size="sm" className="h-10 bg-[#351d12] text-white hover:bg-[#4b2a1b] sm:h-9" disabled={!canApprove(appointment) || actionLoading === appointment.id}
-                                            title={overdue ? "Past appointments cannot be approved" : appointment.paymentStatus !== "AUTHORIZED" ? "Payment authorization is required" : undefined}
+                                            title={overdue ? "Past appointments cannot be approved" : !["AUTHORIZED", "CAPTURED", "NOT_REQUIRED"].includes(appointment.paymentStatus || "") ? "Payment authorization is required" : undefined}
                                             onClick={() => { setAction({ kind: "approve", appointment }); setActionNotes(""); }}><Check className="mr-1 h-4 w-4" />Approve</Button>}
                                         {hasMoreActions && <div className="relative" data-appointment-menu={appointment.id}>
                                             <button type="button" aria-label="More appointment actions" aria-expanded={openActionMenuId === appointment.id} onClick={() => setOpenActionMenuId(current => current === appointment.id ? null : appointment.id)} className="flex h-10 w-10 items-center justify-center rounded-md border border-[#d7c6bb] bg-white text-[#351d12] shadow-sm transition hover:bg-[#f8f5f2] focus:outline-none focus:ring-2 focus:ring-[#b99782] sm:h-9 sm:w-9"><EllipsisVertical className="h-5 w-5" /></button>
