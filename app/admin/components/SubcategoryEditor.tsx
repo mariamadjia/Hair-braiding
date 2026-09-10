@@ -79,6 +79,9 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
     const [bulkFoundationAdjustment, setBulkFoundationAdjustment] = useState("0");
     const [bulkSettingsDirty, setBulkSettingsDirty] = useState(false);
     const [applyingFoundations, setApplyingFoundations] = useState(false);
+    const [bulkDepositInput, setBulkDepositInput] = useState("");
+    const [bulkDepositDirty, setBulkDepositDirty] = useState(false);
+    const [applyingDeposit, setApplyingDeposit] = useState(false);
     const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
     const [draggedLength, setDraggedLength] = useState<{ itemId: number; optionIndex: number } | null>(null);
     const [guideSettings, setGuideSettings] = useState<GuideSettings | null>(null);
@@ -219,6 +222,10 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         } else {
             setBulkUseAdjustment(false);
         }
+        const depositOverrides = new Set(nextItems.map(item => item.depositOverrideCents ?? null));
+        const sharedDeposit = depositOverrides.size === 1 ? depositOverrides.values().next().value : null;
+        setBulkDepositInput(typeof sharedDeposit === "number" ? (sharedDeposit / 100).toFixed(2) : "");
+        setBulkDepositDirty(false);
         setBulkSettingsDirty(false);
         // Seed gallery images from the already-loaded subcategory detail (no extra fetch)
         const preloaded = (sub.galleryImages ?? []) as GalleryImage[];
@@ -584,6 +591,42 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
         }
     };
 
+    const applyDepositToAllSizes = async () => {
+        const persistedItems = items.filter((item): item is BookingItem & { id: number } => typeof item.id === "number");
+        if (!persistedItems.length || applyingDeposit || saving) return;
+        const raw = bulkDepositInput.trim();
+        const amount = raw === "" ? null : Number(raw);
+        if (amount !== null && (!Number.isFinite(amount) || amount < 0 || amount > 1000)) {
+            setSaveError("Deposit must be between $0 and $1,000, or left blank to use the salon default.");
+            return;
+        }
+        const depositCents = amount === null ? null : Math.round(amount * 100);
+        setApplyingDeposit(true);
+        setSaveError(null);
+        try {
+            await Promise.all(persistedItems.map(async item => {
+                const response = await fetch(`/api/admin/pricing/deposits/services/${item.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json", ...headers },
+                    body: JSON.stringify({ version: item.version ?? 0, depositCents }),
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(payload.error || `Unable to update ${item.name}.`);
+                return payload;
+            }));
+            const freshSub = await onSubcategoryUpdate?.(sub.slug);
+            if (freshSub?.items) setItems(freshSub.items);
+            setBulkDepositInput(depositCents == null ? "" : (depositCents / 100).toFixed(2));
+            setBulkDepositDirty(false);
+            setSaveSuccess(`Deposit applied to all ${persistedItems.length} sizes.`);
+            setTimeout(() => setSaveSuccess(null), 3000);
+        } catch (error) {
+            setSaveError(error instanceof Error ? error.message : "Unable to update deposits for all sizes.");
+        } finally {
+            setApplyingDeposit(false);
+        }
+    };
+
     const deleteItem = async (itemId?: number) => {
         if (!itemId || saving) return;
         const itemName = items.find(item => item.id === itemId)?.name ?? "this size";
@@ -855,6 +898,24 @@ export function SubcategoryEditor({ cat, sub, token, headers, mutate, setSelecti
                                     )}
                                 </div>
                             )}
+
+                            <div className="mt-4 flex flex-wrap items-end gap-4 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700 sm:flex-nowrap">
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-semibold text-neutral-950 dark:text-white">Deposit for all sizes</p>
+                                    <p className="mt-1 text-xs text-neutral-500">One deposit applies to every length within every size. Enter $0 to skip the card, or leave blank to use the salon default.</p>
+                                </div>
+                                <label className="w-36 shrink-0">
+                                    <span className="sr-only">Deposit for all sizes</span>
+                                    <span className="flex min-h-10 items-center rounded-lg border border-neutral-300 bg-white focus-within:border-neutral-950 focus-within:ring-2 focus-within:ring-neutral-950/15 dark:border-neutral-600 dark:bg-neutral-900">
+                                        <span className="border-r border-neutral-200 px-3 text-sm font-medium text-neutral-500 dark:border-neutral-700">$</span>
+                                        <input aria-label="Deposit for all sizes" inputMode="decimal" value={bulkDepositInput} placeholder="Salon default" onChange={event => { setBulkDepositInput(event.target.value.replace(/[^0-9.]/g, "")); setBulkDepositDirty(true); }} className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm font-semibold outline-none" />
+                                    </span>
+                                </label>
+                                <button type="button" onClick={() => void applyDepositToAllSizes()} disabled={!bulkDepositDirty || applyingDeposit || saving || !items.some(item => item.id)} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#5b3219] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#442412] disabled:cursor-not-allowed disabled:opacity-45 dark:bg-white dark:text-neutral-950">
+                                    {applyingDeposit && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    {applyingDeposit ? "Applying deposit…" : `Apply deposit to ${items.length} sizes`}
+                                </button>
+                            </div>
                         </div>
                             <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="text-xs text-neutral-500">
