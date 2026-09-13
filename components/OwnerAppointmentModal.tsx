@@ -68,7 +68,8 @@ export default function OwnerAppointmentModal({ onClose, onCreated }: { onClose:
     return () => controller.abort();
   }, [serviceId, lengthOptionId, foundation, addOnIds, selectedService?.foundationChoicesEnabled, selectedService?.pricingMode]);
 
-  const detailsValid = details.firstName.trim() && details.lastName.trim() && details.email.includes("@") && details.phoneNumber.trim();
+  const detailsValid = details.firstName.trim() && details.lastName.trim()
+    && (!details.email.trim() || details.email.includes("@")) && details.phoneNumber.trim();
   const serviceValid = Boolean(selectedService && quote);
   const resetServiceOptions = () => { setServiceId(null); setLengthOptionId(null); setFoundation(""); setTexture(""); setAddOnIds([]); };
   const chooseCategory = (category: Category) => {
@@ -107,8 +108,8 @@ export default function OwnerAppointmentModal({ onClose, onCreated }: { onClose:
       {error && <div role="alert" className="mx-5 mt-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 sm:mx-8">{error}</div>}
 
       {step === 1 && <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-8">{[
-        ["firstName", "First name", "Gloria"], ["lastName", "Last name", "Johnson"], ["email", "Email", "customer@example.com"], ["phoneNumber", "Phone number", "(210) 555-0123"]
-      ].map(([key,label,placeholder]) => <label key={key} className="text-sm font-medium">{label}<input required value={(details as any)[key]} onChange={event => setDetails(value => ({ ...value, [key]: event.target.value }))} placeholder={placeholder} className="mt-2 h-12 w-full rounded-xl border border-[#d9cec6] bg-white px-4 outline-none focus:border-[#8b4e31]"/></label>)}<label className="sm:col-span-2 text-sm font-medium">Notes (optional)<textarea maxLength={1000} value={details.notes} onChange={event => setDetails(value => ({ ...value, notes: event.target.value }))} className="mt-2 min-h-24 w-full rounded-xl border border-[#d9cec6] bg-white p-4"/></label><p className="sm:col-span-2 rounded-xl bg-[#f5eee8] p-4 text-sm text-[#654a3d]">Confirmation and payment messages are always sent to both the email address and phone number.</p><div className="sm:col-span-2 flex justify-end"><button disabled={!detailsValid} onClick={() => setStep(2)} className="rounded-xl bg-[#351d12] px-6 py-3 text-white disabled:opacity-40">Continue to service</button></div></div>}
+        ["firstName", "First name", "Gloria"], ["lastName", "Last name", "Johnson"], ["email", "Email (optional)", "customer@example.com"], ["phoneNumber", "Phone number", "(210) 555-0123"]
+      ].map(([key,label,placeholder]) => <label key={key} className="text-sm font-medium">{label}<input required={key !== "email"} type={key === "email" ? "email" : "text"} value={(details as any)[key]} onChange={event => setDetails(value => ({ ...value, [key]: event.target.value }))} placeholder={placeholder} className="mt-2 h-12 w-full rounded-xl border border-[#d9cec6] bg-white px-4 outline-none focus:border-[#8b4e31]"/></label>)}<label className="sm:col-span-2 text-sm font-medium">Notes (optional)<textarea maxLength={1000} value={details.notes} onChange={event => setDetails(value => ({ ...value, notes: event.target.value }))} className="mt-2 min-h-24 w-full rounded-xl border border-[#d9cec6] bg-white p-4"/></label><p className="sm:col-span-2 rounded-xl bg-[#f5eee8] p-4 text-sm text-[#654a3d]">Confirmation and payment messages are sent to the contact methods provided.</p><div className="sm:col-span-2 flex justify-end"><button disabled={!detailsValid} onClick={() => setStep(2)} className="rounded-xl bg-[#351d12] px-6 py-3 text-white disabled:opacity-40">Continue to service</button></div></div>}
 
       {step === 2 && <div className="space-y-5 p-5 sm:p-8">
         {selectedCategory && <nav aria-label="Service selection" className="flex flex-wrap items-center gap-2 rounded-xl bg-[#f5eee8] px-4 py-3 text-sm">
