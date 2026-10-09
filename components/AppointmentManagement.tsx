@@ -129,12 +129,13 @@ const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detai
     const captureProcessing = appointment.status === "PENDING" && Boolean(appointment.approvedAt);
     const paymentIssue = ["CAPTURE_FAILED", "CANCELLATION_FAILED", "FAILED"].includes(appointment.paymentStatus || "")
         || ["UNPAID", "PROCESSING", "FAILED"].includes(appointment.noShowFee?.paymentStatus || "");
+    const notificationIssue = appointment.notificationStatus?.includes("FAILED");
     const actionablePending = appointment.status === "PENDING"
         && (["AUTHORIZED", "CAPTURED", "NOT_REQUIRED"].includes(appointment.paymentStatus || "") || Boolean(appointment.approvedAt));
     const ownerAwaitingPayment = appointment.bookingSource === "OWNER"
         && appointment.status === "PENDING" && appointment.depositRequired && appointment.paymentStatus === "PENDING";
     const viewMatch = workflow === "NEEDS_ACTION"
-        ? actionablePending || ownerAwaitingPayment || paymentIssue
+        ? actionablePending || ownerAwaitingPayment || paymentIssue || notificationIssue
         : workflow === "UPCOMING"
             ? captureProcessing || (appointment.status === "APPROVED" && appointmentTime >= now)
             : ["DENIED", "CANCELLED", "COMPLETED", "NO_SHOW"].includes(appointment.status)
@@ -711,6 +712,7 @@ function AppointmentManagement() {
                                     </div>
                                     <div className="relative flex shrink-0 items-center justify-end gap-2">
                                         <Button variant="outline" size="sm" className="h-10 border-[#d7c6bb] sm:h-9" onClick={() => setSelectedAppointment(appointment)}>Review <ChevronRight className="ml-1 h-4 w-4" /></Button>
+                                        {notificationIssue && <Button variant="outline" size="sm" className="h-10 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}>{actionLoading === appointment.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Mail className="mr-1 h-4 w-4" />}Retry notification</Button>}
                                         {appointment.status === "PENDING" && !captureProcessing && <Button size="sm" className="h-10 bg-[#351d12] text-white hover:bg-[#4b2a1b] sm:h-9" disabled={!canApprove(appointment) || actionLoading === appointment.id}
                                             title={overdue ? "Past appointments cannot be approved" : !["AUTHORIZED", "CAPTURED", "NOT_REQUIRED"].includes(appointment.paymentStatus || "") ? "Payment authorization is required" : undefined}
                                             onClick={() => { setAction({ kind: "approve", appointment }); setActionNotes(""); }}><Check className="mr-1 h-4 w-4" />Approve</Button>}
