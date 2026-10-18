@@ -18,6 +18,7 @@ const GalleryAdminNew = lazy(() => import("./components/GalleryAdminNew").then(m
 const ProfileSection = lazy(() => import("./components/ProfileSection").then(m => ({ default: m.ProfileSection })));
 const HomePageEditor = lazy(() => import("./components/HomePageEditor").then(m => ({ default: m.HomePageEditor })));
 const AppointmentManagement = lazy(() => import("@/components/AppointmentManagement").then(m => ({ default: m.default })));
+const NotificationAdmin = lazy(() => import("@/components/NotificationAdmin").then(m => ({ default: m.default })));
 const AvailabilitySettings = lazy(() => import("@/components/AvailabilitySettings").then(m => ({ default: m.default })));
 const CustomerTable = lazy(() => import("@/components/CustomerTable").then(m => ({ default: m.default })));
 const CustomerDetails = lazy(() => import("@/components/CustomerDetails").then(m => ({ default: m.default })));
@@ -827,8 +828,12 @@ export default function AdminPage() {
                     <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900"><Suspense fallback={<div className="p-12 text-neutral-500">Loading administrators…</div>}><AdministratorsSettings /></Suspense></div>
                 )}
 
+                {currentSection === "notifications" && (
+                    <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900"><Suspense fallback={<div className="p-12 text-neutral-500">Loading system status…</div>}><NotificationAdmin /></Suspense></div>
+                )}
+
                 {/* Placeholder for other sections */}
-                {currentSection !== "categories" && currentSection !== "services-content" && currentSection !== "dashboard" && currentSection !== "gallery" && currentSection !== "profile" && currentSection !== "homepage" && currentSection !== "bookings" && currentSection !== "availability" && currentSection !== "customers" && currentSection !== "pricing" && currentSection !== "administrators" && (
+                {currentSection !== "categories" && currentSection !== "services-content" && currentSection !== "dashboard" && currentSection !== "gallery" && currentSection !== "profile" && currentSection !== "homepage" && currentSection !== "bookings" && currentSection !== "availability" && currentSection !== "customers" && currentSection !== "pricing" && currentSection !== "administrators" && currentSection !== "notifications" && (
                     <div className="flex-1 overflow-y-auto bg-neutral-50 p-4 dark:bg-neutral-900 sm:p-6 lg:p-8">
                         <div className="max-w-4xl mx-auto">
                             <div className="rounded-lg border border-neutral-200 bg-white p-6 text-center dark:border-neutral-700 dark:bg-neutral-800 sm:p-12">

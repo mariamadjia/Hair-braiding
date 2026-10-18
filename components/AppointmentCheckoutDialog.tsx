@@ -11,7 +11,7 @@ type Checkout = {
   appointmentDateTime: string; appointmentStatus: string; serviceTotalCents: number; depositCreditCents: number;
   tipCents: number; amountPaidCents: number; amountRefundedCents: number; balanceDueCents: number;
   checkoutStatus: string; bookingSource?: "CUSTOMER" | "OWNER"; depositPolicyVersion?: string;
-  depositPolicyAcceptedAt?: string; offSessionConsentPolicyVersion?: string; offSessionConsentAt?: string;
+  depositPolicyAcceptedAt?: string; bookingPolicySnapshot?: string; offSessionConsentPolicyVersion?: string; offSessionConsentAt?: string;
   transactions: Transaction[];
 };
 type PaymentMethod = "CASH" | "ZELLE" | "CASH_APP" | "OTHER";
@@ -85,12 +85,12 @@ export default function AppointmentCheckoutDialog({ appointmentId, onClose, onCh
           {checkout.depositPolicyAcceptedAt ? <div className="mt-3 text-sm text-[#5f5048] dark:text-neutral-300">
             <p className="font-medium text-emerald-800 dark:text-emerald-300">Accepted {dateTime(checkout.depositPolicyAcceptedAt)}</p>
             <p className="mt-1 text-xs text-[#806f64] dark:text-neutral-400">Recorded policy: {checkout.depositPolicyVersion || "booking policy"}</p>
-            <ul className="mt-3 list-disc space-y-2 pl-5">
+            {checkout.bookingPolicySnapshot ? <div className="mt-3 whitespace-pre-wrap rounded-xl bg-[#fffaf5] p-3 text-xs leading-5 text-[#4f4038] dark:bg-neutral-950 dark:text-neutral-300">{checkout.bookingPolicySnapshot}</div> : <ul className="mt-3 list-disc space-y-2 pl-5">
               <li>The approved deposit is non-refundable and is applied toward the service balance.</li>
               <li>Payments are final and non-refundable under the accepted booking policy.</li>
               {checkout.offSessionConsentAt && <li>A missed appointment may result in a fee equal to 60% of the scheduled service price, with the deposit credited toward that fee.</li>}
               {checkout.offSessionConsentAt && <li>The customer authorized the salon to save the deposit card and charge an eligible remaining no-show balance.</li>}
-            </ul>
+            </ul>}
             {checkout.offSessionConsentAt && <p className="mt-3 text-xs text-[#806f64] dark:text-neutral-400">No-show authorization accepted {dateTime(checkout.offSessionConsentAt)} · {checkout.offSessionConsentPolicyVersion || "recorded policy"}</p>}
           </div> : <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">No customer policy acceptance was recorded for this appointment{checkout.bookingSource === "OWNER" ? " because it was created by the salon" : ""}.</p>}
         </details>
