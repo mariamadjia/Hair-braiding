@@ -21,8 +21,7 @@ import {
     Home,
     Clock,
     X,
-    FileText,
-    ReceiptText
+    FileText
 } from "lucide-react";
 
 interface SidebarProps {
@@ -57,7 +56,6 @@ export function AdminSidebar({ currentSection, onSectionChange, onLogout, adminN
         },
         { id: "services-content", label: "Services Page", icon: FileText },
         { id: "bookings", label: "Bookings", icon: Calendar },
-        { id: "checkout", label: "Checkout", icon: ReceiptText },
         { id: "availability", label: "Availability", icon: Clock },
         { id: "customers", label: "Customers", icon: Users },
         { id: "pricing", label: "Pricing", icon: DollarSign },

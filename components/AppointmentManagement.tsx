@@ -12,6 +12,7 @@ import { API_BASE_URL } from "@/lib/config/api";
 import CalendarView, { CalendarRange } from "./CalendarView";
 import OwnerAppointmentModal from "./OwnerAppointmentModal";
 import ManageAvailabilityPicker, { ManageSlot } from "./ManageAvailabilityPicker";
+import AppointmentCheckoutDialog from "./AppointmentCheckoutDialog";
 
 type NoShowFee = {
     appointmentId: number; scheduledServicePriceCents: number; feeRatePercent: number;
@@ -171,6 +172,7 @@ function AppointmentManagement() {
     const [notice, setNotice] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+    const [checkoutAppointment, setCheckoutAppointment] = useState<Appointment | null>(null);
     const [action, setAction] = useState<{ kind: ActionKind; appointment: Appointment } | null>(null);
     const [actionNotes, setActionNotes] = useState("");
     const [confirmOverdue, setConfirmOverdue] = useState(false);
@@ -712,6 +714,7 @@ function AppointmentManagement() {
                                     </div>
                                     <div className="relative flex shrink-0 items-center justify-end gap-2">
                                         <Button variant="outline" size="sm" className="h-10 border-[#d7c6bb] sm:h-9" onClick={() => setSelectedAppointment(appointment)}>Review <ChevronRight className="ml-1 h-4 w-4" /></Button>
+                                        {appointment.status === "APPROVED" && isPast(appointment) && <Button size="sm" className="h-10 bg-[#b9532f] text-white hover:bg-[#9b3f22] sm:h-9" onClick={() => setCheckoutAppointment(appointment)}><CreditCard className="mr-1 h-4 w-4" />Checkout</Button>}
                                         {notificationIssue && <Button variant="outline" size="sm" className="h-10 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 sm:h-9" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}>{actionLoading === appointment.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Mail className="mr-1 h-4 w-4" />}Retry notification</Button>}
                                         {appointment.status === "PENDING" && !captureProcessing && <Button size="sm" className="h-10 bg-[#351d12] text-white hover:bg-[#4b2a1b] sm:h-9" disabled={!canApprove(appointment) || actionLoading === appointment.id}
                                             title={overdue ? "Past appointments cannot be approved" : !["AUTHORIZED", "CAPTURED", "NOT_REQUIRED"].includes(appointment.paymentStatus || "") ? "Payment authorization is required" : undefined}
@@ -724,7 +727,7 @@ function AppointmentManagement() {
                                                 {appointment.paymentStatus === "CANCELLATION_FAILED" && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void retryPayment(appointment, "release")}>Retry release</button>}
                                                 {appointment.notificationStatus?.includes("FAILED") && <button className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void retryNotification(appointment)}><Mail className="mr-2 h-4 w-4" />Retry notification</button>}
                                                 {awaitingOwnerDeposit(appointment) && <button className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-[#f8f5f2] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => void resendOwnerDepositLink(appointment)}><Mail className="mr-2 h-4 w-4"/>Resend deposit link</button>}
-                                                {appointment.status === "APPROVED" && isPast(appointment) && <><button className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-[#9b3f22] hover:bg-[#f8f5f2]" onClick={() => { window.location.assign("/admin?section=checkout"); }}>Open checkout</button>{appointment.noShowFee && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50 disabled:opacity-50" disabled={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime()} title={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime() ? `Available after ${formatDateTime(appointment.noShowFee.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</button>}</>}
+                                                {appointment.status === "APPROVED" && isPast(appointment) && <><button className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-[#9b3f22] hover:bg-[#f8f5f2]" onClick={() => setCheckoutAppointment(appointment)}>Checkout</button>{appointment.noShowFee && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50 disabled:opacity-50" disabled={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime()} title={(salonDate(appointment.noShowFee.eligibleAt)?.getTime() ?? 0) > centralNow().getTime() ? `Available after ${formatDateTime(appointment.noShowFee.eligibleAt)}` : undefined} onClick={() => openNoShow(appointment)}>Mark no-show</button>}</>}
                                                 {canReschedule(appointment) && <button className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm text-[#5f351f] hover:bg-[#f8efe7] disabled:opacity-50" disabled={actionLoading === appointment.id} onClick={() => { setRescheduleAppointment(appointment); setRescheduleReason(""); setError(null); }}><CalendarDays className="mr-2 h-4 w-4"/>Reschedule appointment</button>}
                                                 {appointment.status === "NO_SHOW" && appointment.noShowFee?.paymentStatus === "FAILED" && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50" onClick={() => openNoShow(appointment)}>Retry no-show charge</button>}
                                                 {(appointment.status === "PENDING" || appointment.status === "APPROVED") && !captureProcessing && <button className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-700 hover:bg-red-50" onClick={() => { setAction({ kind: "cancel", appointment }); setActionNotes(""); }}>Cancel appointment</button>}
@@ -756,6 +759,31 @@ function AppointmentManagement() {
                     {error && <div role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
                 </div>
             </div>}
+            {checkoutAppointment && <AppointmentCheckoutDialog
+                appointmentId={checkoutAppointment.id}
+                onClose={() => setCheckoutAppointment(null)}
+                onChanged={async () => {
+                    await fetchAppointments();
+                    if (activeCalendarRange) await fetchCalendarRange(activeCalendarRange);
+                }}
+                onComplete={() => {
+                    const appointment = checkoutAppointment;
+                    setCheckoutAppointment(null);
+                    setAction({ kind: "complete", appointment });
+                    setActionNotes("");
+                }}
+                onNoShow={() => {
+                    const appointment = checkoutAppointment;
+                    setCheckoutAppointment(null);
+                    openNoShow(appointment);
+                }}
+                onCancel={() => {
+                    const appointment = checkoutAppointment;
+                    setCheckoutAppointment(null);
+                    setAction({ kind: "cancel", appointment });
+                    setActionNotes("");
+                }}
+            />}
             {selectedAppointment && <AppointmentDialog appointment={selectedAppointment} formatDateTime={formatDateTime} onClose={() => setSelectedAppointment(null)} onApprove={canApprove(selectedAppointment) ? () => { setSelectedAppointment(null); setAction({ kind: "approve", appointment: selectedAppointment }); setActionNotes(""); } : undefined} onDeny={selectedAppointment.status === "PENDING" && !selectedAppointment.approvedAt ? () => { setSelectedAppointment(null); setAction({ kind: "deny", appointment: selectedAppointment }); setActionNotes(""); } : undefined} />}
 
             {action && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && actionLoading === null) setAction(null); }}>
