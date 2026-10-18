@@ -65,7 +65,7 @@ export type Appointment = {
     depositWaivedAt?: string;
 };
 
-type WorkflowView = "NEEDS_ACTION" | "UPCOMING" | "HISTORY";
+type WorkflowView = "NEEDS_ACTION" | "UPCOMING" | "CHECKOUT" | "HISTORY";
 type DetailFilter = "ALL" | "READY_FOR_APPROVAL" | "AWAITING_PAYMENT" | "CAPTURE_PROCESSING" | "PAYMENT_ISSUE" | "APPROVED" | "PAST" | "COMPLETED" | "DENIED" | "CANCELLED" | "NO_SHOW";
 type SortChoice = "appointment-asc" | "appointment-desc" | "requested-desc" | "payment";
 type ActionKind = "approve" | "deny" | "complete" | "cancel" | "no-show";
@@ -73,7 +73,8 @@ type ActionKind = "approve" | "deny" | "complete" | "cancel" | "no-show";
 const WORKFLOW_VIEWS: { value: WorkflowView; label: string; description: string }[] = [
     { value: "NEEDS_ACTION", label: "Needs Action", description: "Requests and payment issues requiring attention" },
     { value: "UPCOMING", label: "Upcoming", description: "Approved appointments and captures in progress" },
-    { value: "HISTORY", label: "History", description: "Completed, denied, cancelled, and past appointments" }
+    { value: "CHECKOUT", label: "Checkout", description: "Past approved appointments ready for checkout" },
+    { value: "HISTORY", label: "History", description: "Completed, denied, cancelled, and no-show appointments" }
 ];
 const DETAIL_OPTIONS: Record<WorkflowView, { value: DetailFilter; label: string }[]> = {
     NEEDS_ACTION: [
@@ -87,6 +88,9 @@ const DETAIL_OPTIONS: Record<WorkflowView, { value: DetailFilter; label: string 
         { value: "ALL", label: "All upcoming" },
         { value: "APPROVED", label: "Approved" },
         { value: "CAPTURE_PROCESSING", label: "Capture processing" }
+    ],
+    CHECKOUT: [
+        { value: "ALL", label: "Ready for checkout" }
     ],
     HISTORY: [
         { value: "ALL", label: "All history" },
@@ -139,8 +143,9 @@ const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detai
         ? actionablePending || ownerAwaitingPayment || paymentIssue || notificationIssue
         : workflow === "UPCOMING"
             ? captureProcessing || (appointment.status === "APPROVED" && appointmentTime >= now)
-            : ["DENIED", "CANCELLED", "COMPLETED", "NO_SHOW"].includes(appointment.status)
-                || (appointment.status === "APPROVED" && appointmentTime < now);
+            : workflow === "CHECKOUT"
+                ? appointment.status === "APPROVED" && appointmentTime <= now
+                : ["DENIED", "CANCELLED", "COMPLETED", "NO_SHOW"].includes(appointment.status);
     if (!viewMatch || detail === "ALL") return viewMatch;
     return {
         READY_FOR_APPROVAL: appointment.status === "PENDING" && !appointment.approvedAt && ["AUTHORIZED", "CAPTURED", "NOT_REQUIRED"].includes(appointment.paymentStatus || "") && appointmentTime > now,
@@ -163,7 +168,7 @@ function AppointmentManagement() {
     const [calendarLoading, setCalendarLoading] = useState(false);
     const [workflow, setWorkflow] = useState<WorkflowView>("NEEDS_ACTION");
     const [detail, setDetail] = useState<DetailFilter>("ALL");
-    const [workflowCounts, setWorkflowCounts] = useState<Record<WorkflowView, number>>({ NEEDS_ACTION: 0, UPCOMING: 0, HISTORY: 0 });
+    const [workflowCounts, setWorkflowCounts] = useState<Record<WorkflowView, number>>({ NEEDS_ACTION: 0, UPCOMING: 0, CHECKOUT: 0, HISTORY: 0 });
     const [sort, setSort] = useState<SortChoice>("appointment-asc");
     const [query, setQuery] = useState("");
     const deferredQuery = useDeferredValue(query);
@@ -599,7 +604,7 @@ function AppointmentManagement() {
 
             <section className="mb-6 overflow-hidden rounded-2xl border border-[#e6ddd6] bg-white shadow-[0_8px_30px_rgba(53,29,18,0.05)]">
                 <div className="overflow-x-auto border-b border-[#eee5df] px-2 pt-2 sm:px-5" role="tablist" aria-label="Appointment workflow">
-                    <div className="grid min-w-0 grid-cols-3 gap-1 sm:flex sm:min-w-max sm:gap-2">
+                    <div className="grid min-w-0 grid-cols-4 gap-1 sm:flex sm:min-w-max sm:gap-2">
                     {WORKFLOW_VIEWS.map(item => (
                         <button key={item.value} type="button" role="tab" aria-selected={workflow === item.value} onClick={() => changeWorkflow(item.value)}
                             title={item.description}
