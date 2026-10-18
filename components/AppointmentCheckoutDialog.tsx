@@ -10,7 +10,9 @@ type Checkout = {
   appointmentId: number; customerName: string; customerEmail?: string; customerPhone: string; serviceName?: string;
   appointmentDateTime: string; appointmentStatus: string; serviceTotalCents: number; depositCreditCents: number;
   tipCents: number; amountPaidCents: number; amountRefundedCents: number; balanceDueCents: number;
-  checkoutStatus: string; transactions: Transaction[];
+  checkoutStatus: string; bookingSource?: "CUSTOMER" | "OWNER"; depositPolicyVersion?: string;
+  depositPolicyAcceptedAt?: string; offSessionConsentPolicyVersion?: string; offSessionConsentAt?: string;
+  transactions: Transaction[];
 };
 type PaymentMethod = "CASH" | "ZELLE" | "CASH_APP" | "OTHER";
 type View = "ACTIONS" | "PAYMENT" | "REFUND";
@@ -78,6 +80,20 @@ export default function AppointmentCheckoutDialog({ appointmentId, onClose, onCh
       <header className="flex items-center gap-3">{view !== "ACTIONS" && <button onClick={() => { setView("ACTIONS"); setError(""); }} aria-label="Back to checkout actions" className="rounded-full p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"><ChevronLeft className="h-5 w-5"/></button>}<h2 id="checkout-dialog-title" className="flex-1 font-serif text-3xl">{view === "ACTIONS" ? "Checkout" : view === "PAYMENT" ? "Mark as paid" : "Record refund"}</h2><button onClick={onClose} disabled={busy} aria-label="Close checkout" className="rounded-full p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"><X className="h-5 w-5"/></button></header>
       {loading ? <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin"/></div> : checkout && <>
         <div className="mt-5 rounded-2xl border border-[#eadfd4] bg-[#fffaf5] p-4 dark:border-neutral-700 dark:bg-neutral-900"><h3 className="text-lg font-bold">{checkout.customerName}</h3><p className="text-[#76675e] dark:text-neutral-400">{checkout.serviceName || "Braiding service"}</p><p className="mt-1 text-sm">{dateTime(checkout.appointmentDateTime)}</p><dl className="mt-4 space-y-2 text-sm"><Row label="Service total" value={money(checkout.serviceTotalCents)}/><Row label="Deposit paid" value={`−${money(checkout.depositCreditCents)}`}/>{checkout.tipCents > 0 && <Row label="Tip" value={money(checkout.tipCents)}/>}<div className="flex justify-between border-t pt-3 text-lg font-bold"><dt>Balance due</dt><dd>{money(checkout.balanceDueCents)}</dd></div>{checkout.amountRefundedCents > 0 && <Row label="Refunded" value={money(checkout.amountRefundedCents)}/>}</dl></div>
+        <details className="mt-4 rounded-2xl border border-[#eadfd4] bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
+          <summary className="cursor-pointer font-semibold">Customer policy agreement</summary>
+          {checkout.depositPolicyAcceptedAt ? <div className="mt-3 text-sm text-[#5f5048] dark:text-neutral-300">
+            <p className="font-medium text-emerald-800 dark:text-emerald-300">Accepted {dateTime(checkout.depositPolicyAcceptedAt)}</p>
+            <p className="mt-1 text-xs text-[#806f64] dark:text-neutral-400">Recorded policy: {checkout.depositPolicyVersion || "booking policy"}</p>
+            <ul className="mt-3 list-disc space-y-2 pl-5">
+              <li>The approved deposit is non-refundable and is applied toward the service balance.</li>
+              <li>Payments are final and non-refundable under the accepted booking policy.</li>
+              {checkout.offSessionConsentAt && <li>A missed appointment may result in a fee equal to 60% of the scheduled service price, with the deposit credited toward that fee.</li>}
+              {checkout.offSessionConsentAt && <li>The customer authorized the salon to save the deposit card and charge an eligible remaining no-show balance.</li>}
+            </ul>
+            {checkout.offSessionConsentAt && <p className="mt-3 text-xs text-[#806f64] dark:text-neutral-400">No-show authorization accepted {dateTime(checkout.offSessionConsentAt)} · {checkout.offSessionConsentPolicyVersion || "recorded policy"}</p>}
+          </div> : <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">No customer policy acceptance was recorded for this appointment{checkout.bookingSource === "OWNER" ? " because it was created by the salon" : ""}.</p>}
+        </details>
         {notice && <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{notice}</div>}
         {error && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
         {view === "ACTIONS" && <div className="mt-5 space-y-2">
