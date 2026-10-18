@@ -3,7 +3,7 @@
 import { memo, useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import {
     Calendar, CalendarDays, Check, ChevronRight, Clock, CreditCard, List,
-    EllipsisVertical, Loader2, Mail, MessageSquare, Phone, Plus, RefreshCw, Search, ShieldCheck, User, X
+    EllipsisVertical, FileText, Loader2, Mail, MessageSquare, Phone, Plus, RefreshCw, Search, ShieldCheck, User, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -833,6 +833,8 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
     const [events, setEvents] = useState<{ id: number; eventType: string; appointmentStatus: string; paymentStatus?: string; actorName?: string; reason?: string; createdAt: string }[]>([]);
     const [eventsLoading, setEventsLoading] = useState(true);
     const [eventsError, setEventsError] = useState("");
+    const [agreementLoading, setAgreementLoading] = useState(false);
+    const [agreementError, setAgreementError] = useState("");
     const dialogRef = useRef<HTMLElement | null>(null);
     const onCloseRef = useRef(onClose);
 
@@ -888,6 +890,19 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
         return () => controller.abort();
     }, [appointment.id]);
 
+    const openAgreement = async () => {
+        setAgreementLoading(true); setAgreementError("");
+        try {
+            const token = getAuthToken();
+            const response = await fetch(`${API_BASE_URL}/api/appointments/${appointment.id}/agreement.pdf`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+            if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body.error || body.message || "Agreement could not be generated"); }
+            const url = URL.createObjectURL(await response.blob());
+            window.open(url, "_blank", "noopener,noreferrer");
+            window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        } catch (reason) { setAgreementError(reason instanceof Error ? reason.message : "Agreement could not be generated"); }
+        finally { setAgreementLoading(false); }
+    };
+
     return <div className="fixed inset-0 z-40 flex justify-end bg-[#1e120d]/55 backdrop-blur-[2px]" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
         <aside ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="appointment-detail-title" className="flex h-full w-full max-w-2xl flex-col bg-[#fcfaf8] shadow-2xl outline-none">
             <header className="sticky top-0 z-10 flex items-start justify-between border-b border-[#e8ddd5] bg-white/95 px-5 py-5 backdrop-blur sm:px-7">
@@ -912,6 +927,7 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
                 </dl>
             </section>
             <section className="mt-5 rounded-2xl border border-[#e7ddd6] bg-white p-5 text-sm"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><h3 className="font-semibold text-[#241711]">Customer</h3><span className="w-fit rounded-full bg-[#f2e8e1] px-3 py-1 text-xs font-medium text-[#6b3d27]">{appointment.selfServiceChangeCount ?? 0} of 1 changes used</span></div><p className="mt-4 flex items-center gap-2"><User className="h-4 w-4 shrink-0 text-[#9a6d50]" />{appointment.customer.firstName} {appointment.customer.lastName}</p><a href={`mailto:${appointment.customer.email}`} className="mt-3 flex min-w-0 items-center gap-2 hover:underline"><Mail className="h-4 w-4 shrink-0 text-[#9a6d50]" /><span className="break-all">{appointment.customer.email}</span></a><a href={`tel:${appointment.customer.phoneNumber}`} className="mt-3 flex items-center gap-2 hover:underline"><Phone className="h-4 w-4 shrink-0 text-[#9a6d50]" />{appointment.customer.phoneNumber}</a>{appointment.lastSelfServiceChangeAt && <p className="mt-3 text-xs text-neutral-500">Last customer change: {formatDateTime(appointment.lastSelfServiceChangeAt)}</p>}</section>
+            <section className="mt-5 rounded-2xl border border-[#e7ddd6] bg-white p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-semibold text-[#241711]">Customer agreement</h3><p className="mt-1 text-xs text-neutral-500">Full PDF with appointment details, policy text, and recorded acceptance evidence.</p></div><Button variant="outline" disabled={agreementLoading} onClick={() => void openAgreement()}>{agreementLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileText className="mr-2 h-4 w-4"/>}View PDF agreement</Button></div>{agreementError && <p className="mt-3 text-sm text-red-700">{agreementError}</p>}</section>
             {appointment.rescheduledFromDateTime && <div className="mt-6 border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"><h3 className="font-semibold">Appointment rescheduled</h3><p className="mt-2">Previous: {formatDateTime(appointment.rescheduledFromDateTime)}</p><p>Current: {formatDateTime(appointment.appointmentDateTime)}</p></div>}
             {appointment.cancelledByCustomer && <div className="mt-6 border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900"><h3 className="font-semibold">Cancelled by customer</h3><p className="mt-2">Reason: {appointment.customerCancellationReason || "No reason provided"}</p></div>}
             {appointment.notes && <div className="mt-6 border-t pt-5 text-sm"><h3 className="flex items-center gap-2 font-semibold"><MessageSquare className="h-4 w-4" />Customer notes</h3><p className="mt-2 whitespace-pre-wrap text-neutral-700">{appointment.notes}</p></div>}
