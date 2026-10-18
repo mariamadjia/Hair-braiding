@@ -74,7 +74,7 @@ const WORKFLOW_VIEWS: { value: WorkflowView; label: string; description: string 
     { value: "NEEDS_ACTION", label: "Needs Action", description: "Requests and payment issues requiring attention" },
     { value: "UPCOMING", label: "Upcoming", description: "Approved appointments and captures in progress" },
     { value: "CHECKOUT", label: "Checkout", description: "Past approved appointments ready for checkout" },
-    { value: "HISTORY", label: "History", description: "Completed, denied, cancelled, and no-show appointments" }
+    { value: "HISTORY", label: "History", description: "Past, completed, denied, cancelled, and no-show appointments" }
 ];
 const DETAIL_OPTIONS: Record<WorkflowView, { value: DetailFilter; label: string }[]> = {
     NEEDS_ACTION: [
@@ -145,7 +145,8 @@ const matchesWorkflow = (appointment: Appointment, workflow: WorkflowView, detai
             ? captureProcessing || (appointment.status === "APPROVED" && appointmentTime >= now)
             : workflow === "CHECKOUT"
                 ? appointment.status === "APPROVED" && appointmentTime <= now
-                : ["DENIED", "CANCELLED", "COMPLETED", "NO_SHOW"].includes(appointment.status);
+                : ["DENIED", "CANCELLED", "COMPLETED", "NO_SHOW"].includes(appointment.status)
+                    || (appointment.status === "APPROVED" && appointmentTime <= now);
     if (!viewMatch || detail === "ALL") return viewMatch;
     return {
         READY_FOR_APPROVAL: appointment.status === "PENDING" && !appointment.approvedAt && ["AUTHORIZED", "CAPTURED", "NOT_REQUIRED"].includes(appointment.paymentStatus || "") && appointmentTime > now,
