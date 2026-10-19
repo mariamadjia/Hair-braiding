@@ -1057,6 +1057,22 @@ export default function BookingCalendar({
                         />
                     </div>
 
+                    <div>
+                        <label htmlFor="booking-notes" className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#665850]">
+                            Note for your stylist <span className="normal-case tracking-normal text-[#8A7A70]">(optional)</span>
+                        </label>
+                        <textarea
+                            id="booking-notes"
+                            value={formData.notes}
+                            maxLength={1000}
+                            rows={4}
+                            onChange={(event) => setFormData({ ...formData, notes: event.target.value })}
+                            placeholder="Share anything you would like us to know about your appointment."
+                            className="min-h-24 w-full resize-y rounded-[4px] border border-[#D9C4B3] bg-[#FFFDF9] px-3 py-3 text-sm text-[#2C1810] outline-none transition placeholder:text-[#9A8B82] focus:border-[#B8754E] focus:ring-2 focus:ring-[#B8754E]/20"
+                        />
+                        <p className="mt-1 text-right text-xs text-[#8A7A70]">{formData.notes.length}/1000</p>
+                    </div>
+
                     <section className="border border-[#D9C4B3] bg-[#FCF7F1] p-4" aria-labelledby="booking-policy-consent">
                         <div className="flex items-center gap-2 text-[#B0633E]">
                             <ShieldCheck className="h-4 w-4" aria-hidden="true" />
