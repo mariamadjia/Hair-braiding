@@ -106,15 +106,12 @@ export default async function PricingPage() {
                         </section>
                     ) : sections.map(({ category, styles }, sectionIndex) => (
                         <section data-pricing-section id={category.slug} key={category.slug} className={sectionIndex === 0 ? "scroll-mt-40" : "scroll-mt-40 border-t border-[#DCCFC5] pt-16 mt-16"}>
-                            <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                            <div className="mb-8">
                                 <div>
                                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#A05B3A]">Category</p>
                                     <h2 className="mt-2 font-serif text-4xl font-normal sm:text-5xl">{category.name}</h2>
                                     {category.summary && <p className="mt-3 max-w-2xl leading-7 text-[#6F625A]">{category.summary}</p>}
                                 </div>
-                                <Link href={`/booking/${category.slug}`} className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-semibold text-[#6B3A25] underline decoration-[#B98B73] underline-offset-4">
-                                    Browse category <ArrowRight className="h-4 w-4" />
-                                </Link>
                             </div>
 
                             <div className="divide-y divide-[#DCCFC5] border-y border-[#DCCFC5]">
