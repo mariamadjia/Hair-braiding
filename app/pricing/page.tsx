@@ -9,8 +9,9 @@ import type { BookingItem, BookingSubcategory } from "@/lib/booking-types";
 import { itemPriceRangeLabel, subcategoryPriceRangeLabel } from "@/lib/pricing-ranges";
 import PricingControls from "./PricingControls";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Cache the public catalog so navigating to Pricing does not wait on Render.
+// Admin service and pricing updates explicitly invalidate this page.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
     title: "Hair Braiding Prices",
@@ -72,7 +73,7 @@ function directStyle(categorySlug: string, item: BookingItem, index: number): Pr
 }
 
 export default async function PricingPage() {
-    const categories = await readBookingData();
+    const categories = await readBookingData({ revalidateSeconds: 300 });
     const sections = categories.map(category => ({
         category,
         styles: [

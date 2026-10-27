@@ -23,6 +23,7 @@ export function backendAuthHeaders(req: NextRequest): Record<string, string> {
 
 export function revalidatePublicServices(catSlug?: string, subSlug?: string) {
     revalidatePath("/services");
+    revalidatePath("/pricing");
     revalidatePath("/booking");
     revalidatePath("/booking/[slug]", "page");
     revalidatePath("/booking/[slug]/[subSlug]", "page");

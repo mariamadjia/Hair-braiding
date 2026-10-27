@@ -38,10 +38,12 @@ export async function readCategories(): Promise<CategoriesData> {
     }
 }
 
-export async function readBookingData(): Promise<BookingCategory[]> {
+export async function readBookingData(options?: { revalidateSeconds?: number }): Promise<BookingCategory[]> {
     try {
         const response = await fetch(`${API_URL}/api/booking`, {
-            cache: "no-store",
+            ...(options?.revalidateSeconds
+                ? { next: { revalidate: options.revalidateSeconds } }
+                : { cache: "no-store" as const }),
         });
         
         if (!response.ok) {
