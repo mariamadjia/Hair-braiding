@@ -7,56 +7,17 @@ import Image from "next/image";
 import { ChevronLeft, Ruler, Rows3 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { BookingCategory, BookingItem, BookingSubcategory } from "@/lib/booking-types";
+import type { BookingCategory } from "@/lib/booking-types";
 import Navbar from "@/components/Navbar";
 import LengthGuideOverlay from "@/components/LengthGuideOverlay";
 import { formatPrice, sortLengthOptionsByPrice } from "@/lib/utils/price";
 import SizeGuideOverlay from "@/components/SizeGuideOverlay";
 import { guideImageUrl, guideKeyForSize, useGuideSettings } from "@/lib/guides";
+import { itemPriceRangeLabel, subcategoryPriceRangeLabel } from "@/lib/pricing-ranges";
 type ModalQuote = { servicePriceCents: number; depositCents: number; remainingBalanceCents: number };
 
-function configuredPrice(value: string | undefined): number | null {
-    if (!value?.trim()) return null;
-    const parsed = Number(value.replace(/[^0-9.]/g, ""));
-    return Number.isFinite(parsed) ? parsed : null;
-}
-
-function itemPrices(item: BookingItem): number[] {
-    const prices: number[] = [];
-    const basePrice = configuredPrice(item.price);
-    if ((item.pricingMode === "FIXED" || !item.lengthOptions?.length) && basePrice !== null) prices.push(basePrice);
-
-    const adjustment = configuredPrice(item.knotlessPriceAdjustment) ?? 0;
-    for (const option of item.lengthOptions ?? []) {
-        const regularPrice = configuredPrice(option.price);
-        const knotlessPrice = configuredPrice(option.knotlessPrice);
-        if (regularPrice !== null) prices.push(regularPrice);
-        if (item.foundationChoicesEnabled && item.knotlessPricingMode === "SEPARATE" && knotlessPrice !== null) {
-            prices.push(knotlessPrice);
-        } else if (item.foundationChoicesEnabled && regularPrice !== null && adjustment > 0) {
-            prices.push(regularPrice + adjustment);
-        }
-    }
-
-    if (item.foundationChoicesEnabled && item.pricingMode === "FIXED" && basePrice !== null && adjustment > 0) {
-        prices.push(basePrice + adjustment);
-    }
-    return prices;
-}
-
-function priceRangeLabel(prices: number[]): string | null {
-    if (prices.length === 0) return null;
-    const minimum = Math.min(...prices);
-    const maximum = Math.max(...prices);
-    return minimum === maximum ? formatPrice(minimum) : `${formatPrice(minimum)} – ${formatPrice(maximum)}`;
-}
-
-function subcategoryPriceLabel(subcategory: BookingSubcategory): string | null {
-    return priceRangeLabel((subcategory.items ?? []).flatMap(itemPrices));
-}
-
 function itemPriceLabel(item: NonNullable<BookingCategory["items"]>[number]): string {
-    return priceRangeLabel(itemPrices(item)) ?? formatPrice(item.price);
+    return itemPriceRangeLabel(item) ?? formatPrice(item.price);
 }
 
 export default function CategoryPageClient({ category }: { category: BookingCategory }) {
@@ -240,9 +201,9 @@ export default function CategoryPageClient({ category }: { category: BookingCate
                                             <span className="block text-lg md:text-xl font-light tracking-wide text-neutral-900 transition-colors group-hover:text-neutral-700">
                                                 {subcategory.name}
                                             </span>
-                                            {subcategoryPriceLabel(subcategory) && (
+                                            {subcategoryPriceRangeLabel(subcategory) && (
                                                 <span className="mt-1 block text-sm font-medium tracking-wide text-[#8B5E47]">
-                                                    {subcategoryPriceLabel(subcategory)}
+                                                    {subcategoryPriceRangeLabel(subcategory)}
                                                 </span>
                                             )}
                                         </div>

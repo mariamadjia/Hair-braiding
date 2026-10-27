@@ -35,6 +35,7 @@ export default function Navbar() {
             <Link className="hover:opacity-70 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-4" href="/services">Services</Link>
             {/* <a className="hover:opacity-70 transition-opacity" href="/shop">Shop</a> */}
             <Link className="hover:opacity-70 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-4" href="/contact">Contact</Link>
+            <Link className="inline-flex min-h-10 items-center gap-2 border border-[#D8AD93] px-4 py-2 text-[#F2D5C3] transition-colors hover:border-white hover:bg-white hover:text-[#2C1810] focus-visible:outline-2 focus-visible:outline-offset-4" href="/pricing"><span className="font-serif text-base leading-none" aria-hidden="true">$</span> Pricing</Link>
           </nav>
 
           {/* Hamburger */}
@@ -60,6 +61,7 @@ export default function Navbar() {
             <Link className="min-h-11 px-2 py-3 focus-visible:outline-2" href="/gallery" onClick={() => setOpen(false)}>Gallery</Link>
             <Link className="min-h-11 px-2 py-3 focus-visible:outline-2" href="/services" onClick={() => setOpen(false)}>Services</Link>
             <Link className="min-h-11 px-2 py-3 focus-visible:outline-2" href="/contact" onClick={() => setOpen(false)}>Contact</Link>
+            <Link className="mx-2 mt-2 flex min-h-12 items-center justify-center gap-2 border border-[#D8AD93] px-4 py-3 text-[#F2D5C3] focus-visible:outline-2" href="/pricing" onClick={() => setOpen(false)}><span className="font-serif text-lg leading-none" aria-hidden="true">$</span> Pricing</Link>
           </nav>
         </div>
       )}
