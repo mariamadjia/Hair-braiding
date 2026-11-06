@@ -5,23 +5,374 @@ import { Check, Loader2, RotateCcw, Save } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config/api";
 import { getAuthToken } from "@/lib/utils/auth";
 import { Button } from "@/components/ui/button";
+import {
+  friendlyTemplate,
+  friendlyVariableLabel,
+  technicalTemplate,
+} from "@/lib/message-template-labels";
 
-type SmsDraft = { templateKey: string; displayName: string; description: string; category: string; smsTemplate: string; customized: boolean; version: number; updatedBy?: string; availableVariables: string[] };
-const samples: Record<string, string> = { customerFirstName:"Sariah",customerFullName:"Sariah Yable",serviceName:"Bohemian Box Braids",appointmentDate:"Saturday, November 14, 2026",appointmentTime:"9:30 AM CT",appointmentShortDate:"November 14",depositAmount:"$50.00",remainingBalance:"$130.00",managementUrl:"https://ahbraiding.com/manage/example",paymentUrl:"https://ahbraiding.com/pay/example",salonName:"AH Braiding Salon",salonPhone:"(210) 812-8121",salonEmail:"adjiashairbraiding@gmail.com",website:"https://ahbraiding.com",reason:"Scheduling availability",paymentOutcome:"Your deposit remains non-refundable.",feeAmount:"$108.00",paymentReference:"pi_example",customerEmail:"sariah@example.com",customerPhone:"(210) 555-0123",adminBookingsUrl:"https://ahbraiding.com/admin?section=bookings",customerCancellationReason:"Schedule changed" };
-const preview = (value:string) => value.replace(/\{\{([A-Za-z][A-Za-z0-9]*)}}/g,(_,key:string)=>samples[key]??"");
+type SmsDraft = {
+  templateKey: string;
+  displayName: string;
+  description: string;
+  category: string;
+  smsTemplate: string;
+  customized: boolean;
+  version: number;
+  updatedBy?: string;
+  availableVariables: string[];
+};
+const samples: Record<string, string> = {
+  customerFirstName: "Sariah",
+  customerFullName: "Sariah Yable",
+  serviceName: "Bohemian Box Braids",
+  appointmentDate: "Saturday, November 14, 2026",
+  appointmentTime: "9:30 AM CT",
+  appointmentShortDate: "November 14",
+  depositAmount: "$50.00",
+  remainingBalance: "$130.00",
+  managementUrl: "https://ahbraiding.com/manage/example",
+  paymentUrl: "https://ahbraiding.com/pay/example",
+  salonName: "AH Braiding Salon",
+  salonPhone: "(210) 812-8121",
+  salonEmail: "adjiashairbraiding@gmail.com",
+  website: "https://ahbraiding.com",
+  reason: "Scheduling availability",
+  paymentOutcome: "Your deposit remains non-refundable.",
+  feeAmount: "$108.00",
+  paymentReference: "pi_example",
+  customerEmail: "sariah@example.com",
+  customerPhone: "(210) 555-0123",
+  adminBookingsUrl: "https://ahbraiding.com/admin?section=bookings",
+  customerCancellationReason: "Schedule changed",
+};
+const preview = (value: string) =>
+  technicalTemplate(value).replace(
+    /\{\{([A-Za-z][A-Za-z0-9]*)}}/g,
+    (_, key: string) => samples[key] ?? "",
+  );
 
-export default function SmsDraftAdmin(){
- const [items,setItems]=useState<SmsDraft[]>([]),[key,setKey]=useState(""),[message,setMessage]=useState(""),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[restoring,setRestoring]=useState(false),[error,setError]=useState(""),[saved,setSaved]=useState(false); const ref=useRef<HTMLTextAreaElement>(null);
- const selected=items.find(item=>item.templateKey===key)??null; const dirty=Boolean(selected&&message!==selected.smsTemplate);
- const headers=()=>{const token=getAuthToken();return {"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})};};
- const load=useCallback(async()=>{setLoading(true);setError("");try{const response=await fetch(`${API_BASE_URL}/api/admin/sms-templates`,{headers:headers(),cache:"no-store"});const body=await response.json().catch(()=>[]);if(!response.ok)throw new Error(body.message||body.error||"SMS drafts could not be loaded.");setItems(body);setKey(current=>current||body[0]?.templateKey||"");}catch(reason){setError(reason instanceof Error?reason.message:"SMS drafts could not be loaded.");}finally{setLoading(false);}},[]);
- useEffect(()=>{void load();},[load]); useEffect(()=>{if(selected){setMessage(selected.smsTemplate);setSaved(false);}},[key,selected?.version]);
- const grouped=useMemo(()=>items.reduce<Record<string,SmsDraft[]>>((all,item)=>{(all[item.category]??=[]).push(item);return all;},{}),[items]);
- const choose=(next:string)=>{if(next===key)return;if(dirty&&!window.confirm("Discard your unsaved changes and open another SMS draft?"))return;setKey(next);};
- const save=async()=>{if(!selected)return;setSaving(true);setError("");try{const response=await fetch(`${API_BASE_URL}/api/admin/sms-templates/${selected.templateKey}`,{method:"PUT",headers:headers(),body:JSON.stringify({smsTemplate:message,version:selected.version})});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||body.error||"SMS draft could not be saved.");setItems(values=>values.map(value=>value.templateKey===body.templateKey?body:value));setSaved(true);}catch(reason){setError(reason instanceof Error?reason.message:"SMS draft could not be saved.");}finally{setSaving(false);}};
- const restore=async()=>{if(!selected||!window.confirm("Restore the original SMS wording?"))return;setRestoring(true);setError("");try{const response=await fetch(`${API_BASE_URL}/api/admin/sms-templates/${selected.templateKey}/restore-default`,{method:"POST",headers:headers()});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||body.error||"Original SMS could not be restored.");setItems(values=>values.map(value=>value.templateKey===body.templateKey?body:value));}catch(reason){setError(reason instanceof Error?reason.message:"Original SMS could not be restored.");}finally{setRestoring(false);}};
- const insert=(variable:string)=>{const area=ref.current,token=`{{${variable}}}`;if(!area){setMessage(value=>value+token);return;}const start=area.selectionStart,end=area.selectionEnd;setMessage(value=>value.slice(0,start)+token+value.slice(end));requestAnimationFrame(()=>{area.focus();area.setSelectionRange(start+token.length,start+token.length);});};
- if(loading)return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin"/></div>; if(error&&!selected)return <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-800"><b>SMS drafts could not be loaded</b><p className="mt-2">{error}</p><Button variant="outline" className="mt-4" onClick={()=>void load()}>Try again</Button></div>; if(!selected)return <div className="p-10 text-center text-sm text-neutral-500">No SMS drafts are configured.</div>;
- return <div className="grid min-h-[650px] overflow-hidden rounded-2xl border bg-white dark:border-neutral-700 dark:bg-neutral-800 lg:grid-cols-[310px_minmax(0,1fr)]"><aside className="border-b bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 lg:border-b-0 lg:border-r"><div className="border-b p-5 dark:border-neutral-700"><h3 className="font-semibold">All SMS drafts</h3><p className="mt-1 text-xs text-neutral-500">Exact text messages used by appointment notifications.</p></div><div className="max-h-[610px] overflow-y-auto p-2">{Object.entries(grouped).map(([category,drafts])=><div key={category} className="mb-4"><p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[.16em] text-neutral-500">{category}</p>{drafts.map(draft=><button key={draft.templateKey} onClick={()=>choose(draft.templateKey)} className={`mb-1 w-full rounded-lg px-3 py-3 text-left ${key===draft.templateKey?"bg-[#2C1810] text-white":"hover:bg-neutral-100 dark:hover:bg-neutral-800"}`}><span className="block text-sm font-medium">{draft.displayName}</span>{draft.customized&&<span className={`mt-1 block text-[11px] ${key===draft.templateKey?"text-[#E8CDBD]":"text-[#8B4D30]"}`}>Edited</span>}</button>)}</div>)}</div></aside><section className="min-w-0 p-5 sm:p-7"><div className="flex flex-col gap-4 border-b pb-5 dark:border-neutral-700 sm:flex-row sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[.16em] text-[#9A5A3A]">{selected.category}</p><h3 className="mt-1 font-serif text-3xl">{selected.displayName}</h3><p className="mt-2 text-sm text-neutral-500">{selected.description}</p></div><Button onClick={()=>void save()} disabled={!dirty||saving}>{saving?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:saved?<Check className="mr-2 h-4 w-4"/>:<Save className="mr-2 h-4 w-4"/>}{saved&&!dirty?"Saved":"Save"}</Button></div>{error&&<div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}<div className="mt-6 grid gap-7 xl:grid-cols-[minmax(0,1fr)_320px]"><div><label className="block"><span className="mb-2 block text-sm font-semibold">SMS message</span><textarea ref={ref} value={message} maxLength={1600} rows={9} onChange={event=>{setMessage(event.target.value);setSaved(false);}} className="w-full resize-y rounded-lg border bg-white p-4 text-sm leading-6 outline-none focus:border-[#9A5A3A] dark:border-neutral-600 dark:bg-neutral-900"/></label><p className="mt-2 text-xs text-neutral-500">{message.length} characters · Final length changes when appointment information is inserted.</p><div className="mt-5"><p className="text-sm font-semibold">Insert appointment information</p><div className="mt-3 flex flex-wrap gap-2">{selected.availableVariables.map(variable=><button type="button" key={variable} onClick={()=>insert(variable)} className="rounded-full border px-3 py-1.5 text-xs hover:border-[#9A5A3A]">{`{{${variable}}}`}</button>)}</div></div></div><div><p className="mb-2 text-sm font-semibold">Customer preview</p><div className="rounded-[2rem] border-8 border-neutral-900 bg-neutral-100 p-4 shadow-sm"><p className="mb-3 text-center text-xs text-neutral-500">AH Braiding</p><div className="rounded-2xl rounded-bl-sm bg-white p-3 text-sm leading-5 shadow-sm">{preview(message)}</div></div></div></div><div className="mt-7 flex items-center justify-between border-t pt-5 text-sm dark:border-neutral-700"><span className="text-neutral-500">{selected.customized?"Edited SMS":"Using the original SMS"}</span><Button variant="outline" onClick={()=>void restore()} disabled={restoring||!selected.customized}><RotateCcw className="mr-2 h-4 w-4"/>Restore original</Button></div></section></div>;
+export default function SmsDraftAdmin() {
+  const [items, setItems] = useState<SmsDraft[]>([]),
+    [key, setKey] = useState(""),
+    [message, setMessage] = useState(""),
+    [loading, setLoading] = useState(true),
+    [saving, setSaving] = useState(false),
+    [restoring, setRestoring] = useState(false),
+    [error, setError] = useState(""),
+    [saved, setSaved] = useState(false),
+    [variableToInsert, setVariableToInsert] = useState("");
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const selected = items.find((item) => item.templateKey === key) ?? null;
+  const dirty = Boolean(
+    selected && message !== friendlyTemplate(selected.smsTemplate),
+  );
+  const headers = () => {
+    const token = getAuthToken();
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  };
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/sms-templates`, {
+        headers: headers(),
+        cache: "no-store",
+      });
+      const body = await response.json().catch(() => []);
+      if (!response.ok)
+        throw new Error(
+          body.message || body.error || "SMS drafts could not be loaded.",
+        );
+      setItems(body);
+      setKey((current) => current || body[0]?.templateKey || "");
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "SMS drafts could not be loaded.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
+  useEffect(() => {
+    if (selected) {
+      setMessage(friendlyTemplate(selected.smsTemplate));
+      setVariableToInsert(selected.availableVariables[0] ?? "");
+      setSaved(false);
+    }
+  }, [key, selected?.version]);
+  const grouped = useMemo(
+    () =>
+      items.reduce<Record<string, SmsDraft[]>>((all, item) => {
+        (all[item.category] ??= []).push(item);
+        return all;
+      }, {}),
+    [items],
+  );
+  const choose = (next: string) => {
+    if (next === key) return;
+    if (
+      dirty &&
+      !window.confirm(
+        "Discard your unsaved changes and open another SMS draft?",
+      )
+    )
+      return;
+    setKey(next);
+  };
+  const save = async () => {
+    if (!selected) return;
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/admin/sms-templates/${selected.templateKey}`,
+        {
+          method: "PUT",
+          headers: headers(),
+          body: JSON.stringify({
+            smsTemplate: technicalTemplate(message),
+            version: selected.version,
+          }),
+        },
+      );
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(
+          body.message || body.error || "SMS draft could not be saved.",
+        );
+      setItems((values) =>
+        values.map((value) =>
+          value.templateKey === body.templateKey ? body : value,
+        ),
+      );
+      setSaved(true);
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "SMS draft could not be saved.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+  const restore = async () => {
+    if (!selected || !window.confirm("Restore the original SMS wording?"))
+      return;
+    setRestoring(true);
+    setError("");
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/admin/sms-templates/${selected.templateKey}/restore-default`,
+        { method: "POST", headers: headers() },
+      );
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(
+          body.message || body.error || "Original SMS could not be restored.",
+        );
+      setItems((values) =>
+        values.map((value) =>
+          value.templateKey === body.templateKey ? body : value,
+        ),
+      );
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Original SMS could not be restored.",
+      );
+    } finally {
+      setRestoring(false);
+    }
+  };
+  const insert = (variable: string) => {
+    const area = ref.current,
+      token = `[${friendlyVariableLabel(variable)}]`;
+    if (!area) {
+      setMessage((value) => value + token);
+      return;
+    }
+    const start = area.selectionStart,
+      end = area.selectionEnd;
+    setMessage((value) => value.slice(0, start) + token + value.slice(end));
+    requestAnimationFrame(() => {
+      area.focus();
+      area.setSelectionRange(start + token.length, start + token.length);
+    });
+  };
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  if (error && !selected)
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">
+        <b>SMS drafts could not be loaded</b>
+        <p className="mt-2">{error}</p>
+        <Button variant="outline" className="mt-4" onClick={() => void load()}>
+          Try again
+        </Button>
+      </div>
+    );
+  if (!selected)
+    return (
+      <div className="p-10 text-center text-sm text-neutral-500">
+        No SMS drafts are configured.
+      </div>
+    );
+  return (
+    <div className="grid min-h-[650px] overflow-hidden rounded-2xl border bg-white dark:border-neutral-700 dark:bg-neutral-800 lg:grid-cols-[310px_minmax(0,1fr)]">
+      <aside className="border-b bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 lg:border-b-0 lg:border-r">
+        <div className="border-b p-5 dark:border-neutral-700">
+          <h3 className="font-semibold">All SMS drafts</h3>
+          <p className="mt-1 text-xs text-neutral-500">
+            Exact text messages used by appointment notifications.
+          </p>
+        </div>
+        <div className="max-h-[610px] overflow-y-auto p-2">
+          {Object.entries(grouped).map(([category, drafts]) => (
+            <div key={category} className="mb-4">
+              <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[.16em] text-neutral-500">
+                {category}
+              </p>
+              {drafts.map((draft) => (
+                <button
+                  key={draft.templateKey}
+                  onClick={() => choose(draft.templateKey)}
+                  className={`mb-1 w-full rounded-lg px-3 py-3 text-left ${key === draft.templateKey ? "bg-[#2C1810] text-white" : "hover:bg-neutral-100 dark:hover:bg-neutral-800"}`}
+                >
+                  <span className="block text-sm font-medium">
+                    {draft.displayName}
+                  </span>
+                  {draft.customized && (
+                    <span
+                      className={`mt-1 block text-[11px] ${key === draft.templateKey ? "text-[#E8CDBD]" : "text-[#8B4D30]"}`}
+                    >
+                      Edited
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </aside>
+      <section className="min-w-0 p-5 sm:p-7">
+        <div className="flex flex-col gap-4 border-b pb-5 dark:border-neutral-700 sm:flex-row sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[.16em] text-[#9A5A3A]">
+              {selected.category}
+            </p>
+            <h3 className="mt-1 font-serif text-3xl">{selected.displayName}</h3>
+            <p className="mt-2 text-sm text-neutral-500">
+              {selected.description}
+            </p>
+          </div>
+          <Button onClick={() => void save()} disabled={!dirty || saving}>
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : saved ? (
+              <Check className="mr-2 h-4 w-4" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            {saved && !dirty ? "Saved" : "Save"}
+          </Button>
+        </div>
+        {error && (
+          <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+        <div className="mt-6 grid gap-7 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div>
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold">
+                SMS message
+              </span>
+              <textarea
+                ref={ref}
+                value={message}
+                maxLength={1600}
+                rows={9}
+                onChange={(event) => {
+                  setMessage(event.target.value);
+                  setSaved(false);
+                }}
+                className="w-full resize-y rounded-lg border bg-white p-4 text-sm leading-6 outline-none focus:border-[#9A5A3A] dark:border-neutral-600 dark:bg-neutral-900"
+              />
+            </label>
+            <p className="mt-2 text-xs text-neutral-500">
+              {message.length} characters · Final length changes when
+              appointment information is inserted.
+            </p>
+            <div className="mt-5 rounded-xl border bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900">
+              <p className="text-sm font-semibold">
+                Add customer or appointment details
+              </p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Details in brackets are filled in automatically for each customer.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <select
+                  value={variableToInsert}
+                  onChange={(event) => setVariableToInsert(event.target.value)}
+                  className="h-11 min-w-0 flex-1 rounded-lg border bg-white px-3 text-sm dark:border-neutral-600 dark:bg-neutral-800"
+                >
+                  {selected.availableVariables.map((variable) => (
+                    <option key={variable} value={variable}>
+                      {friendlyVariableLabel(variable)}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => variableToInsert && insert(variableToInsert)}
+                >
+                  Add detail
+                </Button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p className="mb-2 text-sm font-semibold">Customer preview</p>
+            <div className="rounded-[2rem] border-8 border-neutral-900 bg-neutral-100 p-4 shadow-sm">
+              <p className="mb-3 text-center text-xs text-neutral-500">
+                AH Braiding
+              </p>
+              <div className="rounded-2xl rounded-bl-sm bg-white p-3 text-sm leading-5 shadow-sm">
+                {preview(message)}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="mt-7 flex items-center justify-between border-t pt-5 text-sm dark:border-neutral-700">
+          <span className="text-neutral-500">
+            {selected.customized ? "Edited SMS" : "Using the original SMS"}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => void restore()}
+            disabled={restoring || !selected.customized}
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Restore original
+          </Button>
+        </div>
+      </section>
+    </div>
+  );
 }
-
