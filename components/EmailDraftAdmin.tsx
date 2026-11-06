@@ -126,6 +126,7 @@ export default function EmailDraftAdmin() {
   };
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (error && !selected) return <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-800"><p className="font-semibold">Email drafts could not be loaded</p><p className="mt-2">{error}</p><Button variant="outline" className="mt-4" onClick={() => void load()}>Try again</Button></div>;
   if (!selected) return <div className="p-10 text-center text-sm text-neutral-500">No email drafts are configured.</div>;
 
   return <div className="grid min-h-[680px] overflow-hidden rounded-2xl border bg-white dark:border-neutral-700 dark:bg-neutral-800 lg:grid-cols-[310px_minmax(0,1fr)]">
