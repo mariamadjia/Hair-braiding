@@ -18,7 +18,7 @@ const GalleryAdminNew = lazy(() => import("./components/GalleryAdminNew").then(m
 const ProfileSection = lazy(() => import("./components/ProfileSection").then(m => ({ default: m.ProfileSection })));
 const HomePageEditor = lazy(() => import("./components/HomePageEditor").then(m => ({ default: m.HomePageEditor })));
 const AppointmentManagement = lazy(() => import("@/components/AppointmentManagement").then(m => ({ default: m.default })));
-const NotificationAdmin = lazy(() => import("@/components/NotificationAdmin").then(m => ({ default: m.default })));
+const NotificationsWorkspace = lazy(() => import("@/components/NotificationsWorkspace").then(m => ({ default: m.default })));
 const AvailabilitySettings = lazy(() => import("@/components/AvailabilitySettings").then(m => ({ default: m.default })));
 const CustomerTable = lazy(() => import("@/components/CustomerTable").then(m => ({ default: m.default })));
 const CustomerDetails = lazy(() => import("@/components/CustomerDetails").then(m => ({ default: m.default })));
@@ -829,7 +829,7 @@ export default function AdminPage() {
                 )}
 
                 {currentSection === "notifications" && (
-                    <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900"><Suspense fallback={<div className="p-12 text-neutral-500">Loading system status…</div>}><NotificationAdmin /></Suspense></div>
+                    <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900"><Suspense fallback={<div className="p-12 text-neutral-500">Loading email drafts…</div>}><NotificationsWorkspace /></Suspense></div>
                 )}
 
                 {/* Placeholder for other sections */}

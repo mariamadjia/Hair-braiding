@@ -12,7 +12,7 @@ type Page = { content: Notification[]; totalElements: number; totalPages: number
 
 const formatDate = (value: string) => new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(`${value.replace(/Z$/, "")}Z`));
 
-export default function NotificationAdmin() {
+export default function NotificationAdmin({ compactHeader = false }: { compactHeader?: boolean }) {
   const [system, setSystem] = useState<Status | null>(null);
   const [items, setItems] = useState<Notification[]>([]);
   const [status, setStatus] = useState("ALL");
@@ -57,7 +57,7 @@ export default function NotificationAdmin() {
   ] as const : [];
 
   return <main className="mx-auto max-w-7xl space-y-7 p-4 sm:p-8">
-    <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-2xl font-semibold">System &amp; notifications</h2><p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">Monitor service configuration and recover failed customer messages.</p></div><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}/>Refresh</Button></header>
+    <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div>{!compactHeader && <><h2 className="text-2xl font-semibold">System &amp; notifications</h2><p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">Monitor service configuration and recover failed customer messages.</p></>}</div><Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}/>Refresh</Button></header>
     {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
     <section aria-label="System status" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{services.map(([label, available, Icon]) => <div key={label} className="rounded-2xl border bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800"><div className="flex items-center justify-between"><Icon className="h-5 w-5 text-neutral-500"/>{available ? <CheckCircle2 className="h-5 w-5 text-emerald-600"/> : <AlertTriangle className="h-5 w-5 text-amber-600"/>}</div><p className="mt-4 font-semibold">{label}</p><p className={`text-xs font-medium ${available ? "text-emerald-700" : "text-amber-700"}`}>{available ? "Available / configured" : "Unavailable / not configured"}</p></div>)}</section>
     {system && <div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><b>{system.pendingNotifications}</b> notifications waiting</div><div className="rounded-xl border border-red-200 bg-red-50 p-4"><b>{system.failedNotifications}</b> failed notifications</div></div>}
