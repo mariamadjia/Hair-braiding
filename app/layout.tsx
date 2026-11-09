@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Oswald, Allura, Playfair_Display, Montserrat } from 
 import "./globals.css";
 import { Providers } from "./providers";
 import Chatbot from "@/components/Chatbot";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -88,6 +89,7 @@ export default function RootLayout({
           {children}
           <Chatbot />
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
