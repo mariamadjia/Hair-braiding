@@ -32,6 +32,7 @@ interface SidebarProps {
   adminName?: string;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
+  unreadInboxCount?: number;
 }
 
 interface MenuItem {
@@ -49,6 +50,7 @@ export function AdminSidebar({
   adminName = "Admin",
   isMobileOpen = false,
   onMobileClose,
+  unreadInboxCount = 0,
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(["services"]);
@@ -184,7 +186,17 @@ export function AdminSidebar({
                     }
                     aria-disabled={item.comingSoon}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="relative shrink-0">
+                      <Icon className="h-4 w-4" />
+                      {item.id === "inbox" && unreadInboxCount > 0 && (
+                        <span
+                          aria-label={`${unreadInboxCount} unread inbox ${unreadInboxCount === 1 ? "item" : "items"}`}
+                          className="absolute -right-2.5 -top-2.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold leading-none text-white ring-2 ring-white dark:ring-neutral-800"
+                        >
+                          {unreadInboxCount > 99 ? "99+" : unreadInboxCount}
+                        </span>
+                      )}
+                    </span>
                     {!isCollapsed && (
                       <>
                         <span className="text-sm flex-1 text-left">

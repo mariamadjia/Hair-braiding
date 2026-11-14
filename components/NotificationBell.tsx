@@ -8,10 +8,12 @@ import {
     Calendar,
     Check,
     Loader2,
+    Inbox,
     MailWarning,
     X,
     XCircle,
 } from "lucide-react";
+import { API_BASE_URL } from "@/lib/config/api";
 
 type Appointment = {
     id: number;
@@ -41,7 +43,10 @@ type Notice = {
     actionLabel: string;
     icon: typeof Bell;
     tone: "neutral" | "success" | "warning" | "danger";
+    destination?: "bookings" | "inbox";
 };
+
+type InboxItem = { read?: boolean; createdAt?: string };
 
 const READ_KEY = "admin_notification_read_ids";
 const DISMISSED_KEY = "admin_notification_dismissed_ids";
@@ -179,10 +184,19 @@ function noticesFromAppointments(appointments: Appointment[]): Notice[] {
     return notices.sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
 }
 
-export function NotificationBell({ token, onNavigate }: { token: string; onNavigate: (section: string) => void }) {
+export function NotificationBell({
+    token,
+    onNavigate,
+    onInboxUnreadCountChange,
+}: {
+    token: string;
+    onNavigate: (section: string) => void;
+    onInboxUnreadCountChange?: (count: number) => void;
+}) {
     const [open, setOpen] = useState(false);
     const [filter, setFilter] = useState<"all" | "unread">("all");
     const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
     const [readIds, setReadIds] = useState<Set<string>>(new Set());
     const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(true);
@@ -198,13 +212,21 @@ export function NotificationBell({ token, onNavigate }: { token: string; onNavig
         if (!quiet) setLoading(true);
         setError("");
         try {
-            const response = await fetch("/api/appointments", {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: "no-store",
-            });
+            const headers = { Authorization: `Bearer ${token}` };
+            const [response, chatsResponse, applicationsResponse] = await Promise.all([
+                fetch("/api/appointments", { headers, cache: "no-store" }),
+                fetch(`${API_BASE_URL}/api/chat/messages`, { headers, cache: "no-store" }),
+                fetch(`${API_BASE_URL}/api/admin/braider-applications`, { headers, cache: "no-store" }),
+            ]);
             const body = await response.json().catch(() => null);
             if (!response.ok) throw new Error(body?.error || "Notifications could not be loaded.");
             setAppointments(Array.isArray(body) ? body : body?.content ?? []);
+            const chats = chatsResponse.ok ? await chatsResponse.json().catch(() => []) : [];
+            const applications = applicationsResponse.ok ? await applicationsResponse.json().catch(() => []) : [];
+            setInboxItems([
+                ...(Array.isArray(chats) ? chats : []),
+                ...(Array.isArray(applications) ? applications : []),
+            ]);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Notifications could not be loaded.");
         } finally {
@@ -245,8 +267,36 @@ export function NotificationBell({ token, onNavigate }: { token: string; onNavig
         () => noticesFromAppointments(appointments).filter((notice) => !dismissedIds.has(notice.id)),
         [appointments, dismissedIds],
     );
-    const unreadCount = notices.filter((notice) => !readIds.has(notice.id)).length;
-    const visible = notices.filter((notice) => filter === "all" || !readIds.has(notice.id)).slice(0, 10);
+    const inboxUnreadCount = inboxItems.filter((item) => !item.read).length;
+    const inboxNotice = useMemo<Notice | null>(() => {
+        if (!inboxUnreadCount) return null;
+        const newestTimestamp = inboxItems
+            .filter((item) => !item.read && item.createdAt)
+            .map((item) => item.createdAt as string)
+            .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0] ?? new Date().toISOString();
+        return {
+            id: "inbox-unread",
+            title: inboxUnreadCount === 1 ? "New inbox message" : `${inboxUnreadCount} new inbox items`,
+            description: inboxUnreadCount === 1
+                ? "A website message or braider application is waiting for you."
+                : "Website messages or braider applications are waiting for you.",
+            timestamp: newestTimestamp,
+            actionLabel: "Open inbox",
+            icon: Inbox,
+            tone: "danger",
+            destination: "inbox",
+        };
+    }, [inboxItems, inboxUnreadCount]);
+    const appointmentUnreadCount = notices.filter((notice) => !readIds.has(notice.id)).length;
+    const unreadCount = appointmentUnreadCount + inboxUnreadCount;
+    const visible = [inboxNotice, ...notices]
+        .filter((notice): notice is Notice => Boolean(notice))
+        .filter((notice) => filter === "all" || notice.destination === "inbox" || !readIds.has(notice.id))
+        .slice(0, 10);
+
+    useEffect(() => {
+        onInboxUnreadCountChange?.(inboxUnreadCount);
+    }, [inboxUnreadCount, onInboxUnreadCountChange]);
 
     const updateRead = (next: Set<string>) => {
         setReadIds(next);
@@ -254,6 +304,11 @@ export function NotificationBell({ token, onNavigate }: { token: string; onNavig
     };
 
     const openNotice = (notice: Notice) => {
+        if (notice.destination === "inbox") {
+            setOpen(false);
+            onNavigate("inbox");
+            return;
+        }
         const next = new Set(readIds);
         next.add(notice.id);
         updateRead(next);
@@ -300,7 +355,7 @@ export function NotificationBell({ token, onNavigate }: { token: string; onNavig
                             <p className="text-xs text-neutral-500">{unreadCount} unread</p>
                         </div>
                         <div className="flex items-center gap-1">
-                            {unreadCount > 0 && <button type="button" onClick={markAllRead} className="rounded px-2 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-700">Mark all read</button>}
+                            {appointmentUnreadCount > 0 && <button type="button" onClick={markAllRead} className="rounded px-2 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-700">Mark alerts read</button>}
                             <button type="button" onClick={() => setOpen(false)} aria-label="Close notifications" className="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:hover:bg-neutral-700"><X className="h-4 w-4" /></button>
                         </div>
                     </header>
@@ -322,7 +377,7 @@ export function NotificationBell({ token, onNavigate }: { token: string; onNavig
                             <ul className="divide-y divide-neutral-100 dark:divide-neutral-700">
                                 {visible.map((notice) => {
                                     const Icon = notice.icon;
-                                    const unread = !readIds.has(notice.id);
+                                    const unread = notice.destination === "inbox" || !readIds.has(notice.id);
                                     return (
                                         <li key={notice.id} className={`group relative flex gap-3 p-4 ${unread ? "bg-neutral-50 dark:bg-neutral-900/40" : ""}`}>
                                             <button type="button" onClick={() => openNotice(notice)} className="flex min-w-0 flex-1 gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900">
@@ -333,7 +388,7 @@ export function NotificationBell({ token, onNavigate }: { token: string; onNavig
                                                     <span className="mt-2 flex items-center gap-2 text-xs"><span className="font-medium text-neutral-800 dark:text-neutral-100">{notice.actionLabel}</span><span className="text-neutral-400">·</span><time dateTime={notice.timestamp} className="text-neutral-500">{relativeTime(notice.timestamp)}</time></span>
                                                 </span>
                                             </button>
-                                            <button type="button" onClick={() => dismiss(notice)} aria-label={`Dismiss ${notice.title}`} className="h-7 w-7 shrink-0 rounded p-1.5 text-neutral-400 opacity-100 hover:bg-neutral-200 hover:text-neutral-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 sm:opacity-0 sm:group-hover:opacity-100 dark:hover:bg-neutral-700 dark:hover:text-white"><X className="h-4 w-4" /></button>
+                                            {notice.destination !== "inbox" && <button type="button" onClick={() => dismiss(notice)} aria-label={`Dismiss ${notice.title}`} className="h-7 w-7 shrink-0 rounded p-1.5 text-neutral-400 opacity-100 hover:bg-neutral-200 hover:text-neutral-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 sm:opacity-0 sm:group-hover:opacity-100 dark:hover:bg-neutral-700 dark:hover:text-white"><X className="h-4 w-4" /></button>}
                                         </li>
                                     );
                                 })}

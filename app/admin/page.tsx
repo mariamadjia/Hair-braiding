@@ -117,6 +117,7 @@ export default function AdminPage() {
     },
   );
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
+  const [unreadInboxCount, setUnreadInboxCount] = useState(0);
 
   // New state for lazy loading
   const [categorySummaries, setCategorySummaries] = useState<CategorySummary[]>(
@@ -830,6 +831,7 @@ export default function AdminPage() {
           adminName={adminName}
           isMobileOpen={mobileNavigationOpen}
           onMobileClose={() => setMobileNavigationOpen(false)}
+          unreadInboxCount={unreadInboxCount}
         />
 
         {/* Main content area */}
@@ -877,7 +879,11 @@ export default function AdminPage() {
                 </span>
               )}
             </div>
-            <NotificationBell token={token} onNavigate={handleSectionChange} />
+            <NotificationBell
+              token={token}
+              onNavigate={handleSectionChange}
+              onInboxUnreadCountChange={setUnreadInboxCount}
+            />
           </div>
 
           {/* Content based on section */}
@@ -1075,7 +1081,7 @@ export default function AdminPage() {
                   <div className="p-12 text-neutral-500">Loading inbox…</div>
                 }
               >
-                <AdminInbox />
+                <AdminInbox onUnreadCountChange={setUnreadInboxCount} />
               </Suspense>
             </div>
           )}

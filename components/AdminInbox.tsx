@@ -60,7 +60,7 @@ const date = (value: string) =>
     timeStyle: "short",
   }).format(new Date(`${value.replace(/Z$/, "")}Z`));
 
-export default function AdminInbox() {
+export default function AdminInbox({ onUnreadCountChange }: { onUnreadCountChange?: (count: number) => void }) {
   const [tab, setTab] = useState<"ALL" | "CHAT" | "APPLICATION">("ALL");
   const [chats, setChats] = useState<Chat[]>([]),
     [applications, setApplications] = useState<Application[]>([]);
@@ -104,6 +104,12 @@ export default function AdminInbox() {
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    onUnreadCountChange?.(
+      chats.filter((chat) => !chat.read).length +
+        applications.filter((application) => !application.read).length,
+    );
+  }, [applications, chats, onUnreadCountChange]);
   const items = useMemo<Item[]>(
     () =>
       [
