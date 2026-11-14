@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Database,
+  Download,
   Eye,
   Loader2,
   Mail,
@@ -156,6 +157,37 @@ export default function NotificationAdmin({
       );
     } finally {
       setRetrying(null);
+    }
+  };
+
+  const downloadEmailPdf = (message: Notification) => {
+    const printWindow = window.open("", "_blank", "width=900,height=1100");
+    if (!printWindow) {
+      setError("Your browser blocked the PDF window. Allow pop-ups and try again.");
+      return;
+    }
+
+    const safeName = `${message.customerName}-${message.subject || "email"}`
+      .replace(/[^a-z0-9]+/gi, "-")
+      .replace(/^-|-$/g, "")
+      .toLowerCase();
+
+    printWindow.opener = null;
+    printWindow.document.open();
+    printWindow.document.write(message.body);
+    printWindow.document.close();
+    printWindow.document.title = safeName || `email-${message.id}`;
+
+    const print = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
+    if (printWindow.document.readyState === "complete") {
+      window.setTimeout(print, 250);
+    } else {
+      printWindow.addEventListener("load", () => window.setTimeout(print, 250), {
+        once: true,
+      });
     }
   };
 
@@ -396,7 +428,15 @@ export default function NotificationAdmin({
               <div className="min-w-0 overflow-y-auto p-5 sm:p-7">
                 <div className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-start sm:justify-between dark:border-neutral-700">
                   <div><div className="flex items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${selectedMessage.status === "SENT" ? "bg-emerald-100 text-emerald-800" : selectedMessage.status === "FAILED" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"}`}>{selectedMessage.status}</span><span className="text-sm text-neutral-500">{selectedMessage.attempts} attempt{selectedMessage.attempts === 1 ? "" : "s"}</span></div><h4 className="mt-3 text-xl font-semibold">{selectedMessage.subject || "Text message"}</h4><p className="mt-1 text-sm text-neutral-500">To {selectedMessage.recipient}</p><p className="mt-1 text-xs text-neutral-500">{selectedMessage.serviceName || "Appointment"} · {formatDate(selectedMessage.appointmentDateTime)}</p></div>
-                  {selectedMessage.status !== "SENT" && <Button variant="outline" disabled={retrying === selectedMessage.id} onClick={() => void retry(selectedMessage.id)}>{retrying === selectedMessage.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Retry</Button>}
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    {selectedMessage.channel === "EMAIL" && (
+                      <Button variant="outline" onClick={() => downloadEmailPdf(selectedMessage)}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download PDF
+                      </Button>
+                    )}
+                    {selectedMessage.status !== "SENT" && <Button variant="outline" disabled={retrying === selectedMessage.id} onClick={() => void retry(selectedMessage.id)}>{retrying === selectedMessage.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Retry</Button>}
+                  </div>
                 </div>
                 {selectedMessage.lastError && <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><b>Delivery error</b><p className="mt-1">{selectedMessage.lastError}</p></div>}
                 <div className="mt-6"><p className="mb-2 text-sm font-semibold">Message sent</p>{selectedMessage.channel === "EMAIL" ? <iframe title="Email content" sandbox="" srcDoc={selectedMessage.body} className="min-h-[560px] w-full rounded-xl border bg-white" /> : <div className="max-w-lg rounded-[2rem] border-8 border-neutral-900 bg-neutral-100 p-4"><p className="mb-3 text-center text-xs text-neutral-500">AH Braiding</p><div className="whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-white p-4 text-sm leading-6 shadow-sm">{selectedMessage.body}</div></div>}</div>
