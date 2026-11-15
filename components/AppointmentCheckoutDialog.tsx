@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Banknote, CheckCircle2, ChevronLeft, ChevronRight, CreditCard, Loader2, Mail, ReceiptText, RotateCcw, UserX, X } from "lucide-react";
+import { Banknote, CheckCircle2, ChevronLeft, ChevronRight, Loader2, Mail, PencilLine, ReceiptText, RotateCcw, UserX, X } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config/api";
 import { getAuthToken } from "@/lib/utils/auth";
 
@@ -9,13 +9,14 @@ type Transaction = { id: number; type: "PAYMENT" | "REFUND"; paymentMethod: stri
 type Checkout = {
   appointmentId: number; customerName: string; customerEmail?: string; customerPhone: string; serviceName?: string;
   appointmentDateTime: string; appointmentStatus: string; serviceTotalCents: number; depositCreditCents: number;
+  originalServiceTotalCents: number; priceAdjustmentCents: number; priceAdjustmentReason?: string; priceAdjustedAt?: string; priceAdjustedBy?: string;
   tipCents: number; amountPaidCents: number; amountRefundedCents: number; balanceDueCents: number;
   checkoutStatus: string; bookingSource?: "CUSTOMER" | "OWNER"; depositPolicyVersion?: string;
   depositPolicyAcceptedAt?: string; bookingPolicySnapshot?: string; offSessionConsentPolicyVersion?: string; offSessionConsentAt?: string;
   transactions: Transaction[];
 };
 type PaymentMethod = "CASH" | "ZELLE" | "CASH_APP" | "OTHER";
-type View = "ACTIONS" | "PAYMENT" | "REFUND";
+type View = "ACTIONS" | "PAYMENT" | "REFUND" | "ADJUSTMENT";
 
 const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 const dateTime = (value: string) => new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(`${value.replace(/Z$/, "")}Z`));
@@ -37,6 +38,9 @@ export default function AppointmentCheckoutDialog({ appointmentId, onClose, onCh
   const [notes, setNotes] = useState("");
   const [refundAmount, setRefundAmount] = useState("");
   const [refundReason, setRefundReason] = useState("");
+  const [adjustmentDirection, setAdjustmentDirection] = useState<"INCREASE" | "DECREASE">("INCREASE");
+  const [adjustmentAmount, setAdjustmentAmount] = useState("");
+  const [adjustmentReason, setAdjustmentReason] = useState("");
   const headers = () => { const token = getAuthToken(); return { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }; };
 
   const load = useCallback(async () => {
@@ -73,13 +77,25 @@ export default function AppointmentCheckoutDialog({ appointmentId, onClose, onCh
     catch (reason) { setError(reason instanceof Error ? reason.message : "Refund could not be recorded"); }
     finally { setBusy(false); }
   };
+  const submitAdjustment = async () => {
+    if (!checkout) return;
+    const cents = Math.round(Number(adjustmentAmount) * 100);
+    if (!Number.isFinite(cents) || cents < 1 || !adjustmentReason.trim()) { setError("Enter an adjustment amount and reason"); return; }
+    const adjustmentCents = adjustmentDirection === "DECREASE" ? -cents : cents;
+    setBusy(true); setError("");
+    try {
+      const updated = await read<Checkout>(await fetch(`${API_BASE_URL}/api/checkouts/${appointmentId}/price-adjustment`, { method: "PATCH", headers: headers(), body: JSON.stringify({ adjustmentCents, reason: adjustmentReason.trim() }) }));
+      setCheckout(updated); setView("ACTIONS"); setNotice("Checkout price adjusted and audit history recorded."); await onChanged();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Price could not be adjusted"); }
+    finally { setBusy(false); }
+  };
 
   const refundable = checkout ? checkout.amountPaidCents - checkout.amountRefundedCents : 0;
   return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose(); }}>
     <section role="dialog" aria-modal="true" aria-labelledby="checkout-dialog-title" className="max-h-[94dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[#fffdf9] p-5 text-[#351d12] shadow-2xl dark:bg-neutral-950 dark:text-neutral-100 sm:rounded-3xl sm:p-6">
-      <header className="flex items-center gap-3">{view !== "ACTIONS" && <button onClick={() => { setView("ACTIONS"); setError(""); }} aria-label="Back to checkout actions" className="rounded-full p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"><ChevronLeft className="h-5 w-5"/></button>}<h2 id="checkout-dialog-title" className="flex-1 font-serif text-3xl">{view === "ACTIONS" ? "Checkout" : view === "PAYMENT" ? "Mark as paid" : "Record refund"}</h2><button onClick={onClose} disabled={busy} aria-label="Close checkout" className="rounded-full p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"><X className="h-5 w-5"/></button></header>
+      <header className="flex items-center gap-3">{view !== "ACTIONS" && <button onClick={() => { setView("ACTIONS"); setError(""); }} aria-label="Back to checkout actions" className="rounded-full p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"><ChevronLeft className="h-5 w-5"/></button>}<h2 id="checkout-dialog-title" className="flex-1 font-serif text-3xl">{view === "ACTIONS" ? "Checkout" : view === "PAYMENT" ? "Mark as paid" : view === "REFUND" ? "Record refund" : "Adjust price"}</h2><button onClick={onClose} disabled={busy} aria-label="Close checkout" className="rounded-full p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"><X className="h-5 w-5"/></button></header>
       {loading ? <div className="flex justify-center py-20"><Loader2 className="h-7 w-7 animate-spin"/></div> : checkout && <>
-        <div className="mt-5 rounded-2xl border border-[#eadfd4] bg-[#fffaf5] p-4 dark:border-neutral-700 dark:bg-neutral-900"><h3 className="text-lg font-bold">{checkout.customerName}</h3><p className="text-[#76675e] dark:text-neutral-400">{checkout.serviceName || "Braiding service"}</p><p className="mt-1 text-sm">{dateTime(checkout.appointmentDateTime)}</p><dl className="mt-4 space-y-2 text-sm"><Row label="Service total" value={money(checkout.serviceTotalCents)}/><Row label="Deposit paid" value={`−${money(checkout.depositCreditCents)}`}/>{checkout.tipCents > 0 && <Row label="Tip" value={money(checkout.tipCents)}/>}<div className="flex justify-between border-t pt-3 text-lg font-bold"><dt>Balance due</dt><dd>{money(checkout.balanceDueCents)}</dd></div>{checkout.amountRefundedCents > 0 && <Row label="Refunded" value={money(checkout.amountRefundedCents)}/>}</dl></div>
+        <div className="mt-5 rounded-2xl border border-[#eadfd4] bg-[#fffaf5] p-4 dark:border-neutral-700 dark:bg-neutral-900"><h3 className="text-lg font-bold">{checkout.customerName}</h3><p className="text-[#76675e] dark:text-neutral-400">{checkout.serviceName || "Braiding service"}</p><p className="mt-1 text-sm">{dateTime(checkout.appointmentDateTime)}</p><dl className="mt-4 space-y-2 text-sm">{checkout.priceAdjustmentCents !== 0 && <Row label="Original price" value={money(checkout.originalServiceTotalCents)}/>} {checkout.priceAdjustmentCents !== 0 && <Row label="Price adjustment" value={`${checkout.priceAdjustmentCents > 0 ? "+" : "−"}${money(Math.abs(checkout.priceAdjustmentCents))}`}/>}<Row label="Service total" value={money(checkout.serviceTotalCents)}/>{checkout.priceAdjustmentReason && <div className="rounded-lg bg-[#f6e9df] p-2 text-xs text-[#6f4938]"><b>Reason:</b> {checkout.priceAdjustmentReason}{checkout.priceAdjustedBy ? ` · ${checkout.priceAdjustedBy}` : ""}</div>}<Row label="Deposit paid" value={`−${money(checkout.depositCreditCents)}`}/>{checkout.tipCents > 0 && <Row label="Tip" value={money(checkout.tipCents)}/>}<div className="flex justify-between border-t pt-3 text-lg font-bold"><dt>Balance due</dt><dd>{money(checkout.balanceDueCents)}</dd></div>{checkout.amountRefundedCents > 0 && <Row label="Refunded" value={money(checkout.amountRefundedCents)}/>}</dl></div>
         <details className="mt-4 rounded-2xl border border-[#eadfd4] bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
           <summary className="cursor-pointer font-semibold">Customer policy agreement</summary>
           {checkout.depositPolicyAcceptedAt ? <div className="mt-3 text-sm text-[#5f5048] dark:text-neutral-300">
@@ -97,6 +113,17 @@ export default function AppointmentCheckoutDialog({ appointmentId, onClose, onCh
         {notice && <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{notice}</div>}
         {error && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
         {view === "ACTIONS" && <div className="mt-5 space-y-2">
+          {checkout.appointmentStatus === "APPROVED" && checkout.checkoutStatus === "OPEN" && <Action
+            icon={PencilLine}
+            title="Adjust service price"
+            detail="Increase or decrease with a required reason"
+            onClick={() => {
+              setAdjustmentDirection(checkout.priceAdjustmentCents < 0 ? "DECREASE" : "INCREASE");
+              setAdjustmentAmount(checkout.priceAdjustmentCents ? (Math.abs(checkout.priceAdjustmentCents) / 100).toFixed(2) : "");
+              setAdjustmentReason(checkout.priceAdjustmentReason || "");
+              setView("ADJUSTMENT");
+            }}
+          />}
           {checkout.appointmentStatus === "APPROVED" && checkout.balanceDueCents > 0 && <Action icon={Banknote} title="Collect remaining balance" detail={`${money(checkout.balanceDueCents)} due`} onClick={() => setView("PAYMENT")}/>} 
           {checkout.appointmentStatus === "APPROVED" && <Action icon={CheckCircle2} title="Mark as paid" detail="Cash, Zelle, Cash App, or other" onClick={() => setView("PAYMENT")}/>} 
           {checkout.appointmentStatus === "APPROVED" && <Action icon={CheckCircle2} title="Mark appointment complete" detail="Complete without recording another payment" onClick={() => { onClose(); onComplete(); }}/>} 
@@ -107,6 +134,7 @@ export default function AppointmentCheckoutDialog({ appointmentId, onClose, onCh
         </div>}
         {view === "PAYMENT" && <div className="mt-5"><h3 className="font-semibold">Payment method</h3><div className="mt-2 grid grid-cols-2 gap-2">{(["CASH", "ZELLE", "CASH_APP", "OTHER"] as PaymentMethod[]).map(value => <button key={value} onClick={() => setMethod(value)} className={`rounded-xl border px-3 py-3 text-sm font-medium ${method === value ? "border-[#b9532f] bg-[#fff0e8] text-[#9b3f22]" : "bg-white dark:bg-neutral-900"}`}>{value.replace("_", " ")}</button>)}</div><label className="mt-4 block text-sm font-medium">Tip<input inputMode="decimal" value={tip} onChange={event => setTip(event.target.value.replace(/[^0-9.]/g, ""))} className="mt-1 w-full rounded-xl border bg-white px-3 py-3 dark:bg-neutral-900"/></label><label className="mt-3 block text-sm font-medium">Reference or note (optional)<input value={reference} maxLength={255} onChange={event => setReference(event.target.value)} className="mt-1 w-full rounded-xl border bg-white px-3 py-3 dark:bg-neutral-900"/></label><label className="mt-3 block text-sm font-medium">Completion notes (optional)<textarea value={notes} maxLength={500} onChange={event => setNotes(event.target.value)} className="mt-1 w-full rounded-xl border bg-white px-3 py-3 dark:bg-neutral-900"/></label><p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">This records a payment received outside Stripe. Confirm the funds before continuing.</p><button disabled={busy} onClick={() => void submitPayment()} className="mt-5 flex w-full items-center justify-center rounded-2xl bg-[#b9532f] px-5 py-4 font-semibold text-white disabled:opacity-50">{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Mark paid &amp; complete</button></div>}
         {view === "REFUND" && <div className="mt-5"><label className="block text-sm font-medium">Refund amount<input inputMode="decimal" value={refundAmount} onChange={event => setRefundAmount(event.target.value.replace(/[^0-9.]/g, ""))} className="mt-1 w-full rounded-xl border bg-white px-3 py-3 text-xl font-semibold dark:bg-neutral-900"/></label><label className="mt-3 block text-sm font-medium">Reason<textarea value={refundReason} maxLength={500} onChange={event => setRefundReason(event.target.value)} className="mt-1 w-full rounded-xl border bg-white px-3 py-3 dark:bg-neutral-900"/></label><p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Return the funds through the original external payment method before recording the refund here.</p><button disabled={busy} onClick={() => void submitRefund()} className="mt-5 flex w-full items-center justify-center rounded-2xl bg-[#b9532f] px-5 py-4 font-semibold text-white disabled:opacity-50">{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Record refund</button></div>}
+        {view === "ADJUSTMENT" && <div className="mt-5"><p className="text-sm text-[#76675e]">Original service price: <b className="text-[#351d12] dark:text-white">{money(checkout.originalServiceTotalCents)}</b></p><div className="mt-4 grid grid-cols-2 gap-2"><button type="button" onClick={() => setAdjustmentDirection("INCREASE")} className={`rounded-xl border px-3 py-3 text-sm font-semibold ${adjustmentDirection === "INCREASE" ? "border-[#b9532f] bg-[#fff0e8] text-[#9b3f22]" : "bg-white dark:bg-neutral-900"}`}>Increase price</button><button type="button" onClick={() => setAdjustmentDirection("DECREASE")} className={`rounded-xl border px-3 py-3 text-sm font-semibold ${adjustmentDirection === "DECREASE" ? "border-[#b9532f] bg-[#fff0e8] text-[#9b3f22]" : "bg-white dark:bg-neutral-900"}`}>Decrease price</button></div><label className="mt-4 block text-sm font-medium">Adjustment amount<input inputMode="decimal" value={adjustmentAmount} onChange={event => setAdjustmentAmount(event.target.value.replace(/[^0-9.]/g, ""))} className="mt-1 w-full rounded-xl border bg-white px-3 py-3 text-xl font-semibold dark:bg-neutral-900" placeholder="0.00"/></label><label className="mt-3 block text-sm font-medium">Reason<textarea required value={adjustmentReason} maxLength={500} onChange={event => setAdjustmentReason(event.target.value)} placeholder="Example: Extra length, additional hair, or courtesy discount" className="mt-1 min-h-24 w-full rounded-xl border bg-white px-3 py-3 dark:bg-neutral-900"/></label>{adjustmentAmount && Number.isFinite(Number(adjustmentAmount)) && <div className="mt-3 flex justify-between rounded-xl bg-[#f6e9df] p-3 text-sm"><span>Adjusted service total</span><b>{money(Math.max(0, checkout.originalServiceTotalCents + (adjustmentDirection === "DECREASE" ? -1 : 1) * Math.round(Number(adjustmentAmount) * 100)))}</b></div>}<p className="mt-3 text-xs text-[#806f64]">The original price remains in the audit record. This does not charge the customer&apos;s card.</p><button disabled={busy} onClick={() => void submitAdjustment()} className="mt-5 flex w-full items-center justify-center rounded-2xl bg-[#b9532f] px-5 py-4 font-semibold text-white disabled:opacity-50">{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Save price adjustment</button></div>}
       </>}
     </section>
   </div>;
