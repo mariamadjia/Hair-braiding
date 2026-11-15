@@ -73,6 +73,7 @@ const PricingManagement = lazy(() =>
     default: m.PricingManagement,
   })),
 );
+const BookingReports = lazy(() => import("@/components/BookingReports"));
 const AdministratorsSettings = lazy(() =>
   import("./components/AdministratorsSettings").then((m) => ({
     default: m.AdministratorsSettings,
@@ -861,6 +862,7 @@ export default function AdminPage() {
                     availability: "Availability Settings",
                     customers: "Customers",
                     pricing: "Pricing",
+                    reports: "Analytics & Reports",
                     gallery: "Gallery",
                     settings: "Settings",
                     general: "General Settings",
@@ -1141,6 +1143,14 @@ export default function AdminPage() {
             </div>
           )}
 
+          {currentSection === "reports" && (
+            <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
+              <Suspense fallback={<div className="p-12 text-neutral-500">Loading reports…</div>}>
+                <BookingReports />
+              </Suspense>
+            </div>
+          )}
+
           {currentSection === "administrators" && (
             <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
               <Suspense
@@ -1181,6 +1191,7 @@ export default function AdminPage() {
             currentSection !== "availability" &&
             currentSection !== "customers" &&
             currentSection !== "pricing" &&
+            currentSection !== "reports" &&
             currentSection !== "administrators" &&
             currentSection !== "notifications" && (
               <div className="flex-1 overflow-y-auto bg-neutral-50 p-4 dark:bg-neutral-900 sm:p-6 lg:p-8">
