@@ -24,6 +24,7 @@ import {
   FileText,
   Inbox,
   BarChart3,
+  UserRound,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -70,6 +71,7 @@ export function AdminSidebar({
     { id: "inbox", label: "Inbox", icon: Inbox },
     { id: "availability", label: "Availability", icon: Clock },
     { id: "customers", label: "Customers", icon: Users },
+    { id: "staff", label: "Employees", icon: UserRound },
     { id: "pricing", label: "Pricing", icon: DollarSign },
     { id: "reports", label: "Reports", icon: BarChart3 },
     { id: "gallery", label: "Gallery", icon: ImageIcon },

@@ -63,6 +63,8 @@ export type Appointment = {
     depositRequired?: boolean;
     depositLinkExpiresAt?: string;
     depositWaivedAt?: string;
+    assignedStaffId?: number;
+    assignedStaffName?: string;
 };
 
 type WorkflowView = "NEEDS_ACTION" | "UPCOMING" | "CHECKOUT" | "HISTORY";
@@ -835,6 +837,10 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
     const [eventsError, setEventsError] = useState("");
     const [agreementLoading, setAgreementLoading] = useState(false);
     const [agreementError, setAgreementError] = useState("");
+    const [staff, setStaff] = useState<{id:number;firstName:string;lastName:string;active:boolean;status:string;serviceIds:number[]}[]>([]);
+    const [assignedStaffId, setAssignedStaffId] = useState(appointment.assignedStaffId ? String(appointment.assignedStaffId) : "");
+    const [assignmentMessage, setAssignmentMessage] = useState("");
+    const [assignmentLoading, setAssignmentLoading] = useState(false);
     const dialogRef = useRef<HTMLElement | null>(null);
     const onCloseRef = useRef(onClose);
 
@@ -890,6 +896,25 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
         return () => controller.abort();
     }, [appointment.id]);
 
+    useEffect(() => {
+        const token=getAuthToken();
+        fetch(`${API_BASE_URL}/api/admin/staff`, {headers:token?{Authorization:`Bearer ${token}`}:{}, cache:"no-store"})
+            .then(async response => response.ok ? response.json() : Promise.reject(new Error("Employees could not be loaded")))
+            .then(body => setStaff(Array.isArray(body) ? body : [])).catch(() => setStaff([]));
+    }, []);
+
+    const saveAssignment = async () => {
+        setAssignmentLoading(true); setAssignmentMessage("");
+        try {
+            const token=getAuthToken();
+            const response=await fetch(`${API_BASE_URL}/api/admin/staff/appointments/${appointment.id}/assignment`, {method:"PUT",headers:{"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({staffId:assignedStaffId?Number(assignedStaffId):null})});
+            const body=await response.json().catch(()=>null); if(!response.ok) throw new Error(body?.error||body?.message||"Assignment could not be saved");
+            appointment.assignedStaffId=body.assignedStaffId; appointment.assignedStaffName=body.assignedStaffName;
+            setAssignmentMessage(body.assignedStaffName ? `Assigned to ${body.assignedStaffName}.` : "Appointment is now unassigned.");
+        } catch(reason) { setAssignmentMessage(reason instanceof Error ? reason.message : "Assignment could not be saved"); }
+        finally { setAssignmentLoading(false); }
+    };
+
     const openAgreement = async () => {
         setAgreementLoading(true); setAgreementError("");
         try {
@@ -926,6 +951,7 @@ function AppointmentDialog({ appointment, formatDateTime, onClose, onApprove, on
                     <div><dt className="text-neutral-500">Hair texture</dt><dd className="mt-1 font-medium">{appointment.selectedTexture || "—"}</dd></div>
                 </dl>
             </section>
+            <section className="mt-5 rounded-2xl border border-[#e7ddd6] bg-white p-5"><h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7a513b]">Assigned employee</h3><p className="mt-2 text-xs text-neutral-500">Only qualified, active employees can be assigned. Availability and scheduling conflicts are checked when you save.</p><div className="mt-4 flex flex-col gap-2 sm:flex-row"><select value={assignedStaffId} onChange={event=>{setAssignedStaffId(event.target.value);setAssignmentMessage("");}} className="h-11 flex-1 rounded-lg border border-neutral-300 bg-white px-3 text-sm"><option value="">Unassigned</option>{staff.filter(person=>person.active&&person.status==="ACTIVE"&&(!appointment.service?.id||person.serviceIds.includes(appointment.service.id))).map(person=><option key={person.id} value={person.id}>{person.firstName} {person.lastName}</option>)}</select><Button disabled={assignmentLoading} onClick={()=>void saveAssignment()} className="h-11 bg-[#351d12]">{assignmentLoading?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:null}Save assignment</Button></div>{assignmentMessage&&<p className={`mt-3 text-sm ${assignmentMessage.startsWith("Assigned")||assignmentMessage.includes("unassigned")?"text-emerald-700":"text-red-700"}`}>{assignmentMessage}</p>}</section>
             <section className="mt-5 rounded-2xl border border-[#e7ddd6] bg-white p-5 text-sm"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><h3 className="font-semibold text-[#241711]">Customer</h3><span className="w-fit rounded-full bg-[#f2e8e1] px-3 py-1 text-xs font-medium text-[#6b3d27]">{appointment.selfServiceChangeCount ?? 0} of 1 changes used</span></div><p className="mt-4 flex items-center gap-2"><User className="h-4 w-4 shrink-0 text-[#9a6d50]" />{appointment.customer.firstName} {appointment.customer.lastName}</p><a href={`mailto:${appointment.customer.email}`} className="mt-3 flex min-w-0 items-center gap-2 hover:underline"><Mail className="h-4 w-4 shrink-0 text-[#9a6d50]" /><span className="break-all">{appointment.customer.email}</span></a><a href={`tel:${appointment.customer.phoneNumber}`} className="mt-3 flex items-center gap-2 hover:underline"><Phone className="h-4 w-4 shrink-0 text-[#9a6d50]" />{appointment.customer.phoneNumber}</a>{appointment.lastSelfServiceChangeAt && <p className="mt-3 text-xs text-neutral-500">Last customer change: {formatDateTime(appointment.lastSelfServiceChangeAt)}</p>}</section>
             <section className="mt-5 rounded-2xl border border-[#e7ddd6] bg-white p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-semibold text-[#241711]">Customer agreement</h3><p className="mt-1 text-xs text-neutral-500">Full PDF with appointment details, policy text, and recorded acceptance evidence.</p></div><Button variant="outline" disabled={agreementLoading} onClick={() => void openAgreement()}>{agreementLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileText className="mr-2 h-4 w-4"/>}View PDF agreement</Button></div>{agreementError && <p className="mt-3 text-sm text-red-700">{agreementError}</p>}</section>
             {appointment.rescheduledFromDateTime && <div className="mt-6 border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"><h3 className="font-semibold">Appointment rescheduled</h3><p className="mt-2">Previous: {formatDateTime(appointment.rescheduledFromDateTime)}</p><p>Current: {formatDateTime(appointment.appointmentDateTime)}</p></div>}

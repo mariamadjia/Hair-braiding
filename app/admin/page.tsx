@@ -74,6 +74,7 @@ const PricingManagement = lazy(() =>
   })),
 );
 const BookingReports = lazy(() => import("@/components/BookingReports"));
+const StaffManagement = lazy(() => import("@/components/StaffManagement"));
 const AdministratorsSettings = lazy(() =>
   import("./components/AdministratorsSettings").then((m) => ({
     default: m.AdministratorsSettings,
@@ -861,6 +862,7 @@ export default function AdminPage() {
                     inbox: "Inbox",
                     availability: "Availability Settings",
                     customers: "Customers",
+                    staff: "Employees",
                     pricing: "Pricing",
                     reports: "Analytics & Reports",
                     gallery: "Gallery",
@@ -1127,6 +1129,14 @@ export default function AdminPage() {
                     />
                   </div>
                 )}
+              </Suspense>
+            </div>
+          )}
+
+          {currentSection === "staff" && (
+            <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-neutral-900">
+              <Suspense fallback={<div className="p-12 text-neutral-500">Loading employees…</div>}>
+                <StaffManagement />
               </Suspense>
             </div>
           )}
