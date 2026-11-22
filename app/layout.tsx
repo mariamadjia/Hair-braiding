@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Oswald, Allura, Playfair_Display, Montserrat } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Providers } from "./providers";
 import Chatbot from "@/components/Chatbot";
@@ -88,6 +89,7 @@ export default function RootLayout({
           {children}
           <Chatbot />
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
