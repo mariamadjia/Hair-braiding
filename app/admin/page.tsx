@@ -1200,6 +1200,7 @@ export default function AdminPage() {
             currentSection !== "inbox" &&
             currentSection !== "availability" &&
             currentSection !== "customers" &&
+            currentSection !== "staff" &&
             currentSection !== "pricing" &&
             currentSection !== "reports" &&
             currentSection !== "administrators" &&
