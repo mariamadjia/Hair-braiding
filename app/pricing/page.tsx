@@ -8,16 +8,17 @@ import { readBookingData } from "@/lib/categories-store";
 import type { BookingItem, BookingSubcategory } from "@/lib/booking-types";
 import { itemPriceRangeLabel, subcategoryPriceRangeLabel } from "@/lib/pricing-ranges";
 import PricingControls from "./PricingControls";
+import { pageMetadata } from "@/lib/site-metadata";
 
 // Cache the public catalog so navigating to Pricing does not wait on Render.
 // Admin service and pricing updates explicitly invalidate this page.
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-    title: "Hair Braiding Prices",
-    description: "Browse current AH Braiding price ranges by service and style. Select a style to see exact size and length pricing.",
-    alternates: { canonical: "/pricing" },
-};
+export const metadata: Metadata = pageMetadata(
+    "Hair Braiding Prices",
+    "Browse current AH Braiding price ranges by service and style. Select a style to see exact size and length pricing.",
+    "/pricing",
+);
 
 type PriceStyle = {
     key: string;

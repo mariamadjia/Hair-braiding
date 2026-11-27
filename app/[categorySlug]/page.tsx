@@ -1,7 +1,9 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import CategoryPageTemplate from '@/components/CategoryPageTemplate';
 import { getCategorySubcategories } from '@/lib/category-page-data';
 import { API_BASE_URL } from '@/lib/config/api';
+import { pageMetadata } from '@/lib/site-metadata';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +17,18 @@ async function getCategoryName(slug: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ categorySlug: string }> }): Promise<Metadata> {
+  const { categorySlug } = await params;
+  const categoryName = await getCategoryName(categorySlug);
+  if (!categoryName) return { title: 'Braiding gallery | AH Braiding' };
+  const cleanName = categoryName.replace(/\s+styles?$/i, '').trim();
+  return pageMetadata(
+    `${cleanName} Gallery`,
+    `View ${cleanName} styles created by AH Braiding in San Antonio and find inspiration for your next appointment.`,
+    `/${encodeURIComponent(categorySlug)}`,
+  );
 }
 
 export default async function CategoryPage({

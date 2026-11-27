@@ -2,6 +2,14 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import Navbar from '@/components/Navbar';
 import FooterWrapper from '@/components/FooterWrapper';
+import { pageMetadata } from '@/lib/site-metadata';
+
+export const metadata = pageMetadata(
+  'Contact AH Braiding',
+  'Call, visit, or contact AH Braiding in San Antonio for appointment questions, directions, and salon information.',
+  '/contact',
+  '/contact/salon-clean.png',
+);
 
 const hours = [
   ['Monday', '9:00 AM – 7:00 PM'],
